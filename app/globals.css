@@ -149,3 +149,10 @@
     @apply font-sans;
     }
 }
+/* Elements revealed by GSAP intros start hidden so they don't flash before
+   hydration. Reduced-motion users (and no-JS, see layout) see them at once. */
+@media (prefers-reduced-motion: no-preference) {
+  [data-reveal] {
+    visibility: hidden;
+  }
+}

@@ -9,6 +9,7 @@ import {
 } from "next/font/google"
 
 import "./globals.css"
+import { SmoothScroll } from "@/components/smooth-scroll"
 import { ThemeProvider } from "@/components/theme-provider"
 import { SiteFooter } from "@/features/footer"
 import { SiteHeader } from "@/features/navbar"
@@ -71,6 +72,10 @@ export default function RootLayout({
       )}
     >
       <body>
+        <noscript>
+          <style>{"[data-reveal]{visibility:visible!important}"}</style>
+        </noscript>
+        <SmoothScroll />
         <ThemeProvider>
           <SiteHeader className="absolute inset-x-0 top-0" />
           {children}

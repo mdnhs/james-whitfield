@@ -8,6 +8,8 @@ export function MemberBadge({ className }: { className?: string }) {
 
   return (
     <div
+      data-hero="badge"
+      data-reveal
       className={cn(
         "inline-flex items-center gap-3.25 rounded-[128px] border border-white/16 bg-white/8 py-1.75 pr-5.75 pl-1.75 backdrop-blur-sm",
         className
@@ -21,12 +23,15 @@ export function MemberBadge({ className }: { className?: string }) {
             alt=""
             width={56}
             height={56}
+            data-hero="avatar"
             className={cn("size-14 shrink-0", i < avatars.length - 1 && "-mr-2")}
           />
         ))}
       </div>
       <p className="font-geist text-xl leading-[1.4] tracking-[-0.4px] whitespace-nowrap text-white">
-        <span className="block font-semibold">{count}</span>
+        <span data-hero="count" className="block font-semibold tabular-nums">
+          {count}
+        </span>
         <span className="block text-white/80">{label}</span>
       </p>
     </div>

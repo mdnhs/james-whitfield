@@ -1,6 +1,7 @@
 import Image from "next/image"
 
 import heroBg from "@/public/images/hero/hero-bg.png"
+import { HeroWebGL } from "./hero-webgl"
 
 // Rotated (19.55deg) left-side shade, stacked three times as in the design.
 // Stops are in px so the layer can extend past the 1140.9px design box
@@ -10,21 +11,25 @@ const SHADE =
 
 export function HeroBackground() {
   return (
-    <div aria-hidden className="absolute inset-0">
+    <div aria-hidden data-hero="bg" className="absolute inset-0">
       <div
         // Design: 1585x1058 image layer at top -31px inside a 1440x810 frame.
         className="absolute top-[-3.83%] left-0 h-[130.62%] w-[110.07%] bg-black"
       >
-        <Image
-          src={heroBg}
-          alt=""
-          fill
-          preload
-          placeholder="blur"
-          sizes="110vw"
-          className="-scale-x-100 object-cover"
-        />
-        <div className="absolute inset-0 bg-black/30" />
+        {/* Inner layer takes the intro zoom and pointer drift. */}
+        <div data-hero="bg-image" className="absolute inset-0">
+          <Image
+            src={heroBg}
+            alt=""
+            fill
+            preload
+            placeholder="blur"
+            sizes="110vw"
+            className="-scale-x-100 object-cover"
+          />
+          <HeroWebGL />
+          <div className="absolute inset-0 bg-black/30" />
+        </div>
       </div>
 
       {/* Shade stays locked to the 1440px content column so it always sits
@@ -37,6 +42,9 @@ export function HeroBackground() {
           />
         </div>
       </div>
+
+      {/* Bottom fade keeps the copy legible now that it sits at the bottom. */}
+      <div className="absolute inset-x-0 bottom-0 h-3/5 bg-linear-to-t from-black/60 via-black/25 to-transparent" />
     </div>
   )
 }

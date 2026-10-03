@@ -1,5 +1,8 @@
+"use client"
+
 import { Accordion } from "@base-ui/react/accordion"
 
+import { ScrollTrigger } from "@/lib/gsap"
 import type { Faq } from "../data/faqs"
 
 function ToggleIcon() {
@@ -15,13 +18,18 @@ export function FaqAccordion({ faqs }: { faqs: Faq[] }) {
   return (
     <Accordion.Root
       defaultValue={[0]}
-      data-motion="stagger"
+      onValueChange={() => {
+        setTimeout(() => {
+          ScrollTrigger.refresh()
+        }, 220)
+      }}
       className="flex w-full flex-col gap-4"
     >
       {faqs.map((faq, i) => (
         <Accordion.Item
           key={faq.question}
           value={i}
+          data-motion="deal"
           className="group rounded-md border border-[#e1dbd0] bg-[#fcfaf7] transition-colors data-open:bg-brand"
         >
           <Accordion.Header>

@@ -55,12 +55,6 @@ export function HeroMotion({
 
           intro
             .fromTo(
-              bgImage,
-              { scale: 1.2 },
-              { scale: 1.06, duration: 2.4, ease: "power2.out" },
-              0
-            )
-            .fromTo(
               q('[data-hero="cta"]'),
               { autoAlpha: 0, y: 24 },
               { autoAlpha: 1, y: 0, duration: 0.8, stagger: 0.1 },

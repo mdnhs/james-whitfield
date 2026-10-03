@@ -17,6 +17,7 @@ import {
 
 import { gsap, ScrollTrigger } from "@/lib/gsap"
 import heroDepth from "@/public/images/hero/hero-depth.png"
+import heroHair from "@/public/images/hero/hero-hair.png"
 import { heroFragmentShader, heroVertexShader } from "../lib/hero-shader"
 
 // Depth of the woman's torso in hero-depth.png (head ≈ 0.27, torso ≈ 0.33,
@@ -30,11 +31,9 @@ const FOCUS = 0.33
 // underneath stays as the LCP image and the fallback; this canvas fades in
 // only after its first frame.
 //
-// Load order matters for smoothness: decoding the photo and uploading it to the
-// GPU is a big main-thread hit, so it waits until the hero intro has played and
-// the browser is idle. The camera starts exactly where the static photo sits
-// and its motion eases in (`live`), so the swap from <img> to canvas is
-// invisible rather than a visible pop.
+// In addition to parallax, this shader renders interactive morning sunbeams
+// streaming from the window onto the woman figure, and gentle organic breeze
+// flutter on her hair strands.
 const START_DELAY = 2600
 export function HeroWebGL() {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -54,7 +53,7 @@ export function HeroWebGL() {
     }
 
     const finePointer = matchMedia("(pointer: fine)").matches
-    renderer.setPixelRatio(Math.min(devicePixelRatio, finePointer ? 1.5 : 1))
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2))
     const canvas = renderer.domElement
     canvas.className = "absolute inset-0 size-full"
     canvas.style.opacity = "0"
@@ -71,11 +70,14 @@ export function HeroWebGL() {
     const uniforms = {
       uTexture: { value: photo },
       uDepth: { value: photo as Texture },
+      uHairMask: { value: photo as Texture },
       uResolution: { value: new Vector2(1, 1) },
       uImageSize: { value: new Vector2(1, 1) },
       uOffset: { value: new Vector2(0, 0) },
       uZoom: { value: 0 },
       uFocus: { value: FOCUS },
+      uTime: { value: 0 },
+      uLive: { value: 0 },
     }
 
     const material = new ShaderMaterial({
@@ -91,7 +93,8 @@ export function HeroWebGL() {
     const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 1)
 
     const resize = () => {
-      const { width, height } = container.getBoundingClientRect()
+      const width = container.clientWidth || container.offsetWidth
+      const height = container.clientHeight || container.offsetHeight
       if (!width || !height) return
       renderer.setSize(width, height, false)
       uniforms.uResolution.value.set(width, height)
@@ -100,8 +103,7 @@ export function HeroWebGL() {
     resizeObserver.observe(container)
     resize()
 
-    // Virtual camera. Each source is tweened independently by GSAP and summed
-    // per frame. Units: fraction of the image height at full depth difference.
+    // Virtual camera and atmosphere controls
     const cam = {
       pointerX: 0, pointerY: 0, // -1..1, eased
       swayX: -1, swayY: -1, // idle orbit
@@ -119,6 +121,8 @@ export function HeroWebGL() {
         (cam.pointerY * 0.055 + cam.swayY * 0.014) * cam.live + cam.scroll * 0.08
       )
       uniforms.uZoom.value = cam.breathe * 0.04 * cam.live + cam.scroll * 0.35
+      uniforms.uTime.value = performance.now() * 0.001
+      uniforms.uLive.value = cam.live
       renderer.render(scene, camera)
     }
     gsap.ticker.add(render)
@@ -145,34 +149,40 @@ export function HeroWebGL() {
       },
     })
 
-    // Load the photo (same URL next/image already fetched, so from cache) and
-    // the depth map. A detached Image is used because the on-page <img> reports
-    // its CSS layout size as width/height, which breaks the texture upload.
+    // Load the photo, depth map, and hair mask texture.
     let cancelled = false
     const start = async () => {
       const source = new Image()
       source.src = image.currentSrc || image.src
       try {
-        const [, depth] = await Promise.all([
+        const [, depth, hair] = await Promise.all([
           source.decode(),
           new TextureLoader().loadAsync(heroDepth.src),
+          new TextureLoader().loadAsync(heroHair.src),
         ])
-        if (cancelled) return depth.dispose()
+        if (cancelled) {
+          depth.dispose()
+          hair.dispose()
+          return
+        }
         uniforms.uDepth.value = configure(depth)
+        uniforms.uHairMask.value = configure(hair)
       } catch {
         return
       }
       photo.image = source
       photo.needsUpdate = true
       uniforms.uImageSize.value.set(source.naturalWidth, source.naturalHeight)
-      // Upload both textures and compile the shader now, in one step, instead
-      // of inside the first visible frame.
+      
+      // Pre-upload all textures and compile the shader
       renderer.initTexture(photo)
       renderer.initTexture(uniforms.uDepth.value)
+      renderer.initTexture(uniforms.uHairMask.value)
+      resize()
       ready = true
       render()
-      gsap.to(canvas, { opacity: 1, duration: 0.8, ease: "power1.out" })
-      gsap.to(cam, { live: 1, duration: 2.5, ease: "sine.inOut", delay: 0.4 })
+      gsap.to(canvas, { opacity: 1, duration: 0.25, ease: "power1.out" })
+      gsap.to(cam, { live: 1, duration: 2.5, ease: "sine.inOut", delay: 0.05 })
     }
 
     // Wait out the hero intro, then for an idle moment, before the heavy work.
@@ -188,7 +198,7 @@ export function HeroWebGL() {
     }
     const delayTimer = window.setTimeout(waitForPhoto, START_DELAY)
 
-    // Pointer: the camera follows the cursor around her.
+    // Pointer: the camera and sunbeam follow the cursor around her.
     const pointerX = gsap.quickTo(cam, "pointerX", { duration: 1.2, ease: "power3" })
     const pointerY = gsap.quickTo(cam, "pointerY", { duration: 1.2, ease: "power3" })
     const onPointerMove = (event: PointerEvent) => {
@@ -225,6 +235,7 @@ export function HeroWebGL() {
       material.dispose()
       photo.dispose()
       if (uniforms.uDepth.value !== photo) uniforms.uDepth.value.dispose()
+      if (uniforms.uHairMask.value !== photo) uniforms.uHairMask.value.dispose()
       renderer.dispose()
       renderer.forceContextLoss()
       canvas.remove()

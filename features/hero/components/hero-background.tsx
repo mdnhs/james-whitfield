@@ -12,19 +12,16 @@ const SHADE =
 export function HeroBackground() {
   return (
     <div aria-hidden data-hero="bg" className="absolute inset-0">
-      <div
-        // Design: 1585x1058 image layer at top -31px inside a 1440x810 frame.
-        className="absolute top-[-3.83%] left-0 h-[130.62%] w-[110.07%] bg-black"
-      >
+      <div className="absolute inset-0 bg-black">
         {/* Inner layer takes the intro zoom and pointer drift. */}
         <div data-hero="bg-image" className="absolute inset-0">
           <Image
             src={heroBg}
             alt=""
             fill
-            preload
-            placeholder="blur"
-            sizes="110vw"
+            priority
+            sizes="100vw"
+            style={{ objectPosition: "center 48%" }}
             className="-scale-x-100 object-cover"
           />
           <HeroWebGL />

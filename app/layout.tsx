@@ -1,4 +1,4 @@
-import { Fraunces, Geist, Geist_Mono, Inter, Plus_Jakarta_Sans } from "next/font/google"
+import { DM_Mono, Fraunces, Geist, Geist_Mono, Inter, Plus_Jakarta_Sans } from "next/font/google"
 
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
@@ -27,6 +27,12 @@ const jakarta = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta",
 })
 
+const dmMono = DM_Mono({
+  subsets: ["latin"],
+  weight: "400",
+  variable: "--font-dm-mono-family",
+})
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -42,6 +48,7 @@ export default function RootLayout({
         geist.variable,
         fraunces.variable,
         jakarta.variable,
+        dmMono.variable,
         "font-sans",
         inter.variable
       )}

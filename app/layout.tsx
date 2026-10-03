@@ -1,4 +1,4 @@
-import { Fraunces, Geist, Geist_Mono, Inter } from "next/font/google"
+import { Fraunces, Geist, Geist_Mono, Inter, Plus_Jakarta_Sans } from "next/font/google"
 
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
@@ -22,6 +22,11 @@ const fraunces = Fraunces({
   variable: "--font-fraunces",
 })
 
+const jakarta = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  variable: "--font-plus-jakarta",
+})
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -36,6 +41,7 @@ export default function RootLayout({
         fontMono.variable,
         geist.variable,
         fraunces.variable,
+        jakarta.variable,
         "font-sans",
         inter.variable
       )}

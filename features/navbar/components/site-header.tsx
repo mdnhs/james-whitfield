@@ -1,5 +1,6 @@
 import Link from "next/link"
 
+import { Container } from "@/components/layout/container"
 import { cn } from "@/lib/utils"
 import { NAV_LINKS } from "../data/nav-links"
 import { BookCallButton } from "./book-call-button"
@@ -14,7 +15,7 @@ export function SiteHeader({ className }: { className?: string }) {
         className
       )}
     >
-      <div className="mx-auto flex h-25 w-full max-w-360 items-center justify-between px-4 sm:px-6 lg:px-16.5">
+      <Container className="flex h-25 items-center justify-between">
         <Brand />
 
         <nav aria-label="Main" className="hidden items-center gap-5.5 lg:flex">
@@ -36,7 +37,7 @@ export function SiteHeader({ className }: { className?: string }) {
           <BookCallButton className="hidden sm:inline-flex" />
           <MobileNav />
         </div>
-      </div>
+      </Container>
     </header>
   )
 }

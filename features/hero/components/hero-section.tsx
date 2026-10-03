@@ -1,3 +1,4 @@
+import { Container } from "@/components/layout/container"
 import { SiteHeader } from "@/features/navbar"
 import { HeroBackground } from "./hero-background"
 import { HeroContent } from "./hero-content"
@@ -10,10 +11,10 @@ export function HeroSection() {
 
       <SiteHeader />
 
-      <div className="relative z-10 mx-auto flex w-full max-w-360 flex-1 flex-col px-4 pt-16 pb-14 sm:px-6 lg:px-16.5 lg:pt-26">
+      <Container className="relative z-10 flex flex-1 flex-col pt-16 pb-14 lg:pt-26">
         <HeroContent />
         <MemberBadge className="mt-12 self-start lg:absolute lg:right-14 lg:bottom-14 lg:mt-0" />
-      </div>
+      </Container>
     </section>
   )
 }

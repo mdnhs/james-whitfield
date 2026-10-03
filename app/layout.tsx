@@ -1,7 +1,16 @@
-import { DM_Mono, Fraunces, Geist, Geist_Mono, Inter, Plus_Jakarta_Sans } from "next/font/google"
+import {
+  DM_Mono,
+  Fraunces,
+  Geist,
+  Geist_Mono,
+  IBM_Plex_Mono,
+  Inter,
+  Plus_Jakarta_Sans,
+} from "next/font/google"
 
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
+import { SiteFooter } from "@/features/footer"
 import { cn } from "@/lib/utils";
 
 const inter = Inter({subsets:['latin'],variable:'--font-sans'})
@@ -33,6 +42,12 @@ const dmMono = DM_Mono({
   variable: "--font-dm-mono-family",
 })
 
+const plexMono = IBM_Plex_Mono({
+  subsets: ["latin"],
+  weight: ["400", "600"],
+  variable: "--font-ibm-plex-mono",
+})
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -49,12 +64,16 @@ export default function RootLayout({
         fraunces.variable,
         jakarta.variable,
         dmMono.variable,
+        plexMono.variable,
         "font-sans",
         inter.variable
       )}
     >
       <body>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          {children}
+          <SiteFooter />
+        </ThemeProvider>
       </body>
     </html>
   )

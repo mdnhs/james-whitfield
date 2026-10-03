@@ -4,7 +4,7 @@ import { Container } from "@/components/layout/container"
 import { cn } from "@/lib/utils"
 import { NAV_LINKS } from "../data/nav-links"
 import { BookCallButton } from "./book-call-button"
-import { Brand } from "./brand"
+import { Brand } from "@/components/brand"
 import { MobileNav } from "./mobile-nav"
 
 export function SiteHeader({ className }: { className?: string }) {

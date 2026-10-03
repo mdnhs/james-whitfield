@@ -25,7 +25,7 @@ export function EnterpriseSection() {
           placeholder="blur"
           className="object-cover"
         />
-        <div className="absolute inset-0 bg-[rgba(30,79,80,0.9)]" />
+        <div className="absolute inset-0 bg-pine/90" />
       </div>
 
       <Container className="relative flex flex-col items-center gap-7 text-center">

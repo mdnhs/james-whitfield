@@ -4,9 +4,17 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@theme {
+    --color-brand: #336060;
+    --color-brand-mint: #d6e8e4;
+    --color-cream: #faf6f0;
+}
+
 @theme inline {
     --font-heading: var(--font-sans);
     --font-sans: var(--font-sans);
+    --font-display: var(--font-fraunces);
+    --font-geist: var(--font-geist-sans);
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);

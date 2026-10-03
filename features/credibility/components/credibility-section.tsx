@@ -7,13 +7,18 @@ export function CredibilitySection() {
     <section aria-label="Credentials" className="bg-white py-10">
       <Container>
         <div className="rounded-[8.455px] py-[25.364px] drop-shadow-[0px_1.057px_1.057px_rgba(0,0,0,0.05)]">
-          <ul className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 lg:gap-[25.364px]">
+          <ul
+            data-motion="stagger"
+            className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 lg:gap-[25.364px]"
+          >
             {CREDENTIALS.map((credential, i) => (
               <CredentialItem
                 key={credential.title}
                 credential={credential}
                 className={
-                  i > 0 ? "lg:border-l lg:border-[#e5e2dc] lg:pl-[17.966px]" : undefined
+                  i > 0
+                    ? "lg:border-l lg:border-[#e5e2dc] lg:pl-[17.966px]"
+                    : undefined
                 }
               />
             ))}

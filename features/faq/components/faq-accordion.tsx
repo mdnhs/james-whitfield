@@ -13,7 +13,11 @@ function ToggleIcon() {
 
 export function FaqAccordion({ faqs }: { faqs: Faq[] }) {
   return (
-    <Accordion.Root defaultValue={[0]} className="flex w-full flex-col gap-4">
+    <Accordion.Root
+      defaultValue={[0]}
+      data-motion="stagger"
+      className="flex w-full flex-col gap-4"
+    >
       {faqs.map((faq, i) => (
         <Accordion.Item
           key={faq.question}
@@ -21,7 +25,7 @@ export function FaqAccordion({ faqs }: { faqs: Faq[] }) {
           className="group rounded-md border border-[#e1dbd0] bg-[#fcfaf7] transition-colors data-open:bg-brand"
         >
           <Accordion.Header>
-            <Accordion.Trigger className="flex w-full cursor-pointer items-center justify-between gap-4 p-[23px] text-left text-base leading-[normal] font-semibold text-pine outline-none group-data-open:pb-3.5 group-data-open:text-white focus-visible:ring-3 focus-visible:ring-clay/50 rounded-md">
+            <Accordion.Trigger className="flex w-full cursor-pointer items-center justify-between gap-4 rounded-md p-[23px] text-left text-base leading-[normal] font-semibold text-pine outline-none group-data-open:pb-3.5 group-data-open:text-white focus-visible:ring-3 focus-visible:ring-clay/50">
               {faq.question}
               <ToggleIcon />
             </Accordion.Trigger>

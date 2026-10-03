@@ -9,13 +9,14 @@ import {
 } from "next/font/google"
 
 import "./globals.css"
+import { ScrollMotion } from "@/components/scroll-motion"
 import { SmoothScroll } from "@/components/smooth-scroll"
 import { ThemeProvider } from "@/components/theme-provider"
 import { SiteFooter } from "@/features/footer"
 import { SiteHeader } from "@/features/navbar"
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils"
 
-const inter = Inter({subsets:['latin'],variable:'--font-sans'})
+const inter = Inter({ subsets: ["latin"], variable: "--font-sans" })
 
 const fontMono = Geist_Mono({
   subsets: ["latin"],
@@ -75,12 +76,14 @@ export default function RootLayout({
         <noscript>
           <style>{"[data-reveal]{visibility:visible!important}"}</style>
         </noscript>
-        <SmoothScroll />
-        <ThemeProvider>
-          <SiteHeader className="absolute inset-x-0 top-0" />
-          {children}
-          <SiteFooter />
-        </ThemeProvider>
+        <SmoothScroll>
+          <ThemeProvider>
+            <SiteHeader className="absolute inset-x-0 top-0" />
+            {children}
+            <SiteFooter />
+            <ScrollMotion />
+          </ThemeProvider>
+        </SmoothScroll>
       </body>
     </html>
   )

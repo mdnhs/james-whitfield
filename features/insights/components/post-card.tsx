@@ -8,20 +8,29 @@ export function PostCard({ post }: { post: Post }) {
   const href = `/insights/${slug}`
 
   return (
-    <article className="group flex flex-col gap-6 text-forest">
+    <article
+      data-motion="deal"
+      className="group flex flex-col gap-6 text-forest"
+    >
       <Link
         href={href}
         tabIndex={-1}
         aria-hidden
         className="relative block h-58.5 overflow-clip rounded-xl bg-[#e5e5e5]"
       >
-        <Image
-          src={image}
-          alt=""
-          fill
-          sizes="(min-width: 1024px) 420px, 100vw"
-          className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-        />
+        {/* Oversized frame gives the scroll parallax room to drift. */}
+        <div
+          data-motion="parallax"
+          className="absolute inset-x-0 -inset-y-[8%]"
+        >
+          <Image
+            src={image}
+            alt=""
+            fill
+            sizes="(min-width: 1024px) 420px, 100vw"
+            className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+          />
+        </div>
       </Link>
 
       <div className="flex flex-col items-start">
@@ -30,7 +39,10 @@ export function PostCard({ post }: { post: Post }) {
         </span>
 
         <h3 className="pt-3 text-[28.1px] leading-[40.63px] whitespace-pre-line">
-          <Link href={href} className="hover:underline hover:underline-offset-4">
+          <Link
+            href={href}
+            className="hover:underline hover:underline-offset-4"
+          >
             {title}
           </Link>
         </h3>

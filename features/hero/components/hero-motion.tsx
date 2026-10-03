@@ -38,11 +38,17 @@ export function HeroMotion({
           const eyebrow = q('[data-hero="eyebrow"]')
           const desc = q('[data-hero="desc"]')
 
-          // Text motion is deliberately calm: long, sine-eased fades that come
-          // out of a soft blur with only a few pixels of travel, so the copy
-          // settles in like a slow breath rather than snapping into place.
-          const soft = { autoAlpha: 0, y: 12, filter: "blur(8px)" }
-          const clear = { autoAlpha: 1, y: 0, filter: "blur(0px)" }
+          // Text motion is deliberately calm: long, sine-eased fades out of a
+          // faint blur, so the copy settles in like a slow breath. No vertical
+          // travel: slow sub-pixel movement makes text visibly wobble as the
+          // browser snaps it to the pixel grid. The filter is cleared once
+          // settled so the text renders as plain text again.
+          const soft = { autoAlpha: 0, filter: "blur(1px)" }
+          const clear = {
+            autoAlpha: 1,
+            filter: "blur(0px)",
+            clearProps: "filter",
+          }
 
           // --- Intro -------------------------------------------------------
           const intro = gsap.timeline({ defaults: { ease: "power3.out" } })
@@ -53,18 +59,6 @@ export function HeroMotion({
               { scale: 1.2 },
               { scale: 1.06, duration: 2.4, ease: "power2.out" },
               0
-            )
-            .fromTo(
-              eyebrow,
-              soft,
-              { ...clear, duration: 1.6, ease: "sine.out" },
-              0.4
-            )
-            .fromTo(
-              desc,
-              soft,
-              { ...clear, duration: 1.8, ease: "sine.out" },
-              1.5
             )
             .fromTo(
               q('[data-hero="cta"]'),
@@ -111,9 +105,10 @@ export function HeroMotion({
           }
 
           // --- Scroll exit ---------------------------------------------------
-          // As the hero scrolls away the copy drifts up and dissolves back
-          // into the same soft blur, top-down, word by word for the headline.
-          // A heavy scrub lag keeps it floaty. Rebuilt on every re-split
+          // As the hero scrolls away the copy fades out top-down, word by word
+          // for the headline, with a soft scrub lag. Opacity only: the
+          // foreground already drifts up as a whole, and moving or blurring
+          // individual words on top of that makes the text tremble. Rebuilt on every re-split
           // (font load, resize), since that replaces the word elements.
           let titleSplit: SplitText | undefined
           let exit: gsap.core.Timeline | undefined
@@ -126,10 +121,9 @@ export function HeroMotion({
               if (!titleSplit) return
               exit?.revert()
 
+              const shown = { autoAlpha: 1 }
               const fade = {
                 autoAlpha: 0,
-                y: -14,
-                filter: "blur(10px)",
                 ease: "sine.inOut",
                 immediateRender: false,
               }
@@ -141,27 +135,27 @@ export function HeroMotion({
                     trigger: section,
                     start: "top top",
                     end: "bottom top",
-                    scrub: 1.5,
+                    scrub: 1,
                   },
                 })
                 // fromTo pins the start at fully visible, whatever state the
                 // intro is in when the trigger first renders.
-                .fromTo(eyebrow, clear, { ...fade, duration: 0.16 }, 0)
+                .fromTo(eyebrow, shown, { ...fade, duration: 0.16 }, 0)
                 .fromTo(
                   titleSplit.words,
-                  clear,
+                  shown,
                   { ...fade, duration: 0.16, stagger: { amount: 0.2 } },
                   0.03
                 )
-                .fromTo(desc, clear, { ...fade, duration: 0.2 }, 0.16)
+                .fromTo(desc, shown, { ...fade, duration: 0.2 }, 0.16)
                 .to(
                   q('[data-hero="ctas"]'),
-                  { autoAlpha: 0, y: -24, duration: 0.2 },
+                  { autoAlpha: 0, duration: 0.2 },
                   0.26
                 )
                 .to(
                   q('[data-hero="badge"] > *'),
-                  { autoAlpha: 0, y: -16, duration: 0.2, stagger: 0.05 },
+                  { autoAlpha: 0, duration: 0.2, stagger: 0.05 },
                   0.4
                 )
                 // Pin the timeline length to 1 so positions above read as
@@ -169,29 +163,45 @@ export function HeroMotion({
                 .set({}, {}, 1)
             })
 
-          // Headline: words surface one after another out of a soft blur.
-          // autoSplit re-splits after the web font loads or on resize;
-          // returning the tween lets SplitText restore its progress then.
-          SplitText.create(title, {
-            type: "words",
-            autoSplit: true,
-            onSplit: (split) => {
-              titleSplit = split
-              buildExit()
-              gsap.set(title, { autoAlpha: 1 })
-              return gsap.fromTo(
-                split.words,
-                { ...soft, y: 16, filter: "blur(12px)" },
-                {
-                  ...clear,
-                  duration: 2,
-                  stagger: 0.12,
-                  ease: "sine.out",
-                  delay: 0.7,
-                }
-              )
-            },
-          })
+          // Text starts only once the web fonts are ready: a font swap mid-fade
+          // shifts the layout and makes SplitText re-split, which reads as the
+          // words jumping before they settle. Until then the copy stays hidden
+          // by its data-reveal pre-hide.
+          let alive = true
+          const startText = () => {
+            if (!alive) return
+            context.add(() => {
+              gsap
+                .timeline({ defaults: { ease: "sine.out" } })
+                .fromTo(eyebrow, soft, { ...clear, duration: 1.6 }, 0.2)
+                .fromTo(desc, soft, { ...clear, duration: 1.8 }, 1.3)
+
+              // Headline: words surface one after another out of a light
+              // blur. autoSplit still re-splits on resize; returning the tween
+              // lets SplitText restore its progress then.
+              SplitText.create(title, {
+                type: "words",
+                autoSplit: true,
+                onSplit: (split) => {
+                  titleSplit = split
+                  buildExit()
+                  gsap.set(title, { autoAlpha: 1 })
+                  return gsap.fromTo(
+                    split.words,
+                    { ...soft, filter: "blur(1.5px)" },
+                    {
+                      ...clear,
+                      duration: 2,
+                      stagger: 0.12,
+                      ease: "sine.out",
+                      delay: 0.5,
+                    }
+                  )
+                },
+              })
+            })
+          }
+          document.fonts.ready.then(startText)
 
           // --- Scroll: background parallax + foreground drift ----------------
           const scrollTrigger = {
@@ -211,7 +221,10 @@ export function HeroMotion({
             scrollTrigger,
           })
 
-          if (!finePointer) return
+          const stopText = () => {
+            alive = false
+          }
+          if (!finePointer) return stopText
 
           // --- Pointer: magnetic CTAs (the photo's depth parallax lives in
           // HeroWebGL) ---------------------------------------------------------
@@ -236,6 +249,7 @@ export function HeroMotion({
           })
 
           return () => {
+            stopText()
             magnets.forEach((cleanup) => cleanup())
           }
         }

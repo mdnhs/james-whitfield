@@ -29,6 +29,13 @@ const FOCUS = 0.33
 // so the subject separates from the window and wall. The next/image photo
 // underneath stays as the LCP image and the fallback; this canvas fades in
 // only after its first frame.
+//
+// Load order matters for smoothness: decoding the photo and uploading it to the
+// GPU is a big main-thread hit, so it waits until the hero intro has played and
+// the browser is idle. The camera starts exactly where the static photo sits
+// and its motion eases in (`live`), so the swap from <img> to canvas is
+// invisible rather than a visible pop.
+const START_DELAY = 2600
 export function HeroWebGL() {
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -100,7 +107,7 @@ export function HeroWebGL() {
       swayX: -1, swayY: -1, // idle orbit
       breathe: 0, // 0..1
       scroll: 0, // 0..1 while the hero scrolls away
-      introX: 0.11, introY: -0.06, introZoom: 0.3,
+      live: 0, // 0..1 eases pointer, sway and breathing in after the swap
     }
 
     let ready = false
@@ -108,10 +115,10 @@ export function HeroWebGL() {
     const render = () => {
       if (!ready || !visible) return
       uniforms.uOffset.value.set(
-        cam.pointerX * 0.085 + cam.swayX * 0.026 + cam.introX,
-        cam.pointerY * 0.055 + cam.swayY * 0.014 + cam.introY + cam.scroll * 0.08
+        (cam.pointerX * 0.085 + cam.swayX * 0.026) * cam.live,
+        (cam.pointerY * 0.055 + cam.swayY * 0.014) * cam.live + cam.scroll * 0.08
       )
-      uniforms.uZoom.value = cam.introZoom + cam.breathe * 0.04 + cam.scroll * 0.35
+      uniforms.uZoom.value = cam.breathe * 0.04 * cam.live + cam.scroll * 0.35
       renderer.render(scene, camera)
     }
     gsap.ticker.add(render)
@@ -158,13 +165,28 @@ export function HeroWebGL() {
       photo.image = source
       photo.needsUpdate = true
       uniforms.uImageSize.value.set(source.naturalWidth, source.naturalHeight)
+      // Upload both textures and compile the shader now, in one step, instead
+      // of inside the first visible frame.
+      renderer.initTexture(photo)
+      renderer.initTexture(uniforms.uDepth.value)
       ready = true
       render()
-      gsap.to(canvas, { opacity: 1, duration: 0.6, ease: "power1.out" })
-      gsap.to(cam, { introX: 0, introY: 0, introZoom: 0, duration: 3, ease: "expo.out" })
+      gsap.to(canvas, { opacity: 1, duration: 0.8, ease: "power1.out" })
+      gsap.to(cam, { live: 1, duration: 2.5, ease: "sine.inOut", delay: 0.4 })
     }
-    if (image.complete && image.naturalWidth) start()
-    else image.addEventListener("load", start, { once: true })
+
+    // Wait out the hero intro, then for an idle moment, before the heavy work.
+    let idleHandle: number | undefined
+    const begin = () => {
+      idleHandle = window.requestIdleCallback
+        ? window.requestIdleCallback(() => start(), { timeout: 1500 })
+        : window.setTimeout(start, 0)
+    }
+    const waitForPhoto = () => {
+      if (image.complete && image.naturalWidth) begin()
+      else image.addEventListener("load", begin, { once: true })
+    }
+    const delayTimer = window.setTimeout(waitForPhoto, START_DELAY)
 
     // Pointer: the camera follows the cursor around her.
     const pointerX = gsap.quickTo(cam, "pointerX", { duration: 1.2, ease: "power3" })
@@ -185,7 +207,12 @@ export function HeroWebGL() {
 
     return () => {
       cancelled = true
-      image.removeEventListener("load", start)
+      window.clearTimeout(delayTimer)
+      if (idleHandle !== undefined) {
+        if (window.cancelIdleCallback) window.cancelIdleCallback(idleHandle)
+        window.clearTimeout(idleHandle)
+      }
+      image.removeEventListener("load", begin)
       section.removeEventListener("pointermove", onPointerMove)
       section.removeEventListener("pointerleave", onPointerLeave)
       gsap.ticker.remove(render)

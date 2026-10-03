@@ -20,15 +20,22 @@ export function InsightsSection() {
           <div className="flex min-w-0 flex-1 flex-col gap-3">
             <h2
               id="insights-heading"
+              data-motion="words"
               className="text-[40px] leading-[1.3] font-bold sm:text-[48.9px] sm:leading-[63.8px]"
             >
               {title}
             </h2>
-            <p className="max-w-[697px] text-lg leading-7.5 sm:text-xl">{subtitle}</p>
+            <p
+              data-motion="rise"
+              className="max-w-[697px] text-lg leading-7.5 sm:text-xl"
+            >
+              {subtitle}
+            </p>
           </div>
 
           <Link
             href={cta.href}
+            data-motion="rise"
             className={cn(
               buttonVariants(),
               "h-12.5 shrink-0 rounded-full bg-clay px-[27px] py-0 text-[15px] leading-[normal] font-semibold text-cream hover:bg-clay/90"
@@ -38,7 +45,11 @@ export function InsightsSection() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 items-start gap-12 pt-6 md:grid-cols-2 lg:grid-cols-3">
+        {/* Aligned cards that rise in one after another on scroll (deal-group). */}
+        <div
+          data-motion="deal-group"
+          className="grid grid-cols-1 items-start gap-12 pt-6 md:grid-cols-2 lg:grid-cols-3"
+        >
           {POSTS.map((post) => (
             <PostCard key={post.slug} post={post} />
           ))}

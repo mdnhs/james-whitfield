@@ -62,11 +62,13 @@ function GsapSync() {
   return null
 }
 
-export function SmoothScroll() {
+// Wraps the app so client components can reach the instance via useLenis().
+export function SmoothScroll({ children }: { children: React.ReactNode }) {
   return (
     <ReactLenis root options={{ autoRaf: false }}>
       <GsapSync />
       <AnchorScroll />
+      {children}
     </ReactLenis>
   )
 }

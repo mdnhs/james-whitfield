@@ -11,6 +11,7 @@ import {
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { SiteFooter } from "@/features/footer"
+import { SiteHeader } from "@/features/navbar"
 import { cn } from "@/lib/utils";
 
 const inter = Inter({subsets:['latin'],variable:'--font-sans'})
@@ -71,6 +72,7 @@ export default function RootLayout({
     >
       <body>
         <ThemeProvider>
+          <SiteHeader className="absolute inset-x-0 top-0" />
           {children}
           <SiteFooter />
         </ThemeProvider>

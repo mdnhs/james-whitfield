@@ -8,7 +8,7 @@ export function Brand() {
         <Image src="/images/hero/logo-mark.svg" alt="" width={28} height={28} />
       </span>
       <span className="font-geist text-xl leading-[normal] font-semibold whitespace-nowrap text-white">
-        James Whitfield
+        Magda Kennedy
       </span>
     </Link>
   )

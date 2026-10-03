@@ -29,7 +29,11 @@ function AnchorScroll() {
       if (!target) return
 
       event.preventDefault()
-      lenis.scrollTo(target)
+      lenis.scrollTo(target, {
+        offset: -20,
+        duration: 1.2,
+        easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      })
       history.pushState(null, "", url.hash)
     }
 
@@ -65,7 +69,17 @@ function GsapSync() {
 // Wraps the app so client components can reach the instance via useLenis().
 export function SmoothScroll({ children }: { children: React.ReactNode }) {
   return (
-    <ReactLenis root options={{ autoRaf: false }}>
+    <ReactLenis
+      root
+      options={{
+        autoRaf: false,
+        duration: 1.15,
+        easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+        wheelMultiplier: 1.0,
+        touchMultiplier: 1.5,
+        smoothWheel: true,
+      }}
+    >
       <GsapSync />
       <AnchorScroll />
       {children}

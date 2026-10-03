@@ -83,7 +83,7 @@ export function SiteFooter() {
             ))}
           </ul>
           <p className="font-plex-mono">
-            © {new Date().getFullYear()} James Whitfield
+            © {new Date().getFullYear()} Magda Kennedy
           </p>
         </div>
       </Container>

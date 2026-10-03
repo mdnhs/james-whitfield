@@ -54,18 +54,26 @@ export function ScrollMotion() {
         // its bottom edge reaches the viewport bottom, so its sticky top is
         // viewport height minus its own height (never below 0). The next card
         // starts covering it at exactly that moment. While the next card
-        // slides up, the covered one shrinks a little and dims.
+        // slides up, the covered one dims smoothly through the shade layer.
         const stacks = gsap.utils.toArray<HTMLElement>("[data-stack]")
         const fit = () => {
           const vh = document.documentElement.clientHeight
-          stacks.forEach((el) => {
-            if (el.dataset.stack === "last") return
-            el.style.top = `${Math.min(0, vh - el.offsetHeight)}px`
+          // Batch reads first to eliminate layout thrashing
+          const tops = stacks.map((el) =>
+            el.dataset.stack === "last" ? null : Math.min(0, vh - el.offsetHeight)
+          )
+          // Batch writes next
+          stacks.forEach((el, i) => {
+            if (tops[i] !== null) {
+              el.style.top = `${tops[i]}px`
+            }
           })
         }
         stacks.forEach((el, i) => {
           el.style.zIndex = String(i + 1)
-          if (el.dataset.stack !== "last") el.style.position = "sticky"
+          if (el.dataset.stack !== "last") {
+            el.style.position = "sticky"
+          }
         })
         fit()
         const observer = new ResizeObserver(fit)
@@ -74,8 +82,9 @@ export function ScrollMotion() {
 
         stacks.forEach((el, i) => {
           const next = stacks[i + 1]
-          const shade = el.querySelector(":scope > [data-stack-shade]")
+          const shade = el.querySelector<HTMLElement>(":scope > [data-stack-shade]")
           if (!next || !shade) return
+
           gsap
             .timeline({
               defaults: { ease: "none" },
@@ -83,11 +92,11 @@ export function ScrollMotion() {
                 trigger: next,
                 start: "top bottom",
                 end: "top top",
-                scrub: true,
+                scrub: 0.5,
+                fastScrollEnd: true,
               },
             })
-            .to(el, { scale: 0.94 }, 0)
-            .to(shade, { opacity: 0.55 }, 0)
+            .to(shade, { opacity: 0.55, force3D: true }, 0)
         })
 
         select("words").forEach((el) => {
@@ -108,7 +117,7 @@ export function ScrollMotion() {
                     trigger: el,
                     start: "top 88%",
                     end: "bottom 55%",
-                    scrub: 1,
+                    scrub: 0.6,
                   },
                 }
               ),
@@ -132,27 +141,26 @@ export function ScrollMotion() {
         })
 
         // Aligned cards (deal-group, desktop): one scrubbed timeline for the
-        // row, cards rising one after another. Scrubbed, so the same order
-        // plays in reverse when scrolling back up.
+        // row, cards rising one after another with refined travel distance.
         const grouped = (el: HTMLElement) =>
           desktop && !!el.closest('[data-motion~="deal-group"]')
         if (desktop) {
           select("deal-group").forEach((el) => {
             gsap.fromTo(
               el.children,
-              { autoAlpha: 0, y: 180, scale: 0.96 },
+              { autoAlpha: 0, y: 48, force3D: true },
               {
                 autoAlpha: 1,
                 y: 0,
-                scale: 1,
                 ease: "power2.out",
                 duration: 1,
-                stagger: 0.7,
+                stagger: 0.35,
                 scrollTrigger: {
                   trigger: el,
                   start: "top 95%",
-                  end: "top 45%",
-                  scrub: 0.8,
+                  end: "top 55%",
+                  scrub: 0.6,
+                  fastScrollEnd: true,
                 },
               }
             )
@@ -164,17 +172,17 @@ export function ScrollMotion() {
           .forEach((el) => {
             gsap.fromTo(
               el,
-              { autoAlpha: 0, y: 180, scale: 0.96 },
+              { autoAlpha: 0, y: 48, force3D: true },
               {
                 autoAlpha: 1,
                 y: 0,
-                scale: 1,
                 ease: "power2.out",
                 scrollTrigger: {
                   trigger: el,
-                  start: "top 102%",
-                  end: "top 65%",
-                  scrub: 0.8,
+                  start: "top 100%",
+                  end: "top 68%",
+                  scrub: 0.6,
+                  fastScrollEnd: true,
                 },
               }
             )
@@ -183,9 +191,10 @@ export function ScrollMotion() {
         select("grow").forEach((el) => {
           gsap.fromTo(
             el,
-            { scaleY: 0, transformOrigin: "50% 0%" },
+            { scaleY: 0, autoAlpha: 0, transformOrigin: "50% 0%" },
             {
               scaleY: 1,
+              autoAlpha: 1,
               ease: "none",
               scrollTrigger: {
                 trigger: el,
@@ -268,6 +277,8 @@ export function ScrollMotion() {
             el.style.removeProperty("top")
             el.style.removeProperty("position")
             el.style.removeProperty("z-index")
+            const shade = el.querySelector<HTMLElement>(":scope > [data-stack-shade]")
+            if (shade) gsap.set(shade, { clearProps: "opacity" })
           })
         }
       }

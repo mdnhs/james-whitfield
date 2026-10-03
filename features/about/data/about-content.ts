@@ -1,5 +1,5 @@
 export const ABOUT_CONTENT = {
-  eyebrow: "About James Whitfield",
+  eyebrow: "About Magda Kennedy",
   headline:
     "Real change starts with understanding where you are — and where you want to go.",
   quote:

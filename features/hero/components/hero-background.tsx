@@ -20,6 +20,8 @@ export function HeroBackground() {
             alt=""
             fill
             priority
+            fetchPriority="high"
+            placeholder="blur"
             sizes="100vw"
             style={{ objectPosition: "center 48%" }}
             className="-scale-x-100 object-cover"
@@ -41,7 +43,7 @@ export function HeroBackground() {
       </div>
 
       {/* Bottom fade keeps the copy legible now that it sits at the bottom. */}
-      <div className="absolute inset-x-0 bottom-0 h-3/5 bg-linear-to-t from-black/60 via-black/25 to-transparent" />
+      <div className="absolute inset-x-0 bottom-0 h-3/5 bg-linear-to-t from-black/60 via-black/25 to-black/0" />
     </div>
   )
 }

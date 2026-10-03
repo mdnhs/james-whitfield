@@ -137,8 +137,11 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
-    }
+    @apply border-border;
+  }
+  *:focus-visible {
+    @apply outline-ring/50;
+  }
   body {
     @apply bg-background text-foreground;
     }
@@ -147,7 +150,8 @@
     }
   html {
     @apply font-sans;
-    }
+    overscroll-behavior-y: none;
+  }
 }
 /* Elements revealed by GSAP intros start hidden so they don't flash before
    hydration. Reduced-motion users (and no-JS, see layout) see them at once. */

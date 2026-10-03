@@ -162,12 +162,19 @@ export function HeroMotion({
           // words jumping before they settle. Until then the copy stays hidden
           // by its data-reveal pre-hide.
           let alive = true
+          let started = false
           const startText = () => {
-            if (!alive) return
+            if (!alive || started) return
+            started = true
             context.add(() => {
               gsap
                 .timeline({ defaults: { ease: "sine.out" } })
-                .fromTo(eyebrow, soft, { ...clear, duration: 1.6 }, 0.2)
+                .fromTo(
+                  eyebrow,
+                  { autoAlpha: 0 },
+                  { autoAlpha: 1, duration: 1.2, ease: "sine.out" },
+                  0.2
+                )
                 .fromTo(desc, soft, { ...clear, duration: 1.8 }, 1.3)
 
               // Headline: words surface one after another out of a light
@@ -195,7 +202,11 @@ export function HeroMotion({
               })
             })
           }
-          document.fonts.ready.then(startText)
+          const fontFallback = window.setTimeout(startText, 350)
+          document.fonts.ready.then(() => {
+            window.clearTimeout(fontFallback)
+            startText()
+          })
 
           // --- Scroll: background parallax + foreground drift ----------------
           const scrollTrigger = {
@@ -217,6 +228,7 @@ export function HeroMotion({
 
           const stopText = () => {
             alive = false
+            window.clearTimeout(fontFallback)
           }
           if (!finePointer) return stopText
 

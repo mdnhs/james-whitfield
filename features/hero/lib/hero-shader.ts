@@ -34,7 +34,7 @@ export const heroFragmentShader = /* glsl */ `
   }
 
   float depthAt(vec2 uv) {
-    return texture2D(uDepth, clamp(coverUv(uv), 0.0, 1.0)).r;
+    return texture2D(uDepth, clamp(coverUv(uv), 0.001, 0.999)).r;
   }
 
   vec2 displace(float depth) {
@@ -52,7 +52,7 @@ export const heroFragmentShader = /* glsl */ `
       uv = displace(depthAt(uv));
     }
 
-    vec2 baseCoverUv = clamp(coverUv(uv), 0.0, 1.0);
+    vec2 baseCoverUv = clamp(coverUv(uv), 0.001, 0.999);
 
     // 2. Gentle hair breeze displacement (ONLY hair strands, face is 100% locked)
     float hairWeight = texture2D(uHairMask, baseCoverUv).r;
@@ -69,10 +69,10 @@ export const heroFragmentShader = /* glsl */ `
       
       // Breeze blows from window towards room interior on hair tips
       vec2 hairOffset = vec2(-0.0022, 0.0011) * wave * hairWeight * uLive;
-      finalCoverUv = clamp(baseCoverUv + hairOffset, 0.0, 1.0);
+      finalCoverUv = clamp(baseCoverUv + hairOffset, 0.001, 0.999);
     }
 
     // Render original photograph with hair breeze
-    gl_FragColor = vec4(texture2D(uTexture, finalCoverUv).rgb, 1.0);
+    gl_FragColor = vec4(texture2D(uTexture, clamp(finalCoverUv, 0.001, 0.999)).rgb, 1.0);
   }
 `

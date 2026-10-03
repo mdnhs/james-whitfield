@@ -9,7 +9,7 @@ const eyebrowVariants = cva(
     variants: {
       tone: {
         onDark: "border border-white/10 bg-[rgba(231,239,238,0.05)] text-white",
-        onLight: "bg-[#d9e5e5] text-brand-deep",
+        onLight: "bg-mist text-brand-deep",
       },
     },
     defaultVariants: { tone: "onLight" },

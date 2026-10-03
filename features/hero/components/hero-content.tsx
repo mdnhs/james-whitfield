@@ -1,6 +1,6 @@
-import Image from "next/image"
 import Link from "next/link"
 
+import { Eyebrow } from "@/components/eyebrow"
 import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { HERO_CONTENT } from "../data/hero-content"
@@ -14,12 +14,7 @@ export function HeroContent() {
 
   return (
     <div className="flex w-full max-w-[1027px] flex-col items-start gap-6">
-      <div className="inline-flex items-center gap-2.25 overflow-clip rounded-full border border-white/10 bg-[rgba(231,239,238,0.05)] py-2.25 pr-4 pl-3.5">
-        <Image src="/images/hero/dot.svg" alt="" width={6} height={6} />
-        <span className="text-[13px] leading-[normal] font-medium tracking-[0.4px] whitespace-nowrap text-white">
-          {eyebrow}
-        </span>
-      </div>
+      <Eyebrow tone="onDark">{eyebrow}</Eyebrow>
 
       <h1 className="max-w-[794px] font-display text-[44px] leading-[1.05] font-bold text-white [font-variation-settings:'SOFT'_0,'WONK'_1] sm:text-[60px] lg:text-[72px]">
         {headline.lead}

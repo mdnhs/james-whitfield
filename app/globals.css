@@ -8,6 +8,11 @@
     --color-brand: #336060;
     --color-brand-mint: #d6e8e4;
     --color-cream: #faf6f0;
+    --color-brand-deep: #245f60;
+    --color-clay: #b55441;
+    --color-stone: #f3f4ee;
+    --color-ink: #030303;
+    --color-ink-muted: #3d3d3d;
 }
 
 @theme inline {

@@ -4,7 +4,7 @@ import { CredentialItem } from "./credential-item"
 
 export function CredibilitySection() {
   return (
-    <section id="about" aria-label="Credentials" className="bg-white py-10">
+    <section aria-label="Credentials" className="bg-white py-10">
       <Container>
         <div className="rounded-[8.455px] py-[25.364px] drop-shadow-[0px_1.057px_1.057px_rgba(0,0,0,0.05)]">
           <ul className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 lg:gap-[25.364px]">

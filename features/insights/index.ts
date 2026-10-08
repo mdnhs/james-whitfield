@@ -1,1 +1,5 @@
+export { FeaturedArticle } from "./components/featured-article"
+export { InsightsBrowser } from "./components/insights-browser"
 export { InsightsSection } from "./components/insights-section"
+export { NewsletterBand } from "./components/newsletter-band"
+export { INSIGHTS_HERO } from "./data/articles"

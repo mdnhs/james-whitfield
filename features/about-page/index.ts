@@ -1,0 +1,5 @@
+export { ApproachSection } from "./components/approach-section"
+export { CredentialsSection } from "./components/credentials-section"
+export { StatsBand } from "./components/stats-band"
+export { StorySection } from "./components/story-section"
+export { ABOUT_CTA, ABOUT_HERO } from "./data/about-page-content"

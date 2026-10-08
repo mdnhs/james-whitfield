@@ -8,13 +8,30 @@ import enterpriseBg from "@/public/images/enterprise/enterprise-bg.png"
 import { ENTERPRISE_CONTENT } from "../data/enterprise-content"
 import { EnterpriseBackdrop } from "./enterprise-backdrop"
 
-export function EnterpriseSection() {
-  const { eyebrow, title, bullets, cta } = ENTERPRISE_CONTENT
+type BandContent = {
+  eyebrow: string
+  title: string
+  bullets: readonly string[]
+  cta: { label: string; href: string }
+}
+
+// Full-bleed photo band with a centred call to action. The home page uses it
+// for enterprise programmes; other pages pass their own copy and tint.
+export function EnterpriseSection({
+  id = "enterprise",
+  content = ENTERPRISE_CONTENT,
+  tint = "bg-pine/90",
+}: {
+  id?: string
+  content?: BandContent
+  tint?: string
+}) {
+  const { eyebrow, title, bullets, cta } = content
 
   return (
     <section
-      id="enterprise"
-      aria-labelledby="enterprise-heading"
+      id={id}
+      aria-labelledby={`${id}-heading`}
       className="relative flex min-h-145 items-center overflow-clip py-20"
     >
       <EnterpriseBackdrop>
@@ -26,7 +43,7 @@ export function EnterpriseSection() {
           placeholder="blur"
           className="object-cover"
         />
-        <div className="absolute inset-0 bg-pine/90" />
+        <div className={cn("absolute inset-0", tint)} />
       </EnterpriseBackdrop>
 
       <Container className="relative flex flex-col items-center gap-7 text-center">
@@ -39,7 +56,7 @@ export function EnterpriseSection() {
         </span>
 
         <h2
-          id="enterprise-heading"
+          id={`${id}-heading`}
           data-motion="words"
           className="max-w-214 font-display text-[34px] leading-[1.15] font-bold text-cream [font-variation-settings:'SOFT'_0,'WONK'_1] sm:text-[50px]"
         >
@@ -64,9 +81,10 @@ export function EnterpriseSection() {
         <Link
           href={cta.href}
           data-motion="rise"
+          data-magnetic
           className={cn(
             buttonVariants(),
-            "h-12.5 rounded-full bg-clay px-[27px] py-0 text-[15px] leading-[normal] font-semibold text-cream hover:bg-clay/90"
+            "h-auto min-h-12.5 max-w-full rounded-full bg-clay px-[27px] py-3.5 text-center text-[15px] leading-[1.35] font-semibold whitespace-normal text-cream hover:bg-clay/90 sm:whitespace-nowrap"
           )}
         >
           {cta.label}

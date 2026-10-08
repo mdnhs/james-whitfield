@@ -7,7 +7,7 @@ export const HERO_CONTENT = {
   },
   description:
     "Personalised hypnotherapy and coaching for individuals, professionals and organisations ready to think, lead and live differently.",
-  primaryCta: { label: "Book a Discovery Call", href: "#contact" },
+  primaryCta: { label: "Book a Discovery Call", href: "/contact" },
   secondaryCta: { label: "Explore the Approach", href: "#how-it-works" },
   members: {
     count: "800+",

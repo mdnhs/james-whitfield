@@ -6,5 +6,5 @@ export const ENTERPRISE_CONTENT = {
     "Leadership coaching programmes",
     "Ongoing wellbeing support",
   ],
-  cta: { label: "Enquire About Corporate Programmes →", href: "#contact" },
+  cta: { label: "Enquire About Corporate Programmes →", href: "/contact" },
 } as const

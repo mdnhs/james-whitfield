@@ -17,7 +17,9 @@ export const HOW_IT_WORKS = {
   title: "How It Works",
   subtitle:
     "A clear, considered path from first conversation to lasting change — four steps, no mysticism.",
-  cta: { label: "Book a Discovery Call", href: "#contact" },
+  // Heading used on the dedicated How It Works page.
+  page: { tag: "How It Works", title: "The four steps" },
+  cta: { label: "Book a Discovery Call", href: "/contact" },
 }
 
 export const STEPS: Step[] = [

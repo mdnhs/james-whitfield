@@ -8,9 +8,9 @@ export const FOOTER_COLUMNS: { title: string; links: NavLink[] }[] = [
   {
     title: "Services",
     links: [
-      { label: "Hypnotherapy", href: "#services" },
-      { label: "Coaching", href: "#services" },
-      { label: "Corporate", href: "#enterprise" },
+      { label: "Hypnotherapy", href: "/services" },
+      { label: "Coaching", href: "/services" },
+      { label: "Corporate", href: "/services#enterprise" },
     ],
   },
 ]

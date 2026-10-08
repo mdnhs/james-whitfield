@@ -13,19 +13,43 @@ import { heroFragmentShader, heroVertexShader } from "../lib/hero-shader"
 // the room shifts around it.
 const FOCUS = 0.33
 
-// 2.5D parallax layer over the hero photo. A virtual camera, moved by GSAP
-// (pointer, idle sway, breathing, scroll, intro), shifts pixels by their depth
+// 2.5D parallax layer over the hero photo. A virtual camera (pointer via GSAP,
+// noise-driven idle sway and breathing, scroll, intro) shifts pixels by their depth
 // so the subject separates from the window and wall. The next/image photo
 // underneath stays as the LCP image and the fallback; this canvas fades in
 // only after its first frame.
 //
-// In addition to parallax, this shader renders interactive morning sunbeams
-// streaming from the window onto the woman figure, and gentle organic breeze
-// flutter on her hair strands.
+// In addition to parallax, the shader adds window sunbeams with dust motes,
+// passing-cloud light, cloud shadows on the fields, far-field defocus, hair
+// breeze and film grain (see hero-shader.ts).
 //
 // Three.js is dynamically imported during idle time so it never blocks the
 // critical LCP paint, hydration, or initial bundle size.
 const START_DELAY = 2600
+
+// Smooth 1D value noise. Sums of these never repeat, so the idle camera reads
+// as a handheld drift and the light/wind as weather rather than a loop.
+const hash = (n: number) => {
+  const s = Math.sin(n * 127.1) * 43758.5453
+  return s - Math.floor(s)
+}
+const noise1 = (x: number) => {
+  const i = Math.floor(x)
+  const f = x - i
+  const u = f * f * (3 - 2 * f)
+  return hash(i) * (1 - u) + hash(i + 1) * u
+}
+// Roughly -1..1.
+const drift = (t: number, seed: number) =>
+  (noise1(t + seed) * 0.6 +
+    noise1(t * 2.3 + seed * 1.7) * 0.3 +
+    noise1(t * 5.1 + seed * 3.1) * 0.1) *
+    2 -
+  1
+const smoothstep = (a: number, b: number, x: number) => {
+  const k = Math.min(Math.max((x - a) / (b - a), 0), 1)
+  return k * k * (3 - 2 * k)
+}
 
 export function HeroWebGL() {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -39,7 +63,6 @@ export function HeroWebGL() {
 
     let cancelled = false
     let idleHandle: number | undefined
-    let delayTimer: number | undefined
     let cleanupFn: (() => void) | undefined
 
     const start = async () => {
@@ -99,6 +122,9 @@ export function HeroWebGL() {
         uFocus: { value: FOCUS },
         uTime: { value: 0 },
         uLive: { value: 0 },
+        uSun: { value: 1 },
+        uGust: { value: 0 },
+        uDpr: { value: renderer.getPixelRatio() },
       }
 
       const material = new THREE.ShaderMaterial({
@@ -127,9 +153,6 @@ export function HeroWebGL() {
       const cam = {
         pointerX: 0,
         pointerY: 0,
-        swayX: -1,
-        swayY: -1,
-        breathe: 0,
         scroll: 0,
         live: 0,
       }
@@ -138,13 +161,24 @@ export function HeroWebGL() {
       let visible = true
       const render = () => {
         if (!ready || !visible) return
+        const t = performance.now() * 0.001
+        const swayX = drift(t * 0.14, 11)
+        const swayY = drift(t * 0.17, 47)
+        // ~4.6s breath, quicker inhale than exhale, rate wandering slightly.
+        const phase = (((t / 4.6 + drift(t * 0.05, 83) * 0.15) % 1) + 1) % 1
+        const breathe =
+          phase < 0.4
+            ? smoothstep(0, 0.4, phase)
+            : 1 - smoothstep(0.4, 1, phase)
         uniforms.uOffset.value.set(
-          (cam.pointerX * 0.085 + cam.swayX * 0.026) * cam.live,
-          (cam.pointerY * 0.055 + cam.swayY * 0.014) * cam.live + cam.scroll * 0.08
+          (cam.pointerX * 0.085 + swayX * 0.03) * cam.live,
+          (cam.pointerY * 0.055 + swayY * 0.016) * cam.live + cam.scroll * 0.08
         )
-        uniforms.uZoom.value = cam.breathe * 0.04 * cam.live + cam.scroll * 0.35
-        uniforms.uTime.value = performance.now() * 0.001
+        uniforms.uZoom.value = breathe * 0.035 * cam.live + cam.scroll * 0.35
+        uniforms.uTime.value = t
         uniforms.uLive.value = cam.live
+        uniforms.uSun.value = smoothstep(-0.55, 0.35, drift(t * 0.035, 191))
+        uniforms.uGust.value = smoothstep(-0.3, 0.7, drift(t * 0.12, 257))
         renderer.render(scene, camera)
       }
       gsap.ticker.add(render)
@@ -153,12 +187,6 @@ export function HeroWebGL() {
         visible = entry.isIntersecting
       })
       intersection.observe(container)
-
-      const idle = [
-        gsap.to(cam, { swayX: 1, duration: 7, ease: "sine.inOut", yoyo: true, repeat: -1 }),
-        gsap.to(cam, { swayY: 1, duration: 5.2, ease: "sine.inOut", yoyo: true, repeat: -1 }),
-        gsap.to(cam, { breathe: 1, duration: 4.2, ease: "sine.inOut", yoyo: true, repeat: -1 }),
-      ]
 
       const scrollTrigger = ScrollTrigger.create({
         trigger: section,
@@ -202,8 +230,14 @@ export function HeroWebGL() {
       gsap.to(canvas, { opacity: 1, duration: 0.25, ease: "power1.out" })
       gsap.to(cam, { live: 1, duration: 2.5, ease: "sine.inOut", delay: 0.05 })
 
-      const pointerX = gsap.quickTo(cam, "pointerX", { duration: 1.2, ease: "power3" })
-      const pointerY = gsap.quickTo(cam, "pointerY", { duration: 1.2, ease: "power3" })
+      const pointerX = gsap.quickTo(cam, "pointerX", {
+        duration: 1.2,
+        ease: "power3",
+      })
+      const pointerY = gsap.quickTo(cam, "pointerY", {
+        duration: 1.2,
+        ease: "power3",
+      })
       const onPointerMove = (event: PointerEvent) => {
         const rect = section.getBoundingClientRect()
         pointerX(((event.clientX - rect.left) / rect.width) * 2 - 1)
@@ -224,7 +258,6 @@ export function HeroWebGL() {
           section.removeEventListener("pointerleave", onPointerLeave)
         }
         gsap.ticker.remove(render)
-        idle.forEach((tween) => tween.kill())
         gsap.killTweensOf([canvas, cam])
         scrollTrigger.kill()
         resizeObserver.disconnect()
@@ -233,7 +266,8 @@ export function HeroWebGL() {
         material.dispose()
         photo.dispose()
         if (uniforms.uDepth.value !== photo) uniforms.uDepth.value.dispose()
-        if (uniforms.uHairMask.value !== photo) uniforms.uHairMask.value.dispose()
+        if (uniforms.uHairMask.value !== photo)
+          uniforms.uHairMask.value.dispose()
         renderer.dispose()
         renderer.forceContextLoss()
         canvas.remove()
@@ -249,7 +283,7 @@ export function HeroWebGL() {
       if (image.complete && image.naturalWidth) begin()
       else image.addEventListener("load", begin, { once: true })
     }
-    delayTimer = window.setTimeout(waitForPhoto, START_DELAY)
+    const delayTimer = window.setTimeout(waitForPhoto, START_DELAY)
 
     return () => {
       cancelled = true
@@ -263,5 +297,11 @@ export function HeroWebGL() {
     }
   }, [])
 
-  return <div ref={containerRef} aria-hidden className="pointer-events-none absolute inset-0" />
+  return (
+    <div
+      ref={containerRef}
+      aria-hidden
+      className="pointer-events-none absolute inset-0"
+    />
+  )
 }

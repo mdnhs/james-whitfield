@@ -1,3 +1,4 @@
+import { JourneyRail } from "@/components/journey-rail"
 import { StackCard } from "@/components/stack-card"
 import { AboutSection } from "@/features/about"
 import { CredibilitySection } from "@/features/credibility"
@@ -8,12 +9,25 @@ import { HowItWorksSection } from "@/features/how-it-works"
 import { InsightsSection } from "@/features/insights"
 import { TestimonialsSection } from "@/features/testimonials"
 
+// Chapters of the scroll journey, in page order, for the side rail. Each
+// target is a section id (or the hero card); #contact lives in the footer.
+const CHAPTERS = [
+  { label: "Welcome", target: "home" },
+  { label: "About", target: "about" },
+  { label: "Process", target: "how-it-works" },
+  { label: "Stories", target: "testimonials" },
+  { label: "Organisations", target: "enterprise" },
+  { label: "Insights", target: "insights" },
+  { label: "FAQ", target: "faq" },
+  { label: "Contact", target: "contact" },
+]
+
 // Each StackCard sticks while the next slides over it (see ScrollMotion). The
 // dark main background is what shows around a card as it shrinks back.
 export default function Page() {
   return (
     <main className="bg-ink">
-      <StackCard rounded={false}>
+      <StackCard id="home" rounded={false}>
         <HeroSection />
       </StackCard>
       <StackCard>
@@ -35,6 +49,7 @@ export default function Page() {
       <StackCard last>
         <FaqSection />
       </StackCard>
+      <JourneyRail chapters={CHAPTERS} />
     </main>
   )
 }

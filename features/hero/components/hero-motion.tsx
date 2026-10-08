@@ -26,13 +26,11 @@ export function HeroMotion({
       mm.add(
         {
           motion: "(prefers-reduced-motion: no-preference)",
-          finePointer: "(pointer: fine)",
         },
         (context) => {
-          const { motion, finePointer } = context.conditions ?? {}
+          const { motion } = context.conditions ?? {}
           if (!motion) return
 
-          const [bgImage] = q('[data-hero="bg-image"]')
           const [title] = q('[data-hero="title"]')
           const [count] = q('[data-hero="count"]')
           const eyebrow = q('[data-hero="eyebrow"]')
@@ -226,37 +224,9 @@ export function HeroMotion({
             scrollTrigger,
           })
 
-          const stopText = () => {
+          return () => {
             alive = false
             window.clearTimeout(fontFallback)
-          }
-          if (!finePointer) return stopText
-
-          // --- Pointer: magnetic CTAs (the photo's depth parallax lives in
-          // HeroWebGL) ---------------------------------------------------------
-          const magnets = q("[data-magnetic]").map((el) => {
-            const x = gsap.quickTo(el, "x", { duration: 0.5, ease: "power3" })
-            const y = gsap.quickTo(el, "y", { duration: 0.5, ease: "power3" })
-            const onMove = (event: PointerEvent) => {
-              const rect = el.getBoundingClientRect()
-              x((event.clientX - (rect.left + rect.width / 2)) * 0.3)
-              y((event.clientY - (rect.top + rect.height / 2)) * 0.4)
-            }
-            const onLeave = () => {
-              x(0)
-              y(0)
-            }
-            el.addEventListener("pointermove", onMove as EventListener)
-            el.addEventListener("pointerleave", onLeave)
-            return () => {
-              el.removeEventListener("pointermove", onMove as EventListener)
-              el.removeEventListener("pointerleave", onLeave)
-            }
-          })
-
-          return () => {
-            stopText()
-            magnets.forEach((cleanup) => cleanup())
           }
         }
       )

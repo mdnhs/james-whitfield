@@ -36,6 +36,7 @@ export function InsightsSection() {
           <Link
             href={cta.href}
             data-motion="rise"
+            data-magnetic
             className={cn(
               buttonVariants(),
               "h-12.5 shrink-0 rounded-full bg-clay px-[27px] py-0 text-[15px] leading-[normal] font-semibold text-cream hover:bg-clay/90"

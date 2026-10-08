@@ -5,8 +5,9 @@ import type { Testimonial } from "../data/testimonials"
 export function TestimonialCard({ quote, name, role, avatar }: Testimonial) {
   return (
     <figure
-      data-motion="deal"
-      className="flex flex-col gap-[42px] rounded-xl bg-stone p-6 text-ink sm:p-9"
+      data-motion="deal tilt"
+      data-tilt="4"
+      className="relative flex flex-col gap-[42px] rounded-xl bg-stone p-6 text-ink sm:p-9"
     >
       <blockquote className="text-lg leading-7.5 sm:text-xl">
         {quote}

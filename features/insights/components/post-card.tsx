@@ -16,6 +16,7 @@ export function PostCard({ post }: { post: Post }) {
         href={href}
         tabIndex={-1}
         aria-hidden
+        data-motion="tilt"
         className="relative block h-58.5 overflow-clip rounded-xl bg-[#e5e5e5]"
       >
         {/* Oversized frame gives the scroll parallax room to drift. */}
@@ -38,7 +39,7 @@ export function PostCard({ post }: { post: Post }) {
           {category}
         </span>
 
-        <h3 className="pt-3 text-[28.1px] leading-[40.63px] whitespace-pre-line">
+        <h3 className="pt-3 text-[28.1px] leading-[40.63px] lg:whitespace-pre-line">
           <Link
             href={href}
             className="hover:underline hover:underline-offset-4"

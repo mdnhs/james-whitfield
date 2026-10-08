@@ -16,8 +16,8 @@ export function AboutSection() {
       aria-labelledby="about-heading"
       className="bg-white pt-9 pb-16 lg:pb-26"
     >
-      <Container className="flex flex-col gap-12 lg:flex-row lg:items-start lg:gap-24">
-        <div className="flex w-full flex-col items-start gap-6 lg:w-130 lg:shrink-0">
+      <Container className="flex flex-col gap-12 lg:flex-row lg:items-start lg:gap-14 xl:gap-24">
+        <div className="flex w-full flex-col items-start gap-6 lg:w-[44%] lg:shrink-0 xl:w-130">
           <div data-motion="rise">
             <Eyebrow>{eyebrow}</Eyebrow>
           </div>
@@ -67,6 +67,7 @@ export function AboutSection() {
           <Link
             href={cta.href}
             data-motion="rise"
+            data-magnetic
             className={cn(
               buttonVariants(),
               "h-12.5 gap-0 rounded-full bg-clay px-[27px] py-0 text-[15px] leading-[normal] font-semibold whitespace-pre text-cream hover:bg-clay/90"

@@ -2,15 +2,17 @@ import { cn } from "@/lib/utils"
 
 // One card in the page's scroll stack. Server-rendered and inert on its own;
 // ScrollMotion finds [data-stack] and, when motion is allowed, makes each card
-// stick while the next one slides over it, shrinking and dimming the covered
+// stick while the next one slides over it, scaling back and dimming the covered
 // card through the shade layer. Without motion the cards are plain sections.
 export function StackCard({
   children,
+  id,
   className,
   rounded = true,
   last = false,
 }: {
   children: React.ReactNode
+  id?: string
   className?: string
   // Round the top corners the next card slides in with. Off for the first card.
   rounded?: boolean
@@ -19,6 +21,7 @@ export function StackCard({
 }) {
   return (
     <div
+      id={id}
       data-stack={last ? "last" : ""}
       className={cn(
         "relative overflow-clip",

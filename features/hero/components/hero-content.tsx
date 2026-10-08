@@ -8,7 +8,8 @@ import { HERO_CONTENT } from "../data/hero-content"
 const ctaBase =
   "h-12.5 rounded-full px-[27px] py-0 text-[15px] font-semibold leading-[normal]"
 
-// data-hero / data-reveal / data-magnetic are animation hooks for HeroMotion.
+// data-hero / data-reveal / data-magnetic are animation hooks for HeroMotion
+// (data-magnetic is handled page-wide by ScrollMotion).
 export function HeroContent() {
   const { eyebrow, headline, description, primaryCta, secondaryCta } =
     HERO_CONTENT

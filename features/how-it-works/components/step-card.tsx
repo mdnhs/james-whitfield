@@ -6,7 +6,11 @@ export function StepCard({ step, index }: { step: Step; index: number }) {
   const { title, description, image, crop } = step
 
   return (
-    <li className="flex w-[min(381.75px,85vw)] shrink-0 snap-start flex-col overflow-clip rounded-2xl bg-white">
+    <li
+      data-motion="tilt"
+      data-tilt="5"
+      className="relative flex w-[min(381.75px,85vw)] shrink-0 snap-start flex-col overflow-clip rounded-2xl bg-white"
+    >
       <div className="relative h-54 w-full shrink-0 overflow-clip">
         <div className="absolute" style={crop}>
           <Image
@@ -28,7 +32,9 @@ export function StepCard({ step, index }: { step: Step; index: number }) {
         <h3 className="font-geist text-[19px] leading-[1.3] font-semibold tracking-[-0.2px] text-ink">
           {title}
         </h3>
-        <p className="text-[14.5px] leading-[1.65] text-[#525252]">{description}</p>
+        <p className="text-[14.5px] leading-[1.65] text-[#525252]">
+          {description}
+        </p>
       </div>
     </li>
   )

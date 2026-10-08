@@ -8,6 +8,7 @@ export function BookCallButton({ className }: { className?: string }) {
   return (
     <Link
       href={BOOK_CALL_HREF}
+      data-magnetic
       className={cn(
         "group inline-flex h-11.5 items-center gap-5 rounded-full border border-[#9a9a9a] pr-1.25 pl-5.75 transition-colors hover:border-white hover:bg-white/10",
         className

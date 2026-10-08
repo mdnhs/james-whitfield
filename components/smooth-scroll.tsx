@@ -3,6 +3,7 @@
 import "lenis/dist/lenis.css"
 
 import { useEffect } from "react"
+import { usePathname } from "next/navigation"
 import { ReactLenis, useLenis } from "lenis/react"
 
 import { gsap, ScrollTrigger } from "@/lib/gsap"
@@ -17,15 +18,20 @@ function AnchorScroll() {
 
     const onClick = (event: MouseEvent) => {
       if (event.defaultPrevented || event.button !== 0) return
-      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
+        return
 
       const link = (event.target as Element | null)?.closest?.("a[href*='#']")
-      if (!(link instanceof HTMLAnchorElement) || link.target === "_blank") return
+      if (!(link instanceof HTMLAnchorElement) || link.target === "_blank")
+        return
 
       const url = new URL(link.href)
-      if (url.origin !== location.origin || url.pathname !== location.pathname) return
+      if (url.origin !== location.origin || url.pathname !== location.pathname)
+        return
 
-      const target = url.hash && document.getElementById(decodeURIComponent(url.hash.slice(1)))
+      const target =
+        url.hash &&
+        document.getElementById(decodeURIComponent(url.hash.slice(1)))
       if (!target) return
 
       event.preventDefault()
@@ -40,6 +46,21 @@ function AnchorScroll() {
     window.addEventListener("click", onClick, { capture: true })
     return () => window.removeEventListener("click", onClick, { capture: true })
   }, [lenis])
+
+  return null
+}
+
+// A new page starts at the top. Lenis keeps its own scroll target, so without
+// this it would glide back to the previous page's position. Hash links are left
+// for the browser to resolve.
+function RouteReset() {
+  const lenis = useLenis()
+  const pathname = usePathname()
+
+  useEffect(() => {
+    if (!lenis || location.hash) return
+    lenis.scrollTo(0, { immediate: true, force: true })
+  }, [lenis, pathname])
 
   return null
 }
@@ -82,6 +103,7 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
     >
       <GsapSync />
       <AnchorScroll />
+      <RouteReset />
       {children}
     </ReactLenis>
   )

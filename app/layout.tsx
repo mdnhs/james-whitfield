@@ -88,7 +88,7 @@ export default function RootLayout({
         </noscript>
         <SmoothScroll>
           <ThemeProvider>
-            <SiteHeader className="absolute inset-x-0 top-0" />
+            <SiteHeader />
             {children}
             <SiteFooter />
             <ScrollMotion />

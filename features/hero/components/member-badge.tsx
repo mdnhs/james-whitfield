@@ -24,11 +24,14 @@ export function MemberBadge({ className }: { className?: string }) {
             width={56}
             height={56}
             data-hero="avatar"
-            className={cn("size-14 shrink-0", i < avatars.length - 1 && "-mr-2")}
+            className={cn(
+              "size-12 shrink-0 sm:size-14",
+              i < avatars.length - 1 && "-mr-2"
+            )}
           />
         ))}
       </div>
-      <p className="font-geist text-xl leading-[1.4] tracking-[-0.4px] whitespace-nowrap text-white">
+      <p className="font-geist text-lg leading-[1.4] tracking-[-0.4px] whitespace-nowrap text-white sm:text-xl">
         <span data-hero="count" className="block font-semibold tabular-nums">
           {count}
         </span>

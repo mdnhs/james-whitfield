@@ -7,7 +7,10 @@ export function Container({
 }: React.ComponentProps<"div">) {
   return (
     <div
-      className={cn("mx-auto w-full max-w-360 px-4 sm:px-6 lg:px-16.5", className)}
+      className={cn(
+        "mx-auto w-full max-w-360 px-4 sm:px-6 lg:px-16.5",
+        className
+      )}
       {...props}
     />
   )

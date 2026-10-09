@@ -1,5 +1,20 @@
 import type { NextConfig } from "next"
 
+// The s3 driver's public host (docs/brief.md §14). Read at build: Dokploy
+// passes MEDIA_PUBLIC_URL as a build arg when the s3 driver is used.
+function mediaRemotePatterns() {
+  const raw = process.env.MEDIA_PUBLIC_URL
+  if (!raw) return []
+  const url = new URL(raw)
+  return [
+    {
+      protocol: "https" as const,
+      hostname: url.hostname,
+      pathname: `${url.pathname.replace(/\/$/, "")}/**`,
+    },
+  ]
+}
+
 // "standalone" traces only the files the server needs, so the Docker image
 // ships a small server.js instead of the full node_modules.
 const nextConfig: NextConfig = {
@@ -19,6 +34,13 @@ const nextConfig: NextConfig = {
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     minimumCacheTTL: 31536000,
+    qualities: [75, 90],
+    // Static assets and the local driver; anything else is refused.
+    localPatterns: [
+      { pathname: "/images/**", search: "" },
+      { pathname: "/uploads/**", search: "" },
+    ],
+    remotePatterns: mediaRemotePatterns(),
   },
   experimental: {
     globalNotFound: true,

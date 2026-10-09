@@ -14,6 +14,10 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # Version skew protection: pass a unique id per deploy (e.g. the git SHA).
 ARG NEXT_DEPLOYMENT_ID
 ENV NEXT_DEPLOYMENT_ID=$NEXT_DEPLOYMENT_ID
+# The s3 media driver's public URL: next.config.ts allows its host for
+# next/image at build. Dokploy passes it as a build arg (unset = local driver).
+ARG MEDIA_PUBLIC_URL
+ENV MEDIA_PUBLIC_URL=$MEDIA_PUBLIC_URL
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 # No secrets and no database at build: env and auth are read lazily at runtime.
@@ -26,6 +30,8 @@ ENV NODE_ENV=production \
     PORT=3000 \
     HOSTNAME=0.0.0.0
 RUN addgroup -S -g 1001 nodejs && adduser -S -u 1001 -G nodejs nextjs
+# The local media driver's default MEDIA_LOCAL_DIR; mount a volume here.
+RUN mkdir -p /app/storage && chown nextjs:nodejs /app/storage
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static

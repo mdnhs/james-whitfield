@@ -11,6 +11,7 @@ import type { AuditRoutes } from "@/server/modules/audit/routes"
 import type { CollectionsRoutes } from "@/server/modules/collections/routes"
 import type { DashboardRoutes } from "@/server/modules/dashboard/routes"
 import type { GlobalsRoutes } from "@/server/modules/globals/routes"
+import type { MediaRoutes } from "@/server/modules/media/routes"
 import type { PagesRoutes } from "@/server/modules/pages/routes"
 import type { SearchRoutes } from "@/server/modules/search/routes"
 
@@ -23,6 +24,7 @@ export const auditApi = hc<AuditRoutes>("/api/v1/admin/audit")
 export const collectionsApi = hc<CollectionsRoutes>("/api/v1/admin/collections")
 export const dashboardApi = hc<DashboardRoutes>("/api/v1/admin/dashboard")
 export const globalsApi = hc<GlobalsRoutes>("/api/v1/admin/globals")
+export const mediaApi = hc<MediaRoutes>("/api/v1/admin/media")
 export const pagesApi = hc<PagesRoutes>("/api/v1/admin/pages")
 export const searchApi = hc<SearchRoutes>("/api/v1/admin/search")
 

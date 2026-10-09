@@ -37,8 +37,158 @@ describe("block registry", () => {
     expect([three(2), three(3), three(4)]).toEqual([false, true, false])
   })
 
+  it("parses a minimal valid instance of every block type", () => {
+    const media = { mediaId: "00000000-0000-4000-8000-000000000001" }
+    const link = { label: "L", href: "/x" }
+    const stat = { value: { kind: "text", text: "T" }, label: "L" }
+    const sel = { mode: "all" }
+    const uuid = media.mediaId
+    const data: Record<string, unknown> = {
+      "hero.home": {
+        eyebrow: "E",
+        headline: { lead: "a", muted: "b", tail: "c" },
+        description: "D",
+        primaryCta: link,
+        secondaryCta: link,
+        members: {
+          count: stat.value,
+          label: "L",
+          avatars: [media, media, media],
+        },
+      },
+      "hero.page": {
+        title: "T",
+        subtitle: "S",
+        image: media,
+        focal: null,
+        tint: 0.3,
+        mirror: false,
+      },
+      credibility: {
+        badges: Array(3).fill({ title: "T", subtitle: "S", icon: "shield" }),
+      },
+      "about.intro": {
+        eyebrow: "E",
+        headline: "H",
+        quote: "Q",
+        paragraphs: ["P"],
+        stats: [stat, stat],
+        cta: link,
+      },
+      process: {
+        variant: "home",
+        tag: "",
+        title: "T",
+        subtitle: "S",
+        cta: link,
+      },
+      testimonials: {
+        variant: "home",
+        eyebrow: "E",
+        title: "T",
+        selection: sel,
+      },
+      band: { bandId: uuid, tint: null },
+      "insights.latest": {
+        title: "T",
+        subtitle: "S",
+        cta: link,
+        count: 3,
+        selection: sel,
+      },
+      faq: {
+        variant: "home",
+        title: "T",
+        subtitle: "S",
+        selection: sel,
+        initiallyOpen: null,
+      },
+      "about.story": {
+        eyebrow: "E",
+        title: "T",
+        paragraphs: ["P"],
+        quote: "Q",
+        badge: stat,
+        role: "R",
+        photo: media,
+      },
+      "about.stats": { stats: [stat, stat, stat] },
+      "about.approach": {
+        eyebrow: "E",
+        title: "T",
+        subtitle: "S",
+        principles: Array(3).fill({ icon: "evidence", title: "T", body: "B" }),
+      },
+      "about.credentials": {
+        eyebrow: "E",
+        title: "T",
+        subtitle: "S",
+        cta: link,
+        items: Array(3).fill({
+          year: "2020",
+          title: "T",
+          issuer: "I",
+          url: null,
+        }),
+      },
+      "services.grid": { eyebrow: "E", title: "T", intro: "I", more: link },
+      "services.plans": {
+        eyebrow: "E",
+        title: "T",
+        subtitle: "S",
+        featuredTag: "F",
+      },
+      "session.timeline": {
+        eyebrow: "E",
+        title: "T",
+        subtitle: "S",
+        beats: Array(3).fill({ time: "1m", title: "T", body: "B" }),
+      },
+      fit: {
+        eyebrow: "E",
+        title: "T",
+        subtitle: "S",
+        good: { heading: "H", items: ["a", "b"] },
+        poor: { heading: "H", items: ["a", "b"] },
+      },
+      "insights.browser": { heading: "H", pageSize: 6 },
+      newsletter: { override: null },
+      "contact.details": { eyebrow: "E", title: "T", subtitle: "S" },
+      "contact.clinic": {
+        eyebrow: "E",
+        title: "T",
+        subtitle: "S",
+        photo: media,
+      },
+      richtext: { doc: { type: "doc", content: [] }, width: "narrow" },
+    }
+    expect(Object.keys(data).sort()).toEqual(BLOCKS.map((b) => b.type).sort())
+    for (const block of BLOCKS) {
+      const result = BlockInstance.safeParse({
+        id: "block-1",
+        type: block.type,
+        anchor: "a",
+        chapter: null,
+        hidden: false,
+        joinPrevious: false,
+        data: data[block.type],
+      })
+      expect(
+        result.success,
+        `${block.type}: ${JSON.stringify(result.error?.issues)}`
+      ).toBe(true)
+    }
+  })
+
   it("only accepts safe hrefs", () => {
-    for (const href of ["/contact", "/contact?topic=sleep-rest", "#faq"]) {
+    for (const href of [
+      "/contact",
+      "/contact?topic=sleep-rest",
+      "#faq",
+      "https://x.ie",
+      "mailto:a@b.ie",
+      "tel:+353",
+    ]) {
       expect(Href.safeParse(href).success, href).toBe(true)
     }
     for (const href of [

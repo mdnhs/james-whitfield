@@ -28,4 +28,27 @@ describe("globals", () => {
     ).toThrow()
     expect(() => parseGlobal("seo", { titleTemplate: "Magda" })).toThrow()
   })
+  it("takes https-only urls for social and sameAs, hex-only admin theme", () => {
+    for (const url of [
+      "javascript:alert(1)",
+      "http://x.ie",
+      "data:text/html,x",
+    ]) {
+      expect(
+        () => parseGlobal("site", { social: [{ label: "L", url }] }),
+        url
+      ).toThrow()
+      expect(
+        () => parseGlobal("seo", { business: { sameAs: [url] } }),
+        url
+      ).toThrow()
+    }
+    expect(() =>
+      parseGlobal("site", { social: [{ label: "L", url: "https://x.ie/a" }] })
+    ).not.toThrow()
+    expect(() => parseGlobal("theme", { admin: { a: "red" } })).toThrow()
+    expect(() =>
+      parseGlobal("theme", { admin: { a: "#aabbcc" } })
+    ).not.toThrow()
+  })
 })

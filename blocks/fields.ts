@@ -25,9 +25,22 @@ export const Href = z
   .trim()
   .max(300)
   .regex(
-    /^(\/(?!\/)|#[a-z]|https:\/\/|mailto:|tel:)/,
+    /^(\/(?!\/)|#[a-z]|https:\/\/|mailto:|tel:)/i,
     "Use /path, #anchor, https://, mailto: or tel:"
   )
+  // No backslashes or control characters (browsers strip tabs/newlines and
+  // treat "\" as "/", which turns "/\evil.example" into a protocol-relative URL).
+  // eslint-disable-next-line no-control-regex
+  .refine(
+    (v) => !/[\\\u0000-\u001f\u007f]/.test(v),
+    "Remove backslashes and control characters"
+  )
+
+// Absolute https URLs only (social profiles, schema.org sameAs).
+export const HttpsUrl = z
+  .url()
+  .max(300)
+  .refine((v) => v.toLowerCase().startsWith("https://"), "Use an https:// URL")
 
 export const LinkValue = z.object({ label: text(60), href: Href })
 export const MediaRef = z.object({ mediaId: z.uuid() })

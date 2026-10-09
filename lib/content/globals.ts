@@ -1,7 +1,7 @@
 // lib/content/globals.ts
 import * as z from "zod"
 
-import { Href, MediaRef } from "@/blocks/fields"
+import { Href, HttpsUrl, MediaRef } from "@/blocks/fields"
 
 const s = (max: number) => z.string().trim().max(max).default("")
 const Link = z.object({
@@ -50,7 +50,7 @@ export const SiteGlobal = z.object({
   locale: z.literal("en-IE").default("en-IE"),
   timeZone: z.literal("Europe/Dublin").default("Europe/Dublin"),
   social: z
-    .array(z.object({ label: s(40), url: z.url() }))
+    .array(z.object({ label: s(40), url: HttpsUrl }))
     .max(10)
     .default([]),
 })
@@ -244,7 +244,7 @@ export const SeoGlobal = z.object({
         .enum(["ProfessionalService", "LocalBusiness"])
         .default("ProfessionalService"),
       priceRange: s(10),
-      sameAs: z.array(z.url()).max(10).default([]),
+      sameAs: z.array(HttpsUrl).max(10).default([]),
     })
     .prefault({}),
 })
@@ -297,7 +297,7 @@ export const ThemeGlobal = z.object({
   // Written into a <style> tag by SiteFrame, so only #rrggbb is accepted.
   site: z.partialRecord(z.enum(SITE_TOKENS), Hex).default({}),
   // Admin tokens arrive with the theme engine (Phase 9).
-  admin: z.record(z.string(), z.string()).default({}),
+  admin: z.record(z.string(), Hex).default({}),
 })
 
 export const NotificationsGlobal = z.object({

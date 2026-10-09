@@ -105,3 +105,8 @@ export type BlockData<T extends BlockType> = Extract<
   BlockInstance,
   { type: T }
 >["data"]
+
+// Compile error if BLOCKS and BlockInstance drift apart.
+type InstanceType = BlockInstance["type"]
+type Exact<A, B> = [A] extends [B] ? ([B] extends [A] ? true : never) : never
+export const _blockTypesInSync: Exact<InstanceType, BlockType> = true

@@ -10,9 +10,12 @@ function Probe({ onTrigger }: { onTrigger: () => void }) {
   return (
     <>
       <input aria-label="Field" />
-      <div data-slot="command">
-        <input aria-label="Palette field" />
-      </div>
+      <div
+        data-testid="editor"
+        contentEditable
+        suppressContentEditableWarning
+        tabIndex={0}
+      />
     </>
   )
 }
@@ -35,14 +38,26 @@ describe("useCommandHotkey", () => {
     expect(onTrigger).not.toHaveBeenCalled()
   })
 
-  it("leaves ⌘K in other editable fields alone, but works inside the palette", async () => {
+  it("opens from plain fields but leaves rich-text editors and handled events alone", async () => {
     const onTrigger = vi.fn()
     render(<Probe onTrigger={onTrigger} />)
     await userEvent.click(screen.getByLabelText("Field"))
     await userEvent.keyboard("{Meta>}k{/Meta}")
-    expect(onTrigger).not.toHaveBeenCalled()
-    await userEvent.click(screen.getByLabelText("Palette field"))
+    expect(onTrigger).toHaveBeenCalledTimes(1)
+
+    const editor = screen.getByTestId("editor")
+    editor.focus()
     await userEvent.keyboard("{Meta>}k{/Meta}")
+    expect(onTrigger).toHaveBeenCalledTimes(1)
+
+    const handled = new KeyboardEvent("keydown", {
+      key: "k",
+      metaKey: true,
+      cancelable: true,
+      bubbles: true,
+    })
+    handled.preventDefault()
+    window.dispatchEvent(handled)
     expect(onTrigger).toHaveBeenCalledTimes(1)
   })
 

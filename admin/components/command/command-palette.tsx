@@ -45,7 +45,6 @@ export function CommandPalette({ siteUrl }: { siteUrl: string }) {
   // A hidden route (<Activity>) must not come back with the palette open.
   useResetOnHide(() => {
     setOpen(false)
-    setQ("")
   })
 
   const actions = useMemo(
@@ -56,9 +55,15 @@ export function CommandPalette({ siteUrl }: { siteUrl: string }) {
     [q, setTheme, signOut, siteUrl]
   )
 
+  // One close path: Escape, a selection, the overlay and ⌘K all land here.
+  const [wasOpen, setWasOpen] = useState(open)
+  if (open !== wasOpen) {
+    setWasOpen(open)
+    if (!open) setQ("")
+  }
+
   function close() {
     setOpen(false)
-    setQ("")
   }
 
   return (

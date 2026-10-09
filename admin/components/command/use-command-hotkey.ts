@@ -7,8 +7,8 @@ type KeyLike = Pick<
   "key" | "metaKey" | "ctrlKey" | "altKey" | "shiftKey"
 >
 
-// ⌘K on macOS, Ctrl+K elsewhere. A modifier is required, so typing in a
-// field never opens the palette (no single-key hotkeys).
+// ⌘K on macOS, Ctrl+K elsewhere. A modifier is required, so typing a bare
+// "k" never opens the palette (no single-key hotkeys).
 export function isPaletteShortcut(event: KeyLike) {
   return (
     event.key.toLowerCase() === "k" &&
@@ -18,18 +18,14 @@ export function isPaletteShortcut(event: KeyLike) {
   )
 }
 
-// Fields and rich-text editors own their keystrokes (same guard as the
-// sidebar's ⌘B), except the palette's own input, which toggles it closed.
-function ownsKeystroke(target: EventTarget | null) {
+// Rich-text editors (TipTap's contenteditable root) use ⌘K for links, so they
+// keep it. Plain inputs, textareas and selects do not: a modifier chord is
+// never typed text, and users expect ⌘K from filter fields.
+function isRichText(target: EventTarget | null) {
   if (!(target instanceof HTMLElement)) return false
-  if (target.closest('[data-slot="command"]')) return false
   return (
     target.isContentEditable ||
-    target.closest('[contenteditable]:not([contenteditable="false"])') !==
-      null ||
-    target instanceof HTMLInputElement ||
-    target instanceof HTMLTextAreaElement ||
-    target instanceof HTMLSelectElement
+    target.closest('[contenteditable]:not([contenteditable="false"])') !== null
   )
 }
 
@@ -37,7 +33,7 @@ export function useCommandHotkey(onTrigger: () => void) {
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if (event.repeat || event.defaultPrevented) return
-      if (!isPaletteShortcut(event) || ownsKeystroke(event.target)) return
+      if (!isPaletteShortcut(event) || isRichText(event.target)) return
       event.preventDefault()
       onTrigger()
     }

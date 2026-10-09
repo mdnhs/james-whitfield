@@ -2,14 +2,13 @@ import { expect, test, type Page } from "@playwright/test"
 
 import { STORAGE } from "../../support/storage"
 
-// The listener attaches on hydration; a press before that is lost, so repeat
-// it until the palette answers.
+// The provider marks <html> once the ⌘K listener is attached; a press before
+// hydration would be lost.
 async function openWithShortcut(page: Page) {
+  await page.locator("html[data-palette-ready]").waitFor({ state: "attached" })
+  await page.keyboard.press("ControlOrMeta+k")
   const palette = page.getByRole("dialog", { name: "Search the admin" })
-  await expect(async () => {
-    await page.keyboard.press("ControlOrMeta+k")
-    await expect(palette).toBeVisible({ timeout: 1000 })
-  }).toPass()
+  await expect(palette).toBeVisible()
   return palette
 }
 

@@ -1,6 +1,13 @@
 "use client"
 
-import { createContext, use, useCallback, useMemo, useState } from "react"
+import {
+  createContext,
+  use,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react"
 
 import { useCommandHotkey } from "./use-command-hotkey"
 
@@ -16,6 +23,14 @@ export function CommandPaletteProvider({
   const [open, setOpen] = useState(false)
   const toggle = useCallback(() => setOpen((value) => !value), [])
   useCommandHotkey(toggle)
+  // Tells tests (and nothing else) the ⌘K listener is attached.
+  useEffect(() => {
+    const root = document.documentElement
+    root.dataset.paletteReady = ""
+    return () => {
+      delete root.dataset.paletteReady
+    }
+  }, [])
   const value = useMemo(() => ({ open, setOpen }), [open])
   return <PaletteContext value={value}>{children}</PaletteContext>
 }

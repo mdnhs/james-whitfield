@@ -4,6 +4,7 @@ import {
   formatDelta,
   formatNumber,
   formatPercent,
+  formatShare,
   relativeTime,
 } from "./format"
 
@@ -26,6 +27,19 @@ describe("formatDelta", () => {
   it("has no percentage without a baseline", () => {
     expect(formatDelta(4, 0)).toBeNull()
     expect(formatDelta(0, 0)).toEqual({ label: "No change", direction: "flat" })
+  })
+})
+
+describe("formatShare", () => {
+  it("rounds down, so only the whole reads 100%", () => {
+    expect(formatShare(199, 200)).toBe("99%")
+    expect(formatShare(200, 200)).toBe("100%")
+    expect(formatShare(1, 3)).toBe("33%")
+    expect(formatShare(29, 100)).toBe("29%")
+  })
+
+  it("shows a dash when there is nothing to measure", () => {
+    expect(formatShare(0, 0)).toBe("—")
   })
 })
 

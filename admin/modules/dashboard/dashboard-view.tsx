@@ -10,7 +10,7 @@ import { EmptyState } from "@/admin/components/dashboard/empty-state"
 import {
   formatDelta,
   formatNumber,
-  formatPercent,
+  formatShare,
 } from "@/admin/components/dashboard/format"
 import { Gauge } from "@/admin/components/dashboard/gauge"
 import { KpiCard } from "@/admin/components/dashboard/kpi-card"
@@ -29,7 +29,8 @@ import { actionStatus } from "./present"
 import { dashboardQuery, type Dashboard } from "./queries"
 
 // Navigation styled as buttons stays a real link (role "link"), unlike
-// Base UI's Button rendered as an anchor, which announces as a button.
+// Base UI's Button rendered as an anchor (nativeButton={false}), which
+// announces as a button. The admin's one pattern for button-looking links.
 // cn() so the action classes win over the variant's (border-primary over
 // the outline's border-border), as Button itself merges them.
 const LINK_PRIMARY = cn(buttonVariants(), PRIMARY_ACTION)
@@ -71,7 +72,11 @@ export function DashboardView({
         actions={
           <>
             {canInvite ? (
-              <Link href="/admin/users" className={LINK_PRIMARY}>
+              <Link
+                href="/admin/users"
+                data-slot="button"
+                className={LINK_PRIMARY}
+              >
                 <UserPlusIcon data-icon="inline-start" />
                 Invite teammate
               </Link>
@@ -80,6 +85,7 @@ export function DashboardView({
               href={siteUrl}
               target="_blank"
               rel="noreferrer"
+              data-slot="button"
               className={LINK_SECONDARY}
             >
               View site
@@ -136,11 +142,7 @@ function DashboardBody({ data }: { data: Dashboard }) {
     data.security
       ? {
           label: "Security health",
-          value: formatPercent(
-            data.security.total
-              ? data.security.protected / data.security.total
-              : 0
-          ),
+          value: formatShare(data.security.protected, data.security.total),
           delta: null,
           caption: `${data.security.requiredMissing + data.security.optionalMissing} without two-factor`,
           href: "/admin/users",
@@ -209,31 +211,38 @@ function DashboardBody({ data }: { data: Dashboard }) {
                   : "Every setup step is done. New suggestions will appear here as the site grows."}
               </p>
             </div>
-            <ul aria-label="Setup checklist" className="flex flex-col gap-2">
-              {data.nextUp.map((item) => (
-                <li key={item.id} className="flex items-center gap-2 text-sm">
-                  {item.done ? (
-                    <CircleCheckIcon
-                      aria-hidden
-                      className="text-success size-4"
-                    />
-                  ) : (
-                    <CircleIcon
-                      aria-hidden
-                      className="size-4 text-muted-foreground"
-                    />
-                  )}
-                  <span className={cn(item.done && "text-muted-foreground")}>
-                    {item.title}
-                  </span>
-                  <span className="sr-only">
-                    {item.done ? "(done)" : "(to do)"}
-                  </span>
-                </li>
-              ))}
-            </ul>
+            {/* One step is already the headline; a list of one repeats it. */}
+            {data.nextUp.length > 1 ? (
+              <ul aria-label="Setup checklist" className="flex flex-col gap-2">
+                {data.nextUp.map((item) => (
+                  <li key={item.id} className="flex items-center gap-2 text-sm">
+                    {item.done ? (
+                      <CircleCheckIcon
+                        aria-hidden
+                        className="text-success size-4"
+                      />
+                    ) : (
+                      <CircleIcon
+                        aria-hidden
+                        className="size-4 text-muted-foreground"
+                      />
+                    )}
+                    <span className={cn(item.done && "text-muted-foreground")}>
+                      {item.title}
+                    </span>
+                    <span className="sr-only">
+                      {item.done ? "(done)" : "(to do)"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
             {next ? (
-              <Link href={next.href} className={LINK_PRIMARY}>
+              <Link
+                href={next.href}
+                data-slot="button"
+                className={LINK_PRIMARY}
+              >
                 {next.cta}
               </Link>
             ) : null}

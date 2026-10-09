@@ -5,8 +5,9 @@ import Link from "next/link"
 
 import { SearchPill } from "@/admin/components/command/search-pill"
 import { usePermission } from "@/admin/lib/actor-context"
-import { Button } from "@/components/ui/button"
+import { buttonVariants } from "@/components/ui/button"
 import { SidebarTrigger } from "@/components/ui/sidebar"
+import { cn } from "@/lib/utils"
 
 import { ICON_BUTTON } from "./constants"
 import { NotificationsButton } from "./notifications-button"
@@ -25,16 +26,18 @@ export function Topbar() {
         <SearchPill />
       </div>
       {canReadLeads ? (
-        <Button
-          variant="outline"
-          size="icon-lg"
-          nativeButton={false}
-          className={ICON_BUTTON}
+        // A real link (role "link"), styled as an icon button.
+        <Link
+          href="/admin/leads"
           aria-label="Enquiries"
-          render={<Link href="/admin/leads" />}
+          data-slot="button"
+          className={cn(
+            buttonVariants({ variant: "outline", size: "icon-lg" }),
+            ICON_BUTTON
+          )}
         >
           <MailIcon />
-        </Button>
+        </Link>
       ) : null}
       <NotificationsButton />
       <UserMenu />

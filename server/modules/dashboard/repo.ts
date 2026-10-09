@@ -1,6 +1,16 @@
 import "server-only"
 
-import { and, count, countDistinct, desc, eq, gte, lt, sql } from "drizzle-orm"
+import {
+  and,
+  count,
+  countDistinct,
+  desc,
+  eq,
+  gte,
+  lt,
+  notLike,
+  sql,
+} from "drizzle-orm"
 
 import { getDb } from "@/server/db/client"
 import { auditLogs, users } from "@/server/db/schema"
@@ -28,20 +38,25 @@ export async function distinctSignedIn(from: Date, to: Date) {
   return row?.value ?? 0
 }
 
-export async function auditCount(from: Date, to: Date) {
+// Content and admin changes only: auth.* rows (sign-ins, impersonation)
+// are activity, not changes.
+export async function changeCount(from: Date, to: Date) {
   const [row] = await getDb()
     .select({ value: count() })
     .from(auditLogs)
-    .where(between(from, to))
+    .where(and(notLike(auditLogs.action, "auth.%"), between(from, to)))
   return row?.value ?? 0
 }
 
-// Accounts that can sign in (banned ones excluded).
-export function activeAccounts() {
+// Accounts that can sign in. A ban whose expiry has passed no longer
+// counts, the same rule as getFreshSession's isBanned.
+export function activeAccounts(now: Date) {
   return getDb()
     .select({ role: users.role, twoFactorEnabled: users.twoFactorEnabled })
     .from(users)
-    .where(sql`coalesce(${users.banned}, false) = false`)
+    .where(
+      sql`coalesce(${users.banned}, false) = false or ${users.banExpires} <= ${now.toISOString()}::timestamptz`
+    )
 }
 
 export function recentAudit(limit: number) {

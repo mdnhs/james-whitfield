@@ -5,9 +5,9 @@ export type GaugePart = {
   tone: "solid" | "dark" | "hatched"
 }
 
-// `ratio` is the headline part's share of the total: the part whose key is
-// `headlineKey`, or the first part when no key is given. An empty gauge (or
-// an unknown key) has a ratio of 0, never NaN.
+// `ratio` is the headline part's share of the total, and `headline` its
+// value: the part whose key is `headlineKey`, or the first part when no key
+// is given. An empty gauge (or an unknown key) has a ratio of 0, never NaN.
 export function gaugeSummary(
   parts: readonly GaugePart[],
   headlineKey?: string
@@ -24,6 +24,7 @@ export function gaugeSummary(
   return {
     parts: clean,
     total,
+    headline: headline?.value ?? 0,
     ratio: total === 0 ? 0 : (headline?.value ?? 0) / total,
   }
 }

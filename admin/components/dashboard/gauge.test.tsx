@@ -66,9 +66,19 @@ it("headlines the part it is given", () => {
   expect(screen.getByText("29%")).toBeTruthy()
 })
 
-it("shows 0% on an empty gauge, never NaN", () => {
+it("rounds the headline down, so it never reads 100% with a part missing", () => {
+  gauge([
+    { key: "on", label: "On", value: 199, tone: "solid" },
+    { key: "off", label: "Off", value: 1, tone: "hatched" },
+  ])
+  expect(screen.getByText("99%")).toBeTruthy()
+  expect(screen.queryByText("100%")).toBeNull()
+})
+
+it("shows — on an empty gauge, never 0% or NaN", () => {
   const { container } = gauge(PARTS.map((part) => ({ ...part, value: 0 })))
-  expect(screen.getByText("0%")).toBeTruthy()
+  expect(screen.getByText("—")).toBeTruthy()
+  expect(screen.queryByText("0%")).toBeNull()
   expect(container.innerHTML).not.toContain("NaN")
 })
 

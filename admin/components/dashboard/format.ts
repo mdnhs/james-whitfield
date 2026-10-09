@@ -13,6 +13,14 @@ const RELATIVE = new Intl.RelativeTimeFormat("en-IE", { numeric: "auto" })
 export const formatNumber = (n: number) => NUMBER.format(n)
 export const formatPercent = (ratio: number) => PERCENT.format(ratio)
 
+// A part's share of a whole, rounded down so it never reads 100% while any
+// of the whole is missing (199 of 200 is 99%, not 100%). With nothing to
+// measure it is "—", not an alarming 0%.
+export function formatShare(part: number, total: number) {
+  if (!(total > 0)) return "—"
+  return PERCENT.format(Math.floor((part * 100) / total) / 100)
+}
+
 export type Delta = { label: string; direction: "up" | "down" | "flat" }
 
 // The KPI caption's "+3.4%". Without a baseline there is no honest

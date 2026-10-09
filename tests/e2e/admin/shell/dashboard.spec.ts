@@ -21,6 +21,9 @@ test.describe("as an owner", () => {
     await expect(
       page.getByRole("link", { name: "Invite teammate" })
     ).toBeVisible()
+    await expect(
+      page.getByRole("list", { name: "Setup checklist" }).getByRole("listitem")
+    ).toHaveCount(2)
   })
 })
 
@@ -42,9 +45,12 @@ test.describe("as a viewer", () => {
     await expect(
       page.getByRole("region", { name: "Security health" })
     ).toHaveCount(0)
+    // Its one step is the headline, so there is no checklist to repeat it.
+    await expect(page.getByRole("heading", { name: "Next up" })).toBeVisible()
+    await expect(page.getByText("Turn on two-factor")).toHaveCount(1)
     await expect(
       page.getByRole("list", { name: "Setup checklist" })
-    ).toBeVisible()
+    ).toHaveCount(0)
     // Two-factor is optional for a viewer: recommended, never "required".
     await expect(page.getByText(/^Recommended\./)).toBeVisible()
   })

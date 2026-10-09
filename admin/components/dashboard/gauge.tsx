@@ -8,7 +8,7 @@ import { ChartContainer, type ChartConfig } from "@/components/ui/chart"
 import { cn } from "@/lib/utils"
 
 import { gaugeSummary, type GaugePart } from "./chart-math"
-import { formatNumber, formatPercent } from "./format"
+import { formatNumber, formatShare } from "./format"
 
 const SWATCH: Record<GaugePart["tone"], string> = {
   solid: "bg-chart-2",
@@ -116,7 +116,7 @@ export function Gauge({
         </ChartContainer>
         <div className="absolute inset-x-0 bottom-0 flex flex-col items-center">
           <p className="text-kpi tabular-nums">
-            {formatPercent(summary.ratio)}
+            {formatShare(summary.headline, summary.total)}
           </p>
           <p className="text-sm text-muted-foreground">{centerLabel}</p>
         </div>

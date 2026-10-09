@@ -23,7 +23,8 @@ import {
   StatusPill,
   toneForStatus,
 } from "@/admin/components/dashboard/status-pill"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 
 import {
   SAMPLE_CONTENT_HEALTH,
@@ -96,14 +97,14 @@ export function Showcase() {
                   Asked about online sessions · today, 14:00
                 </p>
               </div>
-              <Button
-                className={PRIMARY_ACTION}
-                nativeButton={false}
-                render={<Link href="/admin/leads" />}
+              <Link
+                href="/admin/leads"
+                data-slot="button"
+                className={cn(buttonVariants(), PRIMARY_ACTION)}
               >
                 <InboxIcon data-icon="inline-start" />
                 Open enquiry
-              </Button>
+              </Link>
             </div>
           </DashboardCard>
         </div>

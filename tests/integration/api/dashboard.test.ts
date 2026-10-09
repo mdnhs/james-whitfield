@@ -2,7 +2,9 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest"
 
 import type { Actor } from "@/server/auth/actor"
 import { closeDb, getDb } from "@/server/db/client"
-import { auditLogs } from "@/server/db/schema"
+import { eq } from "drizzle-orm"
+
+import { auditLogs, users } from "@/server/db/schema"
 import { getDashboard } from "@/server/modules/dashboard/service"
 import { weekWindow } from "@/server/modules/dashboard/week"
 
@@ -105,7 +107,8 @@ describe("GET /api/v1/admin/dashboard", () => {
       optionalMissing: 1,
       total: 3,
     })
-    expect(body.changes.value).toBeGreaterThanOrEqual(1)
+    // The owner's sign-in is activity, not a change.
+    expect(body.changes).toEqual({ value: 0, previous: 0 })
     expect(body.recentActivity[0]).toMatchObject({
       action: "auth.sign_in",
       actorName: "owner",
@@ -115,6 +118,75 @@ describe("GET /api/v1/admin/dashboard", () => {
       expect.objectContaining({ id: "two-factor", done: true }),
       expect.objectContaining({ id: "invite", done: true }),
     ])
+  })
+})
+
+describe("changes this week", () => {
+  it("counts content and admin changes, never auth.* rows", async () => {
+    const owner = await createUser("owner")
+    const cookie = await signInWithTwoFactor("owner@example.com")
+    await getDb().delete(auditLogs)
+    const week = weekWindow(new Date())
+    await signedIn(owner.id, at(week.start, HOUR))
+    await getDb()
+      .insert(auditLogs)
+      .values({
+        actorId: owner.id,
+        action: "auth.impersonate",
+        entityType: "user",
+        summary: "Viewed as someone",
+        createdAt: at(week.start, HOUR),
+      })
+
+    expect((await dashboard(cookie)).changes).toEqual({
+      value: 0,
+      previous: 0,
+    })
+
+    await getDb()
+      .insert(auditLogs)
+      .values({
+        actorId: owner.id,
+        action: "user.invite",
+        entityType: "user",
+        summary: "Invited someone",
+        createdAt: at(week.start, HOUR),
+      })
+
+    expect((await dashboard(cookie)).changes).toEqual({
+      value: 1,
+      previous: 0,
+    })
+  })
+})
+
+describe("security health", () => {
+  it("counts a user whose ban has expired, not one still banned", async () => {
+    await createUser("owner")
+    const lapsed = await createUser("editor")
+    const banned = await createUser("viewer")
+    const forever = await createUser("author")
+    const cookie = await signInWithTwoFactor("owner@example.com")
+    const hour = (sign: number) => new Date(Date.now() + sign * HOUR)
+    await getDb()
+      .update(users)
+      .set({ banned: true, banExpires: hour(-1) })
+      .where(eq(users.id, lapsed.id))
+    await getDb()
+      .update(users)
+      .set({ banned: true, banExpires: hour(1) })
+      .where(eq(users.id, banned.id))
+    await getDb()
+      .update(users)
+      .set({ banned: true, banExpires: null })
+      .where(eq(users.id, forever.id))
+
+    expect((await dashboard(cookie)).security).toEqual({
+      protected: 1,
+      requiredMissing: 0,
+      optionalMissing: 1,
+      total: 2,
+    })
   })
 })
 

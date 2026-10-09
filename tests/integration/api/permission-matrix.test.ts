@@ -58,9 +58,42 @@ describe.each(ROLE_NAMES)("can() for %s", (role) => {
     expect(response.status).toBe(200)
   })
 
-  it("GET /dashboard → 200 (dashboard.view)", async () => {
+  // People and audit details only for user.list / audit.read (owner and
+  // admin, docs/brief.md §7.2); every other role gets aggregates.
+  it(`GET /dashboard → 200, ${MATRIX[role].audit === 200 ? "details" : "aggregates only"}`, async () => {
     const response = await adminRequest("/dashboard", await cookieFor(role))
     expect(response.status).toBe(200)
+    const body = await response.json()
+    expect(body.activeUsers).toEqual({
+      value: expect.any(Number),
+      previous: expect.any(Number),
+    })
+    expect(body.signIns.days).toHaveLength(7)
+    if (MATRIX[role].audit === 200) {
+      expect(body.security).toEqual({
+        protected: expect.any(Number),
+        requiredMissing: expect.any(Number),
+        optionalMissing: expect.any(Number),
+        total: expect.any(Number),
+      })
+      expect(body.changes).toEqual({
+        value: expect.any(Number),
+        previous: expect.any(Number),
+      })
+      expect(body.recentActivity).toEqual(expect.any(Array))
+      expect(body.recentActivity.length).toBeGreaterThan(0)
+      expect(body.nextUp.map((item: { id: string }) => item.id)).toEqual([
+        "two-factor",
+        "invite",
+      ])
+    } else {
+      expect(body.security).toBeNull()
+      expect(body.changes).toBeNull()
+      expect(body.recentActivity).toBeNull()
+      expect(body.nextUp.map((item: { id: string }) => item.id)).toEqual([
+        "two-factor",
+      ])
+    }
   })
 })
 

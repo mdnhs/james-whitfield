@@ -106,9 +106,9 @@ export async function getDashboard(
     repo.signInsByDay(week.previousStart, week.end),
     repo.distinctSignedIn(monthAgo, now),
     repo.distinctSignedIn(twoMonthsAgo, monthAgo),
-    canListUsers || canInvite ? repo.activeAccounts() : null,
-    canAudit ? repo.auditCount(week.start, week.end) : null,
-    canAudit ? repo.auditCount(week.previousStart, week.start) : null,
+    canListUsers || canInvite ? repo.activeAccounts(now) : null,
+    canAudit ? repo.changeCount(week.start, week.end) : null,
+    canAudit ? repo.changeCount(week.previousStart, week.start) : null,
     canAudit ? repo.recentAudit(8) : null,
   ])
 

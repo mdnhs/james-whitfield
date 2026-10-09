@@ -39,11 +39,19 @@ const collection = (slug: string, label: string): NavLink => ({
   permission: { collection: ["read"] },
 })
 
-const setting = (slug: string, label: string): NavLink => ({
+// docs/brief.md §6.4 and §7.2: the site frame (identity, notifications,
+// privacy) is `settings`, owner and admin only; the content keys (contact,
+// navigation, footer, contact form and microcopy) are `globals`, which
+// editors, marketers and viewers hold too.
+const setting = (
+  slug: string,
+  label: string,
+  resource: "settings" | "globals"
+): NavLink => ({
   id: `settings-${slug}`,
   label,
   href: `/admin/settings/${slug}`,
-  permission: { settings: ["read"] },
+  permission: { [resource]: ["read"] },
 })
 
 export const NAV: readonly NavItem[] = [
@@ -201,16 +209,19 @@ export const NAV: readonly NavItem[] = [
     group: "general",
     label: "Site settings",
     href: "/admin/settings",
-    permission: { settings: ["read"] },
+    // The section opens for anyone who can open one of its pages. Every role
+    // with settings.read also holds globals.read, so this is the weaker of
+    // the two child gates.
+    permission: { globals: ["read"] },
     keywords: ["identity", "contact", "footer", "navigation", "privacy"],
     children: [
-      setting("identity", "Identity"),
-      setting("contact", "Contact & clinic"),
-      setting("navigation", "Navigation"),
-      setting("footer", "Footer"),
-      setting("forms", "Forms & microcopy"),
-      setting("notifications", "Notifications"),
-      setting("privacy", "Privacy"),
+      setting("identity", "Identity", "settings"),
+      setting("contact", "Contact & clinic", "globals"),
+      setting("navigation", "Navigation", "globals"),
+      setting("footer", "Footer", "globals"),
+      setting("forms", "Forms & microcopy", "globals"),
+      setting("notifications", "Notifications", "settings"),
+      setting("privacy", "Privacy", "settings"),
     ],
   },
   {

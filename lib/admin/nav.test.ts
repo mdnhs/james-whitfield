@@ -19,19 +19,35 @@ import {
 
 const ids = (role: RoleName) => visibleNav([role]).map((item) => item.id)
 
+const childIds = (role: RoleName, section: string) =>
+  visibleNav([role])
+    .find((item) => item.id === section)
+    ?.children?.map((child) => child.id)
+
+// The content globals (docs/brief.md §6.4, §7.2): globals.read, not
+// settings.read, so editors, marketers and viewers reach them.
+const GLOBALS_PAGES = [
+  "settings-contact",
+  "settings-navigation",
+  "settings-footer",
+  "settings-forms",
+]
+
 describe("visibleNav (docs/brief.md §7.2, §9.1)", () => {
   it("shows intake only the dashboard and enquiries", () => {
     expect(ids("intake")).toEqual(["dashboard", "leads"])
   })
 
-  it("shows a viewer read-only content sections and no settings", () => {
+  it("shows a viewer read-only content sections and only the globals", () => {
     expect(ids("viewer")).toEqual([
       "dashboard",
       "pages",
       "insights",
       "collections",
       "seo",
+      "settings",
     ])
+    expect(childIds("viewer", "settings")).toEqual(GLOBALS_PAGES)
     const seo = visibleNav(["viewer"]).find((item) => item.id === "seo")
     expect(seo?.children?.map((child) => child.id)).toEqual([
       "seo-overview",
@@ -49,7 +65,9 @@ describe("visibleNav (docs/brief.md §7.2, §9.1)", () => {
       "newsletter",
       "seo",
       "marketing",
+      "settings",
     ])
+    expect(childIds("marketer", "settings")).toEqual(GLOBALS_PAGES)
     const marketing = visibleNav(["marketer"]).find(
       (item) => item.id === "marketing"
     )
@@ -57,6 +75,16 @@ describe("visibleNav (docs/brief.md §7.2, §9.1)", () => {
       "marketing-tracking",
       "marketing-consent",
     ])
+  })
+
+  it("gives an editor the globals but not the site frame", () => {
+    expect(ids("editor")).toContain("settings")
+    expect(childIds("editor", "settings")).toEqual(GLOBALS_PAGES)
+  })
+
+  it("keeps author and intake out of site settings", () => {
+    expect(ids("author")).not.toContain("settings")
+    expect(ids("intake")).not.toContain("settings")
   })
 
   it("shows an owner everything, and an admin everything but custom code", () => {
@@ -67,6 +95,14 @@ describe("visibleNav (docs/brief.md §7.2, §9.1)", () => {
     expect(marketing?.children?.map((child) => child.id)).not.toContain(
       "marketing-code"
     )
+  })
+
+  // The Site settings section is gated on globals.read as the weaker of its
+  // children's gates; that only holds while settings.read implies it.
+  it.each(ROLE_NAMES)("%s: settings.read implies globals.read", (role) => {
+    if (hasPermission([role], { settings: ["read"] })) {
+      expect(hasPermission([role], { globals: ["read"] })).toBe(true)
+    }
   })
 
   it("merges several roles", () => {

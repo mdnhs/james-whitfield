@@ -1,7 +1,8 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { Suspense, useId } from "react"
+import { Suspense } from "react"
 
+import { TitledSection } from "@/admin/components/titled-section"
 import { linkForPath } from "@/lib/admin/nav"
 import { safeNext } from "@/lib/auth/safe-next"
 import { requireActor } from "@/server/auth/session"
@@ -29,20 +30,12 @@ async function NoAccess({ searchParams }: { searchParams: SearchParams }) {
   const { from } = await searchParams
   const target = safeNext(typeof from === "string" ? from : null)
   const link = linkForPath(target.split(/[?#]/)[0])
-  return <NoAccessNotice label={link?.label} />
-}
-
-function NoAccessNotice({ label }: { label?: string }) {
-  // useId, not a fixed id: hidden routes stay in the DOM under <Activity>.
-  const titleId = useId()
   return (
-    <section
-      aria-labelledby={titleId}
+    <TitledSection
+      title={<>You don&apos;t have access to {link?.label ?? "this page"}</>}
       className="mx-auto flex max-w-md flex-col items-center gap-4 py-16 text-center"
+      titleClassName="text-card-title"
     >
-      <h1 id={titleId} className="text-card-title">
-        You don&apos;t have access to {label ?? "this page"}
-      </h1>
       <p className="text-sm text-muted-foreground">
         Your role doesn&apos;t include it. Ask an owner or admin if you need it.
       </p>
@@ -52,6 +45,6 @@ function NoAccessNotice({ label }: { label?: string }) {
       >
         Back to the dashboard
       </Link>
-    </section>
+    </TitledSection>
   )
 }

@@ -1,9 +1,10 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { Suspense, useId } from "react"
+import { Suspense } from "react"
 
-import { linkForPath, permissionFor } from "@/lib/admin/nav"
+import { TitledSection } from "@/admin/components/titled-section"
+import { linkForPath } from "@/lib/admin/nav"
 import { requireActor, requirePermission } from "@/server/auth/session"
 
 export const metadata: Metadata = { title: "Coming soon" }
@@ -28,24 +29,13 @@ async function Section({ params }: { params: Promise<Params> }) {
   await requireActor(path)
   const link = linkForPath(path)
   if (!link) notFound()
-  // The same lookup a built page uses, so a stub and its replacement gate
-  // identically.
-  await requirePermission(permissionFor(path), path)
-  return <ComingSoon label={link.label} />
-}
-
-function ComingSoon({ label }: { label: string }) {
-  // Hidden routes stay in the DOM under <Activity>, so a fixed id could
-  // repeat and point aria-labelledby at the wrong heading.
-  const titleId = useId()
+  await requirePermission(link.permission, path)
   return (
-    <section
-      aria-labelledby={titleId}
+    <TitledSection
+      title={link.label}
       className="flex flex-col items-start gap-4"
+      titleClassName="text-title"
     >
-      <h1 id={titleId} className="text-title">
-        {label}
-      </h1>
       <p className="max-w-prose text-sm text-muted-foreground">
         This part of the admin arrives in a later release. Everything you can
         see in the menu is already set up for your role.
@@ -56,6 +46,6 @@ function ComingSoon({ label }: { label: string }) {
       >
         Back to the dashboard
       </Link>
-    </section>
+    </TitledSection>
   )
 }

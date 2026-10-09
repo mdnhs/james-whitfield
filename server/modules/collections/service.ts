@@ -11,7 +11,7 @@ import {
 import { ApiError, invalid } from "@/server/api/errors"
 import type { Actor } from "@/server/auth/actor"
 import { getDb } from "@/server/db/client"
-import { articles } from "@/server/db/schema"
+import { articleCategories, articles } from "@/server/db/schema"
 import { audit } from "@/server/lib/audit"
 import { invalidate, tags } from "@/server/lib/cache"
 import {
@@ -154,31 +154,56 @@ export async function updateItem(
   return toItem(name, updated, [])
 }
 
+// Usage check and delete share one transaction. LOCK TABLE pages (share row
+// exclusive) makes a concurrent page save or create wait until we commit, so
+// no reference can appear between the check and the delete; the row itself
+// is locked FOR UPDATE.
 export async function deleteItem(
   actor: Actor,
   name: CollectionSlug,
   id: string
 ) {
   const e = entryFor(name)
-  const db = getDb()
-  const row = await findItem(name, id)
-  const { named } = (await collectionUsage(db))(e.tag, id)
-  if (named.length > 0) {
-    throw new ApiError(
-      "CONFLICT",
-      `Still used on ${named.join(", ")}`,
-      undefined,
-      { usedOn: named }
+  await getDb().transaction(async (tx) => {
+    await tx.execute(sql`lock table pages in share row exclusive mode`)
+    const [row] = await tx
+      .select()
+      .from(e.table)
+      .where(eq(e.table.id, id))
+      .for("update")
+      .limit(1)
+    if (!row) throw new ApiError("NOT_FOUND", "That item doesn't exist")
+    const { named } = (await collectionUsage(tx))(e.tag, id)
+    // Foreign keys from other tables: categories point at a service.
+    const used = [...named]
+    if (name === "services") {
+      const cats = await tx
+        .select({ name: articleCategories.name })
+        .from(articleCategories)
+        .where(eq(articleCategories.relatedServiceId, id))
+      used.push(...cats.map((c) => `Category: ${c.name}`))
+    }
+    if (used.length > 0) {
+      throw new ApiError(
+        "CONFLICT",
+        `Still used on ${used.join(", ")}`,
+        undefined,
+        { usedOn: used }
+      )
+    }
+    await tx.delete(e.table).where(eq(e.table.id, id))
+    await audit(
+      actor,
+      {
+        action: "collection.delete",
+        entityType: name,
+        entityId: id,
+        summary: `Deleted "${titleOf(name, row)}" from ${name}`,
+      },
+      tx
     )
-  }
-  await db.delete(e.table).where(eq(e.table.id, id))
-  await audit(actor, {
-    action: "collection.delete",
-    entityType: name,
-    entityId: id,
-    summary: `Deleted "${titleOf(name, row)}" from ${name}`,
   })
-  invalidate([tags.collection(e.tag)])
+  invalidate([tags.collection(entryFor(name).tag)])
   return { ok: true as const }
 }
 

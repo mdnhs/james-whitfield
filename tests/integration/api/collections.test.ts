@@ -8,9 +8,10 @@ vi.mock("next/cache", async (importOriginal) => ({
 }))
 
 import { ROLE_NAMES, type RoleName } from "@/lib/auth/permissions"
+import { ICON_NAMES } from "@/lib/icons"
 import { COLLECTION_NAMES, COLLECTION_SCHEMAS } from "@/lib/content/collections"
 import { closeDb, getDb } from "@/server/db/client"
-import { faqs } from "@/server/db/schema"
+import { articleCategories, faqs } from "@/server/db/schema"
 import { seedContent } from "@/server/db/seed"
 import { listItems } from "@/server/modules/collections/service"
 
@@ -153,6 +154,72 @@ describe("collections API", () => {
         })
       ).status
     ).toBe(200)
+  })
+
+  it("blocks deleting a cta band a page names (bandId), draft-only references included", async () => {
+    const cookie = await cookieFor("editor")
+    const asset = await insertMedia()
+    const band = await (
+      await create(cookie, "cta-bands", {
+        name: "B",
+        eyebrow: "E",
+        title: "T",
+        bullets: ["One"],
+        cta: { label: "Book", href: "/contact" },
+        image: { mediaId: asset.id },
+        tint: 0.5,
+        isVisible: true,
+      })
+    ).json()
+    // published: false -> the reference lives only in the draft
+    await insertPage({
+      path: "/promo",
+      document: {
+        blocks: [
+          {
+            id: "promo-band",
+            type: "band",
+            anchor: "band",
+            chapter: null,
+            hidden: false,
+            joinPrevious: false,
+            data: { bandId: band.id, tint: null },
+          },
+        ],
+      },
+    })
+    const blocked = await adminRequest(
+      `/collections/cta-bands/${band.id}`,
+      cookie,
+      { method: "DELETE" }
+    )
+    expect(blocked.status).toBe(409)
+    expect((await blocked.json()).error.details.usedOn).toEqual(["Test page"])
+  })
+
+  it("blocks deleting a service an article category points at", async () => {
+    const cookie = await cookieFor("editor")
+    const service = await (
+      await create(cookie, "services", {
+        slug: "calm",
+        title: "Calm",
+        body: "Body",
+        icon: ICON_NAMES[0],
+        isVisible: true,
+      })
+    ).json()
+    await getDb()
+      .insert(articleCategories)
+      .values({ slug: "sleep", name: "Sleep", relatedServiceId: service.id })
+    const blocked = await adminRequest(
+      `/collections/services/${service.id}`,
+      cookie,
+      { method: "DELETE" }
+    )
+    expect(blocked.status).toBe(409)
+    expect((await blocked.json()).error.details.usedOn).toEqual([
+      "Category: Sleep",
+    ])
   })
 
   // P3 carries: seeded rows obey the write schemas, and a re-seed never

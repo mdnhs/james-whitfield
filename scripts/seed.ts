@@ -2,7 +2,7 @@ import { closeDb } from "@/server/db/client"
 import { seedContent } from "@/server/db/seed"
 
 // A production run is explicit. So is a run against a database that cannot be
-// shown to be disposable: with SITE_ENV unset, only a name ending _dev, _test
+// shown to be disposable: outside SITE_ENV development/test, only a name ending _dev, _test
 // or _e2e passes without --allow-production.
 const databaseName = (() => {
   try {
@@ -13,7 +13,8 @@ const databaseName = (() => {
 })()
 const unsafe =
   process.env.SITE_ENV === "production" ||
-  (!process.env.SITE_ENV && !/_(dev|test|e2e)$/.test(databaseName))
+  (!["development", "test"].includes(process.env.SITE_ENV ?? "") &&
+    !/_(dev|test|e2e)$/.test(databaseName))
 if (unsafe && !process.argv.includes("--allow-production")) {
   console.error(
     `[seed] refusing to run (SITE_ENV=${process.env.SITE_ENV ?? "unset"}, database "${databaseName}"); pass --allow-production to confirm`

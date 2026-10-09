@@ -1,3 +1,5 @@
+import { ARTICLE_BODIES, type Block } from "./article-bodies"
+
 export const INSIGHTS_HERO = {
   title: "Insights",
   subtitle:
@@ -26,7 +28,7 @@ export type Article = {
 
 const img = (path: string) => `/images/${path}.png`
 
-export const FEATURED_ARTICLE: Article & { readTime: string } = {
+export const FEATURED_ARTICLE: Article = {
   slug: "why-pushing-harder-keeps-you-stuck",
   category: "Coaching",
   title:
@@ -36,7 +38,6 @@ export const FEATURED_ARTICLE: Article & { readTime: string } = {
   image: img("insights/post-listen-back"),
   author: { name: "Magda Kennedy", avatar: img("insights/avatar-featured") },
   date: { label: "2nd Sep, 2026", iso: "2026-09-02" },
-  readTime: "8 min read",
 }
 
 // Newest first.
@@ -101,6 +102,34 @@ export const ARTICLES: Article[] = [
     date: { label: "14th Jul, 2026", iso: "2026-07-14" },
   },
 ]
+
+// Every article that has its own page, featured first.
+export const ALL_ARTICLES = [FEATURED_ARTICLE, ...ARTICLES]
+
+export const getArticle = (slug: string) =>
+  ALL_ARTICLES.find((article) => article.slug === slug)
+
+export const getArticleBody = (slug: string): Block[] =>
+  ARTICLE_BODIES[slug] ?? []
+
+// Reading time at roughly 220 words a minute.
+export function readTime(slug: string) {
+  const words = getArticleBody(slug)
+    .flatMap((block) => (block.type === "list" ? block.items : [block.text]))
+    .join(" ")
+    .split(/\s+/).length
+  return `${Math.max(1, Math.round(words / 220))} min read`
+}
+
+// Same category first, then the newest of the rest.
+export function relatedArticles(slug: string, count = 3) {
+  const current = getArticle(slug)
+  const others = ALL_ARTICLES.filter((article) => article.slug !== slug)
+  return [
+    ...others.filter((article) => article.category === current?.category),
+    ...others.filter((article) => article.category !== current?.category),
+  ].slice(0, count)
+}
 
 export const PAGE_SIZE = 6
 

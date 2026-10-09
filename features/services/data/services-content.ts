@@ -54,7 +54,8 @@ export type Plan = {
   unit: string
   summary: string
   features: string[]
-  cta: { label: string; href: string }
+  // Opens the contact form with this plan pre-filled.
+  cta: { label: string }
   // The highlighted plan: dark card, "Most chosen" tag, clay button.
   featured?: boolean
 }
@@ -72,7 +73,7 @@ export const FORMATS = {
       summary:
         "A relaxed, confidential conversation to see whether we are the right fit.",
       features: ["Video or phone", "Explore your goals", "Zero obligation"],
-      cta: { label: "Book a Free Call", href: "/contact" },
+      cta: { label: "Book a Free Call" },
     },
     {
       name: "Change Programme",
@@ -86,7 +87,7 @@ export const FORMATS = {
         "Between-session check-ins",
         "Lifetime access to tools",
       ],
-      cta: { label: "Start the Programme", href: "/contact" },
+      cta: { label: "Start the Programme" },
       featured: true,
     },
     {
@@ -100,7 +101,7 @@ export const FORMATS = {
         "Personal recording",
         "Follow-up email summary",
       ],
-      cta: { label: "Book a Session", href: "/contact" },
+      cta: { label: "Book a Session" },
     },
   ] satisfies Plan[],
 }

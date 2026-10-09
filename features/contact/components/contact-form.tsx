@@ -1,10 +1,17 @@
 "use client"
 
 import Image from "next/image"
-import { useRef, useState } from "react"
+import { Suspense, useRef, useState } from "react"
+import { useQueryStates } from "nuqs"
 
 import { cn } from "@/lib/utils"
 import { CONTACT_FORM } from "../data/contact-content"
+import {
+  contactParams,
+  FORMAT_BY_SLUG,
+  PLAN_BY_SLUG,
+  TOPIC_BY_SLUG,
+} from "../data/contact-params"
 
 type Field = "name" | "email" | "topic" | "consent"
 type Errors = Partial<Record<Field, string>>
@@ -62,9 +69,43 @@ function FieldError({ id, message }: { id: string; message?: string }) {
   )
 }
 
+type Prefill = { topic?: string; format?: string; message?: string }
+
 // Enquiry form. No email service is connected yet, so a valid submission
 // confirms in place; send the FormData to the chosen provider in onSubmit.
+//
+// Links can pre-fill it (see contact-params). Reading the URL opts a
+// prerendered page out of static HTML up to the nearest Suspense boundary, so
+// the boundary sits inside the card: the card and its reveal stay static, and
+// the fields prerender blank before picking up the URL on load.
 export function ContactForm() {
+  return (
+    <div
+      data-motion="rise"
+      className="flex min-w-0 flex-1 flex-col gap-6 rounded-[28px] bg-white p-6 sm:p-12"
+    >
+      <Suspense fallback={<EnquiryForm prefill={{}} />}>
+        <PrefilledForm />
+      </Suspense>
+    </div>
+  )
+}
+
+function PrefilledForm() {
+  const [{ topic, format, plan }] = useQueryStates(contactParams)
+  const chosen = plan ? PLAN_BY_SLUG.get(plan) : undefined
+  const prefill: Prefill = {
+    topic: topic ? TOPIC_BY_SLUG.get(topic) : undefined,
+    format: format ? FORMAT_BY_SLUG.get(format) : undefined,
+    message: chosen
+      ? `I’d like to ask about the ${chosen.name} (${chosen.price} ${chosen.unit}).`
+      : undefined,
+  }
+  // Uncontrolled fields only read defaults on mount, so a new link remounts.
+  return <EnquiryForm key={`${topic}|${format}|${plan}`} prefill={prefill} />
+}
+
+function EnquiryForm({ prefill }: { prefill: Prefill }) {
   const { title, topics, formats, consent, submit, success } = CONTACT_FORM
   const [errors, setErrors] = useState<Errors>({})
   const [sent, setSent] = useState(false)
@@ -98,10 +139,7 @@ export function ContactForm() {
       : {}
 
   return (
-    <div
-      data-motion="rise"
-      className="flex min-w-0 flex-1 flex-col gap-6 rounded-[28px] bg-white p-6 sm:p-12"
-    >
+    <>
       <div className="flex flex-wrap items-end justify-between gap-2">
         <h2 className="font-display text-[28px] leading-[1.5] font-bold text-pine [font-variation-settings:'SOFT'_0,'WONK'_1] sm:text-[32px]">
           {title}
@@ -193,7 +231,7 @@ export function ContactForm() {
                 <select
                   id="topic"
                   name="topic"
-                  defaultValue=""
+                  defaultValue={prefill.topic ?? ""}
                   onChange={() => clear("topic")}
                   className={cn(
                     control,
@@ -234,7 +272,9 @@ export function ContactForm() {
                     type="radio"
                     name="format"
                     value={format}
-                    defaultChecked={i === 0}
+                    defaultChecked={
+                      prefill.format ? format === prefill.format : i === 0
+                    }
                     className="peer sr-only"
                   />
                   <span className="inline-flex rounded-full border border-[#dfe2d8] bg-white px-4.5 py-2.5 text-[14.5px] leading-[1.5] font-medium text-ink-muted/60 transition-colors duration-300 peer-checked:border-pine peer-checked:bg-pine peer-checked:text-cream peer-focus-visible:ring-3 peer-focus-visible:ring-clay/50 hover:border-pine/40">
@@ -251,6 +291,7 @@ export function ContactForm() {
               id="message"
               name="message"
               rows={5}
+              defaultValue={prefill.message}
               placeholder="Tell me a little about what is bringing you here…"
               className={cn(control, "h-35 resize-y py-3.5")}
             />
@@ -289,6 +330,6 @@ export function ContactForm() {
           </button>
         </form>
       )}
-    </div>
+    </>
   )
 }

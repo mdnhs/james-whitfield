@@ -7,6 +7,7 @@ import {
   Inter,
   Plus_Jakarta_Sans,
 } from "next/font/google"
+import { NuqsAdapter } from "nuqs/adapters/next/app"
 
 import "./globals.css"
 import { ScrollMotion } from "@/components/scroll-motion"
@@ -86,14 +87,16 @@ export default function RootLayout({
         <noscript>
           <style>{"[data-reveal]{visibility:visible!important}"}</style>
         </noscript>
-        <SmoothScroll>
-          <ThemeProvider>
-            <SiteHeader />
-            {children}
-            <SiteFooter />
-            <ScrollMotion />
-          </ThemeProvider>
-        </SmoothScroll>
+        <NuqsAdapter>
+          <SmoothScroll>
+            <ThemeProvider>
+              <SiteHeader />
+              {children}
+              <SiteFooter />
+              <ScrollMotion />
+            </ThemeProvider>
+          </SmoothScroll>
+        </NuqsAdapter>
       </body>
     </html>
   )

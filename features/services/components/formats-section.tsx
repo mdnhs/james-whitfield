@@ -3,7 +3,8 @@ import Link from "next/link"
 
 import { Eyebrow } from "@/components/eyebrow"
 import { Container } from "@/components/layout/container"
-import { cn } from "@/lib/utils"
+import { contactHref } from "@/features/contact/data/contact-params"
+import { cn, slugify } from "@/lib/utils"
 import { FORMATS, type Plan } from "../data/services-content"
 
 function PlanCard({ plan }: { plan: Plan }) {
@@ -102,7 +103,8 @@ function PlanCard({ plan }: { plan: Plan }) {
       </ul>
 
       <Link
-        href={cta.href}
+        // The form opens with this plan already mentioned.
+        href={contactHref({ plan: slugify(name) })}
         data-magnetic
         className={cn(
           "flex w-full items-center justify-center rounded-full px-7 py-4 text-[15px] leading-[1.5] font-semibold transition-colors duration-300",

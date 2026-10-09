@@ -3,12 +3,11 @@ import Link from "next/link"
 
 import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { FEATURED_ARTICLE } from "../data/articles"
+import { FEATURED_ARTICLE, readTime } from "../data/articles"
 import { Byline, CategoryTag } from "./article-card"
 
 export function FeaturedArticle() {
-  const { slug, title, excerpt, image, author, date, readTime } =
-    FEATURED_ARTICLE
+  const { slug, title, excerpt, image, author, date } = FEATURED_ARTICLE
   const href = `/insights/${slug}`
 
   return (
@@ -41,7 +40,7 @@ export function FeaturedArticle() {
         <div data-motion="rise" className="flex items-center gap-3">
           <CategoryTag className="h-7 px-3">Featured</CategoryTag>
           <span className="text-sm leading-[1.5] text-[#525252]">
-            {readTime}
+            {readTime(slug)}
           </span>
         </div>
         <div className="flex flex-col gap-3">

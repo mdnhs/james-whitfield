@@ -2,6 +2,8 @@ import path from "node:path"
 
 import { defineConfig } from "vitest/config"
 
+import { TEST_ENV } from "./tests/test-env"
+
 const root = import.meta.dirname
 
 export default defineConfig({
@@ -13,6 +15,7 @@ export default defineConfig({
     },
   },
   test: {
+    env: { ...TEST_ENV },
     projects: [
       {
         extends: true,
@@ -27,6 +30,19 @@ export default defineConfig({
             "tests/integration/**",
             "tests/e2e/**",
           ],
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: "integration",
+          environment: "node",
+          include: ["tests/integration/**/*.test.ts"],
+          globalSetup: ["tests/integration/setup/global-setup.ts"],
+          // One shared database: files run one after another.
+          fileParallelism: false,
+          hookTimeout: 30_000,
+          testTimeout: 30_000,
         },
       },
     ],

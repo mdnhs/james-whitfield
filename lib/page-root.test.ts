@@ -62,6 +62,15 @@ describe("findTarget", () => {
     expect(findTarget("contact")?.tagName).toBe("FOOTER")
   })
 
+  it("finds rendered chrome even when a hidden page has the same id first", () => {
+    document.body.innerHTML = `
+      <main data-page-root id="previous"><section id="contact"></section></main>
+      <main data-page-root id="current"></main>
+      <footer id="contact"></footer>`
+    markRendered("#current, footer")
+    expect(findTarget("contact")?.tagName).toBe("FOOTER")
+  })
+
   it("ignores ids that only exist in hidden pages", () => {
     document.body.innerHTML = `
       <main data-page-root id="previous"><section id="story"></section></main>

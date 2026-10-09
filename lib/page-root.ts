@@ -24,6 +24,10 @@ export function findTarget(
   const root = from?.closest<HTMLElement>(PAGE_ROOT) ?? activePageRoot()
   const inPage = root?.querySelector<HTMLElement>(byId(id))
   if (inPage) return inPage
-  const anywhere = document.getElementById(id)
-  return anywhere && isRendered(anywhere) ? anywhere : null
+  // A hidden page may hold the same id earlier in the DOM, so take the first
+  // rendered match rather than the first match.
+  for (const el of document.querySelectorAll<HTMLElement>(byId(id))) {
+    if (isRendered(el)) return el
+  }
+  return null
 }

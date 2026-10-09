@@ -3,25 +3,37 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest"
 
 import { getAuth } from "@/server/auth/auth"
 import { closeDb, getDb } from "@/server/db/client"
-import { auditLogs, sessions } from "@/server/db/schema"
+import { auditLogs, sessions, users } from "@/server/db/schema"
 
-import { createUser, ORIGIN, PASSWORD, signIn } from "../helpers/auth"
+import {
+  createUser,
+  ORIGIN,
+  PASSWORD,
+  signIn,
+  signInWithTwoFactor,
+  viewAs,
+} from "../helpers/auth"
 import { resetDb } from "../helpers/db"
 
 beforeEach(resetDb)
 afterAll(closeDb)
 
 // Over HTTP, as the Account page calls them: hooks see a real request.
-function post(path: string, cookie: string, body: unknown = {}) {
+function call(
+  path: string,
+  cookie: string,
+  body?: unknown,
+  method = body === undefined ? "GET" : "POST"
+) {
   return getAuth().handler(
     new Request(`${ORIGIN}/api/auth${path}`, {
-      method: "POST",
+      method,
       headers: {
         cookie,
         origin: ORIGIN,
         "content-type": "application/json",
       },
-      body: JSON.stringify(body),
+      body: body === undefined ? undefined : JSON.stringify(body),
     })
   )
 }
@@ -40,6 +52,9 @@ const accountRows = async () =>
     (row) => !row.action.startsWith("auth.")
   )
 
+const nameOf = async (id: string) =>
+  (await getDb().select().from(users).where(eq(users.id, id)))[0]
+
 // Two signed-in devices for one editor: `laptop` signed in first.
 async function editorOnTwoDevices() {
   const user = await createUser("editor")
@@ -49,24 +64,35 @@ async function editorOnTwoDevices() {
   return { user, laptop, phone, laptopToken, phoneToken }
 }
 
+// An owner viewing as the editor.
+async function ownerViewingAsEditor() {
+  const editor = await createUser("editor")
+  await createUser("owner")
+  const owner = await signInWithTwoFactor("owner@example.com")
+  return { editor, cookie: await viewAs(owner, editor.id) }
+}
+
 describe("changing a password", () => {
-  it("always signs the other devices out and audits it", async () => {
+  it("always signs the other devices out, audits it and returns no token", async () => {
     const { user, phone, laptopToken } = await editorOnTwoDevices()
 
-    const response = await post("/change-password", phone, {
+    const response = await call("/change-password", phone, {
       currentPassword: PASSWORD,
       newPassword: "a brand new passphrase",
       revokeOtherSessions: false,
     })
 
     expect(response.status).toBe(200)
+    expect((await response.json()).token).toBeNull()
+    // The rotated session cookie still reaches the browser.
+    expect(response.headers.get("set-cookie")).toMatch(/mk\.session_token=/)
     const remaining = await tokensOf(user.id)
     expect(remaining).toHaveLength(1)
     expect(remaining).not.toContain(laptopToken)
     const rows = await accountRows()
     expect(rows).toHaveLength(1)
     expect(rows[0]).toMatchObject({
-      action: "user.password_change",
+      action: "account.password_change",
       actorId: user.id,
       entityType: "user",
       entityId: user.id,
@@ -76,7 +102,7 @@ describe("changing a password", () => {
   it("audits nothing when the current password is wrong", async () => {
     const { user, phone } = await editorOnTwoDevices()
 
-    const response = await post("/change-password", phone, {
+    const response = await call("/change-password", phone, {
       currentPassword: "not the password at all",
       newPassword: "a brand new passphrase",
     })
@@ -85,71 +111,104 @@ describe("changing a password", () => {
     expect(await tokensOf(user.id)).toHaveLength(2)
     expect(await accountRows()).toEqual([])
   })
+
+  it("is refused during View-as", async () => {
+    const { editor, cookie } = await ownerViewingAsEditor()
+
+    const response = await call("/change-password", cookie, {
+      currentPassword: PASSWORD,
+      newPassword: "a brand new passphrase",
+    })
+
+    expect(response.status).toBe(403)
+    expect(await response.json()).toMatchObject({
+      code: "IMPERSONATION_READ_ONLY",
+    })
+    expect(await accountRows()).toEqual([])
+    // The editor's own password still works.
+    await expect(signIn(editor.email)).resolves.toMatch(/mk\.session_token=/)
+  })
 })
 
-describe("revoking a session", () => {
-  it("signs another of the user's devices out and audits it", async () => {
-    const { user, phone, laptopToken, phoneToken } = await editorOnTwoDevices()
+describe("updating the profile", () => {
+  it("saves a trimmed name and audits the change", async () => {
+    const { user, phone } = await editorOnTwoDevices()
 
-    const response = await post("/revoke-session", phone, {
-      token: laptopToken,
-    })
+    const response = await call("/update-user", phone, { name: "  Eddie  " })
 
     expect(response.status).toBe(200)
-    expect(await tokensOf(user.id)).toEqual([phoneToken])
+    expect((await nameOf(user.id)).name).toBe("Eddie")
     const rows = await accountRows()
     expect(rows).toHaveLength(1)
     expect(rows[0]).toMatchObject({
-      action: "session.revoke",
+      action: "account.profile_update",
       actorId: user.id,
-      entityType: "session",
+      entityType: "user",
+      entityId: user.id,
+      diff: { name: { from: "editor", to: "Eddie" } },
     })
-    // The audit row never stores the session token.
-    expect(JSON.stringify(rows[0])).not.toContain(laptopToken)
   })
 
-  it("refuses the current session (that is signing out)", async () => {
-    const { user, phone, phoneToken } = await editorOnTwoDevices()
+  it.each([
+    ["an empty name", { name: "   " }],
+    ["an over-long name", { name: "x".repeat(81) }],
+    ["an image", { name: "Ok", image: "https://example.com/me.png" }],
+    ["any other key", { name: "Ok", role: "owner" }],
+    ["no name", {}],
+  ])("refuses %s", async (_label, body) => {
+    const { user, phone } = await editorOnTwoDevices()
 
-    const response = await post("/revoke-session", phone, {
-      token: phoneToken,
-    })
+    const response = await call("/update-user", phone, body)
 
     expect(response.status).toBe(400)
-    expect(await response.json()).toMatchObject({ code: "CURRENT_SESSION" })
-    expect(await tokensOf(user.id)).toHaveLength(2)
+    expect(await response.json()).toMatchObject({ code: "INVALID_PROFILE" })
+    const row = await nameOf(user.id)
+    expect(row).toMatchObject({ name: "editor", image: null })
     expect(await accountRows()).toEqual([])
   })
 
-  it("refuses another user's session", async () => {
-    const { phone } = await editorOnTwoDevices()
-    const other = await createUser("viewer")
-    await signIn("viewer@example.com")
-    const [otherToken] = await tokensOf(other.id)
+  it("is refused during View-as", async () => {
+    const { editor, cookie } = await ownerViewingAsEditor()
 
-    const response = await post("/revoke-session", phone, {
-      token: otherToken,
+    const response = await call("/update-user", cookie, { name: "Hijacked" })
+
+    expect(response.status).toBe(403)
+    expect(await response.json()).toMatchObject({
+      code: "IMPERSONATION_READ_ONLY",
     })
+    expect((await nameOf(editor.id)).name).toBe("editor")
+  })
+})
 
-    expect(response.status).toBe(404)
-    expect(await response.json()).toMatchObject({ code: "SESSION_NOT_FOUND" })
-    expect(await tokensOf(other.id)).toEqual([otherToken])
-    expect(await accountRows()).toEqual([])
+describe("Better Auth's own session endpoints", () => {
+  // Devices are managed through /api/v1/admin/account/sessions, which never
+  // hands session tokens or IP addresses to the browser.
+  it.each([
+    ["/list-sessions", undefined],
+    ["/revoke-session", { token: "x" }],
+    ["/revoke-sessions", {}],
+    ["/revoke-other-sessions", {}],
+  ])("refuses %s over HTTP", async (path, body) => {
+    const { user, phone } = await editorOnTwoDevices()
+
+    const response = await call(path, phone, body)
+
+    expect(response.status).toBe(403)
+    expect(await response.json()).toMatchObject({
+      code: "SESSION_ENDPOINT_DISABLED",
+    })
+    expect(await tokensOf(user.id)).toHaveLength(2)
   })
 
-  it("audits signing out every other device", async () => {
-    const { user, phone, phoneToken } = await editorOnTwoDevices()
+  it("never returns the session token from get-session", async () => {
+    const { phone } = await editorOnTwoDevices()
 
-    const response = await post("/revoke-other-sessions", phone)
+    const response = await call("/get-session", phone)
 
     expect(response.status).toBe(200)
-    expect(await tokensOf(user.id)).toEqual([phoneToken])
-    const rows = await accountRows()
-    expect(rows).toHaveLength(1)
-    expect(rows[0]).toMatchObject({
-      action: "session.revoke",
-      actorId: user.id,
-      entityType: "session",
-    })
+    const body = await response.json()
+    expect(body.user.email).toBe("editor@example.com")
+    expect(body.session.id).toEqual(expect.any(String))
+    expect(body.session).not.toHaveProperty("token")
   })
 })

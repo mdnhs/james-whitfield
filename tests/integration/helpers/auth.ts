@@ -64,3 +64,19 @@ export function adminRequest(
     body: init.body === undefined ? undefined : JSON.stringify(init.body),
   })
 }
+
+// A View-as session: `cookie` is a signed-in owner or admin with 2FA.
+// Started server-side, as a Phase 10 View-as route will.
+export async function viewAs(cookie: string, userId: string) {
+  const started = await getAuth().api.impersonateUser({
+    body: { userId },
+    headers: new Headers({ cookie }),
+    asResponse: true,
+  })
+  if (started.status !== 200) throw new Error(`View-as: ${started.status}`)
+  return started.headers
+    .getSetCookie()
+    .map((value) => value.split(";")[0])
+    .filter((pair) => !pair.endsWith("="))
+    .join("; ")
+}

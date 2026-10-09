@@ -48,7 +48,14 @@ export function SchemaForm<S extends z.ZodObject>({
   })
 
   const submit = form.handleSubmit(async (values) => {
-    const result = await onSubmit(values as z.output<S>)
+    let result: SubmitResult
+    try {
+      result = await onSubmit(values as z.output<S>)
+    } catch (error) {
+      // A bug or an unexpected failure must not look like a silent no-op.
+      console.error("SchemaForm onSubmit failed", error)
+      result = { formError: "Something went wrong. Try again." }
+    }
     if (result?.fieldErrors) {
       for (const [name, messages] of Object.entries(result.fieldErrors)) {
         if (messages[0]) form.setError(name, { message: messages[0] })

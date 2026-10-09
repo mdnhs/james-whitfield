@@ -1,15 +1,13 @@
 import * as z from "zod"
 
 import { ui } from "@/admin/components/schema-form/registry"
+import { profileName } from "@/lib/account/profile"
 
-// Name only: an email change would need verification first, which this
-// phase does not build.
+// Name only (lib/account/profile.ts); the server enforces the same rule.
+// A clone carries the UI hints, so the shared rule stays metadata-free.
 export const ProfileSchema = z.object({
-  name: z
-    .string()
-    .trim()
-    .min(1, "Enter your name")
-    .max(80, "Use 80 characters or fewer")
+  name: profileName
+    .clone()
     .register(ui, { label: "Full name", autoComplete: "name" }),
 })
 

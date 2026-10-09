@@ -97,6 +97,62 @@ describe("SchemaForm", () => {
     )
   })
 
+  it("shows a form error when onSubmit throws", async () => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {})
+    const onSubmit = vi.fn(async () => {
+      throw new Error("boom")
+    })
+    render(
+      <SchemaForm
+        schema={Schema}
+        defaultValues={{
+          ...defaults,
+          name: "M",
+          password: "abcd",
+          confirm: "abcd",
+        }}
+        submitLabel="Save"
+        onSubmit={onSubmit}
+      />
+    )
+    await userEvent.click(screen.getByRole("button", { name: "Save" }))
+    expect(
+      await screen.findByText("Something went wrong. Try again.")
+    ).toBeTruthy()
+    expect(screen.getByRole("button", { name: "Save" })).toHaveProperty(
+      "disabled",
+      false
+    )
+    expect(logged).toHaveBeenCalled()
+    logged.mockRestore()
+  })
+
+  it("shows the error of a list item that fails validation", async () => {
+    const ListSchema = z.object({
+      tags: z
+        .array(z.string().max(5, "Keep each tag short"))
+        .register(ui, { label: "Tags" }),
+    })
+    const onSubmit = vi.fn()
+    render(
+      <SchemaForm
+        schema={ListSchema}
+        defaultValues={{ tags: ["ok", "far too long"] }}
+        submitLabel="Save"
+        onSubmit={onSubmit}
+      />
+    )
+    await userEvent.click(screen.getByRole("button", { name: "Save" }))
+    expect(await screen.findByText("Keep each tag short")).toBeTruthy()
+    expect(screen.getByLabelText("Tags 2").getAttribute("aria-invalid")).toBe(
+      "true"
+    )
+    expect(screen.getByLabelText("Tags 1").getAttribute("aria-invalid")).toBe(
+      null
+    )
+    expect(onSubmit).not.toHaveBeenCalled()
+  })
+
   it("shows field and form errors from the server", async () => {
     const onSubmit = vi.fn(async () => ({
       fieldErrors: { name: ["That name is taken"] },

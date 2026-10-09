@@ -25,9 +25,9 @@ test.describe("as an owner", () => {
           .getByRole("row")
           .filter({ has: page.locator("td") })
     await expect(rows.first()).toContainText("auth.sign_in")
-    for (const text of await rows.allTextContents()) {
-      expect(text).toContain("auth.sign_in")
-    }
+    // Retried: the previous page's rows stay on screen until the filtered
+    // page arrives, and other specs write non-sign-in rows meanwhile.
+    await expect(rows.filter({ hasNotText: "auth.sign_in" })).toHaveCount(0)
 
     await page.reload()
     await expect(page.getByRole("combobox", { name: "Action" })).toHaveText(

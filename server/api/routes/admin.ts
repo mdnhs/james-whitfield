@@ -2,6 +2,7 @@ import "server-only"
 
 import { Hono } from "hono"
 
+import { accountRoutes } from "@/server/modules/account/routes"
 import { auditRoutes } from "@/server/modules/audit/routes"
 import { dashboardRoutes } from "@/server/modules/dashboard/routes"
 import { searchRoutes } from "@/server/modules/search/routes"
@@ -22,3 +23,4 @@ export const adminRoutes = new Hono<AppEnv>()
   .route("/dashboard", dashboardRoutes)
   .route("/audit", auditRoutes)
   .route("/users", usersRoutes)
+  .route("/account", accountRoutes)

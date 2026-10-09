@@ -11,6 +11,7 @@ export type ErrorCode =
   | "UNAUTHENTICATED"
   | "FORBIDDEN"
   | "TWO_FACTOR_REQUIRED" // owner/admin signed in but has not set up 2FA
+  | "IMPERSONATION_READ_ONLY" // account self-service during View-as
   | "NOT_FOUND"
   | "CONFLICT"
   | "PAYLOAD_TOO_LARGE"
@@ -24,6 +25,7 @@ const STATUS: Record<ErrorCode, ContentfulStatusCode> = {
   UNAUTHENTICATED: 401,
   FORBIDDEN: 403,
   TWO_FACTOR_REQUIRED: 403,
+  IMPERSONATION_READ_ONLY: 403,
   NOT_FOUND: 404,
   CONFLICT: 409,
   PAYLOAD_TOO_LARGE: 413,

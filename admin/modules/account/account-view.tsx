@@ -1,10 +1,11 @@
 "use client"
 
-import { ShieldCheckIcon } from "lucide-react"
+import { EyeIcon, ShieldCheckIcon } from "lucide-react"
 import Link from "next/link"
 import { parseAsStringLiteral, useQueryState } from "nuqs"
 
 import { DashboardCard } from "@/admin/components/dashboard/dashboard-card"
+import { EmptyState } from "@/admin/components/dashboard/empty-state"
 import { PageHeader } from "@/admin/components/dashboard/page-header"
 import { StatusPill } from "@/admin/components/dashboard/status-pill"
 import { useActor } from "@/admin/lib/actor-context"
@@ -20,11 +21,25 @@ import { ThemePreference } from "./theme-preference"
 const TABS = ["profile", "security", "sessions"] as const
 
 export function AccountView() {
-  const { user, twoFactorEnabled } = useActor()
+  const { user, twoFactorEnabled, impersonatedBy } = useActor()
   const [tab, setTab] = useQueryState(
     "tab",
     parseAsStringLiteral(TABS).withDefault("profile")
   )
+  // The server refuses account changes during View-as too (403
+  // IMPERSONATION_READ_ONLY); this spares the admin forms that cannot work.
+  if (impersonatedBy) {
+    return (
+      <div className="flex flex-col gap-6">
+        <PageHeader title="Account" description={user.email} />
+        <EmptyState
+          icon={EyeIcon}
+          title={`You're viewing as ${user.name}`}
+          description="Their profile, password and devices can only be changed by them. Stop viewing as them to manage your own account."
+        />
+      </div>
+    )
+  }
   return (
     <div className="flex flex-col gap-6">
       <PageHeader title="Account" description={user.email} />

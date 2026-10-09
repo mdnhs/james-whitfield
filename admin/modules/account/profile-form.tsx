@@ -22,6 +22,13 @@ export function ProfileForm() {
         const { failure } = await authRequest(() =>
           authClient.updateUser({ name })
         )
+        // The server checks the name with the same rule (lib/account/profile).
+        if (
+          failure?.kind === "rejected" &&
+          failure.code === "INVALID_PROFILE"
+        ) {
+          return { fieldErrors: { name: ["Check your name and try again."] } }
+        }
         if (failure) {
           return {
             formError:

@@ -40,6 +40,13 @@ import { Textarea } from "@/components/ui/textarea"
 import type { FormField } from "./to-fields"
 
 type Controlled = ControllerRenderProps<FieldValues, string>
+// An array's errors: its own (min/max items) and one per failing item,
+// keyed by index.
+type ListError = {
+  message?: string
+  root?: { message?: string }
+  [index: number]: { message?: string } | undefined
+}
 // The ref travels separately: React's lint treats any object carrying `ref`
 // as a ref, and reading `value` from it during render as a ref read.
 type RenderInput = Omit<Controlled, "ref">
@@ -72,11 +79,7 @@ export function FieldWidget({
       control={control}
       render={({ field: { ref, ...input }, fieldState }) =>
         field.widget === "list" ? (
-          <ListWidget
-            field={field}
-            input={input}
-            error={fieldState.error?.message}
-          />
+          <ListWidget field={field} input={input} error={fieldState.error} />
         ) : (
           <ScalarWidget
             field={field}
@@ -205,8 +208,12 @@ function ScalarWidget({
         value={input.value ?? ""}
         onBlur={input.onBlur}
         onChange={(event) =>
+          // Partial input ("-", "1e") reads as NaN: treat it as empty so
+          // Zod reports "required", not a confusing type error.
           input.onChange(
-            event.target.value === "" ? undefined : event.target.valueAsNumber
+            Number.isNaN(event.target.valueAsNumber)
+              ? undefined
+              : event.target.valueAsNumber
           )
         }
         {...aria}
@@ -278,12 +285,14 @@ function ScalarWidget({
 function ListWidget({
   field,
   input,
-  error,
+  error: errors,
 }: {
   field: FormField
   input: RenderInput
-  error?: string
+  error?: ListError
 }) {
+  const id = useId()
+  const error = errors?.message ?? errors?.root?.message
   const items: string[] = Array.isArray(input.value) ? input.value : []
   const min = field.minItems ?? 0
   const max = field.maxItems ?? Number.POSITIVE_INFINITY
@@ -298,52 +307,64 @@ function ListWidget({
     <FieldSet data-invalid={Boolean(error) || undefined}>
       <FieldLegend variant="label">{field.label}</FieldLegend>
       <ol className="flex flex-col gap-2">
-        {items.map((value, index) => (
-          <li key={index} className="flex items-center gap-2">
-            <Input
-              aria-label={`${field.label} ${index + 1}`}
-              value={value}
-              onBlur={input.onBlur}
-              onChange={(event) =>
-                set(
-                  items.map((item, i) =>
-                    i === index ? event.target.value : item
-                  )
-                )
-              }
-            />
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              aria-label={`Move ${field.label} ${index + 1} up`}
-              disabled={index === 0}
-              onClick={() => move(index, index - 1)}
-            >
-              <ChevronUpIcon aria-hidden />
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              aria-label={`Move ${field.label} ${index + 1} down`}
-              disabled={index === items.length - 1}
-              onClick={() => move(index, index + 1)}
-            >
-              <ChevronDownIcon aria-hidden />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              aria-label={`Remove ${field.label} ${index + 1}`}
-              disabled={items.length <= min}
-              onClick={() => set(items.filter((_, i) => i !== index))}
-            >
-              <TrashIcon aria-hidden />
-            </Button>
-          </li>
-        ))}
+        {items.map((value, index) => {
+          const itemError = errors?.[index]?.message
+          return (
+            <li key={index} className="flex flex-col gap-1">
+              <div className="flex items-center gap-2">
+                <Input
+                  aria-label={`${field.label} ${index + 1}`}
+                  aria-invalid={itemError ? true : undefined}
+                  aria-describedby={
+                    itemError ? `${id}-${index}-error` : undefined
+                  }
+                  value={value}
+                  onBlur={input.onBlur}
+                  onChange={(event) =>
+                    set(
+                      items.map((item, i) =>
+                        i === index ? event.target.value : item
+                      )
+                    )
+                  }
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  aria-label={`Move ${field.label} ${index + 1} up`}
+                  disabled={index === 0}
+                  onClick={() => move(index, index - 1)}
+                >
+                  <ChevronUpIcon aria-hidden />
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  aria-label={`Move ${field.label} ${index + 1} down`}
+                  disabled={index === items.length - 1}
+                  onClick={() => move(index, index + 1)}
+                >
+                  <ChevronDownIcon aria-hidden />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label={`Remove ${field.label} ${index + 1}`}
+                  disabled={items.length <= min}
+                  onClick={() => set(items.filter((_, i) => i !== index))}
+                >
+                  <TrashIcon aria-hidden />
+                </Button>
+              </div>
+              {itemError ? (
+                <FieldError id={`${id}-${index}-error`}>{itemError}</FieldError>
+              ) : null}
+            </li>
+          )
+        })}
       </ol>
       <div>
         <Button

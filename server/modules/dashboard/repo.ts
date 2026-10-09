@@ -39,12 +39,19 @@ export async function distinctSignedIn(from: Date, to: Date) {
 }
 
 // Content and admin changes only: auth.* rows (sign-ins, impersonation)
-// are activity, not changes.
+// and account.* rows (a person's own password, profile and devices) are
+// activity, not changes.
 export async function changeCount(from: Date, to: Date) {
   const [row] = await getDb()
     .select({ value: count() })
     .from(auditLogs)
-    .where(and(notLike(auditLogs.action, "auth.%"), between(from, to)))
+    .where(
+      and(
+        notLike(auditLogs.action, "auth.%"),
+        notLike(auditLogs.action, "account.%"),
+        between(from, to)
+      )
+    )
   return row?.value ?? 0
 }
 

@@ -1,7 +1,10 @@
+// Order matters: most browsers also claim "Chrome" or "Safari", so the
+// specific tokens (Edge, Opera, and the iOS and Android variants) go first.
 const BROWSERS: [RegExp, string][] = [
-  [/Edg\//, "Edge"],
-  [/Firefox\//, "Firefox"],
-  [/Chrome\//, "Chrome"],
+  [/Edg(A|iOS)?\//, "Edge"],
+  [/OPR\/|Opera/, "Opera"],
+  [/Firefox\/|FxiOS\//, "Firefox"],
+  [/Chrome\/|CriOS\//, "Chrome"],
   [/Safari\//, "Safari"],
 ]
 // Order matters: iOS and Android user agents also mention Mac and Linux.

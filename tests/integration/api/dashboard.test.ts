@@ -122,6 +122,33 @@ describe("GET /api/v1/admin/dashboard", () => {
 })
 
 describe("changes this week", () => {
+  it("never counts self-service account.* rows", async () => {
+    const owner = await createUser("owner")
+    const cookie = await signInWithTwoFactor("owner@example.com")
+    await getDb().delete(auditLogs)
+    const week = weekWindow(new Date())
+    for (const action of [
+      "account.password_change",
+      "account.session_revoke",
+      "account.profile_update",
+    ]) {
+      await getDb()
+        .insert(auditLogs)
+        .values({
+          actorId: owner.id,
+          action,
+          entityType: "user",
+          summary: action,
+          createdAt: at(week.start, HOUR),
+        })
+    }
+
+    expect((await dashboard(cookie)).changes).toEqual({
+      value: 0,
+      previous: 0,
+    })
+  })
+
   it("counts content and admin changes, never auth.* rows", async () => {
     const owner = await createUser("owner")
     const cookie = await signInWithTwoFactor("owner@example.com")

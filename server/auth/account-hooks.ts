@@ -7,48 +7,49 @@ import {
   getSessionFromCtx,
   isAPIError,
 } from "better-auth/api"
+import * as z from "zod"
 
+import { ProfileUpdate } from "@/lib/account/profile"
 import { audit, type AuditActor } from "@/server/lib/audit"
 
-// The Account page calls Better Auth's own user endpoints from the browser
-// (docs/brief.md §7.4). The server, not the client, decides what they may do
-// and writes the audit log (docs/brief.md §6.6), so a crafted request gets
-// the same rules and leaves the same trail.
+// The Account page changes the password and display name through Better
+// Auth's own endpoints (docs/brief.md §7.4). The server, not the client,
+// decides what they may do and writes the audit log (docs/brief.md §6.6), so
+// a crafted request meets the same rules and leaves the same trail. Devices
+// go through server/modules/account instead (see ./hooks.ts).
 
 type CallerSession = {
-  user: { id: string; email: string }
+  user: { id: string; email: string; name: string }
   session: {
-    token: string
     ipAddress?: string | null
     userAgent?: string | null
     impersonatedBy?: string | null
   }
 }
 
-const REVOKE_PATHS = new Set([
-  "/revoke-session",
-  "/revoke-other-sessions",
-  "/revoke-sessions",
-])
-
-const SUMMARIES: Record<string, string> = {
-  "/revoke-session": "Signed out of another device",
-  "/revoke-other-sessions": "Signed out of all other devices",
-  "/revoke-sessions": "Signed out of every device",
-}
+const SELF_SERVICE_PATHS = new Set(["/change-password", "/update-user"])
 
 function actorOf(session: CallerSession): AuditActor {
   return {
     userId: session.user.id,
     email: session.user.email,
-    // Set during View-as: the real user acting as `userId`.
-    impersonatedBy: session.session.impersonatedBy ?? null,
     ip: session.session.ipAddress ?? null,
     userAgent: session.session.userAgent ?? null,
   }
 }
 
 const before = createAuthMiddleware(async (ctx) => {
+  const session = (await getSessionFromCtx(ctx, {
+    disableCookieCache: true,
+  })) as CallerSession | null
+  // View-as shows what a role can see; it never acts for the person.
+  if (session?.session.impersonatedBy) {
+    throw new APIError("FORBIDDEN", {
+      code: "IMPERSONATION_READ_ONLY",
+      message: "Account settings can't be changed while viewing as someone",
+    })
+  }
+
   if (ctx.path === "/change-password") {
     // A changed password must end every other session: a leaked password
     // would otherwise keep working on whatever device used it.
@@ -57,56 +58,63 @@ const before = createAuthMiddleware(async (ctx) => {
     }
   }
 
-  // /revoke-session: Better Auth silently ignores a token that is not the
-  // caller's. Refuse it instead, so only a real revocation is audited, and
-  // keep the current session out of it (that is signing out).
-  const session = (await getSessionFromCtx(ctx, {
-    disableCookieCache: true,
-  })) as CallerSession | null
-  // No session: the endpoint refuses on its own.
-  if (!session) return
-  const token: unknown = ctx.body?.token
-  if (typeof token !== "string") return
-  if (token === session.session.token) {
+  // /update-user would also take `image`, and any length of name.
+  const parsed = ProfileUpdate.safeParse(ctx.body ?? {})
+  if (!parsed.success) {
     throw new APIError("BAD_REQUEST", {
-      code: "CURRENT_SESSION",
-      message: "Sign out to end the session on this device",
+      code: "INVALID_PROFILE",
+      message:
+        z.flattenError(parsed.error).fieldErrors.name?.[0] ??
+        "Only your name can be changed here",
     })
   }
-  const target = await ctx.context.internalAdapter.findSession(token)
-  if (!target || target.session.userId !== session.user.id) {
-    throw new APIError("NOT_FOUND", {
-      code: "SESSION_NOT_FOUND",
-      message: "That device is already signed out",
-    })
-  }
+  return { context: { body: parsed.data } }
 })
 
+type Returned = Record<string, unknown> & {
+  session?: Record<string, unknown> | null
+}
+
 const after = createAuthMiddleware(async (ctx) => {
-  const returned = ctx.context.returned
-  if (returned === undefined || isAPIError(returned)) return
-  // Read by the endpoint's session middleware before it ran; for a password
-  // change it is the session that made the change (since rotated).
+  const returned = ctx.context.returned as Returned | null | undefined
+  if (!returned || isAPIError(returned)) return
+
+  if (ctx.path === "/get-session") {
+    // The browser has no use for the raw token, so script never sees it.
+    if (!ctx.request || !returned.session) return
+    const session = { ...returned.session }
+    delete session.token
+    return ctx.json({ ...returned, session })
+  }
+
+  // Read by the endpoint's session middleware before it ran: the session
+  // that made the change, with the name it had before.
   const session = ctx.context.session as CallerSession | null
   if (!session) {
     console.error(`account-hooks: no session to audit ${ctx.path}`)
     return
   }
+
   if (ctx.path === "/change-password") {
     await audit(actorOf(session), {
-      action: "user.password_change",
+      action: "account.password_change",
       entityType: "user",
       entityId: session.user.id,
       summary: "Changed their password and signed out other devices",
     })
-    return
+    // The rotated session travels in its cookie, never in the body.
+    return ctx.json({ ...returned, token: null })
   }
+
+  // /update-user, its body already validated by `before`.
+  const name = (ctx.body as { name: string }).name
+  if (name === session.user.name) return
   await audit(actorOf(session), {
-    action: "session.revoke",
-    // Never the token: it is a credential.
-    entityType: "session",
-    entityId: null,
-    summary: SUMMARIES[ctx.path] ?? "Signed out of a device",
+    action: "account.profile_update",
+    entityType: "user",
+    entityId: session.user.id,
+    summary: "Changed their display name",
+    diff: { name: { from: session.user.name, to: name } },
   })
 })
 
@@ -116,15 +124,14 @@ export const accountHooks = () =>
     hooks: {
       before: [
         {
-          matcher: ({ path = "" }) =>
-            path === "/change-password" || path === "/revoke-session",
+          matcher: ({ path = "" }) => SELF_SERVICE_PATHS.has(path),
           handler: before,
         },
       ],
       after: [
         {
           matcher: ({ path = "" }) =>
-            path === "/change-password" || REVOKE_PATHS.has(path),
+            SELF_SERVICE_PATHS.has(path) || path === "/get-session",
           handler: after,
         },
       ],

@@ -29,7 +29,24 @@ const HTTP_ADMIN_PATHS = new Set(["/admin/stop-impersonating"])
 
 const isAdminPath = (path: string) => path.startsWith("/admin/")
 
+// Better Auth's own device endpoints hand every session's token and IP
+// address to the browser, and /list-sessions refuses sessions older than a
+// day (freshAge). Devices are managed through /api/v1/admin/account/sessions
+// instead (server/modules/account), which shows neither.
+const HTTP_SESSION_PATHS = new Set([
+  "/list-sessions",
+  "/revoke-session",
+  "/revoke-sessions",
+  "/revoke-other-sessions",
+])
+
 export const beforeHook = createAuthMiddleware(async (ctx) => {
+  if (ctx.request && HTTP_SESSION_PATHS.has(ctx.path)) {
+    throw new APIError("FORBIDDEN", {
+      code: "SESSION_ENDPOINT_DISABLED",
+      message: "Manage devices through the admin API",
+    })
+  }
   if (!isAdminPath(ctx.path)) return
   if (ctx.request && !HTTP_ADMIN_PATHS.has(ctx.path)) {
     throw new APIError("FORBIDDEN", {

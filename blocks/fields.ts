@@ -30,7 +30,6 @@ export const Href = z
   )
   // No backslashes or control characters (browsers strip tabs/newlines and
   // treat "\" as "/", which turns "/\evil.example" into a protocol-relative URL).
-  // eslint-disable-next-line no-control-regex
   .refine(
     (v) => !/[\\\u0000-\u001f\u007f]/.test(v),
     "Remove backslashes and control characters"

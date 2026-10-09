@@ -4,24 +4,20 @@ import { NuqsAdapter } from "nuqs/adapters/next/app"
 import { siteFontClassName } from "./(site)/fonts"
 import "./(site)/site.css"
 import { Container } from "@/components/layout/container"
-import { SiteFooter } from "@/features/footer"
-import { FOOTER } from "@/features/footer/data/footer-links"
-import { SiteHeader } from "@/features/navbar"
-import { NAVIGATION } from "@/features/navbar/data/nav-links"
-import { SITE } from "@/features/site/data/site"
 
 export const metadata: Metadata = {
   title: "Page not found",
 }
 
 // With several root layouts there is no top-level layout to wrap Next's 404,
-// so unmatched URLs render this page: the site chrome around a plain message.
+// so URLs no route matches render this page. It is prerendered, which cannot
+// wait for the database, so it carries no chrome; site 404s render
+// app/(site)/not-found.tsx inside the site layout, chrome included.
 export default function GlobalNotFound() {
   return (
     <html lang="en-IE" className={siteFontClassName}>
       <body>
         <NuqsAdapter>
-          <SiteHeader site={SITE} navigation={NAVIGATION} />
           <main data-page-root>
             <Container className="py-32 text-center">
               <h1 className="text-3xl font-semibold">Page not found</h1>
@@ -31,7 +27,6 @@ export default function GlobalNotFound() {
               </Link>
             </Container>
           </main>
-          <SiteFooter site={SITE} footer={FOOTER} navigation={NAVIGATION} />
         </NuqsAdapter>
       </body>
     </html>

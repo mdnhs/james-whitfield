@@ -42,7 +42,9 @@ const parsers = {
 
 const ACCEPT = "image/jpeg,image/png,image/webp,image/avif,application/pdf"
 
-type Progress = { name: string; fraction: number }
+type Progress = { id: number; name: string; fraction: number }
+type Failure = { id: number; file: File; message: string }
+let nextId = 0
 
 export function MediaView() {
   const queryClient = useQueryClient()
@@ -59,29 +61,37 @@ export function MediaView() {
   })
   const [openId, setOpenId] = useState<string | null>(null)
   const [uploads, setUploads] = useState<Progress[]>([])
-  const [failed, setFailed] = useState<{ file: File; message: string }[]>([])
+  const [failed, setFailed] = useState<Failure[]>([])
   const opened = list.data?.items.find((item) => item.id === openId) ?? null
 
   async function upload(files: File[]) {
-    const problems: { file: File; message: string }[] = []
     // One at a time: the server processes images with a small concurrency cap.
     for (const file of files) {
-      setUploads([{ name: file.name, fraction: 0 }])
-      try {
-        await uploadFile("/api/v1/admin/media", file, (fraction) =>
-          setUploads([{ name: file.name, fraction }])
+      const id = nextId++
+      const patch = (fraction: number) =>
+        setUploads((all) =>
+          all.some((u) => u.id === id)
+            ? all.map((u) => (u.id === id ? { ...u, fraction } : u))
+            : [...all, { id, name: file.name, fraction }]
         )
+      patch(0)
+      try {
+        await uploadFile("/api/v1/admin/media", file, patch)
       } catch (error) {
         const message =
           error instanceof ApiError ? error.message : "Upload failed"
         toast.error(`${file.name}: ${message}`)
-        // A busy server (503) is worth another go; the rest need a new file.
-        if (error instanceof ApiError && error.code === "UNAVAILABLE")
-          problems.push({ file, message })
+        // A busy server or a dropped connection is worth another go; the
+        // rest need a different file.
+        if (
+          error instanceof ApiError &&
+          (error.code === "UNAVAILABLE" || error.code === "NETWORK")
+        )
+          setFailed((all) => [...all, { id, file, message }])
+      } finally {
+        setUploads((all) => all.filter((u) => u.id !== id))
       }
     }
-    setUploads([])
-    setFailed(problems)
     await queryClient.invalidateQueries({ queryKey: queryKeys.media.all })
   }
 
@@ -126,15 +136,15 @@ export function MediaView() {
       ) : null}
       <div role="status" className="flex flex-col gap-1 text-sm">
         {uploads.map((u) => (
-          <p key={u.name}>
+          <p key={u.id}>
             Uploading {u.name}: {Math.round(u.fraction * 100)}%
           </p>
         ))}
       </div>
       {failed.length ? (
         <div role="alert" className="flex flex-col gap-2 text-sm">
-          {failed.map(({ file, message }) => (
-            <div key={file.name} className="flex flex-wrap items-center gap-2">
+          {failed.map(({ id, file, message }) => (
+            <div key={id} className="flex flex-wrap items-center gap-2">
               <span className="text-destructive">
                 {file.name}: {message}
               </span>
@@ -142,7 +152,10 @@ export function MediaView() {
                 type="button"
                 size="sm"
                 variant="outline"
-                onClick={() => void upload([file])}
+                onClick={() => {
+                  setFailed((all) => all.filter((f) => f.id !== id))
+                  void upload([file])
+                }}
               >
                 Retry
               </Button>

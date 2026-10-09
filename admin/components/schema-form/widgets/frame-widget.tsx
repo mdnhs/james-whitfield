@@ -1,7 +1,7 @@
 "use client"
 
 import { useQuery } from "@tanstack/react-query"
-import { useState } from "react"
+import { useRef, useState } from "react"
 import Cropper, { type Area } from "react-easy-crop"
 import {
   useController,
@@ -40,29 +40,63 @@ export function FrameWidget({
   })
   const [crop, setCrop] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
+  // The cropper reports its initial area on mount; only user moves are edits.
+  const touched = useRef(false)
+  const sliderId = `${field.name}-zoom`
   const src = media.data?.items[0]?.url
   return (
     <FieldSet>
       <FieldLegend variant="label">{field.label}</FieldLegend>
       {src ? (
-        <div className="relative h-64 overflow-hidden rounded-xl bg-muted">
-          <Cropper
-            image={src}
-            crop={crop}
-            zoom={zoom}
-            aspect={STEP_SLOT_ASPECT}
-            initialCroppedAreaPercentages={
-              input.value
-                ? frameToCropArea(input.value as StepFrame)
-                : undefined
-            }
-            onCropChange={setCrop}
-            onZoomChange={setZoom}
-            onCropComplete={(area: Area) =>
-              input.onChange(cropAreaToFrame(area))
-            }
-          />
-        </div>
+        <>
+          <div
+            role="group"
+            aria-label={`${field.label}: drag the image to move it, or use the zoom slider`}
+            className="relative h-64 overflow-hidden rounded-xl bg-muted"
+          >
+            <Cropper
+              key={src}
+              image={src}
+              crop={crop}
+              zoom={zoom}
+              aspect={STEP_SLOT_ASPECT}
+              initialCroppedAreaPercentages={
+                input.value
+                  ? frameToCropArea(input.value as StepFrame)
+                  : undefined
+              }
+              onCropChange={(next) => {
+                touched.current = true
+                setCrop(next)
+              }}
+              onZoomChange={(next) => {
+                touched.current = true
+                setZoom(next)
+              }}
+              onCropComplete={(area: Area) => {
+                if (touched.current) input.onChange(cropAreaToFrame(area))
+              }}
+            />
+          </div>
+          <div className="flex items-center gap-3">
+            <label htmlFor={sliderId} className="text-sm">
+              Zoom
+            </label>
+            <input
+              id={sliderId}
+              type="range"
+              min={1}
+              max={3}
+              step={0.05}
+              value={zoom}
+              className="flex-1"
+              onChange={(e) => {
+                touched.current = true
+                setZoom(Number(e.target.value))
+              }}
+            />
+          </div>
+        </>
       ) : (
         <FieldDescription>Choose the image first.</FieldDescription>
       )}

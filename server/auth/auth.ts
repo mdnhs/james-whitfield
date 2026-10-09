@@ -9,6 +9,7 @@ import { getDb } from "@/server/db/client"
 import * as schema from "@/server/db/schema"
 import { getEnv } from "@/server/env"
 import { audit } from "@/server/lib/audit"
+import { accountHooks } from "./account-hooks"
 import { deliverResetEmail } from "./email"
 import { afterHook, beforeHook } from "./hooks"
 import { signInAudit } from "./sign-in-audit"
@@ -102,6 +103,7 @@ export function buildAuth() {
       twoFactor({ issuer: "Magda Kennedy Admin" }),
       // After twoFactor: its hook must see the challenge replace the session.
       signInAudit(),
+      accountHooks(),
     ],
   })
 }

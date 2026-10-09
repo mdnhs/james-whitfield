@@ -26,6 +26,7 @@ import {
 import { Button, buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
+import { DemoForm } from "./demo-form"
 import {
   SAMPLE_CONTENT_HEALTH,
   SAMPLE_KPIS,
@@ -51,6 +52,7 @@ export function Showcase() {
   const dashboardId = `${ids}-dashboard`
   const statusId = `${ids}-status`
   const statesId = `${ids}-states`
+  const formId = `${ids}-form`
   return (
     <div className="flex flex-col gap-10">
       <PageHeader
@@ -139,6 +141,16 @@ export function Showcase() {
             </StatusPill>
           ))}
         </div>
+      </section>
+
+      <section
+        aria-labelledby={formId}
+        className="flex max-w-2xl flex-col gap-4"
+      >
+        <h2 id={formId} className="text-card-title">
+          Schema form
+        </h2>
+        <DemoForm />
       </section>
 
       <section aria-labelledby={statesId} className="flex flex-col gap-4">

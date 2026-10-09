@@ -1,3 +1,6 @@
 export * from "./audit"
 export * from "./auth"
+export * from "./content"
+export * from "./media"
+export * from "./pages"
 export * from "./settings"

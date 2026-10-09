@@ -11,4 +11,9 @@ describe("fill", () => {
       "4 min read {x}"
     )
   })
+  it("ignores inherited keys", () => {
+    expect(fill("{constructor} {toString}", {})).toBe(
+      "{constructor} {toString}"
+    )
+  })
 })

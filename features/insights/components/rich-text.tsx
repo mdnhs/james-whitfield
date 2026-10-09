@@ -21,7 +21,7 @@ function Inline({ nodes }: { nodes?: RichTextInline[] }) {
       }
       if (mark.type === "italic") out = <em>{out}</em>
       if (mark.type === "link") {
-        const href = Href.safeParse(mark.attrs.href)
+        const href = Href.safeParse(mark.attrs?.href)
         if (href.success) {
           out = (
             <Link

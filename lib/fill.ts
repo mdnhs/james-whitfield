@@ -4,5 +4,5 @@ export const fill = (
   values: Record<string, string | number>
 ) =>
   template.replace(/\{(\w+)\}/g, (match, key: string) =>
-    key in values ? String(values[key]) : match
+    Object.hasOwn(values, key) ? String(values[key]) : match
   )

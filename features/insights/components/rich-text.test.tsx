@@ -50,6 +50,51 @@ describe("RichText", () => {
     expect(container.textContent).toContain("talk")
   })
 
+  it("renders a link mark without attrs as plain text", () => {
+    const { container } = render(
+      <RichText doc={doc([{ type: "link" }], "talk")} />
+    )
+    expect(container.querySelector("a")).toBeNull()
+    expect(container.textContent).toContain("talk")
+  })
+
+  it("renders headings, blockquotes and bullet lists with their markup", () => {
+    const text = (value: string) => [{ type: "text", text: value }]
+    const { container } = render(
+      <RichText
+        doc={
+          {
+            type: "doc",
+            content: [
+              { type: "paragraph", content: text("Lead") },
+              {
+                type: "heading",
+                attrs: { level: 2 },
+                content: text("Title"),
+              },
+              {
+                type: "blockquote",
+                content: [{ type: "paragraph", content: text("Quote") }],
+              },
+              {
+                type: "bulletList",
+                content: ["One", "Two"].map((v) => ({
+                  type: "listItem",
+                  content: [{ type: "paragraph", content: text(v) }],
+                })),
+              },
+            ],
+          } as RichTextDoc
+        }
+      />
+    )
+    expect(container.querySelector("h2")?.textContent).toBe("Title")
+    expect(container.querySelector("blockquote p")?.textContent).toBe("Quote")
+    const items = [...container.querySelectorAll("ul > li")]
+    expect(items.map((li) => li.textContent)).toEqual(["One", "Two"])
+    expect(items[0].querySelector("span[aria-hidden]")).not.toBeNull()
+  })
+
   it("renders the first paragraph as the lead and bold marks as strong", () => {
     const { container } = render(
       <RichText doc={doc([{ type: "bold" }], "Bold.")} />

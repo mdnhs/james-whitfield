@@ -82,12 +82,13 @@ describe("GET /api/v1/admin/me", () => {
   })
 
   it("forwards a refreshed session cookie", async () => {
-    await createUser("viewer")
+    const user = await createUser("viewer")
     const cookie = await signIn("viewer@example.com")
     // Aging the session past updateAge (1 day) makes the next read refresh it.
     await getDb()
       .update(sessions)
       .set({ updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000) })
+      .where(eq(sessions.userId, user.id))
     const response = await adminRequest("/me", cookie)
 
     expect(response.status).toBe(200)

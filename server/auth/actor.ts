@@ -22,6 +22,8 @@ export type SessionLike = {
     name: string
     role?: string | null
     twoFactorEnabled?: boolean | null
+    banned?: boolean | null
+    banExpires?: Date | string | null
   }
   session: {
     id: string

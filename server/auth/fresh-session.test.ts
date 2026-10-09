@@ -1,3 +1,4 @@
+import { APIError } from "better-auth/api"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 const getSession = vi.fn()
@@ -10,12 +11,20 @@ beforeEach(() => {
 })
 
 describe("getFreshSession", () => {
-  it("treats a thrown Better Auth error as anonymous", async () => {
-    getSession.mockRejectedValue(new Error("session deleted"))
+  it("treats a Better Auth APIError as anonymous", async () => {
+    getSession.mockRejectedValue(new APIError("UNAUTHORIZED"))
     expect(await getFreshSession(new Headers())).toEqual({
       session: null,
       setCookies: [],
     })
+  })
+
+  it("logs and rethrows unexpected errors", async () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {})
+    getSession.mockRejectedValue(new Error("db down"))
+    await expect(getFreshSession(new Headers())).rejects.toThrow("db down")
+    expect(spy).toHaveBeenCalled()
+    spy.mockRestore()
   })
 
   it("always bypasses the cookie cache", async () => {

@@ -1,5 +1,7 @@
 import "server-only"
 
+import { isAPIError } from "better-auth/api"
+
 import { getAuth } from "./auth"
 import type { SessionLike } from "./actor"
 
@@ -37,8 +39,11 @@ export async function getFreshSession(headers: Headers): Promise<FreshSession> {
       session: response,
       setCookies: responseHeaders.getSetCookie(),
     }
-  } catch {
-    // e.g. the session was deleted mid-refresh: treat as signed out.
-    return ANONYMOUS
+  } catch (error) {
+    // Better Auth's APIError is the expected "session deleted/invalid" case.
+    if (isAPIError(error)) return ANONYMOUS
+    // Anything else (database outage, bug) must not look like "signed out".
+    console.error("getFreshSession failed", error)
+    throw error
   }
 }

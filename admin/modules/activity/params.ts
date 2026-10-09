@@ -22,10 +22,19 @@ export const loadActivityParams = createLoader(activityParsers)
 
 // The one date helper. parseAsIsoDate reads YYYY-MM-DD as UTC midnight, so
 // slicing the ISO string gives the same calendar day back (and a date input
-// the value it expects).
-export const toDay = (date: Date | null) =>
-  date ? date.toISOString().slice(0, 10) : undefined
+// the value it expects). An Invalid Date (a date input can hold a six-digit
+// year) is no day at all.
+export function toDay(date: Date | null) {
+  if (!date || Number.isNaN(date.getTime())) return undefined
+  const day = date.toISOString().slice(0, 10)
+  // Years beyond 9999 serialise as "+275759-12"; that is not a day either.
+  return /^\d{4}-\d{2}-\d{2}$/.test(day) ? day : undefined
+}
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+// URL state is hand-editable and shareable: anything the API would reject is
+// dropped here so a bad link shows sensible results, not a raw 400.
 export function toAuditParams(state: {
   page: number
   pageSize: number
@@ -34,12 +43,16 @@ export function toAuditParams(state: {
   from: Date | null
   to: Date | null
 }): AuditListParams {
+  const action = state.action?.trim()
+  let from = toDay(state.from)
+  let to = toDay(state.to)
+  if (from && to && from > to) [from, to] = [to, from]
   return {
-    page: Math.max(1, Math.trunc(state.page)),
-    pageSize: Math.min(100, Math.max(1, Math.trunc(state.pageSize))),
-    action: state.action ?? undefined,
-    actor: state.actor ?? undefined,
-    from: toDay(state.from),
-    to: toDay(state.to),
+    page: Math.max(1, Math.trunc(state.page) || 1),
+    pageSize: Math.min(100, Math.max(1, Math.trunc(state.pageSize) || 20)),
+    action: action && action.length <= 64 ? action : undefined,
+    actor: state.actor && UUID.test(state.actor) ? state.actor : undefined,
+    from,
+    to,
   }
 }

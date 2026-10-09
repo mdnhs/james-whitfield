@@ -46,6 +46,10 @@ function SelectTrigger({
       {...props}
     >
       {children}
+      {/* Local change to the generated file: with `render={<Icon/>}` Base UI
+          injects a "▼" text node into the svg, so the trigger's text reads
+          "value▼". Keep the icon as a child (re-apply after `shadcn add
+          select --overwrite`). */}
       <SelectPrimitive.Icon>
         <ChevronDownIcon
           aria-hidden

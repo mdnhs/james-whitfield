@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { ButtonGroup } from "@/components/ui/button-group"
 
 export function DataTablePagination({
-  page,
+  page: requested,
   pageSize,
   total,
   onPageChange,
@@ -18,6 +18,7 @@ export function DataTablePagination({
   onPageChange: (page: number) => void
 }) {
   const pageCount = Math.max(1, Math.ceil(total / pageSize))
+  const page = Math.min(requested, pageCount)
   const first = total === 0 ? 0 : (page - 1) * pageSize + 1
   const last = Math.min(total, page * pageSize)
   return (

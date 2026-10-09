@@ -10,6 +10,7 @@ import {
 } from "@tanstack/react-table"
 import { HistoryIcon } from "lucide-react"
 import { useQueryStates } from "nuqs"
+import { useEffect } from "react"
 
 import { EmptyState } from "@/admin/components/dashboard/empty-state"
 import { PageHeader } from "@/admin/components/dashboard/page-header"
@@ -43,6 +44,13 @@ const WHEN = new Intl.DateTimeFormat("en-IE", {
   minute: "2-digit",
   timeZone: "Europe/Dublin",
 })
+
+// An empty or unparseable input (a date field can hold a six-digit year)
+// clears the filter instead of putting an Invalid Date into the state.
+function parseDay(value: string) {
+  const date = new Date(value)
+  return value && toDay(date) ? date : null
+}
 
 const who = (row: AuditRow) => row.actorName ?? row.actorEmail ?? "System"
 
@@ -90,9 +98,25 @@ export function ActivityView() {
     state: { pagination },
     onPaginationChange: (updater) => {
       const next = functionalUpdate(updater, pagination)
-      void setState({ page: next.pageIndex + 1, pageSize: next.pageSize })
+      // Paging pushes history so Back steps through pages; filters replace.
+      void setState(
+        { page: next.pageIndex + 1, pageSize: next.pageSize },
+        { history: "push" }
+      )
     },
   })
+
+  // ?page=999 lands on the last page rather than an empty one.
+  const total = list.data?.total
+  const lastPage =
+    total === undefined
+      ? undefined
+      : Math.max(1, Math.ceil(total / params.pageSize))
+  useEffect(() => {
+    if (lastPage !== undefined && params.page > lastPage) {
+      void setState({ page: lastPage })
+    }
+  }, [lastPage, params.page, setState])
 
   const actionItems = [
     { value: ALL, label: "All actions" },
@@ -170,12 +194,10 @@ export function ActivityView() {
           <Input
             id="activity-from"
             type="date"
-            value={toDay(state.from) ?? ""}
-            onChange={(event) =>
-              filter({
-                from: event.target.value ? new Date(event.target.value) : null,
-              })
-            }
+            value={params.from ?? ""}
+            min={"1970-01-01"}
+            max={params.to ?? "9999-12-31"}
+            onChange={(event) => filter({ from: parseDay(event.target.value) })}
           />
         </Field>
         <Field className="w-[calc(50%-0.375rem)] sm:w-44">
@@ -183,12 +205,10 @@ export function ActivityView() {
           <Input
             id="activity-to"
             type="date"
-            value={toDay(state.to) ?? ""}
-            onChange={(event) =>
-              filter({
-                to: event.target.value ? new Date(event.target.value) : null,
-              })
-            }
+            value={params.to ?? ""}
+            min={params.from ?? "1970-01-01"}
+            max={"9999-12-31"}
+            onChange={(event) => filter({ to: parseDay(event.target.value) })}
           />
         </Field>
         <Button

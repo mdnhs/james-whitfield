@@ -46,7 +46,11 @@ export function DataTable<
         isFetching && "opacity-70"
       )}
     >
-      <ul aria-label={caption} className="flex flex-col gap-3 sm:hidden">
+      <ul
+        role="list"
+        aria-label={caption}
+        className="flex flex-col gap-3 sm:hidden"
+      >
         {rows.map((row) => (
           <li key={row.id} className="rounded-card bg-card p-4">
             {renderCard(row)}

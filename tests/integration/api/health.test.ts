@@ -46,7 +46,7 @@ describe("api core", () => {
   })
 
   it("lets small admin bodies through to routing", async () => {
-    const response = await app.request("/api/v1/admin/anything", {
+    const response = await app.request("/api/v1/admin/__nope", {
       method: "POST",
       body: "{}",
     })

@@ -13,7 +13,8 @@ export const health = new Hono<AppEnv>().get("/", async (c) => {
   try {
     await getDb().execute(sql`select 1`)
     return c.json({ status: "ok" as const, db: "ok" as const })
-  } catch {
+  } catch (error) {
+    console.error(`[api] ${c.get("requestId")} health check failed`, error)
     return c.json(
       errorBody("UNAVAILABLE", "Database unreachable", c.get("requestId")),
       503

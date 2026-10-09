@@ -6,6 +6,7 @@ import type { ContentfulStatusCode } from "hono/utils/http-status"
 import * as z from "zod"
 
 export type ErrorCode =
+  | "BAD_REQUEST" // other 4xx (405, 415, 422...): status carries the detail
   | "VALIDATION_FAILED"
   | "UNAUTHENTICATED"
   | "FORBIDDEN"
@@ -17,6 +18,7 @@ export type ErrorCode =
   | "INTERNAL"
 
 const STATUS: Record<ErrorCode, ContentfulStatusCode> = {
+  BAD_REQUEST: 400,
   VALIDATION_FAILED: 400,
   UNAUTHENTICATED: 401,
   FORBIDDEN: 403,
@@ -72,13 +74,14 @@ export function handleError(error: Error, c: Context) {
       error.status
     )
   }
-  if (error instanceof HTTPException) {
-    const code = CODE_FOR_STATUS[error.status] ?? "INTERNAL"
+  if (error instanceof HTTPException && error.status < 500) {
+    const code = CODE_FOR_STATUS[error.status] ?? "BAD_REQUEST"
     return c.json(
       errorBody(code, error.message || code, requestId),
       error.status as ContentfulStatusCode
     )
   }
+  // 5xx HTTPException messages are internal detail: log, never echo.
   console.error(`[api] ${requestId}`, error)
   return c.json(errorBody("INTERNAL", "Something went wrong", requestId), 500)
 }

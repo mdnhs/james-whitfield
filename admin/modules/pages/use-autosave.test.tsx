@@ -101,4 +101,78 @@ describe("useAutosave", () => {
     await act(() => vi.advanceTimersByTimeAsync(10_000))
     expect(save).toHaveBeenCalledTimes(1)
   })
+
+  // A 409 from publish/restore has nothing queued: Overwrite re-sends the
+  // newest edit, or just closes the conflict.
+  it("overwrite re-sends the latest edit after an outside conflict", async () => {
+    const save = vi.fn(bump)
+    const { result } = renderHook(() => useAutosave({ version: 1, save }))
+    act(() =>
+      result.current.markConflict({
+        version: 4,
+        updatedAt: null,
+        updatedBy: "Eve",
+      })
+    )
+    await act(() => result.current.overwrite())
+    expect(save).not.toHaveBeenCalled()
+    expect(result.current.state.status).toBe("idle")
+
+    act(() => result.current.schedule("a"))
+    await act(async () => {
+      await result.current.flush()
+    })
+    act(() =>
+      result.current.markConflict({
+        version: 9,
+        updatedAt: null,
+        updatedBy: "Eve",
+      })
+    )
+    await act(() => result.current.overwrite())
+    expect(save).toHaveBeenLastCalledWith("a", 9)
+    expect(result.current.state.status).toBe("saved")
+  })
+
+  // Review: publish must not race autosave on the same version.
+  it("runs version-carrying requests in the save queue", async () => {
+    vi.useFakeTimers()
+    const save = vi.fn(bump)
+    const { result } = renderHook(() => useAutosave({ version: 1, save }))
+    act(() => result.current.schedule("a"))
+    let finish: (value: { version: number }) => void = () => {}
+    const request = vi.fn(
+      () =>
+        new Promise<{ version: number }>((resolve) => {
+          finish = resolve
+        })
+    )
+    let publishing: Promise<unknown> = Promise.resolve()
+    await act(async () => {
+      publishing = result.current.exclusive(request)
+      await vi.advanceTimersByTimeAsync(0)
+    })
+    expect(save).toHaveBeenCalledExactlyOnceWith("a", 1)
+    expect(request).toHaveBeenCalledWith(2)
+    act(() => result.current.schedule("b"))
+    await act(() => vi.advanceTimersByTimeAsync(5000))
+    expect(save).toHaveBeenCalledTimes(1)
+    await act(async () => {
+      finish({ version: 3 })
+      await publishing
+      await vi.advanceTimersByTimeAsync(1200)
+    })
+    expect(save).toHaveBeenLastCalledWith("b", 3)
+  })
+
+  it("does not retry a permanent failure", async () => {
+    vi.useFakeTimers()
+    const forbidden = new ApiError("FORBIDDEN", "No", 403)
+    const save = vi.fn(bump).mockRejectedValue(forbidden)
+    const { result } = renderHook(() => useAutosave({ version: 1, save }))
+    act(() => result.current.schedule("a"))
+    await act(() => vi.advanceTimersByTimeAsync(30_000))
+    expect(save).toHaveBeenCalledTimes(1)
+    expect(result.current.state).toMatchObject({ status: "error", error: "No" })
+  })
 })

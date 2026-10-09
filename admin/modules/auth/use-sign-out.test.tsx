@@ -3,6 +3,7 @@ import { act, renderHook } from "@testing-library/react"
 import { afterEach, beforeEach, expect, it, vi } from "vitest"
 
 import { getQueryClient } from "@/admin/lib/query-client"
+import { isSigningOut, registerSignOutFlush } from "@/admin/lib/sign-out-guard"
 
 import { useSignOut } from "./use-sign-out"
 
@@ -48,4 +49,16 @@ it("keeps the session's screen as it was when sign-out fails", async () => {
   })
   expect(assign).not.toHaveBeenCalled()
   expect(result.current.pending).toBe(false)
+})
+
+it("asks before signing out over an unsaved draft", async () => {
+  const unregister = registerSignOutFlush(async () => false)
+  const confirm = vi.spyOn(window, "confirm").mockReturnValue(false)
+  const { result } = renderHook(() => useSignOut())
+  await act(() => result.current.signOut())
+  expect(confirm).toHaveBeenCalled()
+  expect(signOut).not.toHaveBeenCalled()
+  expect(isSigningOut()).toBe(false)
+  expect(result.current.pending).toBe(false)
+  unregister()
 })

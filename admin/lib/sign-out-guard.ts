@@ -18,17 +18,27 @@ export function registerSignOutFlush(flush: Flush) {
   }
 }
 
-// Bounded, so a hung save never keeps someone from signing out.
-export async function prepareSignOut(timeout = 3000) {
+// Bounded, so a hung save never keeps someone from signing out. Resolves
+// false when something could not be saved (offline, conflict, timeout), so
+// the caller can ask before the edit is lost.
+type FlushResult = unknown
+export async function prepareSignOut(timeout = 3000): Promise<boolean> {
   let timer: ReturnType<typeof setTimeout> | undefined
-  await Promise.race([
+  const results = await Promise.race([
     Promise.allSettled([...flushes].map((flush) => flush())),
-    new Promise((resolve) => {
-      timer = setTimeout(resolve, timeout)
+    new Promise<null>((resolve) => {
+      timer = setTimeout(() => resolve(null), timeout)
     }),
   ])
   clearTimeout(timer)
   signingOut = true
+  return (
+    results !== null &&
+    results.every(
+      (result: PromiseSettledResult<FlushResult>) =>
+        result.status === "fulfilled" && result.value !== false
+    )
+  )
 }
 
 // Sign-out failed: the session goes on, and so does saving.

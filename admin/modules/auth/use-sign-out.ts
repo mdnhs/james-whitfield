@@ -17,7 +17,17 @@ export function useSignOut() {
   const signOut = useCallback(async () => {
     setPending(true)
     // Unsaved drafts are saved first; nothing is sent after this point.
-    await prepareSignOut()
+    // A draft that could not be saved is the user's call, not a silent loss.
+    if (
+      !(await prepareSignOut()) &&
+      !window.confirm(
+        "Some changes couldn't be saved and will be lost. Sign out anyway?"
+      )
+    ) {
+      cancelSignOut()
+      setPending(false)
+      return
+    }
     let failed = false
     try {
       failed = Boolean((await authClient.signOut()).error)

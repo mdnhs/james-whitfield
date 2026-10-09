@@ -23,14 +23,16 @@ const TIME = new Intl.DateTimeFormat("en-IE", {
   timeZone: "Europe/Dublin",
 })
 
-// No onOpenChange and no close button: autosave stays stopped until the
-// editor makes a choice (docs/brief.md §6.5, Review Focus 3).
+// Dismissable, but dismissing chooses nothing: autosave stays stopped until
+// the editor picks Review or Overwrite (docs/brief.md §6.5, Review Focus 3).
 export function ConflictDialog({
   conflict,
+  onDismiss,
   onReview,
   onOverwrite,
 }: {
   conflict: Conflict | null
+  onDismiss(): void
   onReview(): void
   onOverwrite(): void
 }) {
@@ -38,8 +40,13 @@ export function ConflictDialog({
     ? TIME.format(new Date(conflict.updatedAt))
     : "just now"
   return (
-    <Dialog open={conflict !== null}>
-      <DialogContent showCloseButton={false} className="gap-5 p-6 sm:max-w-md">
+    <Dialog
+      open={conflict !== null}
+      onOpenChange={(open) => {
+        if (!open) onDismiss()
+      }}
+    >
+      <DialogContent className="gap-5 p-6 sm:max-w-md">
         <DialogHeader className="gap-3">
           <span
             aria-hidden
@@ -53,7 +60,7 @@ export function ConflictDialog({
           <DialogDescription className="text-[14px] leading-relaxed">
             {conflict?.updatedBy ?? "Someone"} saved this page at {when}. Review
             loads their version and drops your unsaved edits; Overwrite saves
-            yours over theirs.
+            yours over theirs. Until you choose, nothing is saved.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="-mx-6 -mb-6 rounded-b-xl border-t bg-muted/50 p-4 sm:justify-end">

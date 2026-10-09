@@ -37,7 +37,13 @@ function label(state: AutosaveState, now: number) {
   }
 }
 
-export function SaveIndicator({ state }: { state: AutosaveState }) {
+export function SaveIndicator({
+  state,
+  onResolve,
+}: {
+  state: AutosaveState
+  onResolve?: () => void
+}) {
   const [now, setNow] = useState(() => Date.now())
   // A save newer than `now` reads as 0 s until the next tick.
   useEffect(() => {
@@ -58,6 +64,15 @@ export function SaveIndicator({ state }: { state: AutosaveState }) {
         className={cn("size-2 shrink-0 rounded-full", DOT[state.status])}
       />
       <span className="truncate">{label(state, now)}</span>
+      {onResolve ? (
+        <button
+          type="button"
+          onClick={onResolve}
+          className="rounded-md font-semibold text-foreground underline underline-offset-4 outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+        >
+          Resolve
+        </button>
+      ) : null}
     </p>
   )
 }

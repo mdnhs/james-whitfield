@@ -180,8 +180,10 @@ function OutlineItem({
           <span className="line-clamp-2 text-sm leading-tight font-semibold">
             {def.label}
           </span>
-          <span className="flex items-center gap-1 truncate font-mono text-[11px] text-muted-foreground">
-            #{block.anchor}
+          <span className="flex min-w-0 items-center gap-1 font-mono text-[11px] text-muted-foreground">
+            <span className="truncate" title={`#${block.anchor}`}>
+              #{block.anchor}
+            </span>
             {joined ? (
               <>
                 <Link2Icon aria-hidden className="size-3" />

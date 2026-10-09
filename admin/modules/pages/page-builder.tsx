@@ -8,6 +8,9 @@ import {
   LayersIcon,
   LockIcon,
   PlusIcon,
+  RotateCwIcon,
+  TriangleAlertIcon,
+  XIcon,
 } from "lucide-react"
 import Link from "next/link"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
@@ -44,7 +47,7 @@ import { PreviewPane, previewSrc } from "./preview-pane"
 import { pageDetailQuery, type PageDetail } from "./queries"
 import { SaveIndicator } from "./save-indicator"
 import { SeoForm } from "./seo-form"
-import { conflictOf, useAutosave } from "./use-autosave"
+import { conflictOf, useAutosave, type Conflict } from "./use-autosave"
 
 export function PageBuilder({ id }: { id: string }) {
   const query = useQuery(pageDetailQuery(id))
@@ -55,7 +58,9 @@ export function PageBuilder({ id }: { id: string }) {
     await refetch()
     setGeneration((g) => g + 1)
   }, [refetch])
-  if (query.isPending) return <BuilderSkeleton />
+  // Only a copy fetched for this mount: a cached one may be versions old.
+  if (query.isPending || (query.isSuccess && !query.isFetchedAfterMount))
+    return <BuilderSkeleton />
   if (query.isError) {
     return (
       <div role="alert" className="flex flex-col items-start gap-3">
@@ -103,38 +108,60 @@ function Builder({
   const [selectedId, setSelectedId] = useState<string | null>(
     doc.blocks[0]?.id ?? null
   )
-  const [publishErrors, setPublishErrors] = useState<Record<string, string[]>>(
-    {}
-  )
+  // Keyed by block id when publish fails, so a later reorder cannot move
+  // the markers; a block's own edit clears them.
+  const [blockErrors, setBlockErrors] = useState<
+    ReadonlyMap<string, Record<string, string[]>>
+  >(() => new Map())
+  // A publish, discard or restore found a newer version on the server.
+  const [stale, setStale] = useState<Conflict | null>(null)
+  const [dismissed, setDismissed] = useState<Conflict | null>(null)
   const [unpublished, setUnpublished] = useState(page.hasUnpublishedChanges)
   const [libraryOpen, setLibraryOpen] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
 
-  const {
-    state,
-    schedule,
-    flush,
-    overwrite,
-    reset,
-    markConflict,
-    setVersion,
-    getVersion,
-  } = useAutosave<DraftDocument>({
-    version: page.version,
-    save: (document, version, options) =>
-      parseResponse(
-        pagesApi[":id"].draft.$patch(
-          { param: { id: page.id }, json: { version, document } },
-          options?.keepalive ? { init: { keepalive: true } } : undefined
+  const { state, schedule, flush, exclusive, overwrite, reset, getVersion } =
+    useAutosave<DraftDocument>({
+      version: page.version,
+      save: async (document, version, options) => {
+        const result = await parseResponse(
+          pagesApi[":id"].draft.$patch(
+            { param: { id: page.id }, json: { version, document } },
+            options?.keepalive ? { init: { keepalive: true } } : undefined
+          )
         )
-      ),
-  })
+        syncCache({
+          // The column holds any draft; its type is the published shape.
+          draft: document as unknown as PageDetail["draft"],
+          version: result.version,
+          updatedAt: result.updatedAt,
+          hasUnpublishedChanges: true,
+        })
+        return result
+      },
+    })
+
+  // The detail cache follows every write, so it never holds a version
+  // older than the server's.
+  function syncCache(patch: Partial<PageDetail>) {
+    queryClient.setQueryData(
+      queryKeys.pages.detail(page.id),
+      (old: PageDetail | undefined) => (old ? { ...old, ...patch } : old)
+    )
+  }
 
   // A read-only actor can look around; nothing they touch is sent.
   const apply = useCallback(
     (action: DocAction) => {
       if (readOnly) return docRef.current
       const next = docReducer(docRef.current, action)
+      if ("id" in action)
+        setBlockErrors((errors) => {
+          if (!errors.has(action.id)) return errors
+          const rest = new Map(errors)
+          rest.delete(action.id)
+          return rest
+        })
       docRef.current = next
       setDoc(next)
       setUnpublished(true)
@@ -148,14 +175,11 @@ function Builder({
   // drop what is queued so the old builder sends nothing as it unmounts.
   const replaceWithServer = useCallback(() => {
     reset(getVersion())
+    setStale(null)
     void reload()
   }, [getVersion, reload, reset])
 
   const selected = doc.blocks.find((block) => block.id === selectedId) ?? null
-  const blockErrors = useMemo(
-    () => errorsByBlock(publishErrors, doc),
-    [publishErrors, doc]
-  )
   const invalidIds = useMemo(() => new Set(blockErrors.keys()), [blockErrors])
   const onData = useCallback(
     (data: Record<string, unknown>) => {
@@ -176,31 +200,40 @@ function Builder({
     return () => window.removeEventListener("keydown", onKey)
   }, [flush])
 
+  // A 409 here is not an autosave conflict (nothing of ours is unsaved):
+  // the server simply has a newer version, so offer to load it.
   const handleError = (error: Error) => {
     const conflict = conflictOf(error)
-    if (conflict) return markConflict(conflict)
+    if (conflict) return setStale(conflict)
     if (error instanceof ApiError && error.code === "VALIDATION_FAILED") {
-      setPublishErrors(error.fieldErrors)
-      const [first] = errorsByBlock(error.fieldErrors, docRef.current).keys()
+      const errors = errorsByBlock(error.fieldErrors, docRef.current)
+      setBlockErrors(errors)
+      const [first] = errors.keys()
       if (first) setSelectedId(first)
     }
     toast.error(error.message)
   }
 
   const publish = useMutation({
-    mutationFn: async () => {
-      if (!(await flush()))
-        throw new Error("Your latest changes are not saved yet")
-      return parseResponse(
-        pagesApi[":id"].publish.$post({
-          param: { id: page.id },
-          json: { version: getVersion() },
-        })
-      )
-    },
+    // exclusive(): what is typed first is saved first, and edits made while
+    // publishing wait for its version.
+    mutationFn: () =>
+      exclusive((version) =>
+        parseResponse(
+          pagesApi[":id"].publish.$post({
+            param: { id: page.id },
+            json: { version },
+          })
+        )
+      ),
     onSuccess: (result) => {
-      setVersion(result.version)
-      setPublishErrors({})
+      syncCache({
+        version: result.version,
+        status: "published",
+        publishedAt: result.publishedAt,
+        hasUnpublishedChanges: false,
+      })
+      setBlockErrors(new Map())
       setUnpublished(false)
       toast.success("Published")
       void queryClient.invalidateQueries({ queryKey: queryKeys.pages.all })
@@ -209,15 +242,15 @@ function Builder({
   })
 
   const discard = useMutation({
-    mutationFn: async () => {
-      await flush()
-      return parseResponse(
-        pagesApi[":id"].discard.$post({
-          param: { id: page.id },
-          json: { version: getVersion() },
-        })
-      )
-    },
+    mutationFn: () =>
+      exclusive((version) =>
+        parseResponse(
+          pagesApi[":id"].discard.$post({
+            param: { id: page.id },
+            json: { version },
+          })
+        )
+      ),
     onSuccess: () => {
       toast.success("Draft discarded")
       void queryClient.invalidateQueries({ queryKey: queryKeys.pages.list })
@@ -227,6 +260,11 @@ function Builder({
   })
 
   const published = page.status === "published"
+  // Dismissing keeps autosave paused; the indicator reopens the choice.
+  const conflictOpen =
+    state.status === "conflict" &&
+    state.conflict !== null &&
+    state.conflict !== dismissed
   const SelectedIcon = selected
     ? BLOCK_ICONS[BLOCK_BY_TYPE[selected.type].icon]
     : null
@@ -259,7 +297,16 @@ function Builder({
         }
         actions={
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-            {readOnly ? null : <SaveIndicator state={state} />}
+            {readOnly ? null : (
+              <SaveIndicator
+                state={state}
+                onResolve={
+                  state.status === "conflict" && !conflictOpen
+                    ? () => setDismissed(null)
+                    : undefined
+                }
+              />
+            )}
             <Button
               variant="outline"
               className={cn(FORM_ACTION, "h-12 bg-card")}
@@ -307,6 +354,34 @@ function Builder({
           </div>
         }
       />
+      {stale ? (
+        <div
+          role="alert"
+          className="border-warning/40 bg-warning-soft flex flex-wrap items-center gap-3 rounded-2xl border p-4 text-sm"
+        >
+          <TriangleAlertIcon
+            aria-hidden
+            className="text-warning size-4 shrink-0"
+          />
+          <p className="min-w-0 flex-1">
+            <span className="font-semibold">This page changed.</span>{" "}
+            {stale.updatedBy ?? "Someone"} saved a newer version, so that
+            didn&apos;t go through. Load the latest version to carry on.
+          </p>
+          <Button size="sm" className="rounded-lg" onClick={replaceWithServer}>
+            <RotateCwIcon data-icon="inline-start" />
+            Reload latest
+          </Button>
+          <Button
+            size="icon-sm"
+            variant="ghost"
+            aria-label="Dismiss"
+            onClick={() => setStale(null)}
+          >
+            <XIcon aria-hidden />
+          </Button>
+        </div>
+      ) : null}
       {readOnly ? (
         <p
           role="note"
@@ -491,13 +566,14 @@ function Builder({
         open={historyOpen}
         onOpenChange={setHistoryOpen}
         pageId={page.id}
-        getVersion={getVersion}
+        exclusive={exclusive}
         canRestore={canEdit}
         onRestored={replaceWithServer}
-        onConflict={markConflict}
+        onConflict={setStale}
       />
       <ConflictDialog
-        conflict={state.status === "conflict" ? state.conflict : null}
+        conflict={conflictOpen ? state.conflict : null}
+        onDismiss={() => setDismissed(state.conflict)}
         onReview={replaceWithServer}
         onOverwrite={() => void overwrite()}
       />

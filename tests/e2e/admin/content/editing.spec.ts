@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test"
+import { expect, test, type Page } from "@playwright/test"
 
 import { api, createPublishedPage, richTextDocument } from "../../support/api"
 import { STORAGE } from "../../support/storage"
@@ -120,4 +120,62 @@ test("typing beside a link keeps the cursor in place", async ({ page }) => {
   })
   await page.keyboard.type("ok ", { delay: 40 })
   await expect(box).toHaveText("Now: ok See the guide today")
+})
+
+async function typeInText(page: Page, text: string) {
+  await page.getByRole("textbox", { name: "Text" }).click()
+  await page.keyboard.press("End")
+  await page.keyboard.type(text)
+}
+
+// Publish saves what was just typed first, on the version that results:
+// no self-inflicted 409, and the typed words go live.
+test("publishing right after typing publishes the typing", async ({
+  page,
+  browser,
+}) => {
+  const { id, path } = await createPublishedPage(page.request, "Words")
+  await page.goto(`/admin/pages/${id}`)
+  await typeInText(page, " typed")
+  const published = page.waitForResponse((r) =>
+    r.url().endsWith(`/pages/${id}/publish`)
+  )
+  await page.getByRole("button", { name: "Publish" }).click()
+  expect((await published).status()).toBe(200)
+  await expect(page.getByRole("dialog")).toHaveCount(0)
+  await expect(page.getByText("This page changed.")).toHaveCount(0)
+  const visitor = await (await browser.newContext()).newPage()
+  await visitor.goto(path)
+  await expect(visitor.getByText("Words typed")).toBeVisible()
+})
+
+// The detail cache follows each save, and a remounted builder refetches:
+// reopening a page never starts from a version it already moved past.
+test("reopening a page after editing it saves without a conflict", async ({
+  page,
+}) => {
+  const a = await createPublishedPage(page.request, "First")
+  const b = await createPublishedPage(page.request, "Second")
+  await page.goto(`/admin/pages/${a.id}`)
+  await typeInText(page, " edit")
+  await expect(page.getByText(/^Saved \d+ s ago$/)).toBeVisible({
+    timeout: 10_000,
+  })
+  // Client-side navigation keeps the query cache: away to another page's
+  // builder (which replaces this one) and back.
+  for (const id of [b.id, a.id]) {
+    await page.getByRole("link", { name: "Pages", exact: true }).first().click()
+    await expect(page).toHaveURL(/\/admin\/pages$/)
+    await page.locator(`table a[href="/admin/pages/${id}"]`).click()
+    await expect(page).toHaveURL(new RegExp(`/admin/pages/${id}$`))
+    await expect(page.getByRole("textbox", { name: "Text" })).toBeVisible()
+  }
+  await expect(page.getByRole("textbox", { name: "Text" })).toHaveText(
+    "First edit"
+  )
+  await typeInText(page, " again")
+  await expect(page.getByText(/^Saved \d+ s ago$/)).toBeVisible({
+    timeout: 10_000,
+  })
+  await expect(page.getByRole("dialog")).toHaveCount(0)
 })

@@ -26,7 +26,7 @@ export function HistorySheet({
   open,
   onOpenChange,
   pageId,
-  getVersion,
+  exclusive,
   canRestore,
   onRestored,
   onConflict,
@@ -34,7 +34,9 @@ export function HistorySheet({
   open: boolean
   onOpenChange(open: boolean): void
   pageId: string
-  getVersion(): number
+  // The autosave queue's exclusive(): pending edits save first, and the
+  // restore runs on the version that results.
+  exclusive<R>(request: (version: number) => Promise<R>): Promise<R>
   canRestore: boolean
   onRestored(): void
   onConflict(conflict: Conflict): void
@@ -42,11 +44,13 @@ export function HistorySheet({
   const list = useQuery({ ...pageRevisionsQuery(pageId), enabled: open })
   const restore = useMutation({
     mutationFn: (rev: string) =>
-      parseResponse(
-        pagesApi[":id"].revisions[":rev"].restore.$post({
-          param: { id: pageId, rev },
-          json: { version: getVersion() },
-        })
+      exclusive((version) =>
+        parseResponse(
+          pagesApi[":id"].revisions[":rev"].restore.$post({
+            param: { id: pageId, rev },
+            json: { version },
+          })
+        )
       ),
     onSuccess: () => {
       onOpenChange(false)

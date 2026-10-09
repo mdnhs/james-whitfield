@@ -25,9 +25,11 @@ export const pageDetailQuery = (id: string) =>
   queryOptions({
     queryKey: queryKeys.pages.detail(id),
     queryFn: () => parseResponse(pagesApi[":id"].$get({ param: { id } })),
-    // The builder owns the working copy once loaded; refetching would not
-    // replace it (Builder is keyed by its generation).
-    staleTime: Number.POSITIVE_INFINITY,
+    // Fresh on every mount, so a reopened builder never starts from an old
+    // version. While it is open the builder owns the working copy (it is
+    // keyed by its generation) and writes each save back into this cache.
+    staleTime: 0,
+    refetchOnWindowFocus: false,
   })
 
 export const pageRevisionsQuery = (id: string) =>

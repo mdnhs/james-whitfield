@@ -1,6 +1,7 @@
 import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest"
 
-import { closeDb } from "@/server/db/client"
+import { closeDb, getDb } from "@/server/db/client"
+import { users } from "@/server/db/schema"
 import { clearOutbox, readOutbox } from "@/server/lib/email"
 
 import { adminRequest, createUser, signIn } from "../helpers/auth"
@@ -12,6 +13,8 @@ afterAll(closeDb)
 
 const invite = (cookie: string, body: unknown, origin?: string) =>
   adminRequest("/users/invite", cookie, { method: "POST", body, origin })
+
+const userCount = async () => (await getDb().select().from(users)).length
 
 describe("POST /api/v1/admin/users/invite", () => {
   it("lets an owner invite an admin and emails a set-password link", async () => {
@@ -44,6 +47,32 @@ describe("POST /api/v1/admin/users/invite", () => {
       role: "owner",
     })
     expect(response.status).toBe(403)
+    expect(readOutbox()).toHaveLength(0)
+    expect(await userCount()).toBe(1)
+  })
+
+  it("lets an owner invite another owner", async () => {
+    await createUser("owner")
+    const cookie = await signIn("owner@example.com")
+    const response = await invite(cookie, {
+      email: "o2@example.com",
+      name: "O",
+      role: "owner",
+    })
+    expect(response.status).toBe(201)
+    expect(await response.json()).toMatchObject({ role: "owner" })
+  })
+
+  it("rejects a multi-role string such as editor,owner", async () => {
+    await createUser("owner")
+    const cookie = await signIn("owner@example.com")
+    const response = await invite(cookie, {
+      email: "x@example.com",
+      name: "X",
+      role: "editor,owner",
+    })
+    expect(response.status).toBe(400)
+    expect(await userCount()).toBe(1)
   })
 
   it("is forbidden for an editor", async () => {
@@ -67,6 +96,8 @@ describe("POST /api/v1/admin/users/invite", () => {
       role: "viewer",
     })
     expect(response.status).toBe(409)
+    expect(readOutbox()).toHaveLength(0)
+    expect(await userCount()).toBe(2)
   })
 
   it("rejects a cross-site request even with a valid session", async () => {

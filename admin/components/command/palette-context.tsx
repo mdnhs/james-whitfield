@@ -1,0 +1,31 @@
+"use client"
+
+import { createContext, use, useCallback, useMemo, useState } from "react"
+
+import { useCommandHotkey } from "./use-command-hotkey"
+
+type PaletteState = { open: boolean; setOpen: (open: boolean) => void }
+
+const PaletteContext = createContext<PaletteState | null>(null)
+
+export function CommandPaletteProvider({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  const [open, setOpen] = useState(false)
+  const toggle = useCallback(() => setOpen((value) => !value), [])
+  useCommandHotkey(toggle)
+  const value = useMemo(() => ({ open, setOpen }), [open])
+  return <PaletteContext value={value}>{children}</PaletteContext>
+}
+
+export function useCommandPalette(): PaletteState {
+  const state = use(PaletteContext)
+  if (!state) {
+    throw new Error(
+      "useCommandPalette must be used inside CommandPaletteProvider"
+    )
+  }
+  return state
+}

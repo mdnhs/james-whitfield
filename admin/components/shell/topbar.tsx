@@ -3,6 +3,7 @@
 import { MailIcon } from "lucide-react"
 import Link from "next/link"
 
+import { SearchPill } from "@/admin/components/command/search-pill"
 import { usePermission } from "@/admin/lib/actor-context"
 import { Button } from "@/components/ui/button"
 import { SidebarTrigger } from "@/components/ui/sidebar"
@@ -20,7 +21,9 @@ export function Topbar() {
         aria-label="Toggle navigation"
         className="size-10 rounded-full"
       />
-      <div className="flex min-w-0 flex-1" data-slot="topbar-search" />
+      <div className="flex min-w-0 flex-1" data-slot="topbar-search">
+        <SearchPill />
+      </div>
       {canReadLeads ? (
         <Button
           variant="outline"

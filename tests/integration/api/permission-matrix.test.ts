@@ -52,6 +52,11 @@ describe.each(ROLE_NAMES)("can() for %s", (role) => {
     )
     expect(response.status).toBe(MATRIX[role].invite)
   })
+
+  it("GET /search → 200 (dashboard.view)", async () => {
+    const response = await adminRequest("/search", await cookieFor(role))
+    expect(response.status).toBe(200)
+  })
 })
 
 describe("can() without a session", () => {

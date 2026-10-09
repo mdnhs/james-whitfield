@@ -35,3 +35,8 @@ export async function closeDb() {
     store.mkDb = undefined
   }
 }
+
+// What a callback of db.transaction() receives. Services pass either one to
+// helpers (audit, revisions) so a write and its audit row commit together.
+export type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0]
+export type DbLike = Db | Tx

@@ -80,3 +80,11 @@ export async function viewAs(cookie: string, userId: string) {
     .filter((pair) => !pair.endsWith("="))
     .join("; ")
 }
+
+// A signed-in user of `role`; owners and admins get past the 2FA gate.
+export async function cookieFor(role: RoleName, email = `${role}@example.com`) {
+  await createUser(role, email)
+  return role === "owner" || role === "admin"
+    ? signInWithTwoFactor(email)
+    : signIn(email)
+}

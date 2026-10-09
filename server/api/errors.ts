@@ -39,7 +39,9 @@ export class ApiError extends Error {
   constructor(
     readonly code: ErrorCode,
     message: string,
-    readonly fieldErrors?: Record<string, string[]>
+    readonly fieldErrors?: Record<string, string[]>,
+    // Machine-readable context, e.g. a 409's current version (§8.2).
+    readonly details?: Record<string, unknown>
   ) {
     super(message)
   }
@@ -53,10 +55,17 @@ export function errorBody(
   code: ErrorCode,
   message: string,
   requestId: string,
-  fieldErrors?: Record<string, string[]>
+  fieldErrors?: Record<string, string[]>,
+  details?: Record<string, unknown>
 ) {
   return {
-    error: { code, message, requestId, ...(fieldErrors && { fieldErrors }) },
+    error: {
+      code,
+      message,
+      requestId,
+      ...(fieldErrors && { fieldErrors }),
+      ...(details && { details }),
+    },
   }
 }
 
@@ -74,7 +83,13 @@ export function handleError(error: Error, c: Context) {
   const requestId = String(c.get("requestId") ?? "")
   if (error instanceof ApiError) {
     return c.json(
-      errorBody(error.code, error.message, requestId, error.fieldErrors),
+      errorBody(
+        error.code,
+        error.message,
+        requestId,
+        error.fieldErrors,
+        error.details
+      ),
       error.status
     )
   }
@@ -104,4 +119,18 @@ export function validationHook(result: {
       fieldErrors as Record<string, string[]>
     )
   }
+}
+
+// Dotted paths ("blocks.3.data.title") so the builder can find the block and
+// the field; flattenError only keeps the first segment.
+export function invalid(
+  error: z.core.$ZodError,
+  message = "Some fields need attention"
+) {
+  const fieldErrors: Record<string, string[]> = {}
+  for (const issue of error.issues) {
+    const key = issue.path.map(String).join(".") || "_"
+    ;(fieldErrors[key] ??= []).push(issue.message)
+  }
+  return new ApiError("VALIDATION_FAILED", message, fieldErrors)
 }

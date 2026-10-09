@@ -9,6 +9,7 @@ import type { ErrorCode } from "@/server/api/errors"
 import type { AccountRoutes } from "@/server/modules/account/routes"
 import type { AuditRoutes } from "@/server/modules/audit/routes"
 import type { DashboardRoutes } from "@/server/modules/dashboard/routes"
+import type { PagesRoutes } from "@/server/modules/pages/routes"
 import type { SearchRoutes } from "@/server/modules/search/routes"
 
 import { ApiError } from "./api-error"
@@ -18,6 +19,7 @@ import { ApiError } from "./api-error"
 export const accountApi = hc<AccountRoutes>("/api/v1/admin/account")
 export const auditApi = hc<AuditRoutes>("/api/v1/admin/audit")
 export const dashboardApi = hc<DashboardRoutes>("/api/v1/admin/dashboard")
+export const pagesApi = hc<PagesRoutes>("/api/v1/admin/pages")
 export const searchApi = hc<SearchRoutes>("/api/v1/admin/search")
 
 type Envelope = {
@@ -26,6 +28,7 @@ type Envelope = {
     message?: unknown
     requestId?: unknown
     fieldErrors?: unknown
+    details?: unknown
   }
 }
 
@@ -98,7 +101,11 @@ function fromStatus(status: number, envelope?: Envelope["error"]) {
       : {}
   const requestId =
     known && typeof envelope?.requestId === "string" ? envelope.requestId : null
-  return new ApiError(code, message, status, requestId, fieldErrors)
+  const details =
+    known && typeof envelope?.details === "object" && envelope.details !== null
+      ? (envelope.details as Record<string, unknown>)
+      : null
+  return new ApiError(code, message, status, requestId, fieldErrors, details)
 }
 
 // `status` is the HTTP status when an answer arrived (a malformed body throws

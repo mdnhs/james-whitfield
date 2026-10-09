@@ -3,7 +3,7 @@ import { Hono } from "hono"
 import { requestId } from "hono/request-id"
 import { describe, expect, it, vi } from "vitest"
 
-import { handleError } from "@/server/api/errors"
+import { ApiError, errorBody, handleError } from "@/server/api/errors"
 
 const make = (status: 400 | 405 | 415 | 422 | 500 | 502) => {
   const app = new Hono().use(requestId()).get("/", () => {
@@ -33,6 +33,24 @@ describe("handleError with HTTPException", () => {
     expect(body.error).toMatchObject({
       code: "INTERNAL",
       message: "Something went wrong",
+    })
+  })
+})
+
+describe("error details", () => {
+  it("carries machine-readable details in the envelope", () => {
+    const error = new ApiError("CONFLICT", "Changed", undefined, {
+      current: { version: 3 },
+    })
+    expect(
+      errorBody(error.code, error.message, "r1", undefined, error.details)
+    ).toEqual({
+      error: {
+        code: "CONFLICT",
+        message: "Changed",
+        requestId: "r1",
+        details: { current: { version: 3 } },
+      },
     })
   })
 })

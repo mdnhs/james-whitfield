@@ -1,4 +1,10 @@
-import { afterAll, beforeEach, describe, expect, it } from "vitest"
+import { afterAll, beforeEach, describe, expect, it, vi } from "vitest"
+
+// Creating a page expires cache tags, which needs a Next request scope.
+vi.mock("next/cache", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("next/cache")>()),
+  revalidateTag: vi.fn(),
+}))
 
 import { ROLE_NAMES, type RoleName } from "@/lib/auth/permissions"
 import { closeDb } from "@/server/db/client"
@@ -97,6 +103,67 @@ describe.each(ROLE_NAMES)("can() for %s", (role) => {
   })
 })
 
+// docs/brief.md §7.2 page rows. 404 means "past can(), no such page"; the
+// bodies are valid so validation never hides the permission check.
+const WRITER = { read: 200, write: 404, create: 201, seo: 404 }
+const PAGES: Record<
+  RoleName,
+  { read: number; write: number; create: number; seo: number }
+> = {
+  owner: WRITER,
+  admin: WRITER,
+  editor: WRITER,
+  author: { read: 200, write: 403, create: 403, seo: 403 },
+  marketer: { read: 200, write: 403, create: 403, seo: 404 },
+  intake: { read: 403, write: 403, create: 403, seo: 403 },
+  viewer: { read: 200, write: 403, create: 403, seo: 403 },
+}
+
+describe.each(ROLE_NAMES)("pages routes for %s", (role) => {
+  const missing = crypto.randomUUID()
+  const expected = PAGES[role]
+
+  it(`GET /pages → ${expected.read}`, async () => {
+    const response = await adminRequest("/pages", await cookieFor(role))
+    expect(response.status).toBe(expected.read)
+  })
+
+  it(`POST /pages → ${expected.create}`, async () => {
+    const response = await adminRequest("/pages", await cookieFor(role), {
+      method: "POST",
+      body: { path: "/team", title: "Team" },
+    })
+    expect(response.status).toBe(expected.create)
+  })
+
+  it.each([
+    [
+      "PATCH",
+      `/pages/${missing}/draft`,
+      { version: 1, document: { blocks: [] } },
+    ],
+    ["POST", `/pages/${missing}/publish`, { version: 1 }],
+    ["POST", `/pages/${missing}/discard`, { version: 1 }],
+    ["POST", `/pages/${missing}/revisions/${missing}/restore`, { version: 1 }],
+    ["DELETE", `/pages/${missing}`, undefined],
+  ])(`%s %s → ${expected.write}`, async (method, path, body) => {
+    const response = await adminRequest(path, await cookieFor(role), {
+      method,
+      body,
+    })
+    expect(response.status).toBe(expected.write)
+  })
+
+  it(`PATCH /pages/:id/seo → ${expected.seo}`, async () => {
+    const response = await adminRequest(
+      `/pages/${missing}/seo`,
+      await cookieFor(role),
+      { method: "PATCH", body: { seo: { noindex: true } } }
+    )
+    expect(response.status).toBe(expected.seo)
+  })
+})
+
 // Every role manages its own account (docs/brief.md §7.2): the same gate as
 // the Account page. 404 on DELETE means "past can(), no such device of yours".
 describe.each(ROLE_NAMES)("account self-service for %s", (role) => {
@@ -137,6 +204,7 @@ describe.each(["owner", "admin"] as const)(
       ["GET", "/search"],
       ["GET", "/audit"],
       ["GET", "/audit/facets"],
+      ["GET", "/pages"],
       ["GET", "/account/sessions"],
       ["DELETE", `/account/sessions/${crypto.randomUUID()}`],
       ["POST", "/account/sessions/revoke-others"],

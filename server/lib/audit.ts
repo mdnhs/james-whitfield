@@ -1,6 +1,6 @@
 import "server-only"
 
-import { getDb, type Db } from "@/server/db/client"
+import { getDb, type DbLike } from "@/server/db/client"
 import { auditLogs } from "@/server/db/schema"
 
 import { hashIp } from "./crypto"
@@ -25,7 +25,7 @@ export type AuditEntry = {
 export async function audit(
   actor: AuditActor | null,
   entry: AuditEntry,
-  db: Db = getDb()
+  db: DbLike = getDb()
 ) {
   await db.insert(auditLogs).values({
     actorId: actor?.userId ?? null,

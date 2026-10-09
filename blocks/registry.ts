@@ -58,10 +58,13 @@ export const BLOCK_BY_TYPE = Object.fromEntries(
   BLOCKS.map((block) => [block.type, block])
 ) as { [B in AnyBlock as B["type"]]: B }
 
+// Stable across edits so the editor can follow a block. Seeded ids are
+// "<page>-<anchor>"; the builder mints crypto.randomUUID() (36 characters),
+// which this pattern accepts.
+export const BlockId = z.string().regex(/^[A-Za-z0-9_-]{4,48}$/)
+
 const base = {
-  // Stable across edits so the editor can follow a block. Seeded ids are
-  // "<page>-<anchor>"; Phase 4 mints nanoids.
-  id: z.string().regex(/^[A-Za-z0-9_-]{4,48}$/),
+  id: BlockId,
   anchor: Anchor,
   // JourneyRail label; null keeps the block out of the rail.
   chapter: z.string().trim().min(1).max(24).nullable(),

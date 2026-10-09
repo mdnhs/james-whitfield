@@ -35,10 +35,21 @@ export default function ContactPage() {
         />
       </StackCard>
       <StackCard>
-        <ContactSection />
+        <ContactSection
+          id="get-in-touch"
+          content={legacy.contactDetails()}
+          contact={legacy.contact()}
+          channels={MICROCOPY.contactChannels}
+          form={legacy.contactForm()}
+        />
       </StackCard>
       <StackCard>
-        <ClinicSection />
+        <ClinicSection
+          id="clinic"
+          content={legacy.contactClinic()}
+          contact={legacy.contact()}
+          directionsLabel={MICROCOPY.directions}
+        />
       </StackCard>
       <StackCard last>
         <FaqSection

@@ -4,7 +4,10 @@ import { siteFontClassName } from "./fonts"
 import "./site.css"
 import { SmoothScroll } from "@/components/smooth-scroll"
 import { SiteFooter } from "@/features/footer"
+import { FOOTER } from "@/features/footer/data/footer-links"
 import { SiteHeader } from "@/features/navbar"
+import { NAVIGATION } from "@/features/navbar/data/nav-links"
+import { SITE } from "@/features/site/data/site"
 
 // The public site has a single light design. The admin has its own root
 // layout with light/dark support (Task 1.10), so next-themes is not used here.
@@ -21,9 +24,9 @@ export default function SiteLayout({
         </noscript>
         <NuqsAdapter>
           <SmoothScroll>
-            <SiteHeader />
+            <SiteHeader site={SITE} navigation={NAVIGATION} />
             {children}
-            <SiteFooter />
+            <SiteFooter site={SITE} footer={FOOTER} navigation={NAVIGATION} />
           </SmoothScroll>
         </NuqsAdapter>
       </body>

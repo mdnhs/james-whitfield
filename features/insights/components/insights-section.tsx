@@ -1,25 +1,34 @@
 import Link from "next/link"
 
+import type { BlockView } from "@/blocks/media-refs"
 import { Container } from "@/components/layout/container"
 import { buttonVariants } from "@/components/ui/button"
+import type { ArticleSummary } from "@/lib/content/types"
 import { cn } from "@/lib/utils"
-import { INSIGHTS_HEADER, POSTS } from "../data/posts"
 import { PostCard } from "./post-card"
 
-export function InsightsSection() {
-  const { title, subtitle, cta } = INSIGHTS_HEADER
+export function InsightsSection({
+  id,
+  content,
+  articles,
+}: {
+  id: string
+  content: BlockView<"insights.latest">
+  articles: ArticleSummary[]
+}) {
+  const { title, subtitle, cta } = content
 
   return (
     <section
-      id="insights"
-      aria-labelledby="insights-heading"
+      id={id}
+      aria-labelledby={`${id}-heading`}
       className="bg-white py-20 lg:py-30"
     >
       <Container className="flex flex-col gap-6">
         <div className="flex flex-col items-start gap-6 text-forest sm:flex-row sm:items-center">
           <div className="flex min-w-0 flex-1 flex-col gap-3">
             <h2
-              id="insights-heading"
+              id={`${id}-heading`}
               data-motion="words"
               className="text-[40px] leading-[1.3] font-bold sm:text-[48.9px] sm:leading-[63.8px]"
             >
@@ -51,8 +60,8 @@ export function InsightsSection() {
           data-motion="deal-group"
           className="grid grid-cols-1 items-start gap-12 pt-6 md:grid-cols-2 lg:grid-cols-3"
         >
-          {POSTS.map((post) => (
-            <PostCard key={post.slug} post={post} />
+          {articles.map((article) => (
+            <PostCard key={article.id} article={article} />
           ))}
         </div>
       </Container>

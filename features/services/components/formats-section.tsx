@@ -1,14 +1,21 @@
 import Image from "next/image"
 import Link from "next/link"
 
+import type { BlockView } from "@/blocks/media-refs"
 import { Eyebrow } from "@/components/eyebrow"
 import { Container } from "@/components/layout/container"
-import { contactHref } from "@/features/contact/data/contact-params"
-import { cn, slugify } from "@/lib/utils"
-import { FORMATS, type Plan } from "../data/services-content"
+import { contactHref } from "@/lib/contact-href"
+import type { PlanView } from "@/lib/content/types"
+import { cn } from "@/lib/utils"
 
-function PlanCard({ plan }: { plan: Plan }) {
-  const { name, price, unit, summary, features, cta, featured } = plan
+function PlanCard({
+  plan,
+  featuredTag,
+}: {
+  plan: PlanView
+  featuredTag: string
+}) {
+  const { name, priceLabel, unit, summary, features, ctaLabel, featured } = plan
 
   return (
     <li
@@ -30,7 +37,7 @@ function PlanCard({ plan }: { plan: Plan }) {
         </h3>
         {featured && (
           <span className="rounded-full bg-clay px-3 py-1.5 text-xs leading-[1.5] font-semibold whitespace-nowrap text-cream">
-            Most chosen
+            {featuredTag}
           </span>
         )}
       </div>
@@ -43,7 +50,7 @@ function PlanCard({ plan }: { plan: Plan }) {
               featured ? "font-bold text-cream" : "font-semibold text-forest"
             )}
           >
-            {price}
+            {priceLabel}
           </span>
           <span
             className={cn(
@@ -71,8 +78,8 @@ function PlanCard({ plan }: { plan: Plan }) {
           featured ? "border-white/15" : "border-line"
         )}
       >
-        {features.map((feature) => (
-          <li key={feature} className="flex items-center gap-2.5">
+        {features.map((feature, i) => (
+          <li key={i} className="flex items-center gap-2.5">
             <span
               className={cn(
                 "flex size-6 shrink-0 items-center justify-center rounded-full",
@@ -104,7 +111,7 @@ function PlanCard({ plan }: { plan: Plan }) {
 
       <Link
         // The form opens with this plan already mentioned.
-        href={contactHref({ plan: slugify(name) })}
+        href={contactHref({ plan: plan.slug })}
         data-magnetic
         className={cn(
           "flex w-full items-center justify-center rounded-full px-7 py-4 text-[15px] leading-[1.5] font-semibold transition-colors duration-300",
@@ -113,19 +120,27 @@ function PlanCard({ plan }: { plan: Plan }) {
             : "border border-[#d5dacd] bg-white text-pine hover:border-pine/40 hover:bg-cream"
         )}
       >
-        {cta.label}
+        {ctaLabel}
       </Link>
     </li>
   )
 }
 
-export function FormatsSection() {
-  const { eyebrow, title, subtitle, plans } = FORMATS
+export function FormatsSection({
+  id,
+  content,
+  plans,
+}: {
+  id: string
+  content: BlockView<"services.plans">
+  plans: PlanView[]
+}) {
+  const { eyebrow, title, subtitle } = content
 
   return (
     <section
-      id="formats"
-      aria-labelledby="formats-heading"
+      id={id}
+      aria-labelledby={`${id}-heading`}
       className="bg-white py-20 lg:py-28"
     >
       <Container className="flex flex-col gap-14">
@@ -134,7 +149,7 @@ export function FormatsSection() {
             <Eyebrow className="uppercase">{eyebrow}</Eyebrow>
           </div>
           <h2
-            id="formats-heading"
+            id={`${id}-heading`}
             data-motion="words"
             className="font-display text-[38px] leading-[1.3] font-bold text-pine [font-variation-settings:'SOFT'_0,'WONK'_1] sm:text-[52px]"
           >
@@ -153,7 +168,11 @@ export function FormatsSection() {
           className="grid grid-cols-1 gap-6 lg:grid-cols-3"
         >
           {plans.map((plan) => (
-            <PlanCard key={plan.name} plan={plan} />
+            <PlanCard
+              key={plan.id}
+              plan={plan}
+              featuredTag={content.featuredTag}
+            />
           ))}
         </ul>
       </Container>

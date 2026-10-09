@@ -1,17 +1,55 @@
-import { Icon } from "@/components/icons/icon"
-
+import type { BlockView } from "@/blocks/media-refs"
 import { Eyebrow } from "@/components/eyebrow"
+import { Icon } from "@/components/icons/icon"
 import { Container } from "@/components/layout/container"
-import { CONTACT_INFO } from "../data/contact-content"
+import { formatAddress } from "@/lib/content/address"
+import type { GlobalValue } from "@/lib/content/globals"
+import type { GlobalView } from "@/lib/content/types"
+import type { IconName } from "@/lib/icons"
 import { ContactForm } from "./contact-form"
 
-export function ContactSection() {
-  const { eyebrow, title, subtitle, items } = CONTACT_INFO
+type Item = { icon: IconName; label: string; value: string; href?: string }
+
+export function ContactSection({
+  id,
+  content,
+  contact,
+  channels,
+  form,
+}: {
+  id: string
+  content: BlockView<"contact.details">
+  contact: GlobalView<"contact">
+  channels: GlobalValue<"microcopy">["contactChannels"]
+  form: React.ComponentProps<typeof ContactForm>
+}) {
+  const { eyebrow, title, subtitle } = content
+  const items: Item[] = [
+    {
+      icon: "email",
+      label: channels.email,
+      value: contact.email,
+      href: `mailto:${contact.email}`,
+    },
+    {
+      icon: "phone",
+      label: channels.phone,
+      value: contact.phone.display,
+      href: `tel:${contact.phone.e164}`,
+    },
+    {
+      icon: "clinic",
+      label: channels.clinic,
+      value: formatAddress(contact.address),
+      href: "#clinic",
+    },
+    { icon: "hours", label: channels.hours, value: contact.hours.summary },
+  ]
 
   return (
     <section
-      id="get-in-touch"
-      aria-labelledby="get-in-touch-heading"
+      id={id}
+      aria-labelledby={`${id}-heading`}
       className="bg-stone py-20 lg:py-30"
     >
       <Container className="flex flex-col gap-12 xl:flex-row xl:items-start xl:gap-14">
@@ -21,7 +59,7 @@ export function ContactSection() {
               <Eyebrow className="uppercase">{eyebrow}</Eyebrow>
             </div>
             <h2
-              id="get-in-touch-heading"
+              id={`${id}-heading`}
               data-motion="words"
               className="max-w-115 font-display text-[38px] leading-[1.2] font-bold text-pine [font-variation-settings:'SOFT'_0,'WONK'_1] sm:text-[52px]"
             >
@@ -58,7 +96,7 @@ export function ContactSection() {
               const card =
                 "group flex items-center gap-4 rounded-2xl bg-white py-4 pr-5 pl-4"
               return (
-                <li key={label}>
+                <li key={icon}>
                   {href ? (
                     <a
                       href={href}
@@ -75,7 +113,7 @@ export function ContactSection() {
           </ul>
         </div>
 
-        <ContactForm />
+        <ContactForm {...form} />
       </Container>
     </section>
   )

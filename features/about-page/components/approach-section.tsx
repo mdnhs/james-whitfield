@@ -16,7 +16,7 @@ export function ApproachSection({
   return (
     <section
       id={id}
-      aria-labelledby="approach-heading"
+      aria-labelledby={`${id}-heading`}
       className="bg-white py-20 lg:py-30"
     >
       <Container className="flex flex-col gap-14">
@@ -25,7 +25,7 @@ export function ApproachSection({
             <Eyebrow className="uppercase">{eyebrow}</Eyebrow>
           </div>
           <h2
-            id="approach-heading"
+            id={`${id}-heading`}
             data-motion="words"
             className="max-w-160 font-display text-[38px] leading-[1.3] font-bold text-pine [font-variation-settings:'SOFT'_0,'WONK'_1] sm:text-[52px]"
           >

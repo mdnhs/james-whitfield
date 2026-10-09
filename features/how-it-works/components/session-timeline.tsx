@@ -2,16 +2,22 @@
 
 import { useRef } from "react"
 
+import type { BlockView } from "@/blocks/media-refs"
 import { Eyebrow } from "@/components/eyebrow"
 import { Container } from "@/components/layout/container"
 import { gsap, ScrollTrigger, useGSAP } from "@/lib/gsap"
-import { SESSION } from "../data/session"
 
 // Zig-zag timeline of a single session. As the reader scrolls, the rail fills
 // from the first marker down and each marker lights up once the reading line
 // reaches it, while its card slides in from its own side.
-export function SessionTimeline() {
-  const { eyebrow, title, subtitle, beats } = SESSION
+export function SessionTimeline({
+  id,
+  content,
+}: {
+  id: string
+  content: BlockView<"session.timeline">
+}) {
+  const { eyebrow, title, subtitle, beats } = content
   const list = useRef<HTMLOListElement>(null)
 
   useGSAP(
@@ -95,7 +101,8 @@ export function SessionTimeline() {
 
   return (
     <section
-      aria-labelledby="session-heading"
+      id={id}
+      aria-labelledby={`${id}-heading`}
       className="overflow-clip bg-stone py-20 lg:py-30"
     >
       <Container className="flex flex-col gap-14">
@@ -104,7 +111,7 @@ export function SessionTimeline() {
             <Eyebrow className="uppercase">{eyebrow}</Eyebrow>
           </div>
           <h2
-            id="session-heading"
+            id={`${id}-heading`}
             data-motion="words"
             className="max-w-150 font-display text-[38px] leading-[1.3] font-bold text-pine [font-variation-settings:'SOFT'_0,'WONK'_1] sm:text-[52px]"
           >
@@ -135,7 +142,7 @@ export function SessionTimeline() {
             const right = i % 2 === 1
             return (
               <li
-                key={beat.title}
+                key={i}
                 data-beat
                 className="group relative grid grid-cols-[48px_1fr] items-start gap-5 lg:grid-cols-[1fr_64px_1fr] lg:gap-6"
               >

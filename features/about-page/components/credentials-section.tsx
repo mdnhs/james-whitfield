@@ -18,7 +18,7 @@ export function CredentialsSection({
   return (
     <section
       id={id}
-      aria-labelledby="credentials-heading"
+      aria-labelledby={`${id}-heading`}
       className="bg-stone py-20 lg:py-30"
     >
       <Container className="flex flex-col gap-12 lg:flex-row lg:items-start lg:gap-14">
@@ -29,7 +29,7 @@ export function CredentialsSection({
               <Eyebrow className="uppercase">{eyebrow}</Eyebrow>
             </div>
             <h2
-              id="credentials-heading"
+              id={`${id}-heading`}
               data-motion="words"
               className="font-display text-[38px] leading-[1.24] font-bold text-pine [font-variation-settings:'SOFT'_0,'WONK'_1] sm:text-[52px]"
             >

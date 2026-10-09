@@ -5,7 +5,10 @@ import { siteFontClassName } from "./(site)/fonts"
 import "./(site)/site.css"
 import { Container } from "@/components/layout/container"
 import { SiteFooter } from "@/features/footer"
+import { FOOTER } from "@/features/footer/data/footer-links"
 import { SiteHeader } from "@/features/navbar"
+import { NAVIGATION } from "@/features/navbar/data/nav-links"
+import { SITE } from "@/features/site/data/site"
 
 export const metadata: Metadata = {
   title: "Page not found",
@@ -18,7 +21,7 @@ export default function GlobalNotFound() {
     <html lang="en-IE" className={siteFontClassName}>
       <body>
         <NuqsAdapter>
-          <SiteHeader />
+          <SiteHeader site={SITE} navigation={NAVIGATION} />
           <main data-page-root>
             <Container className="py-32 text-center">
               <h1 className="text-3xl font-semibold">Page not found</h1>
@@ -28,7 +31,7 @@ export default function GlobalNotFound() {
               </Link>
             </Container>
           </main>
-          <SiteFooter />
+          <SiteFooter site={SITE} footer={FOOTER} navigation={NAVIGATION} />
         </NuqsAdapter>
       </body>
     </html>

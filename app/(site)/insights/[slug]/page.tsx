@@ -10,13 +10,15 @@ import {
   NewsletterBand,
   RelatedArticles,
 } from "@/features/insights"
+import { contactHref } from "@/lib/contact-href"
 import {
   ALL_ARTICLES,
   getArticle,
-  getArticleBody,
-  readTime,
   relatedArticles,
 } from "@/features/insights/data/articles"
+import { MICROCOPY } from "@/features/site/data/microcopy"
+
+import * as legacy from "../../_legacy/views"
 
 // Known slugs prerender at build. Any other slug renders on request and hits
 // notFound() below (dynamicParams is not allowed with Cache Components).
@@ -62,20 +64,32 @@ export default async function ArticlePage({
   const { slug } = await params
   const article = getArticle(slug)
   if (!article) notFound()
+  const detail = legacy.articleDetail(article)
 
   return (
     <main data-page-root className="bg-ink">
       <StackCard id="home" rounded={false}>
-        <ArticleHero article={article} readTime={readTime(slug)} />
+        <ArticleHero article={detail} copy={MICROCOPY} />
       </StackCard>
       <StackCard id="article">
-        <ArticleBody article={article} blocks={getArticleBody(slug)} />
+        <ArticleBody
+          article={detail}
+          copy={MICROCOPY}
+          ctaHref={contactHref({
+            plan: "discovery-call",
+            topic: detail.topicSlug,
+          })}
+        />
       </StackCard>
       <StackCard>
-        <RelatedArticles articles={relatedArticles(slug)} />
+        <RelatedArticles
+          id="keep-reading"
+          articles={relatedArticles(slug).map(legacy.articleSummary)}
+          copy={MICROCOPY}
+        />
       </StackCard>
       <StackCard last>
-        <NewsletterBand />
+        <NewsletterBand id="newsletter" content={legacy.newsletter()} />
       </StackCard>
       <JourneyRail chapters={CHAPTERS} />
       <PageMotion />

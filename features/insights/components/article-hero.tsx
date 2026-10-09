@@ -1,8 +1,10 @@
-import Image from "next/image"
 import Link from "next/link"
 
 import { Container } from "@/components/layout/container"
-import type { Article } from "../data/articles"
+import { MediaImage } from "@/components/media-image"
+import type { GlobalValue } from "@/lib/content/globals"
+import type { ArticleSummary } from "@/lib/content/types"
+import { fill } from "@/lib/fill"
 import { CategoryTag } from "./article-card"
 
 // Opening frame of an article: the cover photo full bleed under a dark
@@ -10,12 +12,13 @@ import { CategoryTag } from "./article-card"
 // fixed site header overlays its top; the photo drifts as the frame scrolls.
 export function ArticleHero({
   article,
-  readTime,
+  copy,
 }: {
-  article: Article
-  readTime: string
+  article: ArticleSummary
+  copy: GlobalValue<"microcopy">
 }) {
-  const { title, category, image, author, date } = article
+  const { title, image, author, date } = article
+  const category = article.category.name
 
   return (
     <section
@@ -27,8 +30,8 @@ export function ArticleHero({
           data-motion="parallax"
           className="absolute inset-x-0 -inset-y-[8%]"
         >
-          <Image
-            src={image}
+          <MediaImage
+            media={image}
             alt=""
             fill
             priority
@@ -53,7 +56,7 @@ export function ArticleHero({
             href="/"
             className="text-white/70 transition-colors hover:text-white"
           >
-            Home
+            {copy.breadcrumbHome}
           </Link>
           <span aria-hidden className="text-white/40">
             /
@@ -62,7 +65,7 @@ export function ArticleHero({
             href="/insights"
             className="text-white/70 transition-colors hover:text-white"
           >
-            Insights
+            {copy.breadcrumbInsights}
           </Link>
           <span aria-hidden className="text-white/40">
             /
@@ -76,7 +79,7 @@ export function ArticleHero({
           <div data-motion="rise" className="flex items-center gap-3">
             <CategoryTag className="h-7 px-3">{category}</CategoryTag>
             <span className="text-sm leading-[1.5] text-white/75">
-              {readTime}
+              {fill(copy.readTime, { minutes: article.readingMinutes })}
             </span>
           </div>
           <h1
@@ -94,8 +97,8 @@ export function ArticleHero({
           data-delay="0.2"
           className="flex items-center gap-3 border-t border-white/15 pt-6 text-[15px] leading-[1.5] text-white/80"
         >
-          <Image
-            src={author.avatar}
+          <MediaImage
+            media={author.avatar}
             alt=""
             width={40}
             height={40}

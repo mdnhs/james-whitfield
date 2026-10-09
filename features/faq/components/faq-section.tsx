@@ -21,13 +21,13 @@ export function FaqSection({
   return (
     <section
       id={id}
-      aria-labelledby="faq-heading"
+      aria-labelledby={`${id}-heading`}
       className={cn("bg-stone py-20", page ? "lg:py-30" : "lg:py-26")}
     >
       <Container className="flex flex-col gap-13">
         <div className="flex max-w-200 flex-col gap-4">
           <h2
-            id="faq-heading"
+            id={`${id}-heading`}
             data-motion="words"
             className={cn(
               "font-display text-[30px] leading-[normal] font-bold text-pine [font-variation-settings:'SOFT'_0,'WONK'_1] sm:leading-[normal]",

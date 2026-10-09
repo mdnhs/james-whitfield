@@ -11,4 +11,8 @@ export const NAV_LINKS: NavLink[] = [
   { label: "Contact", href: "/contact" },
 ]
 
-export const BOOK_CALL_HREF = "/contact"
+// Seed input for the `navigation` global.
+export const NAVIGATION = {
+  links: NAV_LINKS,
+  cta: { label: "Book a Call", href: "/contact" },
+}

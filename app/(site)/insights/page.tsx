@@ -9,7 +9,11 @@ import {
   InsightsBrowser,
   NewsletterBand,
 } from "@/features/insights"
-import { INSIGHTS_HERO } from "@/features/insights/data/articles"
+import {
+  ARTICLES,
+  FEATURED_ARTICLE,
+  INSIGHTS_HERO,
+} from "@/features/insights/data/articles"
 import { MICROCOPY } from "@/features/site/data/microcopy"
 
 import * as legacy from "../_legacy/views"
@@ -37,11 +41,23 @@ export default function InsightsPage() {
           homeLabel={MICROCOPY.breadcrumbHome}
         />
       </StackCard>
-      <StackCard id="articles">
-        <InsightsBrowser featured={<FeaturedArticle />} />
+      <StackCard>
+        <InsightsBrowser
+          id="articles"
+          content={legacy.insightsBrowser()}
+          articles={ARTICLES.map(legacy.articleSummary)}
+          categories={legacy.categories()}
+          copy={MICROCOPY}
+          featured={
+            <FeaturedArticle
+              article={legacy.articleSummary(FEATURED_ARTICLE)}
+              copy={MICROCOPY}
+            />
+          }
+        />
       </StackCard>
       <StackCard last>
-        <NewsletterBand />
+        <NewsletterBand id="newsletter" content={legacy.newsletter()} />
       </StackCard>
       <JourneyRail chapters={CHAPTERS} />
       <PageMotion />

@@ -38,10 +38,18 @@ export default function ServicesPage() {
         />
       </StackCard>
       <StackCard>
-        <ServicesGrid />
+        <ServicesGrid
+          id="services"
+          content={legacy.servicesGrid()}
+          services={legacy.services()}
+        />
       </StackCard>
       <StackCard>
-        <FormatsSection />
+        <FormatsSection
+          id="formats"
+          content={legacy.servicesPlans()}
+          plans={legacy.plans()}
+        />
       </StackCard>
       <StackCard>
         <EnterpriseSection

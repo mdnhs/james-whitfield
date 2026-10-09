@@ -20,7 +20,7 @@ export function StorySection({
   return (
     <section
       id={id}
-      aria-labelledby="story-heading"
+      aria-labelledby={`${id}-heading`}
       className="bg-white py-20 lg:py-30"
     >
       <Container className="flex flex-col gap-12 lg:flex-row lg:items-stretch lg:gap-10 xl:gap-14">
@@ -60,7 +60,7 @@ export function StorySection({
               <Eyebrow className="uppercase">{eyebrow}</Eyebrow>
             </div>
             <h2
-              id="story-heading"
+              id={`${id}-heading`}
               data-motion="words"
               className="text-[30px] leading-[1.24] font-semibold tracking-[-0.6px] text-ink sm:text-[38px]"
             >

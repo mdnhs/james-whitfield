@@ -1,17 +1,27 @@
-import Image from "next/image"
-
+import type { BlockView } from "@/blocks/media-refs"
 import { Eyebrow } from "@/components/eyebrow"
 import { Container } from "@/components/layout/container"
-import clinicImage from "@/public/images/insights/post-host-podcast.png"
-import { CLINIC } from "../data/contact-content"
+import { MediaImage } from "@/components/media-image"
+import { clinicAddress, mapsUrl } from "@/lib/content/address"
+import type { GlobalView } from "@/lib/content/types"
 
-export function ClinicSection() {
-  const { eyebrow, title, subtitle, name, address, online, directions } = CLINIC
+export function ClinicSection({
+  id,
+  content,
+  contact,
+  directionsLabel,
+}: {
+  id: string
+  content: BlockView<"contact.clinic">
+  contact: GlobalView<"contact">
+  directionsLabel: string
+}) {
+  const { eyebrow, title, subtitle } = content
 
   return (
     <section
-      id="clinic"
-      aria-labelledby="clinic-heading"
+      id={id}
+      aria-labelledby={`${id}-heading`}
       className="bg-white py-20 lg:py-28"
     >
       <Container className="flex flex-col gap-10">
@@ -21,7 +31,7 @@ export function ClinicSection() {
               <Eyebrow className="uppercase">{eyebrow}</Eyebrow>
             </div>
             <h2
-              id="clinic-heading"
+              id={`${id}-heading`}
               data-motion="words"
               className="max-w-168 font-display text-[38px] leading-[1.3] font-bold text-pine [font-variation-settings:'SOFT'_0,'WONK'_1] sm:text-[52px]"
             >
@@ -42,11 +52,11 @@ export function ClinicSection() {
               data-motion="parallax"
               className="absolute inset-x-0 -inset-y-[8%]"
             >
-              <Image
-                src={clinicImage}
+              <MediaImage
+                media={content.photo}
                 alt=""
                 fill
-                placeholder="blur"
+                blur
                 sizes="(min-width: 1440px) 1308px, 100vw"
                 className="object-cover"
               />
@@ -59,21 +69,23 @@ export function ClinicSection() {
             className="relative flex w-full max-w-90 flex-col items-start gap-3.5 rounded-[20px] border border-white/16 bg-white/16 p-7 not-italic backdrop-blur-[12px]"
           >
             <p className="text-2xl leading-[1.5] font-semibold tracking-[-0.48px] text-white">
-              {name}
+              {contact.clinic.name}
             </p>
             <p className="max-w-58 text-base leading-[1.6] text-white/80">
-              {address}
+              {clinicAddress(contact.address)}
             </p>
             <span aria-hidden className="h-px w-full bg-line-soft" />
-            <p className="text-base leading-[1.6] text-white/80">{online}</p>
+            <p className="text-base leading-[1.6] text-white/80">
+              {contact.clinic.onlineNote}
+            </p>
             <a
-              href={directions.href}
+              href={mapsUrl(contact.address)}
               target="_blank"
               rel="noopener noreferrer"
               data-magnetic
               className="rounded-full bg-clay px-5.5 py-3.25 text-[14.5px] leading-[1.5] font-semibold whitespace-pre text-cream transition-colors hover:bg-clay/90"
             >
-              {directions.label}
+              {directionsLabel}
             </a>
           </address>
         </div>

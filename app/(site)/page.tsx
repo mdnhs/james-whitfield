@@ -8,6 +8,7 @@ import { FaqSection } from "@/features/faq"
 import { HeroSection } from "@/features/hero"
 import { HowItWorksSection } from "@/features/how-it-works"
 import { InsightsSection } from "@/features/insights"
+import { ALL_ARTICLES } from "@/features/insights/data/articles"
 import { TestimonialsSection } from "@/features/testimonials"
 
 import * as legacy from "./_legacy/views"
@@ -58,7 +59,11 @@ export default function Page() {
         />
       </StackCard>
       <StackCard>
-        <InsightsSection />
+        <InsightsSection
+          id="insights"
+          content={legacy.insightsLatest()}
+          articles={ALL_ARTICLES.slice(0, 3).map(legacy.articleSummary)}
+        />
       </StackCard>
       <StackCard last>
         <FaqSection

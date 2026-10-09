@@ -1,8 +1,8 @@
-import Image from "next/image"
 import Link from "next/link"
 
+import { MediaImage } from "@/components/media-image"
+import type { ArticleSummary } from "@/lib/content/types"
 import { cn } from "@/lib/utils"
-import type { Article } from "../data/articles"
 
 export function CategoryTag({
   children,
@@ -27,11 +27,11 @@ export function Byline({
   author,
   date,
   size = 28,
-}: Pick<Article, "author" | "date"> & { size?: number }) {
+}: Pick<ArticleSummary, "author" | "date"> & { size?: number }) {
   return (
     <p className="flex items-center gap-2 text-sm leading-[1.5] whitespace-pre text-ink-muted">
-      <Image
-        src={author.avatar}
+      <MediaImage
+        media={author.avatar}
         alt=""
         width={size}
         height={size}
@@ -46,8 +46,9 @@ export function Byline({
   )
 }
 
-export function ArticleCard({ article }: { article: Article }) {
-  const { slug, category, title, excerpt, image, author, date } = article
+export function ArticleCard({ article }: { article: ArticleSummary }) {
+  const { slug, title, excerpt, image, author, date } = article
+  const category = article.category.name
 
   return (
     <article
@@ -55,8 +56,8 @@ export function ArticleCard({ article }: { article: Article }) {
       className="group relative flex flex-col items-start gap-5"
     >
       <div className="relative h-62.5 w-full overflow-clip rounded-2xl bg-mist">
-        <Image
-          src={image}
+        <MediaImage
+          media={image}
           alt=""
           fill
           sizes="(min-width: 1024px) 400px, (min-width: 768px) 50vw, 100vw"

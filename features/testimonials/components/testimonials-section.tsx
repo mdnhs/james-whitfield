@@ -23,7 +23,7 @@ export function TestimonialsSection({
   return (
     <section
       id={id}
-      aria-labelledby="testimonials-heading"
+      aria-labelledby={`${id}-heading`}
       className="bg-white py-20 lg:py-30"
     >
       <Container className="flex flex-col gap-14">
@@ -46,7 +46,7 @@ export function TestimonialsSection({
             </p>
           )}
           <h2
-            id="testimonials-heading"
+            id={`${id}-heading`}
             data-motion="words"
             className={cn(
               "text-[40px] leading-[1.2] font-bold sm:text-[53px] sm:leading-[63.8px]",

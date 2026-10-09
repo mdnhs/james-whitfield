@@ -1,13 +1,21 @@
-import Image from "next/image"
 import Link from "next/link"
 
+import { MediaImage } from "@/components/media-image"
 import { buttonVariants } from "@/components/ui/button"
+import type { GlobalValue } from "@/lib/content/globals"
+import type { ArticleSummary } from "@/lib/content/types"
+import { fill } from "@/lib/fill"
 import { cn } from "@/lib/utils"
-import { FEATURED_ARTICLE, readTime } from "../data/articles"
 import { Byline, CategoryTag } from "./article-card"
 
-export function FeaturedArticle() {
-  const { slug, title, excerpt, image, author, date } = FEATURED_ARTICLE
+export function FeaturedArticle({
+  article,
+  copy,
+}: {
+  article: ArticleSummary
+  copy: GlobalValue<"microcopy">
+}) {
+  const { slug, title, excerpt, image, author, date } = article
   const href = `/insights/${slug}`
 
   return (
@@ -24,8 +32,8 @@ export function FeaturedArticle() {
           data-motion="parallax"
           className="absolute inset-x-0 -inset-y-[8%]"
         >
-          <Image
-            src={image}
+          <MediaImage
+            media={image}
             alt=""
             fill
             priority
@@ -38,9 +46,9 @@ export function FeaturedArticle() {
 
       <div className="flex min-w-0 flex-1 flex-col items-start gap-6">
         <div data-motion="rise" className="flex items-center gap-3">
-          <CategoryTag className="h-7 px-3">Featured</CategoryTag>
+          <CategoryTag className="h-7 px-3">{copy.featured}</CategoryTag>
           <span className="text-sm leading-[1.5] text-text-muted">
-            {readTime(slug)}
+            {fill(copy.readTime, { minutes: article.readingMinutes })}
           </span>
         </div>
         <div className="flex flex-col gap-3">
@@ -74,7 +82,7 @@ export function FeaturedArticle() {
             "h-auto rounded-full bg-clay px-7 py-4 text-[15px] leading-[normal] font-semibold text-cream hover:bg-clay/90"
           )}
         >
-          Read article →
+          {copy.readArticle}
         </Link>
       </div>
     </article>

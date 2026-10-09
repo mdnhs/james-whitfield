@@ -19,7 +19,7 @@ export function AboutSection({
   return (
     <section
       id={id}
-      aria-labelledby="about-heading"
+      aria-labelledby={`${id}-heading`}
       className="bg-white pt-9 pb-16 lg:pb-26"
     >
       <Container className="flex flex-col gap-12 lg:flex-row lg:items-start lg:gap-14 xl:gap-24">
@@ -29,7 +29,7 @@ export function AboutSection({
           </div>
 
           <h2
-            id="about-heading"
+            id={`${id}-heading`}
             data-motion="words"
             className="text-[28px] leading-[1.24] font-semibold tracking-[-0.6px] text-ink sm:text-[37px]"
           >

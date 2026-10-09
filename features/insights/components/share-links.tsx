@@ -6,10 +6,16 @@ const button =
   "flex h-10 cursor-pointer items-center justify-center rounded-full border border-line px-4 text-sm leading-[1.5] font-medium text-ink-muted transition-colors duration-300 outline-none hover:border-pine/40 hover:text-ink focus-visible:ring-3 focus-visible:ring-clay/50"
 
 // Copy the article link, or open a pre-filled email with it.
-export function ShareLinks({ title }: { title: string }) {
+export function ShareLinks({
+  title,
+  copy,
+}: {
+  title: string
+  copy: { copyLink: string; linkCopied: string; shareEmail: string }
+}) {
   const [copied, setCopied] = useState(false)
 
-  const copy = async () => {
+  const copyAddress = async () => {
     try {
       await navigator.clipboard.writeText(window.location.href)
       setCopied(true)
@@ -27,11 +33,13 @@ export function ShareLinks({ title }: { title: string }) {
 
   return (
     <div className="flex flex-wrap gap-2">
-      <button type="button" onClick={copy} className={button}>
-        <span aria-live="polite">{copied ? "Link copied" : "Copy link"}</span>
+      <button type="button" onClick={copyAddress} className={button}>
+        <span aria-live="polite">
+          {copied ? copy.linkCopied : copy.copyLink}
+        </span>
       </button>
       <button type="button" onClick={email} className={button}>
-        Email
+        {copy.shareEmail}
       </button>
     </div>
   )

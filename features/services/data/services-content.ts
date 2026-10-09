@@ -69,6 +69,7 @@ export const FORMATS = {
   title: "Simple, transparent options.",
   subtitle:
     "Sessions take place in person at Merrion Square, Dublin, or securely online via Zoom.",
+  featuredTag: "Most chosen",
   plans: [
     {
       name: "Discovery Call",

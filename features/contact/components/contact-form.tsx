@@ -1,32 +1,28 @@
 "use client"
 
 import Image from "next/image"
-import { Suspense, useRef, useState } from "react"
+import { Suspense, useMemo, useRef, useState } from "react"
 import { useQueryStates } from "nuqs"
 
+import type { GlobalValue } from "@/lib/content/globals"
+import type { ContactOption, PlanOption } from "@/lib/content/types"
+import { fill } from "@/lib/fill"
 import { cn } from "@/lib/utils"
-import { CONTACT_FORM } from "../data/contact-content"
-import {
-  contactParams,
-  FORMAT_BY_SLUG,
-  PLAN_BY_SLUG,
-  TOPIC_BY_SLUG,
-} from "../data/contact-params"
+import { contactParams } from "../lib/contact-params"
 
 type Field = "name" | "email" | "topic" | "consent"
 type Errors = Partial<Record<Field, string>>
+type Copy = GlobalValue<"contactForm">
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-function validate(data: FormData): Errors {
+function validate(data: FormData, messages: Copy["errors"]): Errors {
   const errors: Errors = {}
-  if (!String(data.get("name") ?? "").trim())
-    errors.name = "Please add your name."
+  if (!String(data.get("name") ?? "").trim()) errors.name = messages.name
   if (!EMAIL.test(String(data.get("email") ?? "").trim()))
-    errors.email = "Please add a valid email address."
-  if (!data.get("topic")) errors.topic = "Please choose a topic."
-  if (!data.get("consent"))
-    errors.consent = "Please confirm so I can reply to you."
+    errors.email = messages.email
+  if (!data.get("topic")) errors.topic = messages.topic
+  if (!data.get("consent")) errors.consent = messages.consent
   return errors
 }
 
@@ -78,42 +74,74 @@ type Prefill = { topic?: string; format?: string; message?: string }
 // prerendered page out of static HTML up to the nearest Suspense boundary, so
 // the boundary sits inside the card: the card and its reveal stay static, and
 // the fields prerender blank before picking up the URL on load.
-export function ContactForm() {
+export function ContactForm(props: {
+  copy: Copy
+  topics: ContactOption[]
+  formats: ContactOption[]
+  plans: PlanOption[]
+}) {
   return (
     <div
       data-motion="rise"
       className="flex min-w-0 flex-1 flex-col gap-6 rounded-[28px] bg-white p-6 sm:p-12"
     >
-      <Suspense fallback={<EnquiryForm prefill={{}} />}>
-        <PrefilledForm />
+      <Suspense fallback={<EnquiryForm {...props} prefill={{}} />}>
+        <PrefilledForm {...props} />
       </Suspense>
     </div>
   )
 }
 
-function PrefilledForm() {
-  const [{ topic, format, plan }] = useQueryStates(contactParams)
-  const chosen = plan ? PLAN_BY_SLUG.get(plan) : undefined
+type FormProps = {
+  copy: Copy
+  topics: ContactOption[]
+  formats: ContactOption[]
+  plans: PlanOption[]
+}
+
+function PrefilledForm(props: FormProps) {
+  const { copy, topics, formats, plans } = props
+  const params = useMemo(
+    () => contactParams(topics, formats, plans),
+    [topics, formats, plans]
+  )
+  const [{ topic, format, plan }] = useQueryStates(params)
+  const chosen = plan ? plans.find((p) => p.slug === plan) : undefined
   const prefill: Prefill = {
-    topic: topic ? TOPIC_BY_SLUG.get(topic) : undefined,
-    format: format ? FORMAT_BY_SLUG.get(format) : undefined,
+    topic: topics.find((t) => t.slug === topic)?.label,
+    format: formats.find((f) => f.slug === format)?.label,
     message: chosen
-      ? `I’d like to ask about the ${chosen.name} (${chosen.price} ${chosen.unit}).`
+      ? fill(copy.planMessage, {
+          name: chosen.name,
+          price: chosen.priceLabel,
+          unit: chosen.unit,
+        })
       : undefined,
   }
   // Uncontrolled fields only read defaults on mount, so a new link remounts.
-  return <EnquiryForm key={`${topic}|${format}|${plan}`} prefill={prefill} />
+  return (
+    <EnquiryForm
+      {...props}
+      key={`${topic}|${format}|${plan}`}
+      prefill={prefill}
+    />
+  )
 }
 
-function EnquiryForm({ prefill }: { prefill: Prefill }) {
-  const { title, topics, formats, consent, submit, success } = CONTACT_FORM
+function EnquiryForm({
+  copy,
+  topics,
+  formats,
+  prefill,
+}: FormProps & { prefill: Prefill }) {
+  const { title, labels, placeholders, consent, button, success } = copy
   const [errors, setErrors] = useState<Errors>({})
   const [sent, setSent] = useState(false)
   const form = useRef<HTMLFormElement>(null)
 
   const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    const next = validate(new FormData(event.currentTarget))
+    const next = validate(new FormData(event.currentTarget), copy.errors)
     setErrors(next)
     const first = Object.keys(next)[0]
     if (first) {
@@ -167,7 +195,7 @@ function EnquiryForm({ prefill }: { prefill: Prefill }) {
             onClick={() => setSent(false)}
             className="mt-2 cursor-pointer self-start text-[15px] font-semibold text-clay hover:underline hover:underline-offset-4"
           >
-            Send another message
+            {copy.sendAnother}
           </button>
         </div>
       ) : (
@@ -180,13 +208,13 @@ function EnquiryForm({ prefill }: { prefill: Prefill }) {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="flex flex-col gap-2">
               <Label htmlFor="name" required>
-                Full name
+                {labels.name}
               </Label>
               <input
                 id="name"
                 name="name"
                 autoComplete="name"
-                placeholder="Your name"
+                placeholder={placeholders.name}
                 onChange={() => clear("name")}
                 className={cn(control, "h-12")}
                 {...invalid("name")}
@@ -195,14 +223,14 @@ function EnquiryForm({ prefill }: { prefill: Prefill }) {
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="email" required>
-                Email
+                {labels.email}
               </Label>
               <input
                 id="email"
                 name="email"
                 type="email"
                 autoComplete="email"
-                placeholder="you@example.com"
+                placeholder={placeholders.email}
                 onChange={() => clear("email")}
                 className={cn(control, "h-12")}
                 {...invalid("email")}
@@ -213,19 +241,19 @@ function EnquiryForm({ prefill }: { prefill: Prefill }) {
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="flex flex-col gap-2">
-              <Label htmlFor="phone">Phone</Label>
+              <Label htmlFor="phone">{labels.phone}</Label>
               <input
                 id="phone"
                 name="phone"
                 type="tel"
                 autoComplete="tel"
-                placeholder="+353"
+                placeholder={placeholders.phone}
                 className={cn(control, "h-12 text-base")}
               />
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="topic" required>
-                I’d like help with
+                {labels.topic}
               </Label>
               <div className="relative">
                 <select
@@ -241,11 +269,15 @@ function EnquiryForm({ prefill }: { prefill: Prefill }) {
                   {...invalid("topic")}
                 >
                   <option value="" disabled>
-                    Choose a topic
+                    {placeholders.topic}
                   </option>
                   {topics.map((topic) => (
-                    <option key={topic} value={topic} className="text-ink">
-                      {topic}
+                    <option
+                      key={topic.slug}
+                      value={topic.label}
+                      className="text-ink"
+                    >
+                      {topic.label}
                     </option>
                   ))}
                 </select>
@@ -263,22 +295,22 @@ function EnquiryForm({ prefill }: { prefill: Prefill }) {
 
           <fieldset className="flex flex-col gap-2.5">
             <legend className="mb-2.5 text-sm leading-[1.5] font-medium text-text-strong">
-              Preferred format
+              {labels.format}
             </legend>
             <div className="flex flex-wrap gap-2.5">
               {formats.map((format, i) => (
-                <label key={format} className="cursor-pointer">
+                <label key={format.slug} className="cursor-pointer">
                   <input
                     type="radio"
                     name="format"
-                    value={format}
+                    value={format.label}
                     defaultChecked={
-                      prefill.format ? format === prefill.format : i === 0
+                      prefill.format ? format.label === prefill.format : i === 0
                     }
                     className="peer sr-only"
                   />
                   <span className="inline-flex rounded-full border border-line bg-white px-4.5 py-2.5 text-[14.5px] leading-[1.5] font-medium text-ink-muted/60 transition-colors duration-300 peer-checked:border-pine peer-checked:bg-pine peer-checked:text-cream peer-focus-visible:ring-3 peer-focus-visible:ring-clay/50 hover:border-pine/40">
-                    {format}
+                    {format.label}
                   </span>
                 </label>
               ))}
@@ -286,13 +318,13 @@ function EnquiryForm({ prefill }: { prefill: Prefill }) {
           </fieldset>
 
           <div className="flex flex-col gap-2">
-            <Label htmlFor="message">Message</Label>
+            <Label htmlFor="message">{labels.message}</Label>
             <textarea
               id="message"
               name="message"
               rows={5}
               defaultValue={prefill.message}
-              placeholder="Tell me a little about what is bringing you here…"
+              placeholder={placeholders.message}
               className={cn(control, "h-35 resize-y py-3.5")}
             />
           </div>
@@ -326,7 +358,7 @@ function EnquiryForm({ prefill }: { prefill: Prefill }) {
             type="submit"
             className="w-full cursor-pointer rounded-full bg-clay px-7 py-4.5 text-base leading-[1.5] font-semibold whitespace-pre text-cream transition-colors hover:bg-clay/90 focus-visible:ring-3 focus-visible:ring-clay/40 focus-visible:outline-none"
           >
-            {submit}
+            {button}
           </button>
         </form>
       )}

@@ -10,31 +10,14 @@ import {
   useQueryStates,
 } from "nuqs"
 
+import type { BlockView } from "@/blocks/media-refs"
 import { Container } from "@/components/layout/container"
+import type { GlobalValue } from "@/lib/content/globals"
+import type { ArticleSummary, CategoryView } from "@/lib/content/types"
+import { fill } from "@/lib/fill"
 import { gsap, useGSAP } from "@/lib/gsap"
-import { cn, slugify } from "@/lib/utils"
-import {
-  ARTICLES,
-  CATEGORIES,
-  PAGE_SIZE,
-  type Category,
-} from "../data/articles"
+import { cn } from "@/lib/utils"
 import { ArticleCard } from "./article-card"
-
-const ALL = "All articles" as const
-const FILTERS: (Category | typeof ALL)[] = [ALL, ...CATEGORIES]
-
-// Categories travel in the URL as slugs: "Anxiety & Stress" → anxiety-stress.
-const BY_SLUG = new Map(CATEGORIES.map((c) => [slugify(c), c]))
-
-// Filters, search and page live in the query string (?category=sleep&q=calm
-// &page=2), so a filtered view can be shared, survives a refresh and comes
-// back when the reader returns from an article. Defaults stay out of the URL.
-const PARAMS = {
-  category: parseAsStringLiteral([...BY_SLUG.keys()]),
-  q: parseAsString.withDefault(""),
-  page: parseAsInteger.withDefault(1),
-}
 
 type State = { category: string | null; q: string; page: number }
 // null clears a key back to its default (and out of the URL).
@@ -43,8 +26,21 @@ type Update = (next: Patch, history?: "push" | "replace") => void
 
 const DEFAULTS: State = { category: null, q: "", page: 1 }
 
-function useBrowserState(): [State, Update] {
-  const [state, setState] = useQueryStates(PARAMS, { scroll: false })
+// Filters, search and page live in the query string (?category=sleep&q=calm
+// &page=2), so a filtered view can be shared, survives a refresh and comes
+// back when the reader returns from an article. Defaults stay out of the URL.
+// Categories travel as slugs: "Anxiety & Stress" → anxiety-stress.
+function buildParams(categories: CategoryView[]) {
+  return {
+    category: parseAsStringLiteral(categories.map((c) => c.slug)),
+    q: parseAsString.withDefault(""),
+    page: parseAsInteger.withDefault(1),
+  }
+}
+type Params = ReturnType<typeof buildParams>
+
+function useBrowserState(params: Params): [State, Update] {
+  const [state, setState] = useQueryStates(params, { scroll: false })
   const update: Update = (next, history = "push") => {
     void setState(next, { history })
   }
@@ -54,6 +50,14 @@ function useBrowserState(): [State, Update] {
 const matches = (query: string, ...fields: string[]) =>
   fields.some((field) => field.toLowerCase().includes(query))
 
+type Shared = {
+  articles: ArticleSummary[]
+  categories: CategoryView[]
+  copy: GlobalValue<"microcopy">
+  pageSize: number
+}
+type ViewProps = Shared & { state: State; update: Update }
+
 // Reading the URL opts a prerendered page out of static HTML up to the nearest
 // Suspense boundary, so only the two URL-driven parts sit behind one. Each
 // prerenders in its default state (all articles, page one) and picks up the
@@ -61,17 +65,27 @@ const matches = (query: string, ...fields: string[]) =>
 // keeps their scroll reveals bound to markup that never gets swapped out.
 function UrlBound({
   view: View,
+  params,
+  shared,
 }: {
-  view: React.ComponentType<{ state: State; update: Update }>
+  view: React.ComponentType<ViewProps>
+  params: Params
+  shared: Shared
 }) {
-  const [state, update] = useBrowserState()
-  return <View state={state} update={update} />
+  const [state, update] = useBrowserState(params)
+  return <View {...shared} state={state} update={update} />
 }
 
-function withUrl(View: React.ComponentType<{ state: State; update: Update }>) {
+function withUrl(
+  View: React.ComponentType<ViewProps>,
+  params: Params,
+  shared: Shared
+) {
   return (
-    <Suspense fallback={<View state={DEFAULTS} update={() => {}} />}>
-      <UrlBound view={View} />
+    <Suspense
+      fallback={<View {...shared} state={DEFAULTS} update={() => {}} />}
+    >
+      <UrlBound view={View} params={params} shared={shared} />
     </Suspense>
   )
 }
@@ -79,64 +93,82 @@ function withUrl(View: React.ComponentType<{ state: State; update: Update }>) {
 // The filter bar sits above the featured story (passed in from the server)
 // and drives the latest-articles grid below it: category chips, a live search
 // and pagination. Cards ease in whenever the visible set changes.
-export function InsightsBrowser({ featured }: { featured: React.ReactNode }) {
+export function InsightsBrowser({
+  id,
+  content,
+  articles,
+  categories,
+  copy,
+  featured,
+}: {
+  id: string
+  content: BlockView<"insights.browser">
+  articles: ArticleSummary[]
+  categories: CategoryView[]
+  copy: GlobalValue<"microcopy">
+  featured: React.ReactNode
+}) {
+  const params = useMemo(() => buildParams(categories), [categories])
+  const shared: Shared = {
+    articles,
+    categories,
+    copy,
+    pageSize: content.pageSize,
+  }
+
   return (
     <>
       <section
-        aria-label="Featured article"
+        id={id}
+        aria-label={copy.featuredLabel}
         className="bg-white pt-12 pb-20 lg:pt-20 lg:pb-30"
       >
         <Container className="flex flex-col gap-14">
-          {withUrl(FilterBar)}
+          {withUrl(FilterBar, params, shared)}
           {featured}
         </Container>
       </section>
 
       <section
-        aria-labelledby="latest-heading"
+        aria-labelledby={`${id}-heading`}
         className="bg-stone py-20 lg:py-30"
       >
         <Container className="flex flex-col gap-12">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <h2
-              id="latest-heading"
+              id={`${id}-heading`}
               data-motion="words"
               className="font-display text-[38px] leading-[1.3] font-bold text-pine [font-variation-settings:'SOFT'_0,'WONK'_1] sm:text-[52px]"
             >
-              Latest articles
+              {content.heading}
             </h2>
-            {withUrl(Count)}
+            {withUrl(Count, params, shared)}
           </div>
-          {withUrl(Results)}
+          {withUrl(Results, params, shared)}
         </Container>
       </section>
     </>
   )
 }
 
-function FilterBar({ state, update }: { state: State; update: Update }) {
-  const active = state.category ? BY_SLUG.get(state.category) : ALL
+function FilterBar({ categories, copy, state, update }: ViewProps) {
+  const filters = [{ slug: null, name: copy.allArticles }, ...categories]
 
   return (
     <div className="flex flex-col gap-5 border-b border-line-soft pb-7 lg:flex-row lg:items-center lg:justify-between">
       <div
         role="group"
-        aria-label="Filter by category"
+        aria-label={copy.filterLabel}
         className="-mx-4 flex [scrollbar-width:none] gap-2.5 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:px-0"
       >
-        {FILTERS.map((item) => {
-          const selected = item === active
+        {filters.map((item) => {
+          const selected = item.slug === state.category
           return (
             <button
-              key={item}
+              key={item.slug ?? "all"}
               type="button"
               aria-pressed={selected}
-              onClick={() =>
-                update({
-                  category: item === ALL ? null : slugify(item),
-                  page: null,
-                })
-              }
+              onClick={() => update({ category: item.slug, page: null })}
               className={cn(
                 "shrink-0 cursor-pointer rounded-full px-4.5 py-2.5 text-base leading-[1.5] font-medium whitespace-nowrap transition-colors duration-300 outline-none focus-visible:ring-3 focus-visible:ring-clay/50",
                 selected
@@ -144,7 +176,7 @@ function FilterBar({ state, update }: { state: State; update: Update }) {
                   : "bg-stone text-ink-muted hover:bg-mist"
               )}
             >
-              {item}
+              {item.name}
             </button>
           )
         })}
@@ -157,7 +189,7 @@ function FilterBar({ state, update }: { state: State; update: Update }) {
           width={24}
           height={24}
         />
-        <span className="sr-only">Search articles</span>
+        <span className="sr-only">{copy.searchLabel}</span>
         <input
           type="search"
           value={state.q}
@@ -165,7 +197,7 @@ function FilterBar({ state, update }: { state: State; update: Update }) {
           onChange={(event) =>
             update({ q: event.target.value || null, page: null }, "replace")
           }
-          placeholder="Search articles"
+          placeholder={copy.searchPlaceholder}
           className="w-full bg-transparent text-base leading-[1.5] text-ink outline-none placeholder:text-text-subtle lg:w-42.5"
         />
       </label>
@@ -173,45 +205,49 @@ function FilterBar({ state, update }: { state: State; update: Update }) {
   )
 }
 
-function useResults(state: State) {
-  const category = state.category ? BY_SLUG.get(state.category) : undefined
+function useResults(
+  articles: ArticleSummary[],
+  pageSize: number,
+  state: State
+) {
+  const category = state.category
   const deferredQuery = useDeferredValue(state.q.trim().toLowerCase())
 
   const filtered = useMemo(
     () =>
-      ARTICLES.filter(
+      articles.filter(
         (article) =>
-          (!category || article.category === category) &&
+          (!category || article.category.slug === category) &&
           (!deferredQuery ||
             matches(
               deferredQuery,
               article.title,
               article.excerpt,
-              article.category
+              article.category.name
             ))
       ),
-    [category, deferredQuery]
+    [articles, category, deferredQuery]
   )
 
-  const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const pages = Math.max(1, Math.ceil(filtered.length / pageSize))
   const current = Math.min(Math.max(1, state.page), pages)
-  const visible = filtered.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE)
+  const visible = filtered.slice((current - 1) * pageSize, current * pageSize)
   const key = `${category}|${deferredQuery}|${current}`
 
   return { filtered, pages, current, visible, key }
 }
 
-function Count({ state }: { state: State; update: Update }) {
-  const { filtered, visible } = useResults(state)
+function Count({ articles, pageSize, copy, state }: ViewProps) {
+  const { filtered, visible } = useResults(articles, pageSize, state)
   return (
     <p aria-live="polite" className="text-base leading-[1.5] text-text-muted">
-      Showing {visible.length} of {filtered.length}
+      {fill(copy.showing, { shown: visible.length, total: filtered.length })}
     </p>
   )
 }
 
-function Results({ state, update }: { state: State; update: Update }) {
-  const { pages, current, visible, key } = useResults(state)
+function Results({ articles, pageSize, copy, state, update }: ViewProps) {
+  const { pages, current, visible, key } = useResults(articles, pageSize, state)
   const grid = useRef<HTMLDivElement>(null)
   const lenis = useLenis()
 
@@ -263,31 +299,29 @@ function Results({ state, update }: { state: State; update: Update }) {
         {visible.length ? (
           <div className="grid grid-cols-1 gap-x-7 gap-y-14 md:grid-cols-2 lg:grid-cols-3">
             {visible.map((article) => (
-              <ArticleCard key={article.slug} article={article} />
+              <ArticleCard key={article.id} article={article} />
             ))}
           </div>
         ) : (
           <div className="flex flex-col items-center gap-4 rounded-2xl bg-white px-6 py-16 text-center">
-            <p className="text-lg text-ink-muted">
-              No articles match that yet.
-            </p>
+            <p className="text-lg text-ink-muted">{copy.noResults}</p>
             <button
               type="button"
               onClick={clear}
               className="cursor-pointer text-[15px] font-semibold text-clay hover:underline hover:underline-offset-4"
             >
-              Clear filters
+              {copy.clearFilters}
             </button>
           </div>
         )}
       </div>
 
       {pages > 1 && (
-        <nav aria-label="Pagination" className="flex justify-center">
+        <nav aria-label={copy.pagination} className="flex justify-center">
           <ol className="flex items-center gap-2.5">
             <li>
               <PageButton
-                label="Previous page"
+                label={copy.previousPage}
                 disabled={current === 1}
                 onClick={() => goTo(current - 1)}
               >
@@ -297,7 +331,7 @@ function Results({ state, update }: { state: State; update: Update }) {
             {Array.from({ length: pages }, (_, i) => i + 1).map((n) => (
               <li key={n}>
                 <PageButton
-                  label={`Page ${n}`}
+                  label={fill(copy.pageLabel, { n })}
                   active={n === current}
                   onClick={() => goTo(n)}
                 >
@@ -307,7 +341,7 @@ function Results({ state, update }: { state: State; update: Update }) {
             ))}
             <li>
               <PageButton
-                label="Next page"
+                label={copy.nextPage}
                 disabled={current === pages}
                 onClick={() => goTo(current + 1)}
               >

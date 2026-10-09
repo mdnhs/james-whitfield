@@ -2,16 +2,25 @@ import { Icon } from "@/components/icons/icon"
 import Link from "next/link"
 
 import { Eyebrow } from "@/components/eyebrow"
+import type { BlockView } from "@/blocks/media-refs"
 import { Container } from "@/components/layout/container"
-import { SERVICES } from "../data/services-content"
+import type { ServiceView } from "@/lib/content/types"
 
-export function ServicesGrid() {
-  const { eyebrow, title, intro, more, items } = SERVICES
+export function ServicesGrid({
+  id,
+  content,
+  services,
+}: {
+  id: string
+  content: BlockView<"services.grid">
+  services: ServiceView[]
+}) {
+  const { eyebrow, title, intro, more } = content
 
   return (
     <section
-      id="services"
-      aria-labelledby="services-heading"
+      id={id}
+      aria-labelledby={`${id}-heading`}
       className="bg-stone py-20 lg:py-30"
     >
       <Container className="flex flex-col gap-14">
@@ -21,7 +30,7 @@ export function ServicesGrid() {
               <Eyebrow className="uppercase">{eyebrow}</Eyebrow>
             </div>
             <h2
-              id="services-heading"
+              id={`${id}-heading`}
               data-motion="words"
               className="max-w-140 font-display text-[36px] leading-[1.22] font-semibold tracking-[-1.2px] text-pine [font-variation-settings:'SOFT'_0,'WONK'_1] sm:text-5xl"
             >
@@ -40,9 +49,9 @@ export function ServicesGrid() {
           data-motion="deal-group"
           className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3"
         >
-          {items.map(({ icon, title, body }) => (
+          {services.map(({ id: serviceId, icon, title, body }) => (
             <li
-              key={title}
+              key={serviceId}
               data-motion="deal tilt"
               data-tilt="4"
               className="group relative flex flex-col items-start gap-5 overflow-clip rounded-[20px] bg-white p-8 transition-shadow duration-500 hover:shadow-[0_24px_48px_-24px_rgba(30,79,80,0.25)]"

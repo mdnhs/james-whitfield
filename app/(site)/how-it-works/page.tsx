@@ -49,11 +49,11 @@ export default function HowItWorksPage() {
           steps={legacy.processSteps()}
         />
       </StackCard>
-      <StackCard id="session">
-        <SessionTimeline />
+      <StackCard>
+        <SessionTimeline id="session" content={legacy.sessionTimeline()} />
       </StackCard>
-      <StackCard id="fit">
-        <FitSection />
+      <StackCard>
+        <FitSection id="fit" content={legacy.fit()} />
       </StackCard>
       <StackCard>
         <FaqSection

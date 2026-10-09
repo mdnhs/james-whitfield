@@ -1,14 +1,22 @@
 import Link from "next/link"
 
+import { Brand } from "@/components/brand"
 import { Container } from "@/components/layout/container"
+import type { GlobalValue } from "@/lib/content/globals"
 import { cn } from "@/lib/utils"
-import { NAV_LINKS } from "../data/nav-links"
 import { BookCallButton } from "./book-call-button"
 import { HeaderScroll } from "./header-scroll"
-import { Brand } from "@/components/brand"
 import { MobileNav } from "./mobile-nav"
 
-export function SiteHeader({ className }: { className?: string }) {
+export function SiteHeader({
+  site,
+  navigation,
+  className,
+}: {
+  site: { name: string }
+  navigation: GlobalValue<"navigation">
+  className?: string
+}) {
   return (
     <HeaderScroll>
       <header
@@ -19,13 +27,13 @@ export function SiteHeader({ className }: { className?: string }) {
         )}
       >
         <Container className="flex h-25 items-center justify-between transition-[height] duration-500 ease-out group-data-scrolled/header:h-18">
-          <Brand />
+          <Brand name={site.name} />
 
           <nav
             aria-label="Main"
             className="hidden items-center gap-5.5 lg:flex"
           >
-            {NAV_LINKS.map((link, i) => (
+            {navigation.links.map((link, i) => (
               <Link
                 key={link.href}
                 href={link.href}
@@ -40,8 +48,11 @@ export function SiteHeader({ className }: { className?: string }) {
           </nav>
 
           <div className="flex items-center gap-3">
-            <BookCallButton className="hidden sm:inline-flex" />
-            <MobileNav />
+            <BookCallButton
+              cta={navigation.cta}
+              className="hidden sm:inline-flex"
+            />
+            <MobileNav links={navigation.links} cta={navigation.cta} />
           </div>
         </Container>
       </header>

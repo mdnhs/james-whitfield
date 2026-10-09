@@ -1,9 +1,9 @@
 import Image from "next/image"
 
+import type { BlockView } from "@/blocks/media-refs"
 import { Eyebrow } from "@/components/eyebrow"
 import { Container } from "@/components/layout/container"
 import { pairRows } from "@/lib/layout-math"
-import { FIT } from "../data/session"
 
 function Mark({ good }: { good: boolean }) {
   return good ? (
@@ -37,19 +37,29 @@ function Item({ good, children }: { good: boolean; children: string }) {
 
 const divider = "w-0.5 bg-clay/20"
 
-export function FitSection() {
-  const { eyebrow, title, subtitle, good, poor } = FIT
+export function FitSection({
+  id,
+  content,
+}: {
+  id: string
+  content: BlockView<"fit">
+}) {
+  const { eyebrow, title, subtitle, good, poor } = content
   const rows = pairRows(good.items, poor.items)
 
   return (
-    <section aria-labelledby="fit-heading" className="bg-white py-20 lg:py-30">
+    <section
+      id={id}
+      aria-labelledby={`${id}-heading`}
+      className="bg-white py-20 lg:py-30"
+    >
       <Container className="flex flex-col gap-14">
         <header className="flex flex-col items-center gap-3 text-center">
           <div data-motion="rise">
             <Eyebrow className="uppercase">{eyebrow}</Eyebrow>
           </div>
           <h2
-            id="fit-heading"
+            id={`${id}-heading`}
             data-motion="words"
             className="max-w-145 font-display text-[38px] leading-[1.2] font-bold text-pine [font-variation-settings:'SOFT'_0,'WONK'_1] sm:text-[52px]"
           >
@@ -113,11 +123,8 @@ export function FitSection() {
                 data-motion="stagger"
                 className="flex flex-col overflow-clip rounded-3xl"
               >
-                {list.items.map((item) => (
-                  <li
-                    key={item}
-                    className="border border-line-faint bg-stone p-6"
-                  >
+                {list.items.map((item, i) => (
+                  <li key={i} className="border border-line-faint bg-stone p-6">
                     <Item good={n === 0}>{item}</Item>
                   </li>
                 ))}

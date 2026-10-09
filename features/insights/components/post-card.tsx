@@ -1,10 +1,11 @@
-import Image from "next/image"
 import Link from "next/link"
 
-import type { Post } from "../data/posts"
+import { MediaImage } from "@/components/media-image"
+import type { ArticleSummary } from "@/lib/content/types"
 
-export function PostCard({ post }: { post: Post }) {
-  const { slug, category, title, excerpt, image, author, date } = post
+export function PostCard({ article }: { article: ArticleSummary }) {
+  const { slug, title, excerpt, image, author, date } = article
+  const category = article.category.name
   const href = `/insights/${slug}`
 
   return (
@@ -24,8 +25,8 @@ export function PostCard({ post }: { post: Post }) {
           data-motion="parallax"
           className="absolute inset-x-0 -inset-y-[8%]"
         >
-          <Image
-            src={image}
+          <MediaImage
+            media={image}
             alt=""
             fill
             sizes="(min-width: 1024px) 420px, 100vw"
@@ -51,8 +52,8 @@ export function PostCard({ post }: { post: Post }) {
         <p className="pt-3 text-base leading-6">{excerpt}</p>
 
         <div className="flex items-center gap-2 pt-4.5 text-base leading-6 whitespace-nowrap">
-          <Image
-            src={author.avatar}
+          <MediaImage
+            media={author.avatar}
             alt=""
             width={32}
             height={32}

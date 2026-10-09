@@ -4,10 +4,18 @@ import { useState } from "react"
 import Link from "next/link"
 import { Menu, X } from "lucide-react"
 
-import { NAV_LINKS } from "../data/nav-links"
+import type { GlobalValue } from "@/lib/content/globals"
 import { BookCallButton } from "./book-call-button"
 
-export function MobileNav() {
+type Navigation = GlobalValue<"navigation">
+
+export function MobileNav({
+  links,
+  cta,
+}: {
+  links: Navigation["links"]
+  cta: Navigation["cta"]
+}) {
   const [open, setOpen] = useState(false)
 
   return (
@@ -28,7 +36,7 @@ export function MobileNav() {
           id="mobile-nav"
           className="absolute inset-x-4 top-full mt-2 flex flex-col gap-1 rounded-3xl border border-white/15 bg-black/60 p-4 backdrop-blur-md"
         >
-          {NAV_LINKS.map((link) => (
+          {links.map((link) => (
             <Link
               key={link.href}
               href={link.href}
@@ -38,7 +46,7 @@ export function MobileNav() {
               {link.label}
             </Link>
           ))}
-          <BookCallButton className="mt-2 self-start sm:hidden" />
+          <BookCallButton cta={cta} className="mt-2 self-start sm:hidden" />
         </nav>
       )}
     </div>

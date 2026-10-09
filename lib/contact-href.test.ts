@@ -16,3 +16,21 @@ describe("contactHref", () => {
     )
   })
 })
+
+describe("contactHref edge cases", () => {
+  it("encodes special characters", () => {
+    const href = contactHref({ topic: "a b&c=d/é#?" })
+    // & and # can never break out of the value.
+    expect(href).toBe("/contact?topic=a+b%26c=d/é%23?")
+    const url = new URL(href, "https://example.test")
+    expect(url.searchParams.get("topic")).toBe("a b&c=d/é#?")
+    expect(url.hash).toBe("")
+  })
+  it("drops null and undefined values", () => {
+    expect(contactHref({ topic: null, format: undefined, plan: null })).toBe(
+      "/contact"
+    )
+    expect(contactHref({})).toBe("/contact")
+    expect(contactHref({ topic: null, plan: "x" })).toBe("/contact?plan=x")
+  })
+})

@@ -142,7 +142,14 @@ export const NEWSLETTER = {
   title: "One considered idea, once a month.",
   subtitle:
     "Practical notes on stress, confidence and change. No spam, unsubscribe anytime.",
+  emailLabel: "Email address",
   placeholder: "Your email address",
-  submit: "Subscribe",
+  button: "Subscribe",
   success: "Thank you — the next letter is on its way to your inbox.",
+  image: "/images/enterprise/enterprise-bg.png",
+  tint: 0.9,
+  confirmationEmail: {
+    subject: "Confirm your subscription",
+    body: "Please confirm your subscription to the monthly letter.",
+  },
 }

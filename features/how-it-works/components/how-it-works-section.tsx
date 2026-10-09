@@ -27,7 +27,7 @@ export function HowItWorksSection({
   return (
     <section
       id={id}
-      aria-labelledby="how-it-works-heading"
+      aria-labelledby={`${id}-heading`}
       // Pin heights for StepsStory: auto on mobile (no pin), a full-viewport
       // sticky frame with extra scroll room for the sideways walk on desktop.
       className="overflow-clip bg-brand [--steps-child:auto] [--steps-spacer:auto] lg:[--steps-child:100svh] lg:[--steps-spacer:var(--steps-spacer-lg)]"
@@ -52,7 +52,7 @@ export function HowItWorksSection({
                 </span>
               )}
               <h2
-                id="how-it-works-heading"
+                id={`${id}-heading`}
                 data-motion="words"
                 className={cn(
                   "leading-[1.18] tracking-[-0.8px] text-cream",

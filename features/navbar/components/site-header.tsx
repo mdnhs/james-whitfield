@@ -12,6 +12,7 @@ export function SiteHeader({ className }: { className?: string }) {
   return (
     <HeaderScroll>
       <header
+        data-site-chrome
         className={cn(
           "relative z-20 w-full bg-[url(/images/hero/navbar-bg.png)] bg-size-[100%_100%] group-data-scrolled/header:bg-none",
           className

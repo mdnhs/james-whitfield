@@ -16,7 +16,7 @@ const linkClass =
 
 export function SiteFooter() {
   return (
-    <footer id="contact" className="bg-pine pt-16 pb-12 lg:pt-24">
+    <footer id="contact" data-site-chrome className="bg-pine pt-16 pb-12 lg:pt-24">
       <Container className="flex flex-col gap-12 lg:gap-16">
         <div
           data-motion="stagger"

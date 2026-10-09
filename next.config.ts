@@ -13,6 +13,7 @@ const nextConfig: NextConfig = {
     minimumCacheTTL: 31536000,
   },
   experimental: {
+    globalNotFound: true,
     optimizePackageImports: ["lucide-react", "three", "@gsap/react", "lenis"],
   },
 }

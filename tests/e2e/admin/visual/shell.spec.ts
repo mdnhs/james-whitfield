@@ -7,9 +7,10 @@ import { STORAGE } from "../../support/storage"
 // Phase 2, item 10). The numbers are pinned by the fixture, relative times
 // are measured from its generatedAt, and the browser clock is frozen at the
 // same instant. Charts skip their animation under reduced motion, so the
-// capture is stable; the greeting depends on the server's hour and is
-// masked. Titles start with "visual:" because the baselines are macOS-only
-// until Linux ones are recorded (Phase 11), and CI skips them.
+// capture is stable, and the greeting goes by the answer's generatedAt
+// (11:00 in Dublin: "Good morning"). Titles start with "visual:" because
+// the baselines are macOS-only until Linux ones are recorded (Phase 11),
+// and CI skips them.
 const NOW = new Date(DASHBOARD_FIXTURE.generatedAt)
 
 test.use({ storageState: STORAGE.owner, reducedMotion: "reduce" })
@@ -33,9 +34,9 @@ for (const colorScheme of ["light", "dark"] as const) {
           .getByRole("listitem")
       ).toHaveCount(4)
       await page.evaluate(() => document.fonts.ready)
+      await expect(page.getByTestId("greeting")).toHaveText("Good morning, Sam")
       await expect(page).toHaveScreenshot(`dashboard-${colorScheme}.png`, {
         fullPage: true,
-        mask: [page.getByTestId("greeting")],
       })
     })
 

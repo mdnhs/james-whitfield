@@ -20,6 +20,18 @@ export function greetingFor(date: Date) {
 export const firstName = (name: string) =>
   name.trim().split(/\s+/)[0] || "there"
 
+// The time of day comes from the dashboard answer once it arrives (the
+// server's clock when it built the numbers on screen), and until then from
+// when the page was rendered. Never the render's own wall clock: the greeting
+// then follows the data, and a test that pins the data pins the greeting.
+export function dashboardGreeting(
+  name: string,
+  generatedAt: string | undefined,
+  renderedAt: string
+) {
+  return `${greetingFor(new Date(generatedAt ?? renderedAt))}, ${name}`
+}
+
 const ACTION_LABELS: Record<string, string> = {
   "auth.sign_in": "Signed in",
   "auth.impersonate": "Viewed as",

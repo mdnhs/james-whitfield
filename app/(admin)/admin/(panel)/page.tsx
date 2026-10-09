@@ -4,7 +4,7 @@ import { Suspense } from "react"
 
 import { DashboardSkeleton } from "@/admin/modules/dashboard/dashboard-skeleton"
 import { DashboardView } from "@/admin/modules/dashboard/dashboard-view"
-import { firstName, greetingFor } from "@/admin/modules/dashboard/present"
+import { firstName } from "@/admin/modules/dashboard/present"
 import { permissionFor } from "@/lib/admin/nav"
 import { requirePermission } from "@/server/auth/session"
 import { getEnv } from "@/server/env"
@@ -28,7 +28,8 @@ async function Dashboard() {
   await io()
   return (
     <DashboardView
-      greeting={`${greetingFor(new Date())}, ${firstName(actor.name)}`}
+      name={firstName(actor.name)}
+      renderedAt={new Date().toISOString()}
       siteUrl={getEnv().SITE_URL}
     />
   )

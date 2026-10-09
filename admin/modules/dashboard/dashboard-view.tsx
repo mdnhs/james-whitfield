@@ -26,7 +26,7 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 import { DashboardSkeleton } from "./dashboard-skeleton"
-import { actionStatus } from "./present"
+import { actionStatus, dashboardGreeting } from "./present"
 import { dashboardQuery, type Dashboard } from "./queries"
 
 // With a baseline the caption compares ("+20% vs last week"); without one
@@ -44,13 +44,16 @@ function compare(
 // Fetched in the browser (not prefetched) so the shell paints at once and
 // the visual suite can pin the numbers with page.route.
 export function DashboardView({
-  greeting,
+  name,
+  renderedAt,
   siteUrl,
 }: {
-  greeting: string
+  name: string
+  renderedAt: string
   siteUrl: string
 }) {
   const { data, isPending, isError, refetch } = useQuery(dashboardQuery())
+  const greeting = dashboardGreeting(name, data?.generatedAt, renderedAt)
   const canInvite = usePermission({ user: ["create"] })
 
   return (

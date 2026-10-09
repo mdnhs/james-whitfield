@@ -2,6 +2,10 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/* The admin UI and the planning docs never render on the public site. */
+@source not "../../admin";
+@source not "../../docs";
+
 @custom-variant dark (&:is(.dark *));
 
 @theme {

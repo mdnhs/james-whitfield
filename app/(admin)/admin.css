@@ -2,7 +2,28 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/* The admin never renders the public site's sections, and the planning docs
+   are full of example class names: scanning either only bloats this file. */
+@source not "../../features";
+@source not "../../docs";
+
 @custom-variant dark (&:is(.dark *));
+
+/* Evergreen type scale and card radius (docs/brief.md §9.2). */
+@theme {
+  --text-title: 2.25rem;
+  --text-title--line-height: 1.1;
+  --text-title--letter-spacing: -0.025em;
+  --text-title--font-weight: 600;
+  --text-card-title: 1.125rem;
+  --text-card-title--line-height: 1.35;
+  --text-card-title--font-weight: 600;
+  --text-kpi: 2.75rem;
+  --text-kpi--line-height: 1;
+  --text-kpi--letter-spacing: -0.03em;
+  --text-kpi--font-weight: 600;
+  --radius-card: 1.375rem;
+}
 
 /* "Evergreen" admin tokens (docs/brief.md §9.2). Static for now; Phase 9
    generates them from the theme engine. */
@@ -40,6 +61,12 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -82,6 +109,22 @@
   --sidebar-accent-foreground: #14532d;
   --sidebar-border: #e5e8e5;
   --sidebar-ring: #22a055;
+  /* Status pills: soft fill, strong text (Published, Draft, New…). */
+  --success: #15803d;
+  --success-soft: #dcfce7;
+  --warning: #b45309;
+  --warning-soft: #fef3c7;
+  --danger: #b91c1c;
+  --danger-soft: #fee2e2;
+  /* Comparison-period stripes in charts and legends. */
+  --hatch: #8fcca5;
+  /* Hero KPI card and the sidebar's "Your website" card. */
+  --hero-from: #0f4d23;
+  --hero-to: #2b6e3e;
+  --hero-foreground: #ffffff;
+  --promo-from: #06120a;
+  --promo-to: #12381f;
+  --promo-foreground: #ffffff;
 }
 
 :root[data-theme="admin"].dark {
@@ -116,6 +159,31 @@
   --sidebar-accent-foreground: #c9ecd6;
   --sidebar-border: #243026;
   --sidebar-ring: #3fcb75;
+  --success: #4ade80;
+  --success-soft: #12301c;
+  --warning: #fbbf24;
+  --warning-soft: #33270c;
+  --danger: #f87171;
+  --danger-soft: #3a1414;
+  --hatch: #2f7a45;
+}
+
+@utility bg-hatch {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    var(--hatch) 0 3px,
+    transparent 3px 7px
+  );
+}
+
+@utility bg-hero {
+  background-image: linear-gradient(160deg, var(--hero-from), var(--hero-to));
+  color: var(--hero-foreground);
+}
+
+@utility bg-promo {
+  background-image: linear-gradient(160deg, var(--promo-from), var(--promo-to));
+  color: var(--promo-foreground);
 }
 
 @layer base {

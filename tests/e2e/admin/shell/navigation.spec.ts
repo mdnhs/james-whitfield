@@ -66,9 +66,12 @@ test.describe("as a viewer", () => {
       "SEO",
       "Site settings",
     ])
+    // The section opens on the first page this role may use, so settings.read
+    // content (identity) is never drawn for it.
     await page.goto("/admin/settings")
+    await expect(page).toHaveURL(/\/admin\/settings\/contact$/)
     await expect(
-      page.getByRole("heading", { level: 1, name: "Site settings" })
+      page.getByRole("heading", { level: 1, name: "Contact & clinic" })
     ).toBeVisible()
     await page.goto("/admin/settings/identity")
     await expect(
@@ -169,6 +172,19 @@ test.describe("as an owner", () => {
       nav.getByRole("link", { name: "SEO", exact: true })
     ).toHaveAttribute("aria-current", "page")
     await expect(nav.getByRole("link", { name: "Redirects" })).toBeVisible()
+  })
+
+  // Regression: the placeholder route once served the first placeholder the
+  // client router had fetched for every later link (Enquiries opened Media).
+  test("each placeholder link opens its own page", async ({ page }) => {
+    await page.goto("/admin")
+    for (const label of ["Newsletter", "Enquiries", "Appearance"]) {
+      const nav = await mainNav(page)
+      await nav.getByRole("link", { name: label, exact: true }).click()
+      await expect(
+        page.getByRole("heading", { level: 1, name: label })
+      ).toBeVisible()
+    }
   })
 })
 

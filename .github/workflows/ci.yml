@@ -1,10 +1,10 @@
 name: CI
 
-# Checks every push and pull request. Deploys are handled by Dokploy, which
-# builds the Dockerfile on each push to main through its GitHub app.
+# Checks every push and pull request. Deploys stay with Dokploy; Phase 11 makes
+# them wait for this workflow (docs/brief.md §16).
 on:
   push:
-    branches: [main]
+    branches: [main, feat/platform]
   pull_request:
 
 concurrency:
@@ -14,6 +14,22 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: mk
+          POSTGRES_PASSWORD: mk
+          POSTGRES_DB: mk_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U mk -d mk_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL_TEST: postgres://mk:mk@localhost:5432/mk_test
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -24,6 +40,14 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: pnpm audit --prod --audit-level high
       - run: pnpm lint
       - run: pnpm typecheck
-      - run: pnpm build
+      - run: pnpm test:unit
+      - run: pnpm test:integration
+      # Guardrail: the build must never need a database (brief §5.6).
+      - name: Build with an unreachable database
+        run: pnpm build
+        env:
+          DATABASE_URL: postgres://nobody:nothing@127.0.0.1:1/unreachable
+          SITE_URL: https://example.com

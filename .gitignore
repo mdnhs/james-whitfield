@@ -50,3 +50,4 @@ next-env.d.ts
 
 # keep the documented example env
 !.env.example
+/tests/e2e/.auth/

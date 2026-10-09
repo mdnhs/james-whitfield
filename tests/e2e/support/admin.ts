@@ -45,3 +45,9 @@ export async function emailedResetLink(to: string, since: Date) {
     .toBeTruthy()
   return link!
 }
+
+// Signs out through the user menu (the topbar's avatar block).
+export async function signOut(page: Page) {
+  await page.getByRole("button", { name: /^Account menu for / }).click()
+  await page.getByRole("menuitem", { name: "Sign out" }).click()
+}

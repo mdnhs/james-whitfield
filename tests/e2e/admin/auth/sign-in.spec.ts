@@ -3,9 +3,9 @@ import { expect, test } from "@playwright/test"
 import {
   RATE_LIMITED,
   UNREACHABLE,
-} from "../../../admin/modules/auth/auth-errors"
-import { E2E_ORIGIN } from "../fixtures/env"
-import { E2E_USERS, signIn } from "../support/admin"
+} from "../../../../admin/modules/auth/auth-errors"
+import { E2E_ORIGIN } from "../../fixtures/env"
+import { E2E_USERS, signIn } from "../../support/admin"
 
 const welcome = (name: string) => ({ name: `Welcome, ${name}` })
 

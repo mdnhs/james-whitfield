@@ -1,8 +1,8 @@
 import { expect, test, type Page } from "@playwright/test"
 import { TOTP } from "otpauth"
 
-import { E2E_USERS, PASSWORD, signIn } from "../support/admin"
-import { resetTwoFactor } from "../support/db"
+import { E2E_USERS, PASSWORD, signIn } from "../../support/admin"
+import { resetTwoFactor } from "../../support/db"
 
 const SETUP = /\/admin\/two-factor-setup$/
 // The verify step exactly, never /admin/two-factor-setup.

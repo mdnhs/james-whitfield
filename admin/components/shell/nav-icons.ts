@@ -1,0 +1,35 @@
+import {
+  CircleHelpIcon,
+  FileTextIcon,
+  HistoryIcon,
+  ImageIcon,
+  InboxIcon,
+  LayersIcon,
+  LayoutDashboardIcon,
+  MailIcon,
+  MegaphoneIcon,
+  NewspaperIcon,
+  PaletteIcon,
+  SearchCheckIcon,
+  SettingsIcon,
+  UsersIcon,
+  type LucideIcon,
+} from "lucide-react"
+
+// Icons live with the UI; lib/admin/nav.ts stays free of React.
+export const NAV_ICONS: Record<string, LucideIcon> = {
+  dashboard: LayoutDashboardIcon,
+  pages: FileTextIcon,
+  insights: NewspaperIcon,
+  collections: LayersIcon,
+  media: ImageIcon,
+  leads: InboxIcon,
+  newsletter: MailIcon,
+  seo: SearchCheckIcon,
+  marketing: MegaphoneIcon,
+  appearance: PaletteIcon,
+  settings: SettingsIcon,
+  users: UsersIcon,
+  activity: HistoryIcon,
+  help: CircleHelpIcon,
+}

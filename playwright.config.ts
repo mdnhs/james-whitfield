@@ -4,9 +4,9 @@ import { E2E_ENV, E2E_PORT } from "./tests/e2e/fixtures/env"
 
 const PORT = E2E_PORT
 
-// The admin is a desktop tool first; its specs run once, in the desktop
-// project. Parity and navigation specs keep all three viewports.
-const DESKTOP_ONLY = ["**/admin/**"]
+// Specs that change accounts (passwords, 2FA, sign-out) run once, on
+// desktop. Everything else, admin shell included, runs on all viewports.
+const DESKTOP_ONLY = ["**/admin/auth/**"]
 
 // CI builds in its own step, so the server only needs starting.
 const command = process.env.E2E_SKIP_BUILD
@@ -35,8 +35,15 @@ export default defineConfig({
     },
   },
   projects: [
+    // Signs each E2E role in once and saves its storage state.
+    {
+      name: "setup",
+      testMatch: /admin\/auth\.setup\.ts$/,
+      use: { ...devices["Desktop Chrome"] },
+    },
     {
       name: "desktop",
+      dependencies: ["setup"],
       use: {
         ...devices["Desktop Chrome"],
         viewport: { width: 1440, height: 900 },
@@ -44,6 +51,7 @@ export default defineConfig({
     },
     {
       name: "tablet",
+      dependencies: ["setup"],
       testIgnore: DESKTOP_ONLY,
       use: {
         ...devices["Desktop Chrome"],
@@ -52,6 +60,7 @@ export default defineConfig({
     },
     {
       name: "mobile",
+      dependencies: ["setup"],
       testIgnore: DESKTOP_ONLY,
       use: { ...devices["Pixel 7"] },
     },

@@ -13,6 +13,21 @@ export const E2E_USERS = {
   },
   // Only the password-reset spec uses (and changes) this account.
   resetter: { email: "reset@e2e.test", name: "Rita Reset", role: "viewer" },
+  // Shared, read-only sessions for the shell specs (tests/e2e/admin/auth.setup.ts).
+  intake: { email: "intake@e2e.test", name: "Ivy Intake", role: "intake" },
+  viewer: { email: "viewer@e2e.test", name: "Vera Viewer", role: "viewer" },
+  // An owner the setup project enrols in 2FA; never signs out.
+  shellOwner: {
+    email: "owner-shell@e2e.test",
+    name: "Sam Shell",
+    role: "owner",
+  },
+  // Only the account spec changes this one (name, sessions).
+  accountUser: {
+    email: "account@e2e.test",
+    name: "Andy Account",
+    role: "editor",
+  },
 } as const
 
 export type E2EUser = (typeof E2E_USERS)[keyof typeof E2E_USERS]

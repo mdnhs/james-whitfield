@@ -1,33 +1,19 @@
 "use client"
 
 import { LogOutIcon } from "lucide-react"
-import { useRouter } from "next/navigation"
-import { useState } from "react"
-import { toast } from "sonner"
 
-import { authClient } from "@/admin/lib/auth-client"
-import { useResetOnHide } from "@/admin/lib/use-reset-on-hide"
 import { Button } from "@/components/ui/button"
 
+import { useSignOut } from "./use-sign-out"
+
 export function SignOutButton() {
-  const router = useRouter()
-  const [pending, setPending] = useState(false)
-  useResetOnHide(() => setPending(false))
+  const { signOut, pending } = useSignOut()
   return (
     <Button
       variant="outline"
       disabled={pending}
       className="h-11 rounded-xl border-primary px-4 font-semibold text-primary hover:bg-accent hover:text-accent-foreground"
-      onClick={async () => {
-        setPending(true)
-        const { error } = await authClient.signOut()
-        if (error) {
-          setPending(false)
-          return toast.error("Couldn't sign out. Try again.")
-        }
-        router.replace("/admin/sign-in")
-        router.refresh()
-      }}
+      onClick={signOut}
     >
       <LogOutIcon data-icon="inline-start" />
       Sign out

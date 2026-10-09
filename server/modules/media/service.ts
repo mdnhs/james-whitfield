@@ -28,7 +28,7 @@ import {
   MAX_UPLOAD_BYTES,
   processUpload,
 } from "@/server/lib/media/process"
-import { getStorage } from "@/server/lib/media/storage"
+import { getStorage, variantKey } from "@/server/lib/media/storage"
 
 import { MEDIA_REFERRERS, mediaUsage } from "./usage"
 
@@ -134,16 +134,19 @@ async function findLive(id: string, db: DbLike = getDb(), lock = false) {
 // docs/brief.md §7.2: media.update is "own" for authors. Any other role that
 // holds it may edit every file. Checked here, server-side, on every write.
 const OWN_ONLY: readonly RoleName[] = ["author"]
-function assertMayEdit(actor: Actor, row: MediaRow) {
-  const anyFile = hasPermission(
+function mayEditAll(actor: Actor) {
+  return hasPermission(
     actor.roles.filter((r) => !OWN_ONLY.includes(r)),
     { media: ["update"] }
   )
-  if (!anyFile && row.createdBy !== actor.userId) {
+}
+function assertMayEdit(actor: Actor, row: MediaRow) {
+  if (!mayEditAll(actor) && row.createdBy !== actor.userId) {
     throw new ApiError("FORBIDDEN", "You can only edit files you uploaded")
   }
 }
 
+// Only when two writes race for the same key.
 const duplicate = () =>
   new ApiError("CONFLICT", "That file is already in the library")
 
@@ -161,44 +164,66 @@ async function readUpload(file: File) {
   }
 }
 
+// The same bytes under the same name (same key) are reused only when that
+// row is live and this actor may edit it. Otherwise (soft-deleted, or another
+// user's file an author could not edit) the upload gets its own row under a
+// variant key, so nobody inherits stale alt text or someone else's file.
 export async function uploadMedia(actor: Actor, file: File) {
   const { filename, processed } = await readUpload(file)
   const storage = getStorage()
-  await storage.put(processed.key, processed.body, processed.mimeType)
-  const values = {
-    driver: storage.name,
-    key: processed.key,
-    url: storage.urlFor(processed.key),
-    filename,
-    mimeType: processed.mimeType,
-    sizeBytes: processed.sizeBytes,
-    width: processed.width,
-    height: processed.height,
-    blurDataUrl: processed.blurDataUrl,
-    dominantColor: processed.dominantColor,
-    createdBy: actor.userId,
+  const [existing] = await getDb()
+    .select()
+    .from(media)
+    .where(eq(media.key, processed.key))
+    .limit(1)
+  if (
+    existing &&
+    !existing.deletedAt &&
+    (existing.createdBy === actor.userId || mayEditAll(actor))
+  ) {
+    return toItem(existing)
   }
-  const row = await getDb().transaction(async (tx) => {
-    // The same bytes twice: bring the existing row back instead of failing.
-    const [inserted] = await tx
-      .insert(media)
-      .values(values)
-      .onConflictDoUpdate({ target: media.key, set: { deletedAt: null } })
-      .returning()
-    await audit(
-      actor,
-      {
-        action: "media.upload",
-        entityType: "media",
-        entityId: inserted!.id,
-        summary: `Uploaded ${inserted!.filename}`,
-      },
-      tx
-    )
-    return inserted!
-  })
-  invalidate([tags.media])
-  return toItem(row)
+  let key = existing ? variantKey(processed.key) : processed.key
+  for (let attempt = 0; ; attempt++) {
+    await storage.put(key, processed.body, processed.mimeType)
+    try {
+      const row = await getDb().transaction(async (tx) => {
+        const [inserted] = await tx
+          .insert(media)
+          .values({
+            driver: storage.name,
+            key,
+            url: storage.urlFor(key),
+            filename,
+            mimeType: processed.mimeType,
+            sizeBytes: processed.sizeBytes,
+            width: processed.width,
+            height: processed.height,
+            blurDataUrl: processed.blurDataUrl,
+            dominantColor: processed.dominantColor,
+            createdBy: actor.userId,
+          })
+          .returning()
+        await audit(
+          actor,
+          {
+            action: "media.upload",
+            entityType: "media",
+            entityId: inserted!.id,
+            summary: `Uploaded ${inserted!.filename}`,
+          },
+          tx
+        )
+        return inserted!
+      })
+      invalidate([tags.media])
+      return toItem(row)
+    } catch (error) {
+      // A concurrent identical upload took the key first: use a variant.
+      if (!isUniqueViolation(error) || attempt > 0) throw error
+      key = variantKey(processed.key)
+    }
+  }
 }
 
 export async function updateMedia(
@@ -255,10 +280,19 @@ export async function replaceMedia(actor: Actor, id: string, file: File) {
       }
     )
   }
+  // Another row (often a soft-deleted one) may already hold this key: take
+  // a variant rather than refusing a file the library does not show.
+  const [holder] = await getDb()
+    .select({ id: media.id })
+    .from(media)
+    .where(eq(media.key, processed.key))
+    .limit(1)
+  const key =
+    holder && holder.id !== id ? variantKey(processed.key) : processed.key
   // Stored before the transaction (no network I/O under a row lock). Keys
   // are content-hashed, so a rolled-back replace leaves an unused file only.
   const storage = getStorage()
-  await storage.put(processed.key, processed.body, processed.mimeType)
+  await storage.put(key, processed.body, processed.mimeType)
   const row = await getDb().transaction(async (tx) => {
     const before = await findLive(id, tx, true)
     assertMayEdit(actor, before)
@@ -268,8 +302,8 @@ export async function replaceMedia(actor: Actor, id: string, file: File) {
         .update(media)
         .set({
           driver: storage.name,
-          key: processed.key,
-          url: storage.urlFor(processed.key),
+          key,
+          url: storage.urlFor(key),
           filename,
           mimeType: processed.mimeType,
           sizeBytes: processed.sizeBytes,

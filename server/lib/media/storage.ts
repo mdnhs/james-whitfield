@@ -1,7 +1,10 @@
 import "server-only"
 
-import { mkdir, writeFile } from "node:fs/promises"
+import { randomUUID } from "node:crypto"
+import { mkdir, rename, rm, writeFile } from "node:fs/promises"
 import path from "node:path"
+
+import type { S3Client } from "@aws-sdk/client-s3"
 
 import { getEnv, type Env } from "@/server/env"
 
@@ -34,6 +37,26 @@ export function localFile(key: string, dir = getEnv().MEDIA_LOCAL_DIR) {
     path: file,
     mimeType: MIME_BY_EXT[match[1] as keyof typeof MIME_BY_EXT],
   }
+}
+
+// PDFs download rather than render (docs/brief.md §14): Chrome's viewer
+// refuses to run under the CSP sandbox /uploads sends, and R2 cannot send a
+// CSP at all, so both drivers make the same, inert choice. Images stay inline.
+export function contentDisposition(key: string) {
+  const match = MEDIA_KEY.exec(key)
+  if (match?.[1] !== "pdf") return undefined
+  // The slug part of a MEDIA_KEY is [a-z0-9-] only: safe inside quotes.
+  const name = key.slice(key.lastIndexOf("/") + 18)
+  return `attachment; filename="${name}"`
+}
+
+// A second key for the same bytes, for a duplicate upload that must not share
+// a row (a soft-deleted one, or another user's file an author may not edit).
+export function variantKey(key: string) {
+  const match = /^(.*\/[a-f0-9]{16}-)([a-z0-9-]+)\.([a-z]+)$/.exec(key)
+  if (!match) throw new Error(`Refusing media key ${key}`)
+  const suffix = randomUUID().slice(0, 8)
+  return `${match[1]}${match[2]!.slice(0, 51).replace(/-$/, "")}-${suffix}.${match[3]}`
 }
 
 type S3Env = Pick<
@@ -69,20 +92,22 @@ export function getStorage(): StorageDriver {
   const env = getEnv()
   if (env.MEDIA_DRIVER === "s3") {
     const base = env.MEDIA_PUBLIC_URL!.replace(/\/$/, "")
+    // One client per process (it pools connections); the SDK is loaded on
+    // first upload, so the local driver never pulls it in.
+    let client: S3Client | undefined
     cached = {
       name: "s3",
-      // Loaded on first upload, so the local driver never pulls in the SDK.
       async put(key, body, mimeType) {
         if (!MEDIA_KEY.test(key)) throw new Error(`Refusing media key ${key}`)
-        const { PutObjectCommand, S3Client } =
-          await import("@aws-sdk/client-s3")
-        const client = new S3Client(s3Config(env))
+        const sdk = await import("@aws-sdk/client-s3")
+        client ??= new sdk.S3Client(s3Config(env))
         await client.send(
-          new PutObjectCommand({
+          new sdk.PutObjectCommand({
             Bucket: env.S3_BUCKET,
             Key: key,
             Body: body,
             ContentType: mimeType,
+            ContentDisposition: contentDisposition(key),
             CacheControl: CACHE,
           })
         )
@@ -96,12 +121,18 @@ export function getStorage(): StorageDriver {
         const file = localFile(key, env.MEDIA_LOCAL_DIR)
         if (!file) throw new Error(`Refusing media key ${key}`)
         await mkdir(path.dirname(file.path), { recursive: true })
-        // Same key = same bytes (content hash): an existing file is fine.
-        await writeFile(file.path, body, { flag: "wx" }).catch(
-          (error: NodeJS.ErrnoException) => {
-            if (error.code !== "EEXIST") throw error
-          }
-        )
+        // Temp file in the same directory, then rename: readers see the old
+        // file or the whole new one, never a partial write, and a file left
+        // by a crashed write is replaced rather than trusted. The temp name
+        // never matches MEDIA_KEY, so /uploads cannot serve it.
+        const temp = `${file.path}.${randomUUID()}.tmp`
+        try {
+          await writeFile(temp, body, { flag: "wx" })
+          await rename(temp, file.path)
+        } catch (error) {
+          await rm(temp, { force: true })
+          throw error
+        }
       },
       urlFor: (key) => `/uploads/${key}`,
     }

@@ -61,6 +61,19 @@ const EnvSchema = z
         message: 'SMTP_URL is required when EMAIL_DRIVER is "smtp"',
       })
     }
+    // next/image only allows an https media host (next.config.ts), and §15
+    // keeps public URLs https; plain http is for a local emulator only.
+    if (
+      env.MEDIA_PUBLIC_URL &&
+      env.SITE_ENV !== "development" &&
+      !env.MEDIA_PUBLIC_URL.startsWith("https://")
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["MEDIA_PUBLIC_URL"],
+        message: `MEDIA_PUBLIC_URL must use https when SITE_ENV is "${env.SITE_ENV}"`,
+      })
+    }
     if (
       env.SITE_ENV !== "development" &&
       !env.BETTER_AUTH_URL.startsWith("https://")

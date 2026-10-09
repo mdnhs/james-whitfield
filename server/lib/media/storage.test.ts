@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest"
 
-import { localFile, s3Config } from "./storage"
+import {
+  contentDisposition,
+  localFile,
+  MEDIA_KEY,
+  s3Config,
+  variantKey,
+} from "./storage"
 
 describe("media storage", () => {
   it("targets the R2 EU endpoint and only checksums when required", () => {
@@ -44,5 +50,23 @@ describe("media storage", () => {
       path: "/srv/storage/media/2026/10/0123456789abcdef-photo.jpg",
       mimeType: "image/jpeg",
     })
+  })
+})
+
+describe("media keys", () => {
+  it("downloads PDFs under their slug and leaves images inline", () => {
+    expect(
+      contentDisposition("media/2026/10/0123456789abcdef-brochure.pdf")
+    ).toBe('attachment; filename="brochure.pdf"')
+    expect(
+      contentDisposition("media/2026/10/0123456789abcdef-photo.jpg")
+    ).toBeUndefined()
+  })
+  it("makes a distinct, still well-formed key for the same bytes", () => {
+    const key = `media/2026/10/0123456789abcdef-${"a".repeat(60)}.png`
+    const variant = variantKey(key)
+    expect(variant).not.toBe(key)
+    expect(variant.startsWith("media/2026/10/0123456789abcdef-")).toBe(true)
+    expect(MEDIA_KEY.test(variant)).toBe(true)
   })
 })

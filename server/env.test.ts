@@ -75,3 +75,37 @@ describe("getEnv BETTER_AUTH_URL", () => {
     expect(getEnv().BETTER_AUTH_URL).toBe("http://localhost:3000")
   })
 })
+
+describe("getEnv media", () => {
+  const configure = (siteEnv: string, publicUrl: string) => {
+    vi.stubEnv("SITE_ENV", siteEnv)
+    vi.stubEnv("BETTER_AUTH_URL", "https://admin.example.ie")
+    vi.stubEnv("EMAIL_DRIVER", "smtp")
+    vi.stubEnv("SMTP_URL", "smtp://localhost:1025")
+    vi.stubEnv("MEDIA_DRIVER", "s3")
+    vi.stubEnv("MEDIA_PUBLIC_URL", publicUrl)
+    vi.stubEnv("S3_ACCOUNT_ID", "acct")
+    vi.stubEnv("S3_BUCKET", "media")
+    vi.stubEnv("S3_ACCESS_KEY_ID", "k")
+    vi.stubEnv("S3_SECRET_ACCESS_KEY", "s")
+  }
+
+  it.each(["staging", "production"])(
+    "requires an https MEDIA_PUBLIC_URL in %s",
+    (siteEnv) => {
+      configure(siteEnv, "http://media.example.ie")
+      expect(() => getEnv()).toThrow(/MEDIA_PUBLIC_URL must use https/)
+    }
+  )
+
+  it("allows an http emulator in development", () => {
+    configure("development", "http://localhost:9000/media")
+    expect(getEnv().MEDIA_PUBLIC_URL).toBe("http://localhost:9000/media")
+  })
+
+  it("requires the bucket and credentials for the s3 driver", () => {
+    configure("production", "https://media.example.ie")
+    vi.stubEnv("S3_BUCKET", undefined)
+    expect(() => getEnv()).toThrow(/S3_BUCKET is required/)
+  })
+})

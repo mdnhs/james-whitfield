@@ -12,10 +12,42 @@ import { sniff, type Sniffed } from "./sniff"
 
 export const MAX_UPLOAD_BYTES = 20 * 1024 * 1024
 const MAX_EDGE = 4000
-// Decompression-bomb guard: a small file can declare a huge canvas. 100 MP
-// covers any phone or camera photo; sharp refuses anything larger before
-// decoding the pixels.
-const MAX_INPUT_PIXELS = 100_000_000
+// Decompression-bomb guard: a small file can declare a huge canvas. 50 MP
+// covers phone and most camera photos (a 50 MP decode is ~150 MB); sharp
+// refuses anything larger before decoding the pixels.
+const MAX_INPUT_PIXELS = 50_000_000
+
+// At most two images decode at once per process, with a short queue behind
+// them; past that the upload is refused (503) rather than queued without
+// bound, so a burst of uploads cannot exhaust memory.
+const MAX_RUNNING = 2
+const MAX_WAITING = 8
+let running = 0
+const waiting: (() => void)[] = []
+
+export async function withProcessingSlot<T>(
+  work: () => Promise<T>
+): Promise<T> {
+  if (running >= MAX_RUNNING) {
+    if (waiting.length >= MAX_WAITING) {
+      throw new ApiError(
+        "UNAVAILABLE",
+        "The server is busy processing uploads. Try again in a moment."
+      )
+    }
+    await new Promise<void>((resolve) => waiting.push(resolve))
+  } else {
+    running++
+  }
+  try {
+    return await work()
+  } finally {
+    // Hand the slot straight to the next waiter, or free it.
+    const next = waiting.shift()
+    if (next) next()
+    else running--
+  }
+}
 
 // What sharp reports for each allowed type. A file whose magic bytes and
 // decoded format disagree is refused (docs/brief.md §14).
@@ -110,11 +142,14 @@ export async function processUpload(
   }
   if (type.ext !== "pdf") {
     try {
-      body = await normalise(input, type)
-    } catch {
+      ;({ body, probe } = await withProcessingSlot(async () => {
+        const normalised = await normalise(input, type)
+        return { body: normalised, probe: await probeImage(normalised) }
+      }))
+    } catch (error) {
+      if (error instanceof ApiError) throw error
       throw unreadable()
     }
-    probe = await probeImage(body)
   }
   // Content-hashed and immutable (docs/brief.md §14): a replace gets a new key.
   const hash = createHash("sha256").update(body).digest("hex").slice(0, 16)

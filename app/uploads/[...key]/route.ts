@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises"
 
-import { localFile } from "@/server/lib/media/storage"
+import { contentDisposition, localFile } from "@/server/lib/media/storage"
 
 const NOT_FOUND = () =>
   new Response("Not found", {
@@ -12,13 +12,15 @@ const NOT_FOUND = () =>
 // MEDIA_KEY resolve (no traversal, no listing: a directory never matches),
 // and the type comes from the key's extension, set at upload from the
 // sniffed bytes. Keys are content-hashed, so responses are immutable. The
-// CSP sandbox keeps a crafted PDF inert.
+// CSP sandbox keeps a crafted file inert, and PDFs download
+// (contentDisposition) instead of opening in a sandboxed viewer.
 export async function GET(
   _request: Request,
   ctx: RouteContext<"/uploads/[...key]">
 ) {
   const { key } = await ctx.params
-  const file = localFile(key.join("/"))
+  const name = key.join("/")
+  const file = localFile(name)
   if (!file) return NOT_FOUND()
   try {
     return new Response(new Uint8Array(await readFile(file.path)), {
@@ -28,6 +30,9 @@ export async function GET(
         "X-Content-Type-Options": "nosniff",
         "Content-Security-Policy": "default-src 'none'; sandbox",
         "Cross-Origin-Resource-Policy": "same-site",
+        ...(file.mimeType === "application/pdf" && {
+          "Content-Disposition": contentDisposition(name)!,
+        }),
       },
     })
   } catch {

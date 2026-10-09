@@ -314,3 +314,135 @@ describe("media security", () => {
     }
   })
 })
+
+describe("media fixes", () => {
+  it("strips XMP, IPTC and the ICC profile as well as EXIF", async () => {
+    const xmp =
+      '<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"/></x:xmpmeta>'
+    const input = await sharp({
+      create: { width: 32, height: 32, channels: 3, background: "#336699" },
+    })
+      .withIccProfile("p3")
+      .withXmp(xmp)
+      .withExif({ IFD0: { Make: "Test" } })
+      .jpeg()
+      .toBuffer()
+    const before = await sharp(input).metadata()
+    expect(before.xmp).toBeDefined()
+    expect(before.icc).toBeDefined()
+    const item = await (
+      await upload(await cookieFor("editor"), input, "meta.jpg")
+    ).json()
+    const after = await sharp(
+      await readFile(join(dir, item.url.replace("/uploads/", "")))
+    ).metadata()
+    for (const field of ["exif", "xmp", "iptc", "icc"] as const) {
+      expect(after[field]).toBeUndefined()
+    }
+    expect(after.hasProfile).toBe(false)
+  })
+
+  it("refuses a 20–21 MB file with 413 after the body limit lets it through", async () => {
+    const body = Buffer.concat([
+      Buffer.from([0xff, 0xd8, 0xff]),
+      Buffer.alloc(20.5 * 1024 * 1024),
+    ])
+    const response = await upload(await cookieFor("editor"), body, "big.jpg")
+    expect(response.status).toBe(413)
+    expect((await response.json()).error.message).toBe(
+      "Files can be up to 20 MB"
+    )
+  })
+
+  it("deletes unused media: soft delete, audit, gone from the library", async () => {
+    const editor = await cookieFor("editor")
+    const item = await (await upload(editor, await png(), "gone.png")).json()
+    const deleted = await adminRequest(`/media/${item.id}`, editor, {
+      method: "DELETE",
+    })
+    expect(deleted.status).toBe(200)
+    expect(await deleted.json()).toEqual({ ok: true })
+    expect(
+      (await (await adminRequest(`/media?ids=${item.id}`, editor)).json()).items
+    ).toEqual([])
+    expect((await adminRequest(`/media/${item.id}/usage`, editor)).status).toBe(
+      404
+    )
+    const audit = await (
+      await adminRequest("/audit?entityType=media", await cookieFor("owner"))
+    ).json()
+    expect(JSON.stringify(audit)).toContain("media.delete")
+    expect(next.revalidateTag.mock.calls.map(([t]) => t)).toContain("media")
+  })
+
+  it("reuses a duplicate only when it is live and the uploader may edit it", async () => {
+    const editor = await cookieFor("editor")
+    const author = await cookieFor("author")
+    const bytes = await png()
+    const first = await (await upload(editor, bytes, "same.png")).json()
+    // Same uploader, or a role that edits every file: the existing row.
+    expect((await (await upload(editor, bytes, "same.png")).json()).id).toBe(
+      first.id
+    )
+    expect(
+      (
+        await (
+          await upload(await cookieFor("marketer"), bytes, "same.png")
+        ).json()
+      ).id
+    ).toBe(first.id)
+    // An author gets a row of their own, which they can then edit.
+    const authors = await (await upload(author, bytes, "same.png")).json()
+    expect(authors.id).not.toBe(first.id)
+    expect(authors.url).not.toBe(first.url)
+    const patch = await adminRequest(`/media/${authors.id}`, author, {
+      method: "PATCH",
+      body: { alt: "Mine" },
+    })
+    expect(patch.status).toBe(200)
+    // A soft-deleted row is never brought back.
+    await adminRequest(`/media/${first.id}`, editor, { method: "DELETE" })
+    const again = await (await upload(editor, bytes, "same.png")).json()
+    expect(again.id).not.toBe(first.id)
+    expect(again).toMatchObject({ alt: "" })
+    expect((await serve(again.url.replace("/uploads/", ""))).status).toBe(200)
+  })
+
+  it("replaces with bytes that match a soft-deleted file", async () => {
+    const editor = await cookieFor("editor")
+    const bytes = await png()
+    const old = await (await upload(editor, bytes, "old.png")).json()
+    await adminRequest(`/media/${old.id}`, editor, { method: "DELETE" })
+    const other = await sharp({
+      create: { width: 10, height: 10, channels: 3, background: "#000" },
+    })
+      .png()
+      .toBuffer()
+    const item = await (await upload(editor, other, "item.png")).json()
+    const replaced = await upload(
+      editor,
+      bytes,
+      "old.png",
+      `/media/${item.id}/replace`
+    )
+    expect(replaced.status).toBe(200)
+    expect((await replaced.json()).id).toBe(item.id)
+  })
+
+  it("serves PDFs as attachments, keeping nosniff and the sandbox", async () => {
+    const pdf = await (
+      await upload(
+        await cookieFor("editor"),
+        Buffer.from("%PDF-1.4\n%%EOF\n"),
+        "Price List.pdf"
+      )
+    ).json()
+    const response = await serve(pdf.url.replace("/uploads/", ""))
+    expect(response.headers.get("content-type")).toBe("application/pdf")
+    expect(response.headers.get("content-disposition")).toBe(
+      'attachment; filename="price-list.pdf"'
+    )
+    expect(response.headers.get("x-content-type-options")).toBe("nosniff")
+    expect(response.headers.get("content-security-policy")).toContain("sandbox")
+  })
+})

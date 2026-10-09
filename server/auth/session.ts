@@ -4,6 +4,9 @@ import { headers } from "next/headers"
 import { redirect } from "next/navigation"
 import { cache } from "react"
 
+import { ADMIN_PATH_HEADER } from "@/lib/auth/admin-path"
+import { safeNext } from "@/lib/auth/safe-next"
+
 import { toActor, type Actor } from "./actor"
 import { getFreshSession } from "./fresh-session"
 
@@ -13,8 +16,13 @@ export const getSession = cache(async () => {
   return session
 })
 
-export async function requireActor(next = "/admin"): Promise<Actor> {
+// Without an explicit `next`, a signed-out visitor returns to the page they
+// asked for (set by proxy.ts, since layouts never see the pathname).
+export async function requireActor(next?: string): Promise<Actor> {
   const session = await getSession()
-  if (!session) redirect(`/admin/sign-in?next=${encodeURIComponent(next)}`)
+  if (!session) {
+    const target = safeNext(next ?? (await headers()).get(ADMIN_PATH_HEADER))
+    redirect(`/admin/sign-in?next=${encodeURIComponent(target)}`)
+  }
   return toActor(session)
 }

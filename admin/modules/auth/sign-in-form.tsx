@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 
+import { authRequest } from "./auth-errors"
 import { PasswordInput } from "./password-input"
 import { authButtonClass, authInputClass } from "./styles"
 
@@ -28,14 +29,18 @@ export function SignInForm({ next }: { next: string }) {
     const form = new FormData(event.currentTarget)
     setPending(true)
     setError(null)
-    const { data, error } = await authClient.signIn.email({
-      email: String(form.get("email")),
-      password: String(form.get("password")),
-    })
-    if (error) {
+    const { data, failure } = await authRequest(() =>
+      authClient.signIn.email({
+        email: String(form.get("email")),
+        password: String(form.get("password")),
+      })
+    )
+    if (failure) {
       setPending(false)
       // Generic on purpose: never reveal which accounts exist.
-      return setError("That email and password don't match an account.")
+      return setError(
+        failure.message ?? "That email and password don't match an account."
+      )
     }
     if (data && "twoFactorRedirect" in data && data.twoFactorRedirect) {
       return router.push(`/admin/two-factor?next=${encodeURIComponent(next)}`)

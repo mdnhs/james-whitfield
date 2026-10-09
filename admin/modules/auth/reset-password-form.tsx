@@ -14,6 +14,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field"
 
+import { authRequest } from "./auth-errors"
 import { PasswordInput } from "./password-input"
 import { authButtonClass } from "./styles"
 
@@ -28,30 +29,45 @@ export function ResetPasswordForm({
   invite: boolean
 }) {
   const router = useRouter()
-  const [error, setError] = useState<string | null>(null)
+  // Each message sits under, and marks, the field it is about.
+  const [error, setError] = useState<{
+    field: "password" | "confirm"
+    message: string
+  } | null>(null)
   const [pending, setPending] = useState(false)
+
+  const passwordError = error?.field === "password" ? error.message : null
+  const confirmError = error?.field === "confirm" ? error.message : null
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const form = new FormData(event.currentTarget)
     const password = String(form.get("password"))
     if (password.length < MIN_LENGTH) {
-      return setError(`Use at least ${MIN_LENGTH} characters.`)
+      return setError({
+        field: "password",
+        message: `Use at least ${MIN_LENGTH} characters.`,
+      })
     }
     if (password !== String(form.get("confirm"))) {
-      return setError("The two passwords don't match.")
+      return setError({
+        field: "confirm",
+        message: "The two passwords don't match.",
+      })
     }
     setPending(true)
     setError(null)
-    const { error } = await authClient.resetPassword({
-      newPassword: password,
-      token,
-    })
-    if (error) {
+    const { failure } = await authRequest(() =>
+      authClient.resetPassword({ newPassword: password, token })
+    )
+    if (failure) {
       setPending(false)
-      return setError(
-        "This link has expired or was already used. Ask for a new one."
-      )
+      return setError({
+        field: "confirm",
+        message:
+          failure.message ??
+          "This link has expired or was already used. Ask for a new one.",
+      })
     }
     toast.success(
       invite
@@ -64,7 +80,7 @@ export function ResetPasswordForm({
   return (
     <form onSubmit={onSubmit} noValidate>
       <FieldGroup>
-        <Field>
+        <Field data-invalid={passwordError ? true : undefined}>
           <FieldLabel htmlFor="password">
             {invite ? "Choose a password" : "New password"}
           </FieldLabel>
@@ -75,22 +91,26 @@ export function ResetPasswordForm({
             minLength={MIN_LENGTH}
             required
             aria-describedby="password-hint"
+            aria-invalid={passwordError ? true : undefined}
           />
           <FieldDescription id="password-hint">
             At least {MIN_LENGTH} characters. A short phrase is easiest to
             remember.
           </FieldDescription>
+          {passwordError && (
+            <FieldError errors={[{ message: passwordError }]} />
+          )}
         </Field>
-        <Field data-invalid={error ? true : undefined}>
+        <Field data-invalid={confirmError ? true : undefined}>
           <FieldLabel htmlFor="confirm">Repeat password</FieldLabel>
           <PasswordInput
             id="confirm"
             name="confirm"
             autoComplete="new-password"
             required
-            aria-invalid={error ? true : undefined}
+            aria-invalid={confirmError ? true : undefined}
           />
-          {error && <FieldError errors={[{ message: error }]} />}
+          {confirmError && <FieldError errors={[{ message: confirmError }]} />}
         </Field>
         <Button type="submit" disabled={pending} className={authButtonClass}>
           {pending ? "Saving…" : invite ? "Set password" : "Update password"}

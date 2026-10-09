@@ -52,4 +52,56 @@ describe("proxy", () => {
       "noindex, nofollow"
     )
   })
+
+  it("keeps /admin/two-factor public but gates look-alike paths", () => {
+    expect(
+      proxy(request("/admin/two-factor")).headers.get("location")
+    ).toBeNull()
+    const gated = proxy(request("/admin/two-factor-setup"))
+    expect(gated.status).toBe(307)
+    expect(gated.headers.get("location")).toBe(
+      "http://localhost:3000/admin/sign-in?next=%2Fadmin%2Ftwo-factor-setup"
+    )
+  })
+
+  it("sends no Referer from the reset page, whose URL holds a token", () => {
+    expect(
+      proxy(request("/admin/reset-password?token=t")).headers.get(
+        "referrer-policy"
+      )
+    ).toBe("no-referrer")
+    expect(
+      proxy(request("/admin/sign-in")).headers.get("referrer-policy")
+    ).toBeNull()
+  })
+
+  it("forwards the requested path to the app for requireActor", () => {
+    const response = proxy(
+      request("/admin/pages?tab=draft&_rsc=abc", "mk.session_token=abc")
+    )
+    expect(response.headers.get("x-middleware-override-headers")).toContain(
+      "x-mk-admin-path"
+    )
+    expect(response.headers.get("x-middleware-request-x-mk-admin-path")).toBe(
+      "/admin/pages?tab=draft"
+    )
+  })
+
+  it("overwrites a client-supplied admin path header", () => {
+    const forged = new NextRequest(new URL("http://localhost:3000/admin"), {
+      headers: {
+        cookie: "mk.session_token=abc",
+        "x-mk-admin-path": "https://evil.example",
+      },
+    })
+    expect(
+      proxy(forged).headers.get("x-middleware-request-x-mk-admin-path")
+    ).toBe("/admin")
+  })
+
+  it("leaves Next's _rsc parameter out of the return path", () => {
+    expect(
+      proxy(request("/admin/pages?_rsc=abc")).headers.get("location")
+    ).toBe("http://localhost:3000/admin/sign-in?next=%2Fadmin%2Fpages")
+  })
 })

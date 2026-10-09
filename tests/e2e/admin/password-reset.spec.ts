@@ -1,5 +1,9 @@
 import { expect, test } from "@playwright/test"
 
+import {
+  RATE_LIMITED,
+  UNREACHABLE,
+} from "../../../admin/modules/auth/auth-errors"
 import { E2E_USERS, emailedResetLink, signIn } from "../support/admin"
 
 const user = E2E_USERS.resetter
@@ -47,4 +51,36 @@ test("a broken reset link explains what to do", async ({ page }) => {
   await expect(
     page.getByRole("link", { name: "Ask for a new link" })
   ).toHaveAttribute("href", "/admin/forgot-password")
+})
+
+test("a failed reset request is not reported as sent", async ({ page }) => {
+  let status = 429
+  await page.route("**/api/auth/request-password-reset", (route) =>
+    route.fulfill({ status, json: { message: "nope" } })
+  )
+  await page.goto("/admin/forgot-password")
+  await page.getByLabel("Email").fill(user.email)
+  await page.getByRole("button", { name: "Send reset link" }).click()
+  await expect(page.getByText(RATE_LIMITED)).toBeVisible()
+
+  status = 503
+  await page.getByRole("button", { name: "Send reset link" }).click()
+  await expect(page.getByText(UNREACHABLE)).toBeVisible()
+  await expect(page.getByText("Check your inbox")).toHaveCount(0)
+})
+
+test("a short password is flagged on the password field", async ({ page }) => {
+  await page.goto("/admin/reset-password?token=not-checked-client-side")
+  const password = page.getByLabel("New password")
+  const confirm = page.getByLabel("Repeat password")
+  await password.fill("short")
+  await confirm.fill("short")
+  await page.getByRole("button", { name: "Update password" }).click()
+
+  const passwordField = page.getByRole("group").filter({ has: password })
+  await expect(passwordField.getByRole("alert")).toHaveText(
+    "Use at least 12 characters."
+  )
+  await expect(password).toHaveAttribute("aria-invalid", "true")
+  await expect(confirm).not.toHaveAttribute("aria-invalid", "true")
 })

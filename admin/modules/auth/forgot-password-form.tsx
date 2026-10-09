@@ -5,24 +5,36 @@ import { useState } from "react"
 
 import { authClient } from "@/admin/lib/auth-client"
 import { Button } from "@/components/ui/button"
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 
+import { authRequest, UNREACHABLE } from "./auth-errors"
 import { authButtonClass, authInputClass } from "./styles"
 
 export function ForgotPasswordForm() {
   const [sent, setSent] = useState(false)
   const [pending, setPending] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setPending(true)
-    await authClient.requestPasswordReset({
-      email: String(new FormData(event.currentTarget).get("email")),
-      redirectTo: "/admin/reset-password",
-    })
+    setError(null)
+    const { failure } = await authRequest(() =>
+      authClient.requestPasswordReset({
+        email: String(new FormData(event.currentTarget).get("email")),
+        redirectTo: "/admin/reset-password",
+      })
+    )
     setPending(false)
-    // Same message whether or not the account exists.
+    // The server answers the same for unknown emails, so success never
+    // reveals whether an account exists. Only real failures are shown.
+    if (failure) return setError(failure.message ?? UNREACHABLE)
     setSent(true)
   }
 
@@ -49,7 +61,7 @@ export function ForgotPasswordForm() {
   return (
     <form onSubmit={onSubmit}>
       <FieldGroup>
-        <Field>
+        <Field data-invalid={error ? true : undefined}>
           <FieldLabel htmlFor="email">Email</FieldLabel>
           <Input
             id="email"
@@ -60,6 +72,7 @@ export function ForgotPasswordForm() {
             required
             className={authInputClass}
           />
+          {error && <FieldError errors={[{ message: error }]} />}
         </Field>
         <Button type="submit" disabled={pending} className={authButtonClass}>
           {pending ? "Sending…" : "Send reset link"}

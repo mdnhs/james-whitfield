@@ -2,7 +2,7 @@ import path from "node:path"
 
 import { defineConfig } from "vitest/config"
 
-import { TEST_ENV } from "./tests/test-env"
+import { TEST_ENV } from "./tests/test-env.mjs"
 
 const root = import.meta.dirname
 

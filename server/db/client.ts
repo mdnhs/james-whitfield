@@ -18,13 +18,20 @@ export function getDb(): Db {
   const pool =
     store.mkPool ??
     new Pool({ connectionString: getEnv().DATABASE_URL, max: 10 })
+  // Idle-client errors (e.g. DB restart) must not crash the process.
+  if (!store.mkPool) {
+    pool.on("error", (error) => console.error("[db] idle client error", error))
+  }
   store.mkPool = pool
   store.mkDb = drizzle({ client: pool, schema, casing: "snake_case" })
   return store.mkDb
 }
 
 export async function closeDb() {
-  await store.mkPool?.end()
-  store.mkPool = undefined
-  store.mkDb = undefined
+  try {
+    await store.mkPool?.end()
+  } finally {
+    store.mkPool = undefined
+    store.mkDb = undefined
+  }
 }

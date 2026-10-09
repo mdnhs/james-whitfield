@@ -11,4 +11,4 @@ export const TEST_ENV = {
   BETTER_AUTH_URL: "http://localhost:3000",
   EMAIL_DRIVER: "log",
   EMAIL_FROM: "Magda Kennedy <hello@example.com>",
-} as const
+}

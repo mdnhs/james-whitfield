@@ -31,7 +31,10 @@ export type Permissions = { [R in Resource]?: Statement[R][number][] }
 // Derived from the full statement so new resources cannot be missing from owner.
 const owner = ac.newRole(
   Object.fromEntries(
-    Object.entries(statement).map(([resource, actions]) => [resource, [...actions]])
+    Object.entries(statement).map(([resource, actions]) => [
+      resource,
+      [...actions],
+    ])
   ) as { [R in Resource]: Statement[R][number][] }
 )
 
@@ -96,14 +99,13 @@ export const roles = { owner, admin, editor, author, marketer, intake, viewer }
 export type RoleName = keyof typeof roles
 export const ROLE_NAMES = Object.keys(roles) as RoleName[]
 
-const isRoleName = (value: string): value is RoleName => Object.hasOwn(roles, value)
+const isRoleName = (value: string): value is RoleName =>
+  Object.hasOwn(roles, value)
 
-// Better Auth stores several roles as one comma-separated string.
+// Better Auth stores several roles as one comma-separated string and splits
+// it on "," without trimming; match that exactly so we never grant more.
 export function parseRoles(value: string | null | undefined): RoleName[] {
-  return (value ?? "")
-    .split(",")
-    .map((role) => role.trim())
-    .filter(isRoleName)
+  return (value ?? "").split(",").filter(isRoleName)
 }
 
 export function hasPermission(

@@ -23,19 +23,34 @@ const ALL: RoleName[] = [
 // services; at this layer the role only needs the base permission.
 const MATRIX: [Permissions, RoleName[]][] = [
   [{ dashboard: ["view"] }, ALL],
-  [{ page: ["read"] }, ["owner", "admin", "editor", "author", "marketer", "viewer"]],
+  [
+    { page: ["read"] },
+    ["owner", "admin", "editor", "author", "marketer", "viewer"],
+  ],
   [{ page: ["update"] }, ["owner", "admin", "editor"]],
   [{ page: ["publish"] }, ["owner", "admin", "editor"]],
   [{ page: ["create", "delete"] }, ["owner", "admin", "editor"]],
-  [{ article: ["read"] }, ["owner", "admin", "editor", "author", "marketer", "viewer"]],
+  [
+    { article: ["read"] },
+    ["owner", "admin", "editor", "author", "marketer", "viewer"],
+  ],
   [{ article: ["create", "update"] }, ["owner", "admin", "editor", "author"]],
   [{ article: ["publish"] }, ["owner", "admin", "editor"]],
   [{ article: ["delete"] }, ["owner", "admin", "editor", "author"]],
-  [{ collection: ["read"] }, ["owner", "admin", "editor", "author", "marketer", "viewer"]],
-  [{ collection: ["create", "update", "delete"] }, ["owner", "admin", "editor"]],
+  [
+    { collection: ["read"] },
+    ["owner", "admin", "editor", "author", "marketer", "viewer"],
+  ],
+  [
+    { collection: ["create", "update", "delete"] },
+    ["owner", "admin", "editor"],
+  ],
   [{ globals: ["read"] }, ["owner", "admin", "editor", "marketer", "viewer"]],
   [{ globals: ["update"] }, ["owner", "admin", "editor"]],
-  [{ media: ["read", "upload"] }, ["owner", "admin", "editor", "author", "marketer"]],
+  [
+    { media: ["read", "upload"] },
+    ["owner", "admin", "editor", "author", "marketer"],
+  ],
   [{ media: ["update"] }, ["owner", "admin", "editor", "author", "marketer"]],
   [{ media: ["delete"] }, ["owner", "admin", "editor"]],
   [{ lead: ["read", "update"] }, ["owner", "admin", "intake"]],
@@ -71,21 +86,31 @@ describe("permission matrix (brief §7.2)", () => {
 describe("users with several roles", () => {
   it("are allowed when any one role grants the permission", () => {
     expect(hasPermission(["intake", "marketer"], { lead: ["read"] })).toBe(true)
-    expect(hasPermission(["intake", "marketer"], { tracking: ["update"] })).toBe(true)
+    expect(
+      hasPermission(["intake", "marketer"], { tracking: ["update"] })
+    ).toBe(true)
   })
 
   it("need one role that covers every resource of a single check", () => {
     // Same semantics as Better Auth: resources inside one check are ANDed.
     expect(
-      hasPermission(["intake", "marketer"], { lead: ["read"], tracking: ["update"] })
+      hasPermission(["intake", "marketer"], {
+        lead: ["read"],
+        tracking: ["update"],
+      })
     ).toBe(false)
   })
 })
 
 describe("parseRoles", () => {
   it("splits Better Auth's comma-separated role column and drops unknown roles", () => {
-    expect(parseRoles("editor, author,ghost")).toEqual(["editor", "author"])
+    expect(parseRoles("editor,author,ghost")).toEqual(["editor", "author"])
     expect(parseRoles(null)).toEqual([])
+  })
+
+  it("does not trim whitespace, matching Better Auth's own parser", () => {
+    expect(parseRoles("viewer, owner")).toEqual(["viewer"])
+    expect(parseRoles(" owner")).toEqual([])
   })
 
   it("never treats prototype keys as roles", () => {
@@ -118,4 +143,96 @@ describe("permissionMap", () => {
     expect(map.page).toEqual(["read"])
     expect(map.code ?? []).toEqual([])
   })
+})
+
+const read = ["read"]
+const ADMIN_USER = [
+  "create",
+  "list",
+  "set-role",
+  "ban",
+  "impersonate",
+  "delete",
+  "set-password",
+  "set-email",
+  "get",
+  "update",
+]
+const SESSION = ["list", "revoke", "delete"]
+const EDITOR: Record<string, string[]> = {
+  dashboard: ["view"],
+  page: ["read", "create", "update", "publish", "delete"],
+  article: ["read", "create", "update", "publish", "delete"],
+  collection: ["read", "create", "update", "delete"],
+  globals: ["read", "update"],
+  media: ["read", "upload", "update", "delete"],
+  seo: ["read", "update"],
+  redirect: ["read", "manage"],
+}
+const ADMIN: Record<string, string[]> = {
+  ...EDITOR,
+  lead: ["read", "update", "export", "delete"],
+  newsletter: ["read", "export", "delete"],
+  tracking: ["read", "update"],
+  appearance: ["read", "update", "publish"],
+  settings: ["read", "update"],
+  audit: ["read"],
+  user: ADMIN_USER,
+  session: SESSION,
+}
+const EXACT: Record<RoleName, Record<string, string[]>> = {
+  owner: {
+    ...ADMIN,
+    code: ["update"],
+    user: [...ADMIN_USER, "impersonate-admins"],
+  },
+  admin: ADMIN,
+  editor: EDITOR,
+  author: {
+    dashboard: ["view"],
+    page: read,
+    article: ["read", "create", "update", "delete"],
+    collection: read,
+    media: ["read", "upload", "update"],
+  },
+  marketer: {
+    dashboard: ["view"],
+    page: read,
+    article: read,
+    collection: read,
+    globals: read,
+    media: ["read", "upload", "update"],
+    newsletter: ["read", "export"],
+    seo: ["read", "update"],
+    redirect: ["read", "manage"],
+    tracking: ["read", "update"],
+  },
+  intake: { dashboard: ["view"], lead: ["read", "update"] },
+  viewer: {
+    dashboard: ["view"],
+    page: read,
+    article: read,
+    collection: read,
+    globals: read,
+    seo: read,
+  },
+}
+
+describe("exact permission set per role (brief §7.2)", () => {
+  for (const role of ALL) {
+    it(`${role} holds exactly its documented permissions`, () => {
+      const actual = Object.fromEntries(
+        Object.entries(permissionMap([role]))
+          .filter(([, actions]) => actions.length > 0)
+          .map(([resource, actions]) => [resource, [...actions].sort()])
+          .sort(([a], [b]) => (a as string).localeCompare(b as string))
+      )
+      const expected = Object.fromEntries(
+        Object.entries(EXACT[role])
+          .map(([resource, actions]) => [resource, [...actions].sort()])
+          .sort(([a], [b]) => (a as string).localeCompare(b as string))
+      )
+      expect(actual).toEqual(expected)
+    })
+  }
 })

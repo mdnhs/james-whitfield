@@ -37,4 +37,16 @@ describe("authRequest", () => {
       expect(failure).toEqual({ kind: "rejected", message: null })
     }
   })
+
+  it("passes the server's error code through on a rejection", async () => {
+    const { failure } = await authRequest(async () => ({
+      data: null,
+      error: { status: 401, code: "INVALID_TWO_FACTOR_COOKIE" },
+    }))
+    expect(failure).toEqual({
+      kind: "rejected",
+      message: null,
+      code: "INVALID_TWO_FACTOR_COOKIE",
+    })
+  })
 })

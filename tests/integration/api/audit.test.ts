@@ -2,7 +2,12 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest"
 
 import { closeDb } from "@/server/db/client"
 
-import { adminRequest, createUser, signIn } from "../helpers/auth"
+import {
+  adminRequest,
+  createUser,
+  signIn,
+  signInWithTwoFactor,
+} from "../helpers/auth"
 import { resetDb } from "../helpers/db"
 
 beforeEach(resetDb)
@@ -19,7 +24,7 @@ describe("GET /api/v1/admin/audit", () => {
     await createUser("owner")
     await createUser("editor")
     await signIn("editor@example.com")
-    const cookie = await signIn("owner@example.com")
+    const cookie = await signInWithTwoFactor("owner@example.com")
 
     const response = await adminRequest("/audit?page=1&pageSize=10", cookie)
 
@@ -37,7 +42,7 @@ describe("GET /api/v1/admin/audit", () => {
 
   it("validates paging input", async () => {
     await createUser("owner")
-    const cookie = await signIn("owner@example.com")
+    const cookie = await signInWithTwoFactor("owner@example.com")
     const response = await adminRequest("/audit?pageSize=500", cookie)
     expect(response.status).toBe(400)
     expect((await response.json()).error.fieldErrors.pageSize).toBeDefined()

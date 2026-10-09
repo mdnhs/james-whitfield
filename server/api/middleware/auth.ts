@@ -3,6 +3,7 @@ import "server-only"
 import { createMiddleware } from "hono/factory"
 
 import { hasPermission, type Permissions } from "@/lib/auth/permissions"
+import { mustSetUpTwoFactor } from "@/lib/auth/two-factor-policy"
 import { toActor } from "@/server/auth/actor"
 import { getFreshSession } from "@/server/auth/fresh-session"
 
@@ -24,6 +25,19 @@ export const session = createMiddleware<AppEnv>(async (c, next) => {
 export const signedIn = createMiddleware<AppEnv>(async (c, next) => {
   if (!c.get("actor"))
     throw new ApiError("UNAUTHENTICATED", "Sign in to continue")
+  await next()
+})
+
+// docs/brief.md §7.4: an owner or admin who has not set up 2FA gets nothing
+// beyond the routes registered before this middleware.
+export const twoFactorComplete = createMiddleware<AppEnv>(async (c, next) => {
+  const actor = c.get("actor")
+  if (actor && mustSetUpTwoFactor(actor)) {
+    throw new ApiError(
+      "TWO_FACTOR_REQUIRED",
+      "Set up two-factor authentication to continue"
+    )
+  }
   await next()
 })
 

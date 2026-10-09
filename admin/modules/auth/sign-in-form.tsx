@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { useState } from "react"
 
 import { authClient } from "@/admin/lib/auth-client"
+import { useResetOnHide } from "@/admin/lib/use-reset-on-hide"
 import { Button } from "@/components/ui/button"
 import {
   Field,
@@ -23,6 +24,11 @@ export function SignInForm({ next }: { next: string }) {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
+
+  useResetOnHide(() => {
+    setPending(false)
+    setError(null)
+  })
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()

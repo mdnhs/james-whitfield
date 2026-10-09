@@ -10,6 +10,7 @@ export type ErrorCode =
   | "VALIDATION_FAILED"
   | "UNAUTHENTICATED"
   | "FORBIDDEN"
+  | "TWO_FACTOR_REQUIRED" // owner/admin signed in but has not set up 2FA
   | "NOT_FOUND"
   | "CONFLICT"
   | "PAYLOAD_TOO_LARGE"
@@ -22,6 +23,7 @@ const STATUS: Record<ErrorCode, ContentfulStatusCode> = {
   VALIDATION_FAILED: 400,
   UNAUTHENTICATED: 401,
   FORBIDDEN: 403,
+  TWO_FACTOR_REQUIRED: 403,
   NOT_FOUND: 404,
   CONFLICT: 409,
   PAYLOAD_TOO_LARGE: 413,

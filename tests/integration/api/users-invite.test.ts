@@ -4,7 +4,12 @@ import { closeDb, getDb } from "@/server/db/client"
 import { users } from "@/server/db/schema"
 import { clearOutbox, readOutbox } from "@/server/lib/email"
 
-import { adminRequest, createUser, signIn } from "../helpers/auth"
+import {
+  adminRequest,
+  createUser,
+  signIn,
+  signInWithTwoFactor,
+} from "../helpers/auth"
 import { resetDb } from "../helpers/db"
 
 beforeEach(resetDb)
@@ -19,7 +24,7 @@ const userCount = async () => (await getDb().select().from(users)).length
 describe("POST /api/v1/admin/users/invite", () => {
   it("lets an owner invite an admin and emails a set-password link", async () => {
     await createUser("owner")
-    const cookie = await signIn("owner@example.com")
+    const cookie = await signInWithTwoFactor("owner@example.com")
 
     const response = await invite(cookie, {
       email: "  New.Admin@Example.com ",
@@ -40,7 +45,7 @@ describe("POST /api/v1/admin/users/invite", () => {
 
   it("does not let an admin invite an owner", async () => {
     await createUser("admin")
-    const cookie = await signIn("admin@example.com")
+    const cookie = await signInWithTwoFactor("admin@example.com")
     const response = await invite(cookie, {
       email: "x@example.com",
       name: "X",
@@ -53,7 +58,7 @@ describe("POST /api/v1/admin/users/invite", () => {
 
   it("lets an owner invite another owner", async () => {
     await createUser("owner")
-    const cookie = await signIn("owner@example.com")
+    const cookie = await signInWithTwoFactor("owner@example.com")
     const response = await invite(cookie, {
       email: "o2@example.com",
       name: "O",
@@ -65,7 +70,7 @@ describe("POST /api/v1/admin/users/invite", () => {
 
   it("rejects a multi-role string such as editor,owner", async () => {
     await createUser("owner")
-    const cookie = await signIn("owner@example.com")
+    const cookie = await signInWithTwoFactor("owner@example.com")
     const response = await invite(cookie, {
       email: "x@example.com",
       name: "X",
@@ -89,7 +94,7 @@ describe("POST /api/v1/admin/users/invite", () => {
   it("treats emails case-insensitively when checking for duplicates", async () => {
     await createUser("owner")
     await createUser("editor", "editor@example.com")
-    const cookie = await signIn("owner@example.com")
+    const cookie = await signInWithTwoFactor("owner@example.com")
     const response = await invite(cookie, {
       email: "Editor@Example.com",
       name: "Dup",
@@ -102,7 +107,7 @@ describe("POST /api/v1/admin/users/invite", () => {
 
   it("rejects a cross-site request even with a valid session", async () => {
     await createUser("owner")
-    const cookie = await signIn("owner@example.com")
+    const cookie = await signInWithTwoFactor("owner@example.com")
     const response = await invite(
       cookie,
       { email: "x@example.com", name: "X", role: "viewer" },
@@ -113,7 +118,7 @@ describe("POST /api/v1/admin/users/invite", () => {
 
   it("returns field errors for invalid input", async () => {
     await createUser("owner")
-    const cookie = await signIn("owner@example.com")
+    const cookie = await signInWithTwoFactor("owner@example.com")
     const response = await invite(cookie, {
       email: "nope",
       name: "",

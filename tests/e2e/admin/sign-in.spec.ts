@@ -40,6 +40,21 @@ test("signing out returns to sign-in and the panel is gated again", async ({
   await expect(page).toHaveURL(/\/admin\/sign-in/)
 })
 
+// The sign-in route stays mounted but hidden (<Activity>) after the first
+// sign-in; coming back must find a usable form, not a pending one.
+test("signing out and straight back in works", async ({ page }) => {
+  await page.goto("/admin/sign-in")
+  await signIn(page, E2E_USERS.editor)
+  await expect(page).toHaveURL(/\/admin$/)
+  await page.getByRole("button", { name: "Sign out" }).click()
+  await expect(page).toHaveURL(/\/admin\/sign-in/)
+  await signIn(page, E2E_USERS.editor)
+  await expect(page).toHaveURL(/\/admin$/)
+  await expect(
+    page.getByRole("heading", welcome(E2E_USERS.editor.name))
+  ).toBeVisible()
+})
+
 test("an off-site next is ignored after signing in", async ({ page }) => {
   await page.goto("/admin/sign-in?next=https%3A%2F%2Fevil.example%2Fadmin")
   await signIn(page, E2E_USERS.editor)
@@ -50,14 +65,14 @@ test("a signed-in visit to sign-in skips straight to next", async ({
   page,
 }) => {
   await page.goto("/admin/sign-in")
-  await signIn(page, E2E_USERS.owner)
+  await signIn(page, E2E_USERS.editor)
   await expect(
-    page.getByRole("heading", welcome(E2E_USERS.owner.name))
+    page.getByRole("heading", welcome(E2E_USERS.editor.name))
   ).toBeVisible()
   await page.goto("/admin/sign-in?next=%2Fadmin%3Fwelcome%3D1")
   await expect(page).toHaveURL(/\/admin\?welcome=1$/)
   await expect(
-    page.getByRole("heading", welcome(E2E_USERS.owner.name))
+    page.getByRole("heading", welcome(E2E_USERS.editor.name))
   ).toBeVisible()
 })
 

@@ -6,11 +6,13 @@ import { useState } from "react"
 import { toast } from "sonner"
 
 import { authClient } from "@/admin/lib/auth-client"
+import { useResetOnHide } from "@/admin/lib/use-reset-on-hide"
 import { Button } from "@/components/ui/button"
 
 export function SignOutButton() {
   const router = useRouter()
   const [pending, setPending] = useState(false)
+  useResetOnHide(() => setPending(false))
   return (
     <Button
       variant="outline"

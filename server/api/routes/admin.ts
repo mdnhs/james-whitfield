@@ -6,7 +6,7 @@ import { permissionMap } from "@/lib/auth/permissions"
 import { auditRoutes } from "@/server/modules/audit/routes"
 import { usersRoutes } from "@/server/modules/users/routes"
 
-import { session, signedIn } from "../middleware/auth"
+import { session, signedIn, twoFactorComplete } from "../middleware/auth"
 import { sameOrigin } from "../middleware/same-origin"
 import type { AppEnv } from "../types"
 
@@ -22,5 +22,9 @@ export const adminRoutes = new Hono<AppEnv>()
       impersonatedBy: actor.impersonatedBy,
     })
   })
+  // Everything below needs 2FA set up for owners and admins. /me stays above
+  // it: it answers before this runs, so the client can still see who it is
+  // and send them to setup.
+  .use(twoFactorComplete)
   .route("/audit", auditRoutes)
   .route("/users", usersRoutes)

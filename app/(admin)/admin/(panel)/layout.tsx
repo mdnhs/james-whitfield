@@ -3,7 +3,9 @@ import { Suspense } from "react"
 import { requireActor } from "@/server/auth/session"
 
 // The session read is request-time data, so it sits behind Suspense (Cache
-// Components). This check is for UX; the API authorises every call itself.
+// Components). requireActor also sends an owner or admin without 2FA to
+// setup (docs/brief.md §7.4). This check is for UX; the API authorises, and
+// enforces 2FA on, every call itself.
 export default function PanelLayout({
   children,
 }: {

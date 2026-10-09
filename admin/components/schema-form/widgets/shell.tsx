@@ -17,6 +17,16 @@ export type WidgetProps<T> = {
   error?: string
 }
 
+// aria-describedby for a control: the description and error ids WidgetShell
+// renders.
+export function describedBy(id: string, field: FormField, error?: string) {
+  return (
+    [field.description && `${id}-description`, error && `${id}-error`]
+      .filter(Boolean)
+      .join(" ") || undefined
+  )
+}
+
 // Label, description and error around one control (ids wire aria).
 export function WidgetShell({
   id,
@@ -34,7 +44,9 @@ export function WidgetShell({
       <FieldLabel htmlFor={id}>{field.label}</FieldLabel>
       {children}
       {field.description ? (
-        <FieldDescription>{field.description}</FieldDescription>
+        <FieldDescription id={`${id}-description`}>
+          {field.description}
+        </FieldDescription>
       ) : null}
       {error ? <FieldError id={`${id}-error`}>{error}</FieldError> : null}
     </Field>

@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
-import { WidgetShell, type WidgetProps } from "./shell"
+import { describedBy, WidgetShell, type WidgetProps } from "./shell"
 
 type Selection = { mode: "all" } | { mode: "chosen"; ids: string[] }
 
@@ -42,7 +42,12 @@ export function CollectionWidget({
           value={typeof value === "string" ? value : null}
           onValueChange={(next) => onChange(next as string)}
         >
-          <SelectTrigger id={id} className="w-full">
+          <SelectTrigger
+            id={id}
+            className="w-full"
+            aria-invalid={error ? true : undefined}
+            aria-describedby={describedBy(id, field, error)}
+          >
             <SelectValue placeholder="Choose…" />
           </SelectTrigger>
           <SelectContent>
@@ -61,18 +66,23 @@ export function CollectionWidget({
   const chosen = selection.mode === "chosen" ? selection.ids : []
   const toggle = (itemId: string, on: boolean) => {
     const ids = on ? [...chosen, itemId] : chosen.filter((x) => x !== itemId)
-    onChange(ids.length ? { mode: "chosen", ids } : { mode: "all" })
+    // Unchecking the last row keeps "Only these" (the schema asks for at
+    // least one); switching back to "All" is the editor's call.
+    onChange({ mode: "chosen", ids })
   }
   return (
-    <FieldSet data-invalid={error ? true : undefined}>
+    <FieldSet
+      data-invalid={error ? true : undefined}
+      aria-describedby={describedBy(id, field, error)}
+    >
       <FieldLegend variant="label">{field.label}</FieldLegend>
       <RadioGroup
         value={selection.mode}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={describedBy(id, field, error)}
         onValueChange={(mode) =>
           onChange(
-            mode === "all"
-              ? { mode: "all" }
-              : { mode: "chosen", ids: items.slice(0, 1).map((i) => i.id) }
+            mode === "all" ? { mode: "all" } : { mode: "chosen", ids: chosen }
           )
         }
         className="flex gap-4"
@@ -84,6 +94,9 @@ export function CollectionWidget({
           <RadioGroupItem value="chosen" /> Only these
         </label>
       </RadioGroup>
+      {selection.mode === "chosen" && options.isPending ? (
+        <p className="text-sm text-muted-foreground">Loading…</p>
+      ) : null}
       {selection.mode === "chosen" ? (
         <ul className="flex flex-col gap-2">
           {items.map((item) => {
@@ -105,7 +118,10 @@ export function CollectionWidget({
           })}
         </ul>
       ) : null}
-      {error ? <FieldError>{error}</FieldError> : null}
+      {options.isError ? (
+        <p className="text-sm text-destructive">Could not load the options.</p>
+      ) : null}
+      {error ? <FieldError id={`${id}-error`}>{error}</FieldError> : null}
     </FieldSet>
   )
 }

@@ -4,7 +4,7 @@ import { useId } from "react"
 
 import { Input } from "@/components/ui/input"
 
-import { WidgetShell, type WidgetProps } from "./shell"
+import { describedBy, WidgetShell, type WidgetProps } from "./shell"
 
 const HEX = /^#[0-9a-f]{6}$/i
 
@@ -23,6 +23,8 @@ export function ColourWidget({
         <input
           type="color"
           aria-label={`${field.label} picker`}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={describedBy(id, field, error)}
           className="h-9 w-12 shrink-0 cursor-pointer rounded-lg border border-input bg-transparent p-1"
           value={HEX.test(text) ? text : "#000000"}
           onChange={(event) => onChange(event.target.value)}
@@ -34,7 +36,7 @@ export function ColourWidget({
           onBlur={onBlur}
           onChange={(event) => onChange(event.target.value)}
           aria-invalid={error ? true : undefined}
-          aria-describedby={error ? `${id}-error` : undefined}
+          aria-describedby={describedBy(id, field, error)}
         />
       </div>
     </WidgetShell>

@@ -14,7 +14,8 @@ import { Input } from "@/components/ui/input"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import type { StatValue } from "@/lib/count"
 
-import type { WidgetProps } from "./shell"
+import { DraftNumber } from "./draft-number"
+import { describedBy, type WidgetProps } from "./shell"
 
 type Count = Extract<StatValue, { kind: "count" }>
 
@@ -36,8 +37,7 @@ export function StatWidget({
 }: WidgetProps<StatValue | undefined>) {
   const id = useId()
   const stat = value ?? COUNT
-  const number = (raw: number, fallback: number) =>
-    Number.isNaN(raw) ? fallback : raw
+  const described = describedBy(id, field, error)
   const countInput = (
     key: "value" | "decimals" | "prefix" | "suffix",
     label: string,
@@ -47,39 +47,44 @@ export function StatWidget({
     return (
       <Field>
         <FieldLabel htmlFor={`${id}-${key}`}>{label}</FieldLabel>
-        <Input
-          id={`${id}-${key}`}
-          type={numeric ? "number" : "text"}
-          inputMode={numeric ? "decimal" : undefined}
-          min={numeric ? 0 : undefined}
-          max={key === "decimals" ? 2 : undefined}
-          step={key === "value" ? "any" : undefined}
-          value={count[key]}
-          onBlur={onBlur}
-          onChange={(event) => {
-            const raw = event.target.value
-            if (key === "value")
-              onChange({
-                ...count,
-                value: number(event.target.valueAsNumber, 0),
-              })
-            else if (key === "decimals") {
-              onChange({
-                ...count,
-                decimals: Math.min(
-                  2,
-                  Math.max(0, Math.trunc(number(event.target.valueAsNumber, 0)))
-                ),
-              })
-            } else onChange({ ...count, [key]: raw })
-          }}
-          aria-invalid={error ? true : undefined}
-        />
+        {numeric ? (
+          <DraftNumber
+            id={`${id}-${key}`}
+            min={0}
+            max={key === "decimals" ? 2 : undefined}
+            step={key === "value" ? "any" : 1}
+            value={count[key as "value" | "decimals"]}
+            fallback={0}
+            clamp={
+              key === "decimals"
+                ? (n) => Math.min(2, Math.max(0, Math.trunc(n)))
+                : undefined
+            }
+            onCommit={(n) => onChange({ ...count, [key]: n })}
+            onBlur={onBlur}
+            invalid={Boolean(error)}
+            describedBy={described}
+          />
+        ) : (
+          <Input
+            id={`${id}-${key}`}
+            value={count[key as "prefix" | "suffix"]}
+            onBlur={onBlur}
+            onChange={(event) =>
+              onChange({ ...count, [key]: event.target.value })
+            }
+            aria-invalid={error ? true : undefined}
+            aria-describedby={described}
+          />
+        )}
       </Field>
     )
   }
   return (
-    <FieldSet data-invalid={error ? true : undefined}>
+    <FieldSet
+      data-invalid={error ? true : undefined}
+      aria-describedby={described}
+    >
       <FieldLegend variant="label">{field.label}</FieldLegend>
       <RadioGroup
         value={stat.kind}
@@ -111,13 +116,16 @@ export function StatWidget({
               onChange({ kind: "text", text: event.target.value })
             }
             aria-invalid={error ? true : undefined}
+            aria-describedby={described}
           />
         </Field>
       )}
       {field.description ? (
-        <FieldDescription>{field.description}</FieldDescription>
+        <FieldDescription id={`${id}-description`}>
+          {field.description}
+        </FieldDescription>
       ) : null}
-      {error ? <FieldError>{error}</FieldError> : null}
+      {error ? <FieldError id={`${id}-error`}>{error}</FieldError> : null}
     </FieldSet>
   )
 }

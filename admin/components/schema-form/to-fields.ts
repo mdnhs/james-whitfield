@@ -18,6 +18,8 @@ export type JsonNode = {
   anyOf?: JsonNode[]
   oneOf?: JsonNode[]
   maxLength?: number
+  minLength?: number
+  pattern?: string
   minItems?: number
   maxItems?: number
   minimum?: number
@@ -213,10 +215,15 @@ export function emptyValue(raw: JsonNode): unknown {
   switch (typeOf(node)) {
     case "object":
       return Object.fromEntries(
-        Object.entries(node.properties ?? {}).map(([key, child]) => [
-          key,
-          emptyValue(child),
-        ])
+        Object.entries(node.properties ?? {}).map(([key, child]) => {
+          // An untouched optional string must not start as "" when it has
+          // min-length or pattern rules (Href): leave it unset.
+          const guarded =
+            !node.required?.includes(key) &&
+            typeOf(child) === "string" &&
+            (child.minLength !== undefined || child.pattern !== undefined)
+          return [key, guarded ? undefined : emptyValue(child)]
+        })
       )
     case "array":
       return Array.from({ length: node.minItems ?? 0 }, () =>

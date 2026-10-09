@@ -11,7 +11,7 @@ import {
   ListIcon,
   QuoteIcon,
 } from "lucide-react"
-import { useId, useState } from "react"
+import { useEffect, useId, useRef, useState } from "react"
 
 import { Href } from "@/blocks/fields"
 import { RichTextDoc } from "@/blocks/rich-text"
@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Toggle } from "@/components/ui/toggle"
 
-import { WidgetShell, type WidgetProps } from "./shell"
+import { describedBy, WidgetShell, type WidgetProps } from "./shell"
 
 const EMPTY = { type: "doc", content: [{ type: "paragraph" }] }
 
@@ -42,6 +42,21 @@ const extensions = [
 
 function Toolbar({ editor }: { editor: Editor }) {
   const [href, setHref] = useState<string | null>(null)
+  const [linkError, setLinkError] = useState<string | null>(null)
+  const errorId = useId()
+  const chain = () => editor.chain().focus()
+  const apply = () => {
+    if (href === null) return
+    if (href === "") chain().unsetLink().run()
+    else if (Href.safeParse(href).success)
+      chain().extendMarkRange("link").setLink({ href }).run()
+    else {
+      setLinkError("Use /path, #anchor, https://, mailto: or tel:")
+      return
+    }
+    setLinkError(null)
+    setHref(null)
+  }
   const mark = (
     label: string,
     Icon: typeof BoldIcon,
@@ -52,7 +67,6 @@ function Toolbar({ editor }: { editor: Editor }) {
       <Icon aria-hidden />
     </Toggle>
   )
-  const chain = () => editor.chain().focus()
   return (
     <div className="flex flex-wrap items-center gap-1 border-b p-1">
       {mark("Bold", BoldIcon, editor.isActive("bold"), () =>
@@ -89,26 +103,33 @@ function Toolbar({ editor }: { editor: Editor }) {
             aria-label="Link target"
             className="h-8 w-56"
             value={href}
-            onChange={(e) => setHref(e.target.value)}
-            placeholder="/contact or https://…"
-            aria-invalid={
-              href !== "" && !Href.safeParse(href).success ? true : undefined
-            }
-          />
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={() => {
-              if (href === "") chain().unsetLink().run()
-              else if (Href.safeParse(href).success)
-                chain().extendMarkRange("link").setLink({ href }).run()
-              else return
-              setHref(null)
+            onChange={(e) => {
+              setHref(e.target.value)
+              setLinkError(null)
             }}
-          >
+            // Enter confirms the link; it must not submit the surrounding form.
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault()
+                apply()
+              }
+            }}
+            placeholder="/contact or https://…"
+            aria-invalid={linkError ? true : undefined}
+            aria-describedby={linkError ? errorId : undefined}
+          />
+          <Button type="button" size="sm" variant="outline" onClick={apply}>
             Apply
           </Button>
+          {linkError ? (
+            <span
+              id={errorId}
+              role="alert"
+              className="text-xs text-destructive"
+            >
+              {linkError}
+            </span>
+          ) : null}
         </div>
       ) : null}
     </div>
@@ -119,9 +140,12 @@ export function RichTextWidget({
   field,
   value,
   onChange,
+  onBlur,
   error,
 }: WidgetProps<unknown>) {
   const id = useId()
+  const emitted = useRef<unknown>(undefined)
+  const described = describedBy(id, field, error)
   const editor = useEditor({
     extensions,
     content: (value as object | undefined) ?? EMPTY,
@@ -133,6 +157,8 @@ export function RichTextWidget({
         role: "textbox",
         "aria-multiline": "true",
         "aria-label": field.label,
+        ...(error ? { "aria-invalid": "true" } : {}),
+        ...(described ? { "aria-describedby": described } : {}),
         class: "prose prose-sm min-h-40 max-w-none p-3 focus:outline-none",
       },
     },
@@ -141,9 +167,22 @@ export function RichTextWidget({
     onUpdate: ({ editor: e }) => {
       const json = e.getJSON()
       const parsed = RichTextDoc.safeParse(json)
-      onChange(parsed.success ? parsed.data : json)
+      const next = parsed.success ? parsed.data : json
+      emitted.current = next
+      onChange(next)
     },
+    onBlur: () => onBlur?.(),
   })
+  // External changes (reset, restore, reconcile) replace the editor content;
+  // the editor's own edits come back here as `emitted` and are skipped.
+  useEffect(() => {
+    if (!editor || value === emitted.current) return
+    const next = (value as object | undefined) ?? EMPTY
+    if (JSON.stringify(next) !== JSON.stringify(editor.getJSON())) {
+      editor.commands.setContent(next, { emitUpdate: false })
+    }
+    emitted.current = value
+  }, [editor, value])
   return (
     <WidgetShell id={id} field={field} error={error}>
       <div className="rounded-xl border">

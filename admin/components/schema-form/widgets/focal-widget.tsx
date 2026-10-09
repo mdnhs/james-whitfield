@@ -10,9 +10,9 @@ import {
   FieldLegend,
   FieldSet,
 } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
 
-import type { WidgetProps } from "./shell"
+import { DraftNumber } from "./draft-number"
+import { describedBy, type WidgetProps } from "./shell"
 
 type Focal = { x: number; y: number }
 
@@ -26,38 +26,41 @@ export function FocalWidget({
   error,
 }: WidgetProps<Focal | null | undefined>) {
   const id = useId()
+  const described = describedBy(id, field, error)
   const focal = value ?? { x: 0.5, y: 0.5 }
   const axis = (key: keyof Focal, label: string) => (
     <Field>
       <FieldLabel htmlFor={`${id}-${key}`}>{label}</FieldLabel>
-      <Input
+      <DraftNumber
         id={`${id}-${key}`}
-        type="number"
-        inputMode="decimal"
         min={0}
         max={1}
         step={0.05}
         value={focal[key]}
+        fallback={0.5}
+        onCommit={(n) => onChange({ ...focal, [key]: n })}
         onBlur={onBlur}
-        onChange={(event) => {
-          const n = event.target.valueAsNumber
-          onChange({ ...focal, [key]: Number.isNaN(n) ? 0.5 : n })
-        }}
-        aria-invalid={error ? true : undefined}
+        invalid={Boolean(error)}
+        describedBy={described}
       />
     </Field>
   )
   return (
-    <FieldSet data-invalid={error ? true : undefined}>
+    <FieldSet
+      data-invalid={error ? true : undefined}
+      aria-describedby={described}
+    >
       <FieldLegend variant="label">{field.label}</FieldLegend>
       <div className="grid gap-3 sm:grid-cols-2">
         {axis("x", "Across (0–1)")}
         {axis("y", "Down (0–1)")}
       </div>
       {field.description ? (
-        <FieldDescription>{field.description}</FieldDescription>
+        <FieldDescription id={`${id}-description`}>
+          {field.description}
+        </FieldDescription>
       ) : null}
-      {error ? <FieldError>{error}</FieldError> : null}
+      {error ? <FieldError id={`${id}-error`}>{error}</FieldError> : null}
     </FieldSet>
   )
 }

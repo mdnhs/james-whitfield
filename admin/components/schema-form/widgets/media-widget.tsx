@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 
-import { WidgetShell, type WidgetProps } from "./shell"
+import { describedBy, WidgetShell, type WidgetProps } from "./shell"
 
 type Ref = { mediaId: string }
 
@@ -67,6 +67,8 @@ export function MediaWidget({
         <div className="flex flex-col gap-2">
           <Button
             id={id}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={describedBy(id, field, error)}
             type="button"
             variant="outline"
             onClick={() => setOpen(true)}

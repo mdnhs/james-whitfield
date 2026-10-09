@@ -57,9 +57,14 @@ export function LinkWidget({
               key === "href" ? "/contact, #faq or https://…" : undefined
             }
             aria-invalid={fieldState.error ? true : undefined}
+            aria-describedby={
+              fieldState.error ? `${id}-${key}-error` : undefined
+            }
           />
           {fieldState.error ? (
-            <FieldError>{fieldState.error.message}</FieldError>
+            <FieldError id={`${id}-${key}-error`}>
+              {fieldState.error.message}
+            </FieldError>
           ) : null}
         </Field>
       )}

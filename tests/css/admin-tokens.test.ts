@@ -112,6 +112,22 @@ describe.each([
   })
 })
 
+// WCAG 1.4.11: a control's edge (input, select, checkbox and radio borders,
+// the unchecked switch track) is drawn in --input, and must read at 3:1
+// against every surface a control sits on: panels, cards and the canvas.
+// --border stays soft; it only separates decorative card edges.
+describe.each([
+  ["light", light],
+  ["dark", dark],
+])("%s control edges", (_name, tokens) => {
+  it.each(["sidebar", "card", "background"])(
+    "--input on --%s meets 3:1",
+    (surface) => {
+      expect(contrast(tokens.input, tokens[surface])).toBeGreaterThanOrEqual(3)
+    }
+  )
+})
+
 describe("type scale", () => {
   it.each(["--text-title:", "--text-card-title:", "--text-kpi:"])(
     "declares %s",

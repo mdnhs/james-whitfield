@@ -100,7 +100,8 @@
   --accent-foreground: #14532d;
   --destructive: #dc2626;
   --border: #e5e8e5;
-  --input: #e5e8e5;
+  /* Control edges (WCAG 1.4.11): 3:1 on the panel, cards and canvas. */
+  --input: #7d867e;
   --ring: #22a055;
   --chart-1: #1e6b35;
   --chart-2: #3f9d5e;
@@ -158,7 +159,7 @@
   --accent-foreground: #c9ecd6;
   --destructive: #f87171;
   --border: #243026;
-  --input: #243026;
+  --input: #667369;
   --ring: #3fcb75;
   --chart-1: #3fcb75;
   --chart-2: #6cc08c;

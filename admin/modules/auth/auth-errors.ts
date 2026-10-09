@@ -13,11 +13,30 @@ export type AuthFailure =
   // The server answered "no" (bad credentials, expired token…): the caller
   // words it, since only it knows what the request was. `code` is Better
   // Auth's error code (e.g. INVALID_TWO_FACTOR_COOKIE) when it sends one.
-  | { kind: "rejected"; message: null; code?: string }
+  // `fieldErrors` when the server names the fields at fault (our hooks do,
+  // e.g. INVALID_PROFILE).
+  | {
+      kind: "rejected"
+      message: null
+      code?: string
+      fieldErrors?: Record<string, string[]>
+    }
 
 type AuthResult<T> = {
   data: T | null
-  error: { status?: number; code?: string } | null
+  error: { status?: number; code?: string; fieldErrors?: unknown } | null
+}
+
+function asFieldErrors(value: unknown) {
+  if (typeof value !== "object" || value === null) return undefined
+  const entries = Object.entries(value)
+  const valid = entries.every(
+    ([, messages]) =>
+      Array.isArray(messages) && messages.every((m) => typeof m === "string")
+  )
+  return valid && entries.length > 0
+    ? (value as Record<string, string[]>)
+    : undefined
 }
 
 // Wraps an authClient call so a rate limit or an outage is never shown as
@@ -47,8 +66,14 @@ export async function authRequest<T>(
   if (status === 0 || status >= 500) {
     return { data, failure: { kind: "unreachable", message: UNREACHABLE } }
   }
+  const fieldErrors = asFieldErrors(error.fieldErrors)
   return {
     data,
-    failure: { kind: "rejected", message: null, code: error.code },
+    failure: {
+      kind: "rejected",
+      message: null,
+      code: error.code,
+      ...(fieldErrors && { fieldErrors }),
+    },
   }
 }

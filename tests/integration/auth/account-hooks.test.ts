@@ -83,7 +83,7 @@ describe("changing a password", () => {
     })
 
     expect(response.status).toBe(200)
-    expect((await response.json()).token).toBeNull()
+    expect(await response.json()).not.toHaveProperty("token")
     // The rotated session cookie still reaches the browser.
     expect(response.headers.get("set-cookie")).toMatch(/mk\.session_token=/)
     const remaining = await tokensOf(user.id)
@@ -165,6 +165,19 @@ describe("updating the profile", () => {
     const row = await nameOf(user.id)
     expect(row).toMatchObject({ name: "editor", image: null })
     expect(await accountRows()).toEqual([])
+  })
+
+  it("names the field and the rule that failed", async () => {
+    const { phone } = await editorOnTwoDevices()
+
+    const response = await call("/update-user", phone, {
+      name: "x".repeat(81),
+    })
+
+    expect(await response.json()).toMatchObject({
+      code: "INVALID_PROFILE",
+      fieldErrors: { name: ["Use 80 characters or fewer"] },
+    })
   })
 
   it("is refused during View-as", async () => {

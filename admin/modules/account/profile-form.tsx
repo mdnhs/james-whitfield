@@ -27,7 +27,13 @@ export function ProfileForm() {
           failure?.kind === "rejected" &&
           failure.code === "INVALID_PROFILE"
         ) {
-          return { fieldErrors: { name: ["Check your name and try again."] } }
+          return {
+            fieldErrors: {
+              name: failure.fieldErrors?.name ?? [
+                "Check your name and try again.",
+              ],
+            },
+          }
         }
         if (failure) {
           return {

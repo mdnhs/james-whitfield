@@ -61,31 +61,20 @@ const before = createAuthMiddleware(async (ctx) => {
   // /update-user would also take `image`, and any length of name.
   const parsed = ProfileUpdate.safeParse(ctx.body ?? {})
   if (!parsed.success) {
+    const { fieldErrors } = z.flattenError(parsed.error)
     throw new APIError("BAD_REQUEST", {
       code: "INVALID_PROFILE",
-      message:
-        z.flattenError(parsed.error).fieldErrors.name?.[0] ??
-        "Only your name can be changed here",
+      message: fieldErrors.name?.[0] ?? "Only your name can be changed here",
+      // The form shows these under the field.
+      fieldErrors,
     })
   }
   return { context: { body: parsed.data } }
 })
 
-type Returned = Record<string, unknown> & {
-  session?: Record<string, unknown> | null
-}
-
 const after = createAuthMiddleware(async (ctx) => {
-  const returned = ctx.context.returned as Returned | null | undefined
+  const returned = ctx.context.returned
   if (!returned || isAPIError(returned)) return
-
-  if (ctx.path === "/get-session") {
-    // The browser has no use for the raw token, so script never sees it.
-    if (!ctx.request || !returned.session) return
-    const session = { ...returned.session }
-    delete session.token
-    return ctx.json({ ...returned, session })
-  }
 
   // Read by the endpoint's session middleware before it ran: the session
   // that made the change, with the name it had before.
@@ -102,8 +91,8 @@ const after = createAuthMiddleware(async (ctx) => {
       entityId: session.user.id,
       summary: "Changed their password and signed out other devices",
     })
-    // The rotated session travels in its cookie, never in the body.
-    return ctx.json({ ...returned, token: null })
+    // The new token is dropped from the body by ./response-scrub.
+    return
   }
 
   // /update-user, its body already validated by `before`.
@@ -130,8 +119,7 @@ export const accountHooks = () =>
       ],
       after: [
         {
-          matcher: ({ path = "" }) =>
-            SELF_SERVICE_PATHS.has(path) || path === "/get-session",
+          matcher: ({ path = "" }) => SELF_SERVICE_PATHS.has(path),
           handler: after,
         },
       ],

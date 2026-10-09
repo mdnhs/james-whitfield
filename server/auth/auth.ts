@@ -12,6 +12,7 @@ import { audit } from "@/server/lib/audit"
 import { accountHooks } from "./account-hooks"
 import { deliverResetEmail } from "./email"
 import { afterHook, beforeHook } from "./hooks"
+import { responseScrub } from "./response-scrub"
 import { signInAudit } from "./sign-in-audit"
 
 export function buildAuth() {
@@ -104,6 +105,8 @@ export function buildAuth() {
       // After twoFactor: its hook must see the challenge replace the session.
       signInAudit(),
       accountHooks(),
+      // Last: strips session tokens and IPs from JSON sent to the browser.
+      responseScrub(),
     ],
   })
 }

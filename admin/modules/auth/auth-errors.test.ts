@@ -58,4 +58,28 @@ describe("authRequest", () => {
     expect(failure).toEqual({ kind: "locked", message: LOCKED })
     expect(LOCKED).toContain("15 minutes")
   })
+  it("passes the server's field errors through on a rejection", async () => {
+    const { failure } = await authRequest(async () => ({
+      data: null,
+      error: {
+        status: 400,
+        code: "INVALID_PROFILE",
+        fieldErrors: { name: ["Use 80 characters or fewer"] },
+      },
+    }))
+    expect(failure).toEqual({
+      kind: "rejected",
+      message: null,
+      code: "INVALID_PROFILE",
+      fieldErrors: { name: ["Use 80 characters or fewer"] },
+    })
+  })
+
+  it("ignores malformed field errors", async () => {
+    const { failure } = await authRequest(async () => ({
+      data: null,
+      error: { status: 400, fieldErrors: { name: "not a list" } },
+    }))
+    expect(failure).toEqual({ kind: "rejected", message: null })
+  })
 })

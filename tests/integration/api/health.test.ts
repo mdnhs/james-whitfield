@@ -45,11 +45,12 @@ describe("api core", () => {
     expect(body.error.requestId).toEqual(expect.any(String))
   })
 
-  it("lets small admin bodies through to routing", async () => {
+  it("lets small admin bodies through to the auth gate", async () => {
     const response = await app.request("/api/v1/admin/__nope", {
       method: "POST",
       body: "{}",
     })
-    expect(response.status).toBe(404)
+    // Past the body limit, the request reaches the auth gate (anonymous).
+    expect(response.status).toBe(401)
   })
 })

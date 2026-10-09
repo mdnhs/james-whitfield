@@ -5,7 +5,10 @@ import { bodyLimit } from "hono/body-limit"
 import { requestId } from "hono/request-id"
 import { secureHeaders } from "hono/secure-headers"
 
+import { getAuth } from "@/server/auth/auth"
+
 import { errorBody, handleError } from "./errors"
+import { adminRoutes } from "./routes/admin"
 import { health } from "./routes/health"
 import type { AppEnv } from "./types"
 
@@ -37,7 +40,9 @@ export const app = new Hono<AppEnv>()
         ),
     })
   )
+  .on(["GET", "POST"], "/auth/*", (c) => getAuth().handler(c.req.raw))
   .route("/v1/health", health)
+  .route("/v1/admin", adminRoutes)
 
 app.onError(handleError)
 app.notFound((c) =>

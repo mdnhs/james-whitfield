@@ -25,17 +25,13 @@ export const TESTIMONIALS_HEADER = {
   title: "What Clients Say",
 }
 
-// Two columns, in the design's order.
-export const TESTIMONIAL_COLUMNS: Testimonial[][] = [
-  [
-    { ...client, quote: QUOTES.clarity, avatar: avatar("andrew-brown") },
-    { ...client, quote: QUOTES.nervousSystem, avatar: avatar("ben-goldsmith") },
-    { ...client, quote: QUOTES.clarity, avatar: avatar("dean-gardner") },
-    { ...client, quote: QUOTES.pathForward, avatar: avatar("ted-white") },
-  ],
-  [
-    { ...client, quote: QUOTES.pathForward, avatar: avatar("isabella-tree") },
-    { ...client, quote: QUOTES.confidence, avatar: avatar("saif-hameed") },
-    { ...client, quote: QUOTES.nervousSystem, avatar: avatar("ben-brown") },
-  ],
+// Flat list in reading order; the section splits it into columns.
+export const TESTIMONIALS: Testimonial[] = [
+  { ...client, quote: QUOTES.clarity, avatar: avatar("andrew-brown") },
+  { ...client, quote: QUOTES.nervousSystem, avatar: avatar("ben-goldsmith") },
+  { ...client, quote: QUOTES.clarity, avatar: avatar("dean-gardner") },
+  { ...client, quote: QUOTES.pathForward, avatar: avatar("ted-white") },
+  { ...client, quote: QUOTES.pathForward, avatar: avatar("isabella-tree") },
+  { ...client, quote: QUOTES.confidence, avatar: avatar("saif-hameed") },
+  { ...client, quote: QUOTES.nervousSystem, avatar: avatar("ben-brown") },
 ]

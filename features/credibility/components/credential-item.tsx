@@ -1,18 +1,11 @@
 import { Icon } from "@/components/icons/icon"
-import { cn } from "@/lib/utils"
 import type { Credential } from "../data/credentials"
 
-export function CredentialItem({
-  credential,
-  className,
-}: {
-  credential: Credential
-  className?: string
-}) {
+export function CredentialItem({ credential }: { credential: Credential }) {
   const { title, subtitle, icon } = credential
 
   return (
-    <li className={cn("flex min-w-0 items-center gap-[12.682px]", className)}>
+    <li className="flex min-w-0 items-center gap-[12.682px]">
       <span className="flex size-[42.273px] shrink-0 items-center justify-center rounded-[12.682px] bg-[#cee9da]">
         <Icon name={icon} className="text-spruce" />
       </span>

@@ -178,6 +178,16 @@
 @media (prefers-reduced-motion: no-preference) {
   [data-reveal] {
     visibility: hidden;
+    /* Failsafe (docs/brief.md §5.7): if JavaScript never runs or a trigger
+       is missed, the element still appears. An animation outranks the inline
+       visibility GSAP sets, but opacity still hides an element mid-reveal. */
+    animation: reveal-failsafe 0s linear 2.5s forwards;
+  }
+}
+
+@keyframes reveal-failsafe {
+  to {
+    visibility: visible;
   }
 }
 

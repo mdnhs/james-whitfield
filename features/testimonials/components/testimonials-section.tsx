@@ -1,7 +1,8 @@
 import { Eyebrow } from "@/components/eyebrow"
 import { Container } from "@/components/layout/container"
+import { splitColumns } from "@/lib/layout-math"
 import { cn } from "@/lib/utils"
-import { TESTIMONIAL_COLUMNS, TESTIMONIALS_HEADER } from "../data/testimonials"
+import { TESTIMONIALS, TESTIMONIALS_HEADER } from "../data/testimonials"
 import { TestimonialCard } from "./testimonial-card"
 
 // "page" (inner pages) uses the pill eyebrow, the pine heading and two
@@ -52,7 +53,7 @@ export function TestimonialsSection({
         </header>
 
         <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-2 lg:gap-8">
-          {TESTIMONIAL_COLUMNS.map((column, i) => (
+          {splitColumns(TESTIMONIALS, 2).map((column, i) => (
             // The right column sits lower on desktop so the cards read in
             // order, left then right, as each one rises in on scroll.
             <div
@@ -63,7 +64,7 @@ export function TestimonialsSection({
               )}
             >
               {column.map((testimonial, j) => (
-                <TestimonialCard key={j} {...testimonial} />
+                <TestimonialCard key={`${i}-${j}`} {...testimonial} />
               ))}
             </div>
           ))}

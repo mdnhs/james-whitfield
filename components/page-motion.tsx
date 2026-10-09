@@ -3,6 +3,7 @@
 import { useRef } from "react"
 import { usePathname } from "next/navigation"
 
+import { formatCount } from "@/lib/count"
 import { gsap, ScrollTrigger, SplitText, useGSAP } from "@/lib/gsap"
 
 // Page-wide scrollytelling. Server-rendered sections opt in with data-motion
@@ -16,7 +17,7 @@ import { gsap, ScrollTrigger, SplitText, useGSAP } from "@/lib/gsap"
 //             left to right; reverses on the way back up
 //   deal-group  its children deal as cards (grids and lists of cards)
 //   grow      scales in from its top edge, scrubbed (the about quote rule)
-//   count     counts its leading number up on enter ("10+")
+//   count     counts up from data-count-* (value, decimals, prefix, suffix)
 //   parallax  drifts against the scroll inside its clipped frame
 //   drift     floats by data-speed px while passing (offset columns)
 //   tilt      leans toward the pointer in 3D with a soft glare (fine pointer)
@@ -343,12 +344,11 @@ export function PageMotion() {
           })
 
           select("count").forEach((el) => {
-            // Keep the original copy on the element: effects can run twice (dev
-            // strict mode, matchMedia changes) and must not read a mid-count.
-            el.dataset.count ??= el.textContent ?? ""
-            const [, value, suffix = ""] =
-              el.dataset.count.match(/^(\d+)(.*)$/) ?? []
-            if (!value) return
+            const target = Number(el.dataset.countValue)
+            if (!Number.isFinite(target)) return
+            const decimals = Number(el.dataset.countDecimals ?? 0)
+            const prefix = el.dataset.countPrefix ?? ""
+            const suffix = el.dataset.countSuffix ?? ""
             const counter = { n: 0 }
             ScrollTrigger.create({
               trigger: el,
@@ -356,11 +356,11 @@ export function PageMotion() {
               once: true,
               onEnter: () =>
                 gsap.to(counter, {
-                  n: Number(value),
+                  n: target,
                   duration: 2,
                   ease: "power2.out",
                   onUpdate: () => {
-                    el.textContent = `${Math.round(counter.n)}${suffix}`
+                    el.textContent = `${prefix}${formatCount(counter.n, decimals)}${suffix}`
                   },
                 }),
             })

@@ -2,6 +2,7 @@ import Image from "next/image"
 
 import { Eyebrow } from "@/components/eyebrow"
 import { Container } from "@/components/layout/container"
+import { StatValue } from "@/components/stat-value"
 import storyImage from "@/public/images/about/story.png"
 import { ABOUT_STORY } from "../data/about-page-content"
 
@@ -36,12 +37,10 @@ export function StorySection() {
             data-motion="rise"
             className="relative flex flex-col gap-1.5 self-start rounded-[20px] border border-white/16 bg-white/20 p-6 text-cream backdrop-blur-[8px]"
           >
-            <span
-              data-motion="count"
+            <StatValue
+              stat={badge.value}
               className="font-display text-[40px] leading-[1.1] font-bold [font-variation-settings:'SOFT'_0,'WONK'_1]"
-            >
-              {badge.value}
-            </span>
+            />
             <span className="w-40.5 text-sm leading-[1.45]">{badge.label}</span>
           </div>
         </div>

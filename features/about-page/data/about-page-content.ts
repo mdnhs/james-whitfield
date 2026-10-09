@@ -1,4 +1,13 @@
+import type { StatValue } from "@/lib/count"
 import type { IconName } from "@/lib/icons"
+
+const count = (value: number, suffix = "", decimals = 0): StatValue => ({
+  kind: "count",
+  value,
+  decimals,
+  prefix: "",
+  suffix,
+})
 
 export const ABOUT_HERO = {
   title: "About",
@@ -14,15 +23,18 @@ export const ABOUT_STORY = {
   ],
   quote:
     "“You don’t need more willpower. You need a different relationship with the part of you that’s been protecting you.”",
-  badge: { value: "10+", label: "Years helping people change from within" },
+  badge: {
+    value: count(10, "+"),
+    label: "Years helping people change from within",
+  },
   role: "Clinical Hypnotherapist & Coach",
 }
 
 export const ABOUT_STATS = [
-  { value: "10+", label: "Years in clinical practice" },
-  { value: "800+", label: "Clients supported 1-to-1" },
-  { value: "3", label: "Countries — Ireland, UK & USA" },
-  { value: "4.9/5", label: "Average client rating" },
+  { value: count(10, "+"), label: "Years in clinical practice" },
+  { value: count(800, "+"), label: "Clients supported 1-to-1" },
+  { value: count(3), label: "Countries — Ireland, UK & USA" },
+  { value: count(4.9, "/5", 1), label: "Average client rating" },
 ]
 
 export const ABOUT_APPROACH = {

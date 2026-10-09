@@ -1,5 +1,6 @@
 import Image from "next/image"
 
+import { countAttrs, statText } from "@/lib/count"
 import { cn } from "@/lib/utils"
 import { HERO_CONTENT } from "../data/hero-content"
 
@@ -32,8 +33,12 @@ export function MemberBadge({ className }: { className?: string }) {
         ))}
       </div>
       <p className="font-geist text-lg leading-[1.4] tracking-[-0.4px] whitespace-nowrap text-white sm:text-xl">
-        <span data-hero="count" className="block font-semibold tabular-nums">
-          {count}
+        <span
+          data-hero="count"
+          className="block font-semibold tabular-nums"
+          {...{ ...countAttrs(count), "data-motion": undefined }}
+        >
+          {statText(count)}
         </span>
         <span className="block text-white/80">{label}</span>
       </p>

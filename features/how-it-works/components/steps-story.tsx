@@ -3,7 +3,7 @@
 import * as Scrollytelling from "@bsmnt/scrollytelling"
 import { useRef, useSyncExternalStore } from "react"
 
-import { STEPS } from "../data/steps"
+import { stepsTimeline } from "@/lib/layout-math"
 
 const DESKTOP = "(min-width: 1024px) and (pointer: fine)"
 
@@ -20,14 +20,6 @@ function useDesktop() {
   )
 }
 
-// Pin timeline beats (percent of the pinned scroll). The first card is lit from
-// the start; each later card gets its own window to surface.
-const BEAT = 24
-const surface = (i: number) => ({
-  start: (i - 1) * BEAT + 8,
-  end: i * BEAT + 4,
-})
-
 // Desktop scrollytelling for the steps: the section sticks to the viewport
 // while vertical scroll walks the card track sideways. Heights come from CSS vars set on the
 // section, so on mobile the pin collapses to auto and the carousel stays a
@@ -41,11 +33,16 @@ const surface = (i: number) => ({
 // list — so GSAP only tweens --p from 0 to 1 and resizes need no recalculation.
 export function StepsStory({
   header,
+  count,
   children,
 }: {
   header: React.ReactNode
+  count: number
   children: React.ReactNode
 }) {
+  // Pin timeline beats (percent of the pinned scroll). The first card is lit
+  // from the start; each later card gets its own window to surface.
+  const { surface } = stepsTimeline(count)
   const track = useRef<HTMLDivElement>(null)
   const desktop = useDesktop()
   // Later cards are resolved inside this section's own track when the
@@ -78,9 +75,9 @@ export function StepsStory({
           </div>
         </Scrollytelling.Pin>
 
-        {STEPS.slice(1).map((step, i) => (
+        {Array.from({ length: count - 1 }, (_, i) => (
           <Scrollytelling.Animation
-            key={step.title}
+            key={i + 1}
             tween={{
               ...surface(i + 1),
               target: stepAt(i + 1),

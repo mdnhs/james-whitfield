@@ -2,6 +2,7 @@ import Link from "next/link"
 
 import { Container } from "@/components/layout/container"
 import { buttonVariants } from "@/components/ui/button"
+import { stepsTimeline } from "@/lib/layout-math"
 import { cn } from "@/lib/utils"
 import { HOW_IT_WORKS, STEPS } from "../data/steps"
 import { StepCard } from "./step-card"
@@ -24,9 +25,15 @@ export function HowItWorksSection({
       aria-labelledby="how-it-works-heading"
       // Pin heights for StepsStory: auto on mobile (no pin), a full-viewport
       // sticky frame with extra scroll room for the sideways walk on desktop.
-      className="overflow-clip bg-brand [--steps-child:auto] [--steps-spacer:auto] lg:[--steps-child:100svh] lg:[--steps-spacer:260svh]"
+      className="overflow-clip bg-brand [--steps-child:auto] [--steps-spacer:auto] lg:[--steps-child:100svh] lg:[--steps-spacer:var(--steps-spacer-lg)]"
+      style={
+        {
+          "--steps-spacer-lg": stepsTimeline(STEPS.length).spacer,
+        } as React.CSSProperties
+      }
     >
       <StepsStory
+        count={STEPS.length}
         header={
           <Container className="flex flex-col items-start gap-8 lg:flex-row lg:items-center lg:gap-14">
             <div className="flex min-w-0 flex-1 flex-col items-start gap-4">

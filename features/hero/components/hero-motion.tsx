@@ -2,6 +2,7 @@
 
 import { useRef } from "react"
 
+import { formatCount } from "@/lib/count"
 import { gsap, SplitText, useGSAP } from "@/lib/gsap"
 
 // Client-only animation shell for the hero. The markup stays server-rendered;
@@ -77,23 +78,28 @@ export function HeroMotion({
               2.15
             )
 
-          // Count up "800+" → keeps any non-numeric suffix.
+          // Count up from the data-count-* attributes (value, decimals, prefix,
+          // suffix) that MemberBadge renders.
           if (count) {
-            const [, value = "0", suffix = ""] =
-              count.textContent?.match(/^(\d+)(.*)$/) ?? []
-            const counter = { n: 0 }
-            intro.to(
-              counter,
-              {
-                n: Number(value),
-                duration: 1.6,
-                ease: "power2.out",
-                onUpdate: () => {
-                  count.textContent = `${Math.round(counter.n)}${suffix}`
+            const target = Number(count.dataset.countValue)
+            const decimals = Number(count.dataset.countDecimals ?? 0)
+            const prefix = count.dataset.countPrefix ?? ""
+            const suffix = count.dataset.countSuffix ?? ""
+            if (Number.isFinite(target)) {
+              const counter = { n: 0 }
+              intro.to(
+                counter,
+                {
+                  n: target,
+                  duration: 1.6,
+                  ease: "power2.out",
+                  onUpdate: () => {
+                    count.textContent = `${prefix}${formatCount(counter.n, decimals)}${suffix}`
+                  },
                 },
-              },
-              2.15
-            )
+                2.15
+              )
+            }
           }
 
           // --- Scroll exit ---------------------------------------------------

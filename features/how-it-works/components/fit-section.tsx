@@ -2,6 +2,7 @@ import Image from "next/image"
 
 import { Eyebrow } from "@/components/eyebrow"
 import { Container } from "@/components/layout/container"
+import { pairRows } from "@/lib/layout-math"
 import { FIT } from "../data/session"
 
 function Mark({ good }: { good: boolean }) {
@@ -38,7 +39,7 @@ const divider = "w-0.5 bg-clay/20"
 
 export function FitSection() {
   const { eyebrow, title, subtitle, good, poor } = FIT
-  const rows = good.items.map((item, i) => [item, poor.items[i]] as const)
+  const rows = pairRows(good.items, poor.items)
 
   return (
     <section aria-labelledby="fit-heading" className="bg-white py-20 lg:py-30">
@@ -79,13 +80,13 @@ export function FitSection() {
           <tbody data-motion="stagger">
             {rows.map(([yes, no], i) => (
               <tr
-                key={yes}
+                key={i}
                 className="group bg-stone transition-colors duration-300 hover:bg-mist/60"
               >
                 <td
                   className={`border-y border-l border-line-faint p-9 pr-0 ${i === 0 ? "rounded-tl-3xl" : ""} ${i === rows.length - 1 ? "rounded-bl-3xl" : ""}`}
                 >
-                  <Item good>{yes}</Item>
+                  {yes !== null && <Item good>{yes}</Item>}
                 </td>
                 <td aria-hidden className="w-4 border-y border-line-faint" />
                 <td aria-hidden className="border-y border-line-faint py-6">
@@ -94,7 +95,7 @@ export function FitSection() {
                 <td
                   className={`border-y border-r border-line-faint p-9 pl-14 ${i === 0 ? "rounded-tr-3xl" : ""} ${i === rows.length - 1 ? "rounded-br-3xl" : ""}`}
                 >
-                  <Item good={false}>{no}</Item>
+                  {no !== null && <Item good={false}>{no}</Item>}
                 </td>
               </tr>
             ))}

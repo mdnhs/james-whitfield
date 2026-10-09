@@ -3,6 +3,7 @@ import { Geist_Mono, Plus_Jakarta_Sans } from "next/font/google"
 
 import "./admin.css"
 import { Toaster } from "@/components/ui/sonner"
+import { ThemeProvider } from "@/components/theme-provider"
 import { cn } from "@/lib/utils"
 
 const sans = Plus_Jakarta_Sans({
@@ -23,7 +24,8 @@ export const metadata: Metadata = {
 }
 
 // Separate root layout: no Lenis, GSAP or site chrome, and its own tokens.
-// Light only until the Phase 2 theme switch adds the `.dark` class.
+// next-themes sets `.light`/`.dark` on <html> from an inline script before
+// hydration, hence suppressHydrationWarning on that element only.
 export default function AdminRootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
@@ -32,10 +34,13 @@ export default function AdminRootLayout({
       lang="en-IE"
       data-theme="admin"
       className={cn(sans.variable, mono.variable)}
+      suppressHydrationWarning
     >
       <body>
-        {children}
-        <Toaster theme="light" position="top-center" />
+        <ThemeProvider>
+          {children}
+          <Toaster position="top-center" />
+        </ThemeProvider>
       </body>
     </html>
   )

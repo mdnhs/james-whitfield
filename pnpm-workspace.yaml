@@ -8,6 +8,8 @@ allowBuilds:
 auditConfig:
   ignoreGhsas:
     # braces <=3.0.3 ReDoS: no patched release exists. Reached only through
-    # micromatch/fast-glob in eslint-config-next and the shadcn CLI (dev-time
-    # tooling on trusted globs), never in the deployed runtime.
+    # micromatch/fast-glob in eslint-config-next and the shadcn CLI. shadcn
+    # stays a prod dependency (site.css and admin.css import
+    # shadcn/tailwind.css), so the CLI's glob code ships, but nothing at
+    # runtime executes it: only dev-time tooling on trusted globs does.
     - GHSA-vfj7-8cjw-p6xm

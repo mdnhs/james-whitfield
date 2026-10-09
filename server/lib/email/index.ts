@@ -14,18 +14,21 @@ export type EmailMessage = {
 type Envelope = EmailMessage & { from: string }
 type EmailDriver = { send(message: Envelope): Promise<void> }
 
-// The log driver keeps messages in memory (tests read them). Only development
-// prints the body (so invite links work without a mail server); elsewhere just
-// metadata is logged, since bodies carry live reset/invite tokens.
+// The log driver keeps messages in memory for tests only: elsewhere (staging
+// may use it) that would hold every live reset/invite token forever. Only
+// development prints the body (so invite links work without a mail server);
+// elsewhere just metadata is logged, since bodies carry those tokens.
 const oneLine = (value: string) => value.replace(/[\r\n]+/g, " ")
 
 const outbox: Envelope[] = []
 
 const logDriver: EmailDriver = {
   async send(message) {
-    outbox.push(message)
     const { NODE_ENV } = getEnv()
-    if (NODE_ENV === "test") return
+    if (NODE_ENV === "test") {
+      outbox.push(message)
+      return
+    }
     const meta = `[email] to=${oneLine(message.to)} subject="${oneLine(message.subject)}"`
     console.info(NODE_ENV === "development" ? `${meta}\n${message.text}` : meta)
   },

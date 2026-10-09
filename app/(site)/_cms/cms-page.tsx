@@ -2,7 +2,11 @@ import type { Metadata } from "next"
 import { io } from "next/cache"
 import { notFound } from "next/navigation"
 
-import { getPublishedPage, getSetting } from "@/server/modules/content/queries"
+import {
+  getMedia,
+  getPublishedPage,
+  getSetting,
+} from "@/server/modules/content/queries"
 
 import { BlockRenderer } from "./block-renderer"
 
@@ -25,15 +29,29 @@ export async function CmsPage({ path }: { path: string }) {
   return <BlockRenderer page={page} contactLabel={copy.contactChapter} />
 }
 
-// Metadata blocks for every agent (htmlLimitedBots), so a notFound() here
-// runs before the body streams and the response is a real 404.
+// Metadata blocks for every agent (htmlLimitedBots), so a missing page puts
+// noindex in the head; the status stays 200 (see the note above CmsPage).
 export async function cmsMetadata(path: string): Promise<Metadata> {
   await io()
   const page = await getPublishedPage(path)
   if (!page) notFound()
-  const description = page.seo.description ?? undefined
-  // The home page keeps the site's default title (root layout).
-  return page.systemKey === "home"
-    ? { description }
-    : { title: page.seo.title ?? page.title, description }
+  const { seo } = page
+  const ogId = seo.ogImage?.mediaId
+  // A deleted share image drops the tag rather than failing the page.
+  const og = ogId ? (await getMedia([ogId])).get(ogId) : undefined
+  return {
+    // The home page keeps the site's default title (root layout).
+    ...(page.systemKey === "home" ? {} : { title: seo.title ?? page.title }),
+    description: seo.description ?? undefined,
+    ...(seo.noindex ? { robots: { index: false } } : {}),
+    ...(og
+      ? {
+          openGraph: {
+            images: [
+              { url: og.src, width: og.width, height: og.height, alt: og.alt },
+            ],
+          },
+        }
+      : {}),
+  }
 }

@@ -4,7 +4,8 @@ const expectNotFoundPage = async (page: Page) => {
   await expect(
     page.getByRole("heading", { name: "Page not found" })
   ).toBeVisible()
-  await expect(page.getByRole("navigation", { name: "Main" })).toBeAttached()
+  // Site chrome on every viewport (the main nav collapses below desktop).
+  await expect(page.locator("footer#contact")).toBeAttached()
   await expect(
     page.locator('meta[name="robots"][content*="noindex"]').first()
   ).toBeAttached()
@@ -25,7 +26,7 @@ for (const path of ["/no-such-page", "/about/extra"]) {
 // A route that exists but whose content is missing or unpublished streams its
 // shell first under Cache Components, so the status stays 200; noindex keeps
 // the soft 404 out of search results.
-for (const path of ["/privacy", "/insights/nope"]) {
+for (const path of ["/privacy", "/insights/nope", "/insights/__shell"]) {
   test(`${path} renders a noindex not-found page`, async ({ page }) => {
     await page.goto(path)
     await expectNotFoundPage(page)

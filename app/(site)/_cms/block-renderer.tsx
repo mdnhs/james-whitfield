@@ -7,8 +7,8 @@ import type { PublishedPage } from "@/lib/content/types"
 import { ResolvedBlock } from "./resolve-block"
 
 // Cards, rail and motion for one page (docs/brief.md §5.7). `key` remounts the
-// page root when two CMS paths share the [...slug] segment, so the rail and
-// PageMotion rebuild for the new page instead of keeping the old chapters.
+// page root if two paths ever render through one segment (Phase 4's custom
+// pages), so the rail and PageMotion rebuild instead of keeping old chapters.
 export function BlockRenderer({
   page,
   contactLabel,

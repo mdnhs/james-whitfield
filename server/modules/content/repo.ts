@@ -10,9 +10,11 @@ import {
   isNull,
 } from "drizzle-orm"
 import type { AnyPgColumn } from "drizzle-orm/pg-core"
+import * as z from "zod"
 
 import { IconField } from "@/blocks/fields"
-import { PageDocument, PageSeo, PageSettings } from "@/blocks/page"
+import { PageSeo, PageSettings } from "@/blocks/page"
+import { BlockInstance } from "@/blocks/registry"
 import type {
   ArticleDetail,
   ArticleSummary,
@@ -59,6 +61,28 @@ const need = (assets: Map<string, MediaAsset>, id: string) => {
   return asset ?? null
 }
 
+// Documents are validated on write. A block that no longer parses (a
+// hand-edited row, a schema change) is dropped with a warning so the rest of
+// the page still renders; the page-level fields below still parse strictly.
+const DocumentShape = z.object({ blocks: z.array(z.unknown()) })
+
+function liveBlocks(path: string, document: unknown): BlockInstance[] {
+  const shape = DocumentShape.safeParse(document)
+  if (!shape.success) {
+    console.warn(`[content] page ${path} has no block list; treated as missing`)
+    return []
+  }
+  return shape.data.blocks.flatMap((raw, i) => {
+    const block = BlockInstance.safeParse(raw)
+    if (block.success) return [block.data]
+    console.warn(
+      `[content] page ${path} block ${i} is invalid; skipped`,
+      z.prettifyError(block.error)
+    )
+    return []
+  })
+}
+
 export async function findPageByPath(
   path: string,
   { draft }: { draft: boolean },
@@ -77,14 +101,14 @@ export async function findPageByPath(
       ? row.published
       : null
   if (!document) return null
+  const blocks = liveBlocks(row.path, document)
+  if (blocks.length === 0) return null
   return {
     id: row.id,
     path: row.path,
     title: row.title,
     systemKey: row.systemKey,
-    // Validated on write; parsing again turns a hand-edited row into a clear
-    // error instead of a broken render.
-    document: PageDocument.parse(document),
+    document: { blocks },
     seo: PageSeo.parse(row.seo),
     settings: PageSettings.parse(row.settings),
   }

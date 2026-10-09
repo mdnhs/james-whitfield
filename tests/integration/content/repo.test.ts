@@ -47,6 +47,10 @@ const doc = (title: string) => ({
   ],
 })
 
+// A row the write path would reject (hand-edited, or from another schema).
+const corrupt = (document: unknown) =>
+  document as (typeof pages.$inferInsert)["published"]
+
 describe("content repo", () => {
   it("serves the published document, or the draft in draft mode", async () => {
     await getDb()
@@ -66,6 +70,45 @@ describe("content repo", () => {
       showContactChapter: true,
       needsReview: false,
     })
+  })
+
+  it("drops an invalid block and keeps the rest of the page", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
+    const valid = doc("Live").blocks[0]
+    await getDb()
+      .insert(pages)
+      .values({
+        path: "/about",
+        title: "About",
+        status: "published",
+        draft: doc("Draft"),
+        published: corrupt({
+          blocks: [
+            valid,
+            { ...valid, id: "about-bogus", type: "no.such", anchor: "bogus" },
+            { ...valid, id: "about-bad", anchor: "bad", data: { title: 1 } },
+          ],
+        }),
+      })
+    const page = await findPageByPath("/about", { draft: false })
+    expect(page?.document.blocks.map((b) => b.id)).toEqual(["about-home"])
+    expect(warn).toHaveBeenCalledTimes(2)
+    warn.mockRestore()
+  })
+
+  it("treats a page whose blocks are all invalid as missing", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
+    await getDb()
+      .insert(pages)
+      .values({
+        path: "/broken",
+        title: "Broken",
+        status: "published",
+        draft: doc("Draft"),
+        published: corrupt({ blocks: [{ id: "x-bogus", type: "no.such" }] }),
+      })
+    expect(await findPageByPath("/broken", { draft: false })).toBeNull()
+    warn.mockRestore()
   })
 
   it("treats an unpublished page as missing", async () => {

@@ -13,6 +13,7 @@ import {
   RelatedArticles,
 } from "@/features/insights"
 import { contactHref } from "@/lib/contact-href"
+import { ARTICLE_SHELL_SLUG } from "@/lib/content/article-slug"
 import {
   getArticle,
   getMedia,
@@ -22,10 +23,11 @@ import {
 
 // Articles render on request from cached data. Cache Components needs at least
 // one param to build the route's shell; a sentinel slug gives it one without
-// reading the database (it has no article, so it renders not-found). Unknown
-// slugs render not-found inside the streamed shell: 200 + noindex.
+// reading the database. ArticleSlug cannot produce it, so it never names an
+// article and renders not-found. Unknown slugs render not-found inside the
+// streamed shell: 200 + noindex.
 export function generateStaticParams() {
-  return [{ slug: "__shell" }]
+  return [{ slug: ARTICLE_SHELL_SLUG }]
 }
 
 export async function generateMetadata({

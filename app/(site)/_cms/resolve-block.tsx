@@ -201,7 +201,14 @@ export async function ResolvedBlock({ block }: { block: BlockInstance }) {
     }
     case "richtext":
       return <RichTextSection id={id} content={block.data} />
-    default:
-      return block satisfies never
+    default: {
+      // Compile-time exhaustive; at runtime an unknown type (a row written by
+      // a newer or older build) skips its section instead of failing the page.
+      const unknown: { type: string; id: string } = block satisfies never
+      console.warn(
+        `[content] block ${unknown.id} has unknown type "${unknown.type}"; skipped`
+      )
+      return null
+    }
   }
 }

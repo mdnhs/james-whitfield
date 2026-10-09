@@ -13,6 +13,7 @@ import {
 } from "@/features/insights/data/articles"
 import { FORMATS, SERVICES } from "@/features/services/data/services-content"
 import { TESTIMONIALS } from "@/features/testimonials/data/testimonials"
+import { ArticleSlug } from "@/lib/content/article-slug"
 import { cropToFrame } from "@/lib/content/frame"
 import { slugify } from "@/lib/utils"
 import type { Db } from "@/server/db/client"
@@ -187,7 +188,7 @@ export async function seedCollections(db: Db) {
         const text = plainText(body)
         return {
           id: seedId("article", a.slug),
-          slug: a.slug,
+          slug: ArticleSlug.parse(a.slug),
           title: a.title,
           excerpt: a.excerpt,
           coverId: media(a.image),

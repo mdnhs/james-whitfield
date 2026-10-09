@@ -10,7 +10,8 @@ import * as schema from "@/server/db/schema"
 import { getEnv } from "@/server/env"
 import { audit } from "@/server/lib/audit"
 import { deliverResetEmail } from "./email"
-import { twoFactorAfterHook, twoFactorBeforeHook } from "./two-factor-hooks"
+import { afterHook, beforeHook } from "./hooks"
+import { signInAudit } from "./sign-in-audit"
 
 export function buildAuth() {
   const env = getEnv()
@@ -42,34 +43,29 @@ export function buildAuth() {
       // Cheap reads for the UI. Admin checks bypass it (disableCookieCache).
       cookieCache: { enabled: true, maxAge: 5 * 60 },
     },
-    hooks: { before: twoFactorBeforeHook, after: twoFactorAfterHook },
+    hooks: { before: beforeHook, after: afterHook },
     databaseHooks: {
       session: {
         create: {
-          // Sign-ins and impersonation starts land in the audit log.
+          // Impersonation starts land in the audit log. Sign-ins are
+          // audited when they complete (./sign-in-audit), not per session.
           after: async (created) => {
             const impersonatedBy = (
               created as { impersonatedBy?: string | null }
             ).impersonatedBy
+            if (!impersonatedBy) return
             await audit(
               {
-                userId: impersonatedBy ?? created.userId,
+                userId: impersonatedBy,
                 ip: created.ipAddress ?? null,
                 userAgent: created.userAgent ?? null,
               },
-              impersonatedBy
-                ? {
-                    action: "auth.impersonate",
-                    entityType: "user",
-                    entityId: created.userId,
-                    summary: "Started a View-as session",
-                  }
-                : {
-                    action: "auth.sign_in",
-                    entityType: "user",
-                    entityId: created.userId,
-                    summary: "Signed in",
-                  }
+              {
+                action: "auth.impersonate",
+                entityType: "user",
+                entityId: created.userId,
+                summary: "Started a View-as session",
+              }
             )
           },
         },
@@ -87,6 +83,10 @@ export function buildAuth() {
     },
     advanced: {
       cookiePrefix: "mk",
+      // Better Auth skips its origin and redirect checks when NODE_ENV is
+      // "test". Explicit, so tests exercise the same checks production runs
+      // (an off-origin redirectTo would carry reset tokens off-site).
+      disableOriginCheck: false,
       database: { generateId: "uuid" },
       // Behind Traefik on Dokploy; X-Forwarded-For chains are not trusted.
       ipAddress: { ipAddressHeaders: ["x-real-ip"] },
@@ -100,6 +100,8 @@ export function buildAuth() {
         impersonationSessionDuration: 60 * 60,
       }),
       twoFactor({ issuer: "Magda Kennedy Admin" }),
+      // After twoFactor: its hook must see the challenge replace the session.
+      signInAudit(),
     ],
   })
 }

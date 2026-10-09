@@ -8,6 +8,8 @@ import { hashIp } from "./crypto"
 export type AuditActor = {
   userId: string
   email?: string | null
+  // Set during View-as: the real user acting as `userId`.
+  impersonatedBy?: string | null
   ip?: string | null
   userAgent?: string | null
 }
@@ -28,8 +30,10 @@ export async function audit(
   await db.insert(auditLogs).values({
     actorId: actor?.userId ?? null,
     actorEmail: actor?.email ?? null,
+    impersonatedBy: actor?.impersonatedBy ?? null,
     ipHash: actor?.ip ? hashIp(actor.ip) : null,
-    userAgent: actor?.userAgent ?? null,
+    // Client-supplied: bounded so a crafted header cannot bloat the log.
+    userAgent: actor?.userAgent?.slice(0, 512) ?? null,
     action: entry.action,
     entityType: entry.entityType,
     entityId: entry.entityId ?? null,

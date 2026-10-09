@@ -1,0 +1,2 @@
+ALTER TABLE "audit_logs" ADD COLUMN "impersonated_by" uuid;--> statement-breakpoint
+ALTER TABLE "audit_logs" ADD CONSTRAINT "audit_logs_impersonated_by_users_id_fk" FOREIGN KEY ("impersonated_by") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;

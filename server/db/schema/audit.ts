@@ -16,6 +16,8 @@ export const auditLogs = pgTable(
     id: uuid().primaryKey().defaultRandom(),
     actorId: uuid().references(() => users.id, { onDelete: "set null" }),
     actorEmail: text(),
+    // The real user behind a View-as session; actorId is who they viewed as.
+    impersonatedBy: uuid().references(() => users.id, { onDelete: "set null" }),
     action: text().notNull(),
     entityType: text().notNull(),
     entityId: text(),

@@ -255,3 +255,52 @@ describe.each(ROLE_NAMES)("globals read routes for %s", (role) => {
     }
   )
 })
+
+// docs/brief.md §7.2 collection rows. 404 means "past can(), no such item";
+// 400 on reorder means "past can(), incomplete id list".
+const COLLECTION_WRITER = { read: 200, write: 404, reorder: 400 }
+const COLLECTIONS: Record<
+  RoleName,
+  { read: number; write: number; reorder: number }
+> = {
+  owner: COLLECTION_WRITER,
+  admin: COLLECTION_WRITER,
+  editor: COLLECTION_WRITER,
+  author: { read: 200, write: 403, reorder: 403 },
+  marketer: { read: 200, write: 403, reorder: 403 },
+  intake: { read: 403, write: 403, reorder: 403 },
+  viewer: { read: 200, write: 403, reorder: 403 },
+}
+
+describe.each(ROLE_NAMES)("collections routes for %s", (role) => {
+  const missing = crypto.randomUUID()
+  const expected = COLLECTIONS[role]
+
+  it.each(["/collections/faqs", "/collections/faqs/options"])(
+    `GET %s → ${expected.read}`,
+    async (path) => {
+      const response = await adminRequest(path, await cookieFor(role))
+      expect(response.status).toBe(expected.read)
+    }
+  )
+
+  it(`PATCH /collections/faqs/order → ${expected.reorder}`, async () => {
+    const response = await adminRequest(
+      "/collections/faqs/order",
+      await cookieFor(role),
+      { method: "PATCH", body: { ids: [missing] } }
+    )
+    expect(response.status).toBe(expected.reorder)
+  })
+
+  it.each([
+    ["PATCH", `/collections/faqs/${missing}`, { version: 1, values: {} }],
+    ["DELETE", `/collections/faqs/${missing}`, undefined],
+  ])(`%s %s → ${expected.write}`, async (method, path, body) => {
+    const response = await adminRequest(path, await cookieFor(role), {
+      method,
+      body,
+    })
+    expect(response.status).toBe(expected.write)
+  })
+})

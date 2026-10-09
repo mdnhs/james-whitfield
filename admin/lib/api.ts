@@ -8,6 +8,7 @@ import {
 import type { ErrorCode } from "@/server/api/errors"
 import type { AccountRoutes } from "@/server/modules/account/routes"
 import type { AuditRoutes } from "@/server/modules/audit/routes"
+import type { CollectionsRoutes } from "@/server/modules/collections/routes"
 import type { DashboardRoutes } from "@/server/modules/dashboard/routes"
 import type { GlobalsRoutes } from "@/server/modules/globals/routes"
 import type { PagesRoutes } from "@/server/modules/pages/routes"
@@ -19,6 +20,7 @@ import { ApiError } from "./api-error"
 // origin, so the session cookie flows without configuration.
 export const accountApi = hc<AccountRoutes>("/api/v1/admin/account")
 export const auditApi = hc<AuditRoutes>("/api/v1/admin/audit")
+export const collectionsApi = hc<CollectionsRoutes>("/api/v1/admin/collections")
 export const dashboardApi = hc<DashboardRoutes>("/api/v1/admin/dashboard")
 export const globalsApi = hc<GlobalsRoutes>("/api/v1/admin/globals")
 export const pagesApi = hc<PagesRoutes>("/api/v1/admin/pages")

@@ -15,7 +15,8 @@ vi.mock("./fresh-session", () => ({
   getFreshSession: async () => ({ session: current, setCookies: [] }),
 }))
 
-const { requireActor, requireSignedIn } = await import("./session")
+const { requireActor, requirePermission, requireSignedIn } =
+  await import("./session")
 
 const signedInAs = (role: string, twoFactorEnabled: boolean): SessionLike => ({
   user: {
@@ -89,5 +90,45 @@ describe("two-factor enforcement (brief §7.4)", () => {
     await expect(requireSignedIn()).resolves.toMatchObject({
       twoFactorEnabled: false,
     })
+  })
+})
+
+describe("requirePermission", () => {
+  beforeEach(() => {
+    requestHeaders.delete("x-mk-admin-path")
+  })
+
+  it("returns the actor when a role grants the permission", async () => {
+    current = signedInAs("viewer", false)
+    await expect(requirePermission({ page: ["read"] })).resolves.toMatchObject({
+      roles: ["viewer"],
+    })
+  })
+
+  it("sends a role without it to the no-access screen, remembering where", async () => {
+    current = signedInAs("viewer", false)
+    requestHeaders.set("x-mk-admin-path", "/admin/leads?tab=new")
+    await expect(requirePermission({ lead: ["read"] })).rejects.toThrow(
+      "REDIRECT /admin/no-access?from=%2Fadmin%2Fleads%3Ftab%3Dnew"
+    )
+  })
+
+  it("never echoes an unsafe path into the no-access link", async () => {
+    current = signedInAs("viewer", false)
+    requestHeaders.set("x-mk-admin-path", "//evil.example")
+    await expect(requirePermission({ lead: ["read"] })).rejects.toThrow(
+      "REDIRECT /admin/no-access?from=%2Fadmin"
+    )
+  })
+
+  it("still enforces sign-in and two-factor first", async () => {
+    current = null
+    await expect(requirePermission({ page: ["read"] })).rejects.toThrow(
+      /^REDIRECT \/admin\/sign-in/
+    )
+    current = signedInAs("owner", false)
+    await expect(requirePermission({ page: ["read"] })).rejects.toThrow(
+      "REDIRECT /admin/two-factor-setup"
+    )
   })
 })

@@ -1,5 +1,7 @@
 import { Suspense } from "react"
 
+import { AdminActorProvider } from "@/admin/lib/actor-context"
+import { toMePayload } from "@/lib/auth/me"
 import { requireActor } from "@/server/auth/session"
 
 // The session read is request-time data, so it sits behind Suspense (Cache
@@ -19,6 +21,10 @@ export default function PanelLayout({
 }
 
 async function Guarded({ children }: { children: React.ReactNode }) {
-  await requireActor()
-  return <div className="min-h-svh bg-background p-3 sm:p-4">{children}</div>
+  const actor = await requireActor()
+  return (
+    <AdminActorProvider value={toMePayload(actor)}>
+      <div className="min-h-svh bg-background p-3 sm:p-4">{children}</div>
+    </AdminActorProvider>
+  )
 }

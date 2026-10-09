@@ -12,7 +12,10 @@
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "test:unit": "vitest run --project unit",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "test:parity": "playwright test tests/e2e/parity",
+    "test:parity:update": "playwright test tests/e2e/parity --update-snapshots"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
@@ -36,6 +39,7 @@
   },
   "devDependencies": {
     "@huggingface/transformers": "^4.3.0",
+    "@playwright/test": "^1.64.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^22.20.5",
     "@types/react": "^19",

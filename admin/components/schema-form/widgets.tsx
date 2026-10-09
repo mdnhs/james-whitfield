@@ -9,6 +9,8 @@ import {
 import { useId } from "react"
 import {
   Controller,
+  get,
+  useController,
   type Control,
   type ControllerRenderProps,
   type FieldValues,
@@ -37,58 +39,314 @@ import {
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 
-import type { FormField } from "./to-fields"
+import { emptyValue, rebase, type FormField } from "./to-fields"
+import { CollectionWidget } from "./widgets/collection-widget"
+import { ColourWidget } from "./widgets/colour-widget"
+import { FocalWidget } from "./widgets/focal-widget"
+import { IconWidget } from "./widgets/icon-widget"
+import { LinkWidget } from "./widgets/link-widget"
+import { MediaWidget } from "./widgets/media-widget"
+import { RichTextWidget } from "./widgets/rich-text-widget"
+import { StatWidget } from "./widgets/stat-widget"
 
 type Controlled = ControllerRenderProps<FieldValues, string>
-// An array's errors: its own (min/max items) and one per failing item,
-// keyed by index.
-type ListError = {
-  message?: string
-  root?: { message?: string }
-  [index: number]: { message?: string } | undefined
-}
 // The ref travels separately: React's lint treats any object carrying `ref`
 // as a ref, and reading `value` from it during render as a ref read.
 type RenderInput = Omit<Controlled, "ref">
 
-export function FieldWidget({
-  field,
-  control,
-}: {
-  field: FormField
-  control: Control<FieldValues>
-}) {
-  if (field.widget === "group") {
-    return (
-      <FieldSet>
-        <FieldLegend>{field.label}</FieldLegend>
-        {field.description ? (
-          <FieldDescription>{field.description}</FieldDescription>
-        ) : null}
-        <FieldGroup>
-          {(field.fields ?? []).map((child) => (
-            <FieldWidget key={child.name} field={child} control={control} />
-          ))}
-        </FieldGroup>
-      </FieldSet>
-    )
+type Props = { field: FormField; control: Control<FieldValues> }
+
+// Object-valued fields that may be null get an explicit on/off switch.
+const TOGGLED: ReadonlySet<FormField["widget"]> = new Set([
+  "group",
+  "link",
+  "stat",
+  "focal",
+])
+
+export function FieldWidget({ field, control }: Props) {
+  if (field.nullable && TOGGLED.has(field.widget))
+    return <NullableField field={field} control={control} />
+  switch (field.widget) {
+    case "group":
+      return <GroupWidget field={field} control={control} />
+    case "list":
+      return <ListWidget field={field} control={control} />
+    case "link":
+      return <LinkWidget field={field} control={control} />
+    default:
+      return <LeafWidget field={field} control={control} />
   }
+}
+
+function GroupWidget({ field, control }: Props) {
+  return (
+    <FieldSet>
+      <FieldLegend>{field.label}</FieldLegend>
+      {field.description ? (
+        <FieldDescription>{field.description}</FieldDescription>
+      ) : null}
+      <FieldGroup>
+        {(field.fields ?? []).map((child) => (
+          <FieldWidget key={child.name} field={child} control={control} />
+        ))}
+      </FieldGroup>
+    </FieldSet>
+  )
+}
+
+function NullableField({ field, control }: Props) {
+  const id = useId()
+  const { field: input } = useController({ name: field.name, control })
+  const on = input.value !== null && input.value !== undefined
+  return (
+    <div className="flex flex-col gap-3">
+      <Field orientation="horizontal">
+        <Switch
+          id={id}
+          checked={on}
+          onCheckedChange={(checked) =>
+            input.onChange(checked ? emptyValue(field.node) : null)
+          }
+        />
+        <FieldLabel htmlFor={id}>{field.label}</FieldLabel>
+      </Field>
+      {on ? (
+        <FieldWidget field={{ ...field, nullable: false }} control={control} />
+      ) : null}
+    </div>
+  )
+}
+
+// The first message under a field (objects nest their errors).
+function firstMessage(error: unknown): string | undefined {
+  if (!error || typeof error !== "object") return undefined
+  const { message } = error as { message?: unknown }
+  if (typeof message === "string") return message
+  for (const child of Object.values(error)) {
+    const found = firstMessage(child)
+    if (found) return found
+  }
+  return undefined
+}
+
+function LeafWidget({ field, control }: Props) {
   return (
     <Controller
       name={field.name}
       control={control}
-      render={({ field: { ref, ...input }, fieldState }) =>
-        field.widget === "list" ? (
-          <ListWidget field={field} input={input} error={fieldState.error} />
-        ) : (
-          <ScalarWidget
-            field={field}
-            input={input}
-            inputRef={ref}
-            error={fieldState.error?.message}
-          />
+      render={({ field: { ref, ...input }, fieldState, formState }) => {
+        const error =
+          fieldState.error?.message ??
+          firstMessage(get(formState.errors, field.name))
+        const props = {
+          field,
+          value: input.value,
+          onChange: input.onChange,
+          onBlur: input.onBlur,
+          error,
+        }
+        switch (field.widget) {
+          case "media":
+            return <MediaWidget {...props} />
+          case "icon":
+            return <IconWidget {...props} />
+          case "stat":
+            return <StatWidget {...props} />
+          case "richtext":
+            return <RichTextWidget {...props} />
+          case "collection":
+            return <CollectionWidget {...props} />
+          case "colour":
+            return <ColourWidget {...props} />
+          case "focal":
+            return <FocalWidget {...props} />
+          default:
+            return (
+              <ScalarWidget
+                field={field}
+                input={input}
+                inputRef={ref}
+                error={error}
+              />
+            )
+        }
+      }}
+    />
+  )
+}
+
+// Text items keep the Phase 2 inline row (input + up/down/remove). Any other
+// item (objects, images, textareas) renders as its own fieldset.
+function ListWidget({ field, control }: Props) {
+  const id = useId()
+  const { field: input, fieldState } = useController({
+    name: field.name,
+    control,
+  })
+  const items: unknown[] = Array.isArray(input.value) ? input.value : []
+  const item = field.item!
+  const min = field.minItems ?? 0
+  const max = field.maxItems ?? Number.POSITIVE_INFINITY
+  const set = (next: unknown[]) => input.onChange(next)
+  const move = (from: number, to: number) => {
+    const next = [...items]
+    const [moved] = next.splice(from, 1)
+    next.splice(to, 0, moved)
+    set(next)
+  }
+  const error =
+    fieldState.error?.message ??
+    (fieldState.error as { root?: { message?: string } } | undefined)?.root
+      ?.message
+  const controls = (index: number) => (
+    <div className="flex gap-1">
+      <Button
+        type="button"
+        variant="outline"
+        size="icon"
+        aria-label={`Move ${field.label} ${index + 1} up`}
+        disabled={index === 0}
+        onClick={() => move(index, index - 1)}
+      >
+        <ChevronUpIcon aria-hidden />
+      </Button>
+      <Button
+        type="button"
+        variant="outline"
+        size="icon"
+        aria-label={`Move ${field.label} ${index + 1} down`}
+        disabled={index === items.length - 1}
+        onClick={() => move(index, index + 1)}
+      >
+        <ChevronDownIcon aria-hidden />
+      </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        aria-label={`Remove ${field.label} ${index + 1}`}
+        disabled={items.length <= min}
+        onClick={() => set(items.filter((_, i) => i !== index))}
+      >
+        <TrashIcon aria-hidden />
+      </Button>
+    </div>
+  )
+  const inline = item.widget === "text"
+  return (
+    <FieldSet data-invalid={error ? true : undefined}>
+      <FieldLegend variant="label">{field.label}</FieldLegend>
+      <ol className="flex flex-col gap-3">
+        {items.map((_, index) => {
+          const child = {
+            ...rebase(item, `${field.name}.$`, `${field.name}.${index}`),
+            label: `${field.label} ${index + 1}`,
+          }
+          return (
+            <li key={index}>
+              {inline ? (
+                <InlineTextItem
+                  field={child}
+                  control={control}
+                  listId={id}
+                  index={index}
+                  actions={controls(index)}
+                />
+              ) : (
+                <fieldset
+                  aria-label={child.label}
+                  className="flex flex-col gap-3 rounded-xl border p-3"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">{child.label}</span>
+                    {controls(index)}
+                  </div>
+                  {child.widget === "group" ? (
+                    // The item's own fieldset already names the group.
+                    <FieldGroup>
+                      {(child.fields ?? []).map((inner) => (
+                        <FieldWidget
+                          key={inner.name}
+                          field={inner}
+                          control={control}
+                        />
+                      ))}
+                    </FieldGroup>
+                  ) : (
+                    <FieldWidget field={child} control={control} />
+                  )}
+                </fieldset>
+              )}
+            </li>
+          )
+        })}
+      </ol>
+      <div>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={items.length >= max}
+          onClick={() => set([...items, inline ? "" : emptyValue(item.node)])}
+        >
+          <PlusIcon data-icon="inline-start" />
+          Add to {field.label.toLowerCase()}
+        </Button>
+      </div>
+      {Number.isFinite(max) ? (
+        <FieldDescription>
+          {min > 0 ? `Between ${min} and ${max} items.` : `Up to ${max} items.`}
+        </FieldDescription>
+      ) : null}
+      {error ? <FieldError>{error}</FieldError> : null}
+    </FieldSet>
+  )
+}
+
+function InlineTextItem({
+  field,
+  control,
+  listId,
+  index,
+  actions,
+}: {
+  field: FormField
+  control: Control<FieldValues>
+  listId: string
+  index: number
+  actions: React.ReactNode
+}) {
+  return (
+    <Controller
+      name={field.name}
+      control={control}
+      render={({ field: { ref, ...input }, fieldState }) => {
+        const itemError = fieldState.error?.message
+        return (
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <Input
+                ref={ref}
+                name={input.name}
+                aria-label={field.label}
+                aria-invalid={itemError ? true : undefined}
+                aria-describedby={
+                  itemError ? `${listId}-${index}-error` : undefined
+                }
+                value={input.value ?? ""}
+                onBlur={input.onBlur}
+                onChange={(event) => input.onChange(event.target.value)}
+              />
+              {actions}
+            </div>
+            {itemError ? (
+              <FieldError id={`${listId}-${index}-error`}>
+                {itemError}
+              </FieldError>
+            ) : null}
+          </div>
         )
-      }
+      }}
     />
   )
 }
@@ -204,6 +462,9 @@ function ScalarWidget({
         ref={inputRef}
         type="number"
         inputMode="numeric"
+        min={field.minimum}
+        max={field.maximum}
+        step={field.step ?? "any"}
         placeholder={field.placeholder}
         value={input.value ?? ""}
         onBlur={input.onBlur}
@@ -212,7 +473,9 @@ function ScalarWidget({
           // Zod reports "required", not a confusing type error.
           input.onChange(
             Number.isNaN(event.target.valueAsNumber)
-              ? undefined
+              ? field.nullable
+                ? null
+                : undefined
               : event.target.valueAsNumber
           )
         }
@@ -254,7 +517,13 @@ function ScalarWidget({
         placeholder={field.placeholder}
         value={input.value ?? ""}
         onBlur={input.onBlur}
-        onChange={(event) => input.onChange(event.target.value)}
+        onChange={(event) =>
+          input.onChange(
+            event.target.value === "" && field.nullable
+              ? null
+              : event.target.value
+          )
+        }
         {...aria}
       />
     )
@@ -277,112 +546,5 @@ function ScalarWidget({
       {description}
       {errorText}
     </Field>
-  )
-}
-
-// Phase 2 lists hold text items and reorder with buttons (fully keyboard
-// operable). Drag handles (dnd-kit) arrive with the page builder in Phase 4.
-function ListWidget({
-  field,
-  input,
-  error: errors,
-}: {
-  field: FormField
-  input: RenderInput
-  error?: ListError
-}) {
-  const id = useId()
-  const error = errors?.message ?? errors?.root?.message
-  const items: string[] = Array.isArray(input.value) ? input.value : []
-  const min = field.minItems ?? 0
-  const max = field.maxItems ?? Number.POSITIVE_INFINITY
-  const set = (next: string[]) => input.onChange(next)
-  const move = (from: number, to: number) => {
-    const next = [...items]
-    const [moved] = next.splice(from, 1)
-    next.splice(to, 0, moved!)
-    set(next)
-  }
-  return (
-    <FieldSet data-invalid={Boolean(error) || undefined}>
-      <FieldLegend variant="label">{field.label}</FieldLegend>
-      <ol className="flex flex-col gap-2">
-        {items.map((value, index) => {
-          const itemError = errors?.[index]?.message
-          return (
-            <li key={index} className="flex flex-col gap-1">
-              <div className="flex items-center gap-2">
-                <Input
-                  aria-label={`${field.label} ${index + 1}`}
-                  aria-invalid={itemError ? true : undefined}
-                  aria-describedby={
-                    itemError ? `${id}-${index}-error` : undefined
-                  }
-                  value={value}
-                  onBlur={input.onBlur}
-                  onChange={(event) =>
-                    set(
-                      items.map((item, i) =>
-                        i === index ? event.target.value : item
-                      )
-                    )
-                  }
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  aria-label={`Move ${field.label} ${index + 1} up`}
-                  disabled={index === 0}
-                  onClick={() => move(index, index - 1)}
-                >
-                  <ChevronUpIcon aria-hidden />
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  aria-label={`Move ${field.label} ${index + 1} down`}
-                  disabled={index === items.length - 1}
-                  onClick={() => move(index, index + 1)}
-                >
-                  <ChevronDownIcon aria-hidden />
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  aria-label={`Remove ${field.label} ${index + 1}`}
-                  disabled={items.length <= min}
-                  onClick={() => set(items.filter((_, i) => i !== index))}
-                >
-                  <TrashIcon aria-hidden />
-                </Button>
-              </div>
-              {itemError ? (
-                <FieldError id={`${id}-${index}-error`}>{itemError}</FieldError>
-              ) : null}
-            </li>
-          )
-        })}
-      </ol>
-      <div>
-        <Button
-          type="button"
-          variant="outline"
-          disabled={items.length >= max}
-          onClick={() => set([...items, ""])}
-        >
-          <PlusIcon data-icon="inline-start" />
-          Add to {field.label.toLowerCase()}
-        </Button>
-      </div>
-      {Number.isFinite(max) ? (
-        <FieldDescription>
-          {min > 0 ? `Between ${min} and ${max} items.` : `Up to ${max} items.`}
-        </FieldDescription>
-      ) : null}
-      {error ? <FieldError>{error}</FieldError> : null}
-    </FieldSet>
   )
 }

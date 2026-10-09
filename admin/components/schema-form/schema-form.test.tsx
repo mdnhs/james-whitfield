@@ -1,8 +1,11 @@
 // @vitest-environment jsdom
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import * as z from "zod"
 import { describe, expect, it, vi } from "vitest"
+
+import { LinkValue, Stat } from "@/blocks/fields"
 
 import { ui } from "./registry"
 import { SchemaForm } from "./schema-form"
@@ -174,5 +177,31 @@ describe("SchemaForm", () => {
     await userEvent.click(screen.getByRole("button", { name: "Save" }))
     expect(await screen.findByText("That name is taken")).toBeTruthy()
     expect(screen.getByText("Nothing was saved")).toBeTruthy()
+  })
+})
+describe("content widgets", () => {
+  it("adds an object item to a list and renders link fields", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        Response.json({ items: [], page: 1, pageSize: 0, total: 0 })
+      )
+    )
+    const user = userEvent.setup()
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <SchemaForm
+          schema={z.object({ cta: LinkValue, stats: z.array(Stat).max(4) })}
+          defaultValues={{ cta: { label: "", href: "" }, stats: [] }}
+          onSubmit={() => {}}
+          submitLabel="Save"
+        />
+      </QueryClientProvider>
+    )
+    expect(screen.getByLabelText("Link text")).toBeTruthy()
+    expect(screen.getByLabelText("Link target")).toBeTruthy()
+    await user.click(screen.getByRole("button", { name: "Add to stats" }))
+    expect(screen.getByRole("group", { name: "Stats 1" })).toBeTruthy()
+    vi.unstubAllGlobals()
   })
 })

@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button"
 import { FieldGroup } from "@/components/ui/field"
 import { Spinner } from "@/components/ui/spinner"
 
-import { toFields } from "./to-fields"
+import { toFields, type FieldOverrides } from "./to-fields"
 import { FieldWidget } from "./widgets"
 
 export type SubmitResult = void | {
@@ -32,14 +32,16 @@ export function SchemaForm<S extends z.ZodObject>({
   onSubmit,
   submitLabel,
   resetOnSuccess = false,
+  overrides,
 }: {
   schema: S
   defaultValues: z.input<S>
   onSubmit: (values: z.output<S>) => Promise<SubmitResult> | SubmitResult
   submitLabel: string
   resetOnSuccess?: boolean
+  overrides?: FieldOverrides
 }) {
-  const fields = useMemo(() => toFields(schema), [schema])
+  const fields = useMemo(() => toFields(schema, overrides), [schema, overrides])
   const form = useForm<FieldValues, unknown, FieldValues>({
     resolver: zodResolver(
       schema as unknown as z.ZodType<FieldValues, FieldValues>

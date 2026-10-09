@@ -2,7 +2,10 @@ import * as z from "zod"
 import { describe, expect, it } from "vitest"
 
 import { ui } from "./registry"
-import { toFields } from "./to-fields"
+import { MediaRef, Selection, Stat, StatValue } from "@/blocks/fields"
+import { BLOCKS } from "@/blocks/registry"
+
+import { emptyValueFor, rebase, toFields } from "./to-fields"
 
 const Schema = z
   .object({
@@ -95,5 +98,55 @@ describe("toFields", () => {
 
   it("humanises a field with no metadata", () => {
     expect(fields.confirm.label).toBe("Confirm")
+  })
+})
+
+describe("content fields", () => {
+  it("unwraps nullable fields and keeps their widget", () => {
+    const [field] = toFields(z.object({ image: MediaRef.nullable() }))
+    expect(field).toMatchObject({
+      name: "image",
+      widget: "media",
+      nullable: true,
+      required: false,
+    })
+  })
+  it("names list items with a placeholder that rebase replaces", () => {
+    const [list] = toFields(z.object({ stats: z.array(Stat).min(1).max(4) }))
+    expect(list!.item!.widget).toBe("group")
+    expect(list!.item!.fields!.map((f) => f.name)).toEqual([
+      "stats.$.value",
+      "stats.$.label",
+    ])
+    expect(list!.item!.fields![0]!.widget).toBe("stat")
+    const second = rebase(list!.item!, "stats.$", "stats.1")
+    expect(second.fields!.map((f) => f.name)).toEqual([
+      "stats.1.value",
+      "stats.1.label",
+    ])
+  })
+  it("applies overrides by dotted path", () => {
+    const [field] = toFields(z.object({ bandId: z.uuid() }), {
+      bandId: { widget: "collection", collection: "cta-bands", label: "Band" },
+    })
+    expect(field).toMatchObject({
+      widget: "collection",
+      collection: "cta-bands",
+      label: "Band",
+    })
+  })
+  it("builds structurally complete starting values", () => {
+    expect(emptyValueFor(z.object({ s: Selection }))).toEqual({
+      s: { mode: "all" },
+    })
+    expect(emptyValueFor(z.object({ v: StatValue }))).toEqual({
+      v: { kind: "count", value: 0, decimals: 0, prefix: "", suffix: "" },
+    })
+    for (const block of BLOCKS) {
+      const value = emptyValueFor(block.schema) as Record<string, unknown>
+      expect(Object.keys(value), block.type).toEqual(
+        Object.keys(block.schema.shape)
+      )
+    }
   })
 })

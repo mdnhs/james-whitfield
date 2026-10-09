@@ -48,6 +48,15 @@ export function StepsStory({
 }) {
   const track = useRef<HTMLDivElement>(null)
   const desktop = useDesktop()
+  // Later cards are resolved inside this section's own track when the
+  // timeline is built (Scrollytelling reads `.current` lazily). A global
+  // selector could hit a copy of this section kept in a hidden route.
+  const stepAt = (index: number) =>
+    ({
+      get current() {
+        return track.current?.querySelectorAll("li").item(index) ?? null
+      },
+    }) as React.RefObject<HTMLElement>
 
   return (
     <Scrollytelling.Root
@@ -74,7 +83,7 @@ export function StepsStory({
             key={step.title}
             tween={{
               ...surface(i + 1),
-              target: `#how-it-works li:nth-child(${i + 2})`,
+              target: stepAt(i + 1),
               fromTo: [
                 { opacity: 0.3, y: 28, scale: 0.94 },
                 { opacity: 1, y: 0, scale: 1, ease: "sine.out" },

@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation"
 import { ReactLenis, useLenis } from "lenis/react"
 
 import { gsap, ScrollTrigger } from "@/lib/gsap"
+import { findTarget } from "@/lib/page-root"
 
 // Same-page "#hash" links scroll through Lenis. Runs in the capture phase so it
 // cancels the click before next/link performs its instant jump.
@@ -30,8 +31,7 @@ function AnchorScroll() {
         return
 
       const target =
-        url.hash &&
-        document.getElementById(decodeURIComponent(url.hash.slice(1)))
+        url.hash && findTarget(decodeURIComponent(url.hash.slice(1)), link)
       if (!target) return
 
       event.preventDefault()

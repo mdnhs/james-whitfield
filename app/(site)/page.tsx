@@ -1,4 +1,5 @@
 import { JourneyRail } from "@/components/journey-rail"
+import { PageMotion } from "@/components/page-motion"
 import { StackCard } from "@/components/stack-card"
 import { AboutSection } from "@/features/about"
 import { CredibilitySection } from "@/features/credibility"
@@ -22,11 +23,11 @@ const CHAPTERS = [
   { label: "Contact", target: "contact" },
 ]
 
-// Each StackCard sticks while the next slides over it (see ScrollMotion). The
+// Each StackCard sticks while the next slides over it (see PageMotion). The
 // dark main background is what shows around a card as it shrinks back.
 export default function Page() {
   return (
-    <main className="bg-ink">
+    <main data-page-root className="bg-ink">
       <StackCard id="home" rounded={false}>
         <HeroSection />
       </StackCard>
@@ -50,6 +51,7 @@ export default function Page() {
         <FaqSection />
       </StackCard>
       <JourneyRail chapters={CHAPTERS} />
+      <PageMotion />
     </main>
   )
 }

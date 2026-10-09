@@ -163,7 +163,7 @@
 }
 
 /* Light that follows the pointer across a [data-motion~="tilt"] card. The
-   span is injected by ScrollMotion; --gx/--gy track the pointer. */
+   span is injected by PageMotion; --gx/--gy track the pointer. */
 [data-tilt-glare] {
   position: absolute;
   inset: 0;

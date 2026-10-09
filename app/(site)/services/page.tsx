@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 
 import { JourneyRail } from "@/components/journey-rail"
+import { PageMotion } from "@/components/page-motion"
 import { PageHero } from "@/components/page-hero"
 import { StackCard } from "@/components/stack-card"
 import { EnterpriseSection } from "@/features/enterprise"
@@ -30,7 +31,7 @@ const CHAPTERS = [
 // the next slides over it.
 export default function ServicesPage() {
   return (
-    <main className="bg-ink">
+    <main data-page-root className="bg-ink">
       <StackCard id="home" rounded={false}>
         <PageHero
           {...SERVICES_HERO}
@@ -51,6 +52,7 @@ export default function ServicesPage() {
         <FaqSection variant="page" />
       </StackCard>
       <JourneyRail chapters={CHAPTERS} />
+      <PageMotion />
     </main>
   )
 }

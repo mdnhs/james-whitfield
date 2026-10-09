@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils"
 
 // One card in the page's scroll stack. Server-rendered and inert on its own;
-// ScrollMotion finds [data-stack] and, when motion is allowed, makes each card
+// PageMotion finds [data-stack] and, when motion is allowed, makes each card
 // stick while the next one slides over it, scaling back and dimming the covered
 // card through the shade layer. Without motion the cards are plain sections.
 export function StackCard({

@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 
 import { JourneyRail } from "@/components/journey-rail"
+import { PageMotion } from "@/components/page-motion"
 import { StackCard } from "@/components/stack-card"
 import {
   ALL_ARTICLES,
@@ -61,7 +62,7 @@ export default async function ArticlePage({
   if (!article) notFound()
 
   return (
-    <main className="bg-ink">
+    <main data-page-root className="bg-ink">
       <StackCard id="home" rounded={false}>
         <ArticleHero article={article} readTime={readTime(slug)} />
       </StackCard>
@@ -75,6 +76,7 @@ export default async function ArticlePage({
         <NewsletterBand />
       </StackCard>
       <JourneyRail chapters={CHAPTERS} />
+      <PageMotion />
     </main>
   )
 }

@@ -5,6 +5,7 @@ import { useLenis } from "lenis/react"
 
 import { gsap, ScrollTrigger, useGSAP } from "@/lib/gsap"
 import { cn } from "@/lib/utils"
+import { findTarget } from "@/lib/page-root"
 
 type Chapter = { label: string; target: string }
 
@@ -51,7 +52,7 @@ export function JourneyRail({ chapters }: { chapters: Chapter[] }) {
     // A chapter is current while its card holds the middle of the viewport.
     // Cards sit end to end in the flow, so the ranges hand over cleanly.
     chapters.forEach(({ target }, i) => {
-      const el = document.getElementById(target)
+      const el = findTarget(target, rail.current)
       if (!el) return
       ScrollTrigger.create({
         trigger: el.closest<HTMLElement>("[data-stack]") ?? el,
@@ -65,7 +66,7 @@ export function JourneyRail({ chapters }: { chapters: Chapter[] }) {
   })
 
   const go = (target: string) => {
-    const el = document.getElementById(target)
+    const el = findTarget(target, rail.current)
     if (!el || !lenis) return
     lenis.scrollTo(target === "home" ? 0 : el, { duration: 1.6, easing: EASE })
   }

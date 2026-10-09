@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 
 import { JourneyRail } from "@/components/journey-rail"
+import { PageMotion } from "@/components/page-motion"
 import { PageHero } from "@/components/page-hero"
 import { StackCard } from "@/components/stack-card"
 import { ABOUT_CTA } from "@/features/about-page"
@@ -33,7 +34,7 @@ const CHAPTERS = [
 // the next slides over it.
 export default function HowItWorksPage() {
   return (
-    <main className="bg-ink">
+    <main data-page-root className="bg-ink">
       <StackCard id="home" rounded={false}>
         <PageHero {...HOW_IT_WORKS_HERO} image={heroImage} mirror />
       </StackCard>
@@ -53,6 +54,7 @@ export default function HowItWorksPage() {
         <EnterpriseSection id="next-step" content={ABOUT_CTA} />
       </StackCard>
       <JourneyRail chapters={CHAPTERS} />
+      <PageMotion />
     </main>
   )
 }

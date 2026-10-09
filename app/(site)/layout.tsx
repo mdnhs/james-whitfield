@@ -2,7 +2,6 @@ import { NuqsAdapter } from "nuqs/adapters/next/app"
 import { siteFontClassName } from "./fonts"
 
 import "./site.css"
-import { ScrollMotion } from "@/components/scroll-motion"
 import { SmoothScroll } from "@/components/smooth-scroll"
 import { SiteFooter } from "@/features/footer"
 import { SiteHeader } from "@/features/navbar"
@@ -25,7 +24,6 @@ export default function SiteLayout({
             <SiteHeader />
             {children}
             <SiteFooter />
-            <ScrollMotion />
           </SmoothScroll>
         </NuqsAdapter>
       </body>

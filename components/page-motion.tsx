@@ -1,5 +1,6 @@
 "use client"
 
+import { useRef } from "react"
 import { usePathname } from "next/navigation"
 
 import { gsap, ScrollTrigger, SplitText, useGSAP } from "@/lib/gsap"
@@ -30,9 +31,6 @@ import { gsap, ScrollTrigger, SplitText, useGSAP } from "@/lib/gsap"
 // out of focus while scrolling.
 const EASE = "sine.out"
 
-const select = (token: string) =>
-  gsap.utils.toArray<HTMLElement>(`[data-motion~="${token}"]`)
-
 const soft = { autoAlpha: 0, y: 24 }
 const settled = {
   autoAlpha: 1,
@@ -42,12 +40,28 @@ const settled = {
   clearProps: "transform",
 }
 
-export function ScrollMotion() {
-  // Lives in the root layout, so it rebuilds for each page's markup.
+// Rendered as the last child of each page's <main data-page-root>. Motion is
+// built for that page plus the shared header and footer ([data-site-chrome]),
+// and torn down when the page unmounts or Activity hides it, so a hidden
+// route's markup is never animated or measured.
+export function PageMotion() {
+  const marker = useRef<HTMLSpanElement>(null)
   const pathname = usePathname()
 
   useGSAP(
     () => {
+      const root = marker.current?.closest<HTMLElement>("[data-page-root]")
+      if (!root) return
+      const scopes: ParentNode[] = [
+        root,
+        ...document.querySelectorAll<HTMLElement>("[data-site-chrome]"),
+      ]
+      const query = (selector: string) =>
+        scopes.flatMap((scope) =>
+          Array.from(scope.querySelectorAll<HTMLElement>(selector))
+        )
+      const select = (token: string) => query(`[data-motion~="${token}"]`)
+
       const mm = gsap.matchMedia()
 
       mm.add(
@@ -79,7 +93,9 @@ export function ScrollMotion() {
           // starts there. It follows the scroll directly (Lenis already smooths
           // it): a scrub lag would leave the card shrunk while the next one
           // drops back on a fast scroll up, opening the same seam.
-          const stacks = gsap.utils.toArray<HTMLElement>("[data-stack]")
+          const stacks = Array.from(
+            root.querySelectorAll<HTMLElement>("[data-stack]")
+          )
           let measured = ""
           const fit = () => {
             const vh = document.documentElement.clientHeight
@@ -400,7 +416,7 @@ export function ScrollMotion() {
           }
 
           if (fine) {
-            gsap.utils.toArray<HTMLElement>("[data-magnetic]").forEach((el) => {
+            query("[data-magnetic]").forEach((el) => {
               const x = gsap.quickTo(el, "x", { duration: 0.6, ease: "power3" })
               const y = gsap.quickTo(el, "y", { duration: 0.6, ease: "power3" })
               on(el, "pointermove", (event) => {
@@ -476,5 +492,5 @@ export function ScrollMotion() {
     { dependencies: [pathname], revertOnUpdate: true }
   )
 
-  return null
+  return <span ref={marker} hidden data-page-motion />
 }

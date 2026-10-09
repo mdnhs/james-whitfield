@@ -11,9 +11,11 @@ const expectNotFoundPage = async (page: Page) => {
   ).toBeAttached()
 }
 
-// Review Focus 4: a URL no route matches is a real 404. It renders
-// app/global-not-found.tsx, which is prerendered and so carries no chrome.
-for (const path of ["/no-such-page", "/about/extra"]) {
+// Review Focus 4: a URL no route matches (two or more unknown segments) is a
+// real 404. It renders app/global-not-found.tsx, which is prerendered and so
+// carries no chrome. One unknown segment reaches the custom-page route and
+// renders the soft 404 below.
+for (const path of ["/about/extra", "/no/such/page"]) {
   test(`${path} answers 404`, async ({ page }) => {
     const response = await page.goto(path)
     expect(response?.status()).toBe(404)
@@ -26,7 +28,13 @@ for (const path of ["/no-such-page", "/about/extra"]) {
 // A route that exists but whose content is missing or unpublished streams its
 // shell first under Cache Components, so the status stays 200; noindex keeps
 // the soft 404 out of search results.
-for (const path of ["/privacy", "/insights/nope", "/insights/__shell"]) {
+for (const path of [
+  "/no-such-page",
+  "/privacy",
+  "/insights/nope",
+  "/insights/__shell",
+  "/__page",
+]) {
   test(`${path} renders a noindex not-found page`, async ({ page }) => {
     await page.goto(path)
     await expectNotFoundPage(page)

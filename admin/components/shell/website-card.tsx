@@ -5,8 +5,14 @@ import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 // The inspiration's "Download our Mobile App" slot, as "Your website"
-// (docs/brief.md §9.1). Phase 4 adds "Preview drafts" next to "Open site".
-export function WebsiteCard({ siteUrl }: { siteUrl: string }) {
+// (docs/brief.md §9.1). "Preview drafts" sits under "Open site".
+export function WebsiteCard({
+  siteUrl,
+  canPreview,
+}: {
+  siteUrl: string
+  canPreview: boolean
+}) {
   return (
     <div className="bg-promo relative isolate overflow-hidden rounded-[18px] p-5 group-data-[collapsible=icon]:hidden">
       <Swirl className="absolute inset-0 -z-10 size-full" />
@@ -33,6 +39,17 @@ export function WebsiteCard({ siteUrl }: { siteUrl: string }) {
         <ExternalLinkIcon data-icon="inline-end" />
         <span className="sr-only"> (opens in a new tab)</span>
       </a>
+      {canPreview ? (
+        <a
+          href="/api/v1/admin/preview?path=/"
+          target="_blank"
+          rel="noreferrer"
+          className="mt-2 block text-center text-sm font-semibold underline-offset-4 hover:underline"
+        >
+          Preview drafts
+          <span className="sr-only"> (opens in a new tab)</span>
+        </a>
+      ) : null}
     </div>
   )
 }

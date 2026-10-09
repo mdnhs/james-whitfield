@@ -6,6 +6,7 @@ import { accountRoutes } from "@/server/modules/account/routes"
 import { auditRoutes } from "@/server/modules/audit/routes"
 import { dashboardRoutes } from "@/server/modules/dashboard/routes"
 import { pagesRoutes } from "@/server/modules/pages/routes"
+import { previewRoutes } from "@/server/modules/preview/routes"
 import { searchRoutes } from "@/server/modules/search/routes"
 import { meRoutes } from "@/server/modules/session/routes"
 import { usersRoutes } from "@/server/modules/users/routes"
@@ -20,6 +21,7 @@ export const adminRoutes = new Hono<AppEnv>()
   // Everything below needs 2FA set up for owners and admins. /me stays above
   // it: its handler answers before this runs.
   .use(twoFactorComplete)
+  .route("/preview", previewRoutes)
   .route("/pages", pagesRoutes)
   .route("/search", searchRoutes)
   .route("/dashboard", dashboardRoutes)

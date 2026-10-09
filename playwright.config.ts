@@ -8,7 +8,11 @@ const PORT = E2E_PORT
 // sign-out), and specs that pin their own desktop viewport and scroll with
 // the mouse wheel. Everything else, admin shell included, runs on all
 // viewports.
-const DESKTOP_ONLY = ["**/admin/auth/**", "**/navigation/activity.spec.ts"]
+const DESKTOP_ONLY = [
+  "**/admin/auth/**",
+  "**/admin/content/**",
+  "**/navigation/activity.spec.ts",
+]
 
 // Admin specs run in their own projects, after the setup project has signed
 // the E2E roles in; public-site specs (parity, navigation) never wait on it.

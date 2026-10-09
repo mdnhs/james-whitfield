@@ -5,6 +5,9 @@ import { getMedia, getPublishedPage } from "@/server/modules/content/queries"
 
 import { cmsMetadata } from "./cms-page"
 
+vi.mock("@/server/modules/content/preview", () => ({
+  isPreviewing: vi.fn(async () => false),
+}))
 vi.mock("next/cache", () => ({ io: async () => {} }))
 vi.mock("@/server/modules/content/queries", () => ({
   getMedia: vi.fn(),

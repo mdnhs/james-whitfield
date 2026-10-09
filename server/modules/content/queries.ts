@@ -1,7 +1,6 @@
 import "server-only"
 
 import { cacheLife, cacheTag } from "next/cache"
-import { draftMode } from "next/headers"
 
 import {
   parseGlobal,
@@ -26,10 +25,11 @@ export async function getMedia(ids: string[]) {
   return assets
 }
 
-export async function getPublishedPage(path: string) {
+// `draft` comes from isPreviewing(): a cache scope must not decide on its
+// own whether this request may see drafts. In draft mode Next re-runs the
+// scope on every request and stores nothing.
+export async function getPublishedPage(path: string, draft = false) {
   "use cache"
-  // Draft mode may be read inside a cache scope; Next then skips storing.
-  const { isEnabled: draft } = await draftMode()
   cacheTag(tags.routes)
   const page = await repo.findPageByPath(path, { draft })
   if (page) cacheTag(tags.page(page.id))
@@ -37,15 +37,15 @@ export async function getPublishedPage(path: string) {
   return page
 }
 
+// Globals go live on save; the theme's draft (Phase 9) will pass it in.
 export async function getSetting<K extends PublicGlobalKey>(
   key: K
 ): Promise<GlobalValue<K>> {
   "use cache"
   cacheTag(tags.setting(key))
-  const { isEnabled: draft } = await draftMode()
   const row = await repo.findSetting(key)
   lifetime(row !== null)
-  return parseGlobal(key, draft && row?.draft != null ? row.draft : row?.value)
+  return parseGlobal(key, row?.value)
 }
 
 // Runs inside the caller's cache scope, so its tag and lifetime apply there.

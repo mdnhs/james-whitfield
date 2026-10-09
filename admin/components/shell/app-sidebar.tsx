@@ -5,7 +5,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 
 import { BrandMark } from "@/admin/components/brand-mark"
-import { useActor } from "@/admin/lib/actor-context"
+import { useActor, usePermission } from "@/admin/lib/actor-context"
 import { useSignOut } from "@/admin/modules/auth/use-sign-out"
 import {
   Sidebar,
@@ -37,6 +37,7 @@ export function AppSidebar({
   badges?: Partial<Record<"new-leads", number>>
 }) {
   const { roles } = useActor()
+  const canPreview = usePermission({ page: ["read"] })
   const pathname = usePathname()
   const { signOut, pending } = useSignOut()
   const { isMobile, setOpenMobile } = useSidebar()
@@ -116,7 +117,7 @@ export function AppSidebar({
         </nav>
         {/* Scrolls with the menu, so a tall menu is never hidden under it. */}
         <div className="p-3 pt-2">
-          <WebsiteCard siteUrl={siteUrl} />
+          <WebsiteCard siteUrl={siteUrl} canPreview={canPreview} />
         </div>
       </SidebarContent>
     </Sidebar>

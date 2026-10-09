@@ -2,9 +2,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 
 const next = vi.hoisted(() => ({ cacheLife: vi.fn(), cacheTag: vi.fn() }))
 vi.mock("next/cache", () => next)
-vi.mock("next/headers", () => ({
-  draftMode: async () => ({ isEnabled: false }),
-}))
 const repo = vi.hoisted(() => ({
   findMedia: vi.fn(),
   findArticleBySlug: vi.fn(),
@@ -44,6 +41,15 @@ describe("cached content queries", () => {
     await getPublishedPage("/about")
     expect(next.cacheLife).toHaveBeenCalledWith("max")
     expect(tagsOf()).toEqual(expect.arrayContaining(["routes", "page:p1"]))
+  })
+  it("reads the draft only when asked", async () => {
+    repo.findPageByPath.mockResolvedValue(null)
+    await getPublishedPage("/about", true)
+    expect(repo.findPageByPath).toHaveBeenCalledWith("/about", { draft: true })
+    await getPublishedPage("/about")
+    expect(repo.findPageByPath).toHaveBeenLastCalledWith("/about", {
+      draft: false,
+    })
   })
   it("treats an empty collection as a miss", async () => {
     repo.listServices.mockResolvedValue([])

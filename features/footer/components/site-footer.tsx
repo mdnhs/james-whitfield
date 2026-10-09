@@ -2,6 +2,7 @@ import Link from "next/link"
 
 import { Brand } from "@/components/brand"
 import { Container } from "@/components/layout/container"
+import { CopyrightYear } from "@/components/copyright-year"
 import {
   FOOTER_BLURB,
   FOOTER_COLUMNS,
@@ -87,7 +88,7 @@ export function SiteFooter() {
             ))}
           </ul>
           <p className="font-plex-mono">
-            © {new Date().getFullYear()} Magda Kennedy
+            © <CopyrightYear /> Magda Kennedy
           </p>
         </div>
       </Container>

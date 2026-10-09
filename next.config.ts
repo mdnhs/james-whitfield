@@ -6,6 +6,8 @@ const nextConfig: NextConfig = {
   output: "standalone",
   poweredByHeader: false,
   compress: true,
+  // Pages render from tag-cached data at request time (docs/brief.md §5.6).
+  cacheComponents: true,
   images: {
     formats: ["image/avif", "image/webp"],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048],

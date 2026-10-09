@@ -15,8 +15,8 @@ import {
   relatedArticles,
 } from "@/features/insights"
 
-// Every article is known at build time; any other slug is a 404.
-export const dynamicParams = false
+// Known slugs prerender at build. Any other slug renders on request and hits
+// notFound() below (dynamicParams is not allowed with Cache Components).
 
 export function generateStaticParams() {
   return ALL_ARTICLES.map(({ slug }) => ({ slug }))

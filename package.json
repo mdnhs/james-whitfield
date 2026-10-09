@@ -12,6 +12,7 @@
     "db:up": "docker compose up -d --wait",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "dotenv -e .env -- tsx scripts/migrate.ts",
+    "admin:create": "NODE_OPTIONS=--conditions=react-server dotenv -e .env -- tsx scripts/admin-create.ts",
     "auth:generate": "esbuild server/auth/cli.ts --bundle --platform=node --format=esm --packages=external --alias:server-only=./node_modules/server-only/empty.js --outfile=node_modules/.cache/auth-cli/cli.mjs && dotenv -e .env -- pnpm dlx auth@1.7.7 generate --config node_modules/.cache/auth-cli/cli.mjs --output server/db/schema/auth.ts -y && node scripts/auth-schema-tz.mjs server/db/schema/auth.ts && prettier --write server/db/schema/auth.ts",
     "db:studio": "dotenv -e .env -- drizzle-kit studio",
     "typecheck": "next typegen && tsc --noEmit",

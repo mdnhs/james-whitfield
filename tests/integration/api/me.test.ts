@@ -6,7 +6,13 @@ import { getAuth } from "@/server/auth/auth"
 import { closeDb, getDb } from "@/server/db/client"
 import { sessions, users } from "@/server/db/schema"
 
-import { adminRequest, createUser, ORIGIN, signIn } from "../helpers/auth"
+import {
+  adminRequest,
+  createUser,
+  ORIGIN,
+  signIn,
+  signInWithTwoFactor,
+} from "../helpers/auth"
 import { resetDb } from "../helpers/db"
 
 beforeEach(resetDb)
@@ -48,7 +54,7 @@ describe("GET /api/v1/admin/me", () => {
   it("locks out a banned user immediately", async () => {
     await createUser("owner")
     const target = await createUser("viewer")
-    const ownerCookie = await signIn("owner@example.com")
+    const ownerCookie = await signInWithTwoFactor("owner@example.com")
     const viewerCookie = await signIn("viewer@example.com")
 
     await getAuth().api.banUser({

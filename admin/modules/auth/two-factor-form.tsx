@@ -36,7 +36,7 @@ export function TwoFactorForm({ next }: { next: string }) {
   const [expired, setExpired] = useState(false)
   const [pending, setPending] = useState(false)
 
-  useResetOnHide(() => {
+  const begin = useResetOnHide(() => {
     setPending(false)
     setError(null)
     setExpired(false)
@@ -46,6 +46,7 @@ export function TwoFactorForm({ next }: { next: string }) {
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const code = String(new FormData(event.currentTarget).get("code")).trim()
+    const current = begin()
     setPending(true)
     setError(null)
     const { failure } = await authRequest(() =>
@@ -53,6 +54,8 @@ export function TwoFactorForm({ next }: { next: string }) {
         ? authClient.twoFactor.verifyBackupCode({ code, trustDevice: trust })
         : authClient.twoFactor.verifyTotp({ code, trustDevice: trust })
     )
+    // Hidden meanwhile (the user went elsewhere): leave that screen be.
+    if (!current()) return
     if (failure) {
       setPending(false)
       if (

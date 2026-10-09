@@ -10,6 +10,7 @@ import * as schema from "@/server/db/schema"
 import { getEnv } from "@/server/env"
 import { audit } from "@/server/lib/audit"
 import { deliverResetEmail } from "./email"
+import { twoFactorAfterHook, twoFactorBeforeHook } from "./two-factor-hooks"
 
 export function buildAuth() {
   const env = getEnv()
@@ -41,6 +42,7 @@ export function buildAuth() {
       // Cheap reads for the UI. Admin checks bypass it (disableCookieCache).
       cookieCache: { enabled: true, maxAge: 5 * 60 },
     },
+    hooks: { before: twoFactorBeforeHook, after: twoFactorAfterHook },
     databaseHooks: {
       session: {
         create: {

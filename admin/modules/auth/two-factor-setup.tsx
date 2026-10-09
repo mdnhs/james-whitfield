@@ -39,7 +39,7 @@ export function TwoFactorSetup() {
 
   // Also drops the secret and backup codes rather than keep them in a
   // hidden DOM once the user moves on.
-  useResetOnHide(() => {
+  const begin = useResetOnHide(() => {
     setStep("password")
     setSecret("")
     setQr("")
@@ -52,17 +52,24 @@ export function TwoFactorSetup() {
   async function enable(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const password = String(new FormData(event.currentTarget).get("password"))
+    const current = begin()
     setPending(true)
     setError(null)
     const { data, failure } = await authRequest(() =>
       authClient.twoFactor.enable({ password })
     )
+    if (!current()) return
     if (failure || data?.method !== "totp") {
       setPending(false)
       return setError(failure?.message ?? "That password is not correct.")
     }
+    const qrCode = await QRCode.toDataURL(data.totpURI, {
+      margin: 1,
+      width: 192,
+    })
+    if (!current()) return
     setSecret(new URL(data.totpURI).searchParams.get("secret") ?? "")
-    setQr(await QRCode.toDataURL(data.totpURI, { margin: 1, width: 192 }))
+    setQr(qrCode)
     setCodes(data.backupCodes)
     setPending(false)
     setStep("scan")
@@ -71,11 +78,13 @@ export function TwoFactorSetup() {
   async function verify(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const code = String(new FormData(event.currentTarget).get("code")).trim()
+    const current = begin()
     setPending(true)
     setError(null)
     const { failure } = await authRequest(() =>
       authClient.twoFactor.verifyTotp({ code })
     )
+    if (!current()) return
     setPending(false)
     if (failure) {
       return setError(
@@ -83,6 +92,10 @@ export function TwoFactorSetup() {
           "That code didn't work. Check your phone's clock and try again."
       )
     }
+    // Enrolled: the secret has done its job. Only the backup codes remain
+    // on screen, and only until the user moves on.
+    setSecret("")
+    setQr("")
     setStep("codes")
   }
 

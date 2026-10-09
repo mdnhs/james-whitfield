@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { authRequest, RATE_LIMITED, UNREACHABLE } from "./auth-errors"
+import { authRequest, LOCKED, RATE_LIMITED, UNREACHABLE } from "./auth-errors"
 
 const ok = { data: { ok: true }, error: null }
 const failed = (status: number) => ({ data: null, error: { status } })
@@ -48,5 +48,14 @@ describe("authRequest", () => {
       message: null,
       code: "INVALID_TWO_FACTOR_COOKIE",
     })
+  })
+
+  it("reports a two-factor lockout as locked, not a 1-minute rate limit", async () => {
+    const { failure } = await authRequest(async () => ({
+      data: null,
+      error: { status: 429, code: "ACCOUNT_TEMPORARILY_LOCKED" },
+    }))
+    expect(failure).toEqual({ kind: "locked", message: LOCKED })
+    expect(LOCKED).toContain("15 minutes")
   })
 })

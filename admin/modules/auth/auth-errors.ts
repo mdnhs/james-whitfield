@@ -1,9 +1,14 @@
 export const RATE_LIMITED = "Too many attempts — try again in a minute."
+// Better Auth's two-factor lockout: 10 wrong codes in a row lock the
+// account's 2FA for accountLockout.durationSeconds (default 900).
+export const LOCKED =
+  "Too many wrong codes. Two-factor sign-in is locked for 15 minutes."
 export const UNREACHABLE =
   "Couldn't reach the server. Check your connection and try again."
 
 export type AuthFailure =
   | { kind: "rate-limited"; message: string }
+  | { kind: "locked"; message: string }
   | { kind: "unreachable"; message: string }
   // The server answered "no" (bad credentials, expired token…): the caller
   // words it, since only it knows what the request was. `code` is Better
@@ -33,6 +38,9 @@ export async function authRequest<T>(
   const { data, error } = result
   if (!error) return { data, failure: null }
   const status = error.status ?? 0
+  if (status === 429 && error.code === "ACCOUNT_TEMPORARILY_LOCKED") {
+    return { data, failure: { kind: "locked", message: LOCKED } }
+  }
   if (status === 429) {
     return { data, failure: { kind: "rate-limited", message: RATE_LIMITED } }
   }

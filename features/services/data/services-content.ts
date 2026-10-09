@@ -3,6 +3,10 @@ import type { IconName } from "@/lib/icons"
 export const SERVICES_HERO = {
   title: "Services",
   subtitle: "Hypnotherapy and coaching shaped around where you are right now.",
+  image: "/images/enterprise/enterprise-bg.png",
+  focal: { x: 0.5, y: 0.29 },
+  tint: 0.32,
+  mirror: false,
 }
 
 export type Service = { icon: IconName; title: string; body: string }

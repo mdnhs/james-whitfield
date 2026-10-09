@@ -1,7 +1,8 @@
 import { StatValue } from "@/components/stat-value"
 import type { StatValue as Stat } from "@/lib/count"
 
-export function StatCard({ value, label }: { value: Stat; label: string }) {
+export function StatCard({ stat }: { stat: { value: Stat; label: string } }) {
+  const { value, label } = stat
   return (
     <li
       data-motion="tilt"

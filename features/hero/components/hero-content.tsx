@@ -1,18 +1,17 @@
 import Link from "next/link"
 
+import type { BlockView } from "@/blocks/media-refs"
 import { Eyebrow } from "@/components/eyebrow"
 import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { HERO_CONTENT } from "../data/hero-content"
 
 const ctaBase =
   "h-12.5 rounded-full px-[27px] py-0 text-[15px] font-semibold leading-[normal]"
 
 // data-hero / data-reveal / data-magnetic are animation hooks for HeroMotion
 // (data-magnetic is handled page-wide by PageMotion).
-export function HeroContent() {
-  const { eyebrow, headline, description, primaryCta, secondaryCta } =
-    HERO_CONTENT
+export function HeroContent({ content }: { content: BlockView<"hero.home"> }) {
+  const { eyebrow, headline, description, primaryCta, secondaryCta } = content
 
   return (
     <div className="flex w-full max-w-[1027px] flex-col items-start gap-6">

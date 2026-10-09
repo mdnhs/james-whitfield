@@ -12,12 +12,16 @@ const count = (value: number, suffix = "", decimals = 0): StatValue => ({
 export const ABOUT_HERO = {
   title: "About",
   subtitle: "The person, the practice and the principles behind every session.",
+  image: "/images/hero/hero-bg.png",
+  focal: null,
+  tint: 0.32,
+  mirror: false,
 }
 
 export const ABOUT_STORY = {
   eyebrow: "My Story",
   title: "From the boardroom to the therapy chair and why it matters for you.",
-  body: [
+  paragraphs: [
     "Before training as a clinical hypnotherapist, I spent twelve years leading teams in financial services. I saw first-hand how capable people quietly burn out, second-guess themselves, and stay stuck in patterns they can describe perfectly but cannot shift.",
     "That curiosity led me to clinical hypnotherapy, NLP and applied neuroscience. Today my practice blends all three into a calm, structured process — no mysticism, no jargon, just a clear account of how change actually happens.",
   ],
@@ -28,6 +32,7 @@ export const ABOUT_STORY = {
     label: "Years helping people change from within",
   },
   role: "Clinical Hypnotherapist & Coach",
+  photo: "/images/about/story.png",
 }
 
 export const ABOUT_STATS = [
@@ -72,26 +77,31 @@ export const ABOUT_CREDENTIALS = {
       year: "2024",
       title: "Applied Neuroplasticity Practitioner",
       issuer: "Neuroscience Academy, London",
+      url: null,
     },
     {
       year: "2021",
       title: "ICF Professional Certified Coach (PCC)",
       issuer: "International Coaching Federation",
+      url: null,
     },
     {
       year: "2019",
       title: "EMCC Senior Practitioner Accreditation",
       issuer: "European Mentoring & Coaching Council",
+      url: null,
     },
     {
       year: "2017",
       title: "NLP Master Practitioner",
       issuer: "Society of NLP, Dublin",
+      url: null,
     },
     {
       year: "2015",
       title: "Diploma in Clinical Hypnotherapy",
       issuer: "Irish Institute of Hypnotherapy",
+      url: null,
     },
   ],
 }
@@ -101,4 +111,6 @@ export const ABOUT_CTA = {
   title: "Ready when you are. It starts with one conversation.",
   bullets: ["Free 25-minute call", "No obligation", "In person or online"],
   cta: { label: "Book a Discovery Call →", href: "/contact" },
+  image: "/images/enterprise/enterprise-bg.png",
+  tint: 0.9,
 }

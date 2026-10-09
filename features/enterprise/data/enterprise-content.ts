@@ -1,4 +1,4 @@
-import { contactHref } from "@/features/contact/data/contact-params"
+import { contactHref } from "@/lib/contact-href"
 
 export const ENTERPRISE_CONTENT = {
   eyebrow: "Enterprise & Corporate",
@@ -12,4 +12,6 @@ export const ENTERPRISE_CONTENT = {
     label: "Enquire About Corporate Programmes →",
     href: contactHref({ topic: "workplace-wellbeing" }),
   },
-} as const
+  image: "/images/enterprise/enterprise-bg.png",
+  tint: 0.9,
+}

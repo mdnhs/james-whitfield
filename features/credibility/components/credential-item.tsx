@@ -1,8 +1,12 @@
 import { Icon } from "@/components/icons/icon"
-import type { Credential } from "../data/credentials"
+import type { BlockView } from "@/blocks/media-refs"
 
-export function CredentialItem({ credential }: { credential: Credential }) {
-  const { title, subtitle, icon } = credential
+export function CredentialItem({
+  badge,
+}: {
+  badge: BlockView<"credibility">["badges"][number]
+}) {
+  const { title, subtitle, icon } = badge
 
   return (
     <li className="flex min-w-0 items-center gap-[12.682px]">

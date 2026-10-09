@@ -5,8 +5,6 @@ import { PageMotion } from "@/components/page-motion"
 import { PageHero } from "@/components/page-hero"
 import { StackCard } from "@/components/stack-card"
 import {
-  ABOUT_CTA,
-  ABOUT_HERO,
   ApproachSection,
   CredentialsSection,
   StatsBand,
@@ -14,7 +12,11 @@ import {
 } from "@/features/about-page"
 import { EnterpriseSection } from "@/features/enterprise"
 import { TestimonialsSection } from "@/features/testimonials"
-import heroBg from "@/public/images/hero/hero-bg.png"
+import { ABOUT_HERO } from "@/features/about-page/data/about-page-content"
+import { MICROCOPY } from "@/features/site/data/microcopy"
+import { SITE } from "@/features/site/data/site"
+
+import * as legacy from "../_legacy/views"
 
 export const metadata: Metadata = {
   title: "About",
@@ -38,23 +40,41 @@ export default function AboutPage() {
   return (
     <main data-page-root className="bg-ink">
       <StackCard id="home" rounded={false}>
-        <PageHero {...ABOUT_HERO} image={heroBg} />
-      </StackCard>
-      <StackCard id="story">
-        <StorySection />
-        <StatsBand />
-      </StackCard>
-      <StackCard id="approach">
-        <ApproachSection />
-      </StackCard>
-      <StackCard id="credentials">
-        <CredentialsSection />
+        <PageHero
+          content={legacy.pageHero(ABOUT_HERO)}
+          homeLabel={MICROCOPY.breadcrumbHome}
+        />
       </StackCard>
       <StackCard>
-        <TestimonialsSection variant="page" />
+        <StorySection
+          id="story"
+          content={legacy.aboutStory()}
+          siteName={SITE.name}
+        />
+        <StatsBand id="practice-in-numbers" content={legacy.aboutStats()} />
+      </StackCard>
+      <StackCard>
+        <ApproachSection id="approach" content={legacy.aboutApproach()} />
+      </StackCard>
+      <StackCard>
+        <CredentialsSection
+          id="credentials"
+          content={legacy.aboutCredentials()}
+        />
+      </StackCard>
+      <StackCard>
+        <TestimonialsSection
+          id="testimonials"
+          content={legacy.testimonialsBlock("page")}
+          items={legacy.testimonialItems()}
+        />
       </StackCard>
       <StackCard last>
-        <EnterpriseSection id="next-step" content={ABOUT_CTA} tint={0.7} />
+        <EnterpriseSection
+          id="next-step"
+          band={legacy.ctaBand("about")}
+          tint={0.7}
+        />
       </StackCard>
       <JourneyRail chapters={CHAPTERS} />
       <PageMotion />

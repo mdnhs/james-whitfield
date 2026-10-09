@@ -14,7 +14,7 @@ export const ABOUT_CONTENT = {
     "Real change starts with understanding where you are — and where you want to go.",
   quote:
     "“When someone hits a ceiling, it is almost never for lack of effort.”",
-  body: [
+  paragraphs: [
     "James works with individuals, professionals and organisations who have reached the point where pushing harder has stopped working. His practice combines clinical hypnotherapy with evidence-informed coaching — no mysticism, no jargon, just a clear account of how change actually happens.",
     "Sessions run in person from Dublin and online with clients across Ireland, the UK and the USA.",
   ],

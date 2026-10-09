@@ -1,16 +1,23 @@
 import Link from "next/link"
 
+import type { BlockView } from "@/blocks/media-refs"
 import { Eyebrow } from "@/components/eyebrow"
 import { Container } from "@/components/layout/container"
 import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { ABOUT_CREDENTIALS } from "../data/about-page-content"
 
-export function CredentialsSection() {
-  const { eyebrow, title, subtitle, cta, items } = ABOUT_CREDENTIALS
+export function CredentialsSection({
+  id,
+  content,
+}: {
+  id: string
+  content: BlockView<"about.credentials">
+}) {
+  const { eyebrow, title, subtitle, cta, items } = content
 
   return (
     <section
+      id={id}
       aria-labelledby="credentials-heading"
       className="bg-stone py-20 lg:py-30"
     >
@@ -53,9 +60,9 @@ export function CredentialsSection() {
           data-motion="deal-group"
           className="flex min-w-0 flex-1 flex-col gap-2"
         >
-          {items.map(({ year, title, issuer }) => (
+          {items.map(({ year, title, issuer, url }, i) => (
             <li
-              key={title}
+              key={i}
               className="group flex items-center gap-6 border-b border-[#e3e5dc] py-6.5 sm:gap-10"
             >
               <span className="text-[15px] leading-[1.5] text-clay tabular-nums">
@@ -63,7 +70,13 @@ export function CredentialsSection() {
               </span>
               <div className="flex min-w-0 flex-1 flex-col gap-1.5 transition-transform duration-500 ease-out group-hover:translate-x-1.5">
                 <h3 className="text-lg leading-[1.3] font-semibold text-text-strong sm:text-xl">
-                  {title}
+                  {url ? (
+                    <a href={url} rel="noreferrer" target="_blank">
+                      {title}
+                    </a>
+                  ) : (
+                    title
+                  )}
                 </h3>
                 <p className="text-[15px] leading-[1.5] text-text-muted sm:text-base">
                   {issuer}

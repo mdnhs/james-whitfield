@@ -1,18 +1,24 @@
 import Link from "next/link"
 
+import type { BlockView } from "@/blocks/media-refs"
 import { Eyebrow } from "@/components/eyebrow"
 import { Container } from "@/components/layout/container"
 import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { ABOUT_CONTENT } from "../data/about-content"
 import { StatCard } from "./stat-card"
 
-export function AboutSection() {
-  const { eyebrow, headline, quote, body, stats, cta } = ABOUT_CONTENT
+export function AboutSection({
+  id,
+  content,
+}: {
+  id: string
+  content: BlockView<"about.intro">
+}) {
+  const { eyebrow, headline, quote, paragraphs, stats, cta } = content
 
   return (
     <section
-      id="about"
+      id={id}
       aria-labelledby="about-heading"
       className="bg-white pt-9 pb-16 lg:pb-26"
     >
@@ -50,8 +56,8 @@ export function AboutSection() {
             data-motion="stagger"
             className="flex flex-col gap-6 text-[17px] leading-[1.72] text-ink-muted"
           >
-            {body.map((paragraph) => (
-              <p key={paragraph}>{paragraph}</p>
+            {paragraphs.map((paragraph, i) => (
+              <p key={i}>{paragraph}</p>
             ))}
           </div>
 
@@ -59,8 +65,8 @@ export function AboutSection() {
             data-motion="deal-group"
             className="grid w-full grid-cols-1 gap-3.5 pt-1.5 sm:grid-cols-3"
           >
-            {stats.map((stat) => (
-              <StatCard key={stat.label} {...stat} />
+            {stats.map((stat, i) => (
+              <StatCard key={i} stat={stat} />
             ))}
           </ul>
 

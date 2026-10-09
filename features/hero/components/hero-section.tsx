@@ -1,10 +1,11 @@
+import type { BlockView } from "@/blocks/media-refs"
 import { Container } from "@/components/layout/container"
 import { HeroBackground } from "./hero-background"
 import { HeroContent } from "./hero-content"
 import { HeroMotion } from "./hero-motion"
 import { MemberBadge } from "./member-badge"
 
-export function HeroSection() {
+export function HeroSection({ content }: { content: BlockView<"hero.home"> }) {
   return (
     <HeroMotion className="relative flex min-h-svh w-full flex-col overflow-clip bg-[#888] lg:h-svh lg:min-h-190">
       <HeroBackground />
@@ -16,8 +17,11 @@ export function HeroSection() {
         data-hero="foreground"
         className="relative z-10 flex flex-1 flex-col justify-end pt-36 pb-14 lg:pt-28 lg:pb-47"
       >
-        <HeroContent />
-        <MemberBadge className="mt-12 self-start lg:absolute lg:right-14 lg:bottom-14 lg:mt-0" />
+        <HeroContent content={content} />
+        <MemberBadge
+          members={content.members}
+          className="mt-12 self-start lg:absolute lg:right-14 lg:bottom-14 lg:mt-0"
+        />
       </Container>
     </HeroMotion>
   )

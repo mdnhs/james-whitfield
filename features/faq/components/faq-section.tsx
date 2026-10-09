@@ -1,21 +1,26 @@
+import type { BlockView } from "@/blocks/media-refs"
 import { Container } from "@/components/layout/container"
+import type { FaqView } from "@/lib/content/types"
 import { cn } from "@/lib/utils"
-import { FAQ_HEADER, FAQS } from "../data/faqs"
 import { FaqAccordion } from "./faq-accordion"
 
 // "page" (inner pages) sets the heading at full section size with roomier
 // padding.
 export function FaqSection({
-  variant = "home",
+  id,
+  content,
+  items,
 }: {
-  variant?: "home" | "page"
+  id: string
+  content: BlockView<"faq">
+  items: FaqView[]
 }) {
-  const { title, subtitle } = FAQ_HEADER
-  const page = variant === "page"
+  const { title, subtitle } = content
+  const page = content.variant === "page"
 
   return (
     <section
-      id="faq"
+      id={id}
       aria-labelledby="faq-heading"
       className={cn("bg-stone py-20", page ? "lg:py-30" : "lg:py-26")}
     >
@@ -39,7 +44,7 @@ export function FaqSection({
           </p>
         </div>
 
-        <FaqAccordion faqs={FAQS} />
+        <FaqAccordion items={items} initiallyOpen={content.initiallyOpen} />
       </Container>
     </section>
   )

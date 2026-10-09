@@ -1,9 +1,15 @@
-import Image from "next/image"
+import { MediaImage } from "@/components/media-image"
+import { frameStyle } from "@/lib/content/frame"
+import type { ProcessStepView } from "@/lib/content/types"
 
-import type { Step } from "../data/steps"
-
-export function StepCard({ step, index }: { step: Step; index: number }) {
-  const { title, description, image, crop } = step
+export function StepCard({
+  step,
+  index,
+}: {
+  step: ProcessStepView
+  index: number
+}) {
+  const { title, description, image, frame } = step
 
   return (
     <li
@@ -12,13 +18,13 @@ export function StepCard({ step, index }: { step: Step; index: number }) {
       className="relative flex w-[min(381.75px,85vw)] shrink-0 snap-start flex-col overflow-clip rounded-2xl bg-white"
     >
       <div className="relative h-54 w-full shrink-0 overflow-clip">
-        <div className="absolute" style={crop}>
-          <Image
-            src={image}
+        <div className="absolute" style={frameStyle(frame)}>
+          <MediaImage
+            media={image}
             alt=""
             fill
             sizes="520px"
-            placeholder="blur"
+            blur
             draggable={false}
             className="object-cover"
           />

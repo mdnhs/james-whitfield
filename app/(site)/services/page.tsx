@@ -6,12 +6,11 @@ import { PageHero } from "@/components/page-hero"
 import { StackCard } from "@/components/stack-card"
 import { EnterpriseSection } from "@/features/enterprise"
 import { FaqSection } from "@/features/faq"
-import {
-  FormatsSection,
-  SERVICES_HERO,
-  ServicesGrid,
-} from "@/features/services"
-import enterpriseBg from "@/public/images/enterprise/enterprise-bg.png"
+import { FormatsSection, ServicesGrid } from "@/features/services"
+import { SERVICES_HERO } from "@/features/services/data/services-content"
+import { MICROCOPY } from "@/features/site/data/microcopy"
+
+import * as legacy from "../_legacy/views"
 
 export const metadata: Metadata = {
   title: "Services",
@@ -34,9 +33,8 @@ export default function ServicesPage() {
     <main data-page-root className="bg-ink">
       <StackCard id="home" rounded={false}>
         <PageHero
-          {...SERVICES_HERO}
-          image={enterpriseBg}
-          imagePosition="center 29%"
+          content={legacy.pageHero(SERVICES_HERO)}
+          homeLabel={MICROCOPY.breadcrumbHome}
         />
       </StackCard>
       <StackCard>
@@ -46,10 +44,17 @@ export default function ServicesPage() {
         <FormatsSection />
       </StackCard>
       <StackCard>
-        <EnterpriseSection />
+        <EnterpriseSection
+          id="enterprise"
+          band={legacy.ctaBand("enterprise")}
+        />
       </StackCard>
       <StackCard last>
-        <FaqSection variant="page" />
+        <FaqSection
+          id="faq"
+          content={legacy.faqBlock("page")}
+          items={legacy.faqItems()}
+        />
       </StackCard>
       <JourneyRail chapters={CHAPTERS} />
       <PageMotion />

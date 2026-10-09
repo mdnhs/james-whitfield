@@ -1,14 +1,21 @@
+import type { BlockView } from "@/blocks/media-refs"
 import { Icon } from "@/components/icons/icon"
 
 import { Eyebrow } from "@/components/eyebrow"
 import { Container } from "@/components/layout/container"
-import { ABOUT_APPROACH } from "../data/about-page-content"
 
-export function ApproachSection() {
-  const { eyebrow, title, subtitle, principles } = ABOUT_APPROACH
+export function ApproachSection({
+  id,
+  content,
+}: {
+  id: string
+  content: BlockView<"about.approach">
+}) {
+  const { eyebrow, title, subtitle, principles } = content
 
   return (
     <section
+      id={id}
       aria-labelledby="approach-heading"
       className="bg-white py-20 lg:py-30"
     >
@@ -36,9 +43,9 @@ export function ApproachSection() {
           data-motion="deal-group"
           className="grid grid-cols-1 gap-6 md:grid-cols-3"
         >
-          {principles.map(({ icon, title, body }) => (
+          {principles.map(({ icon, title, body }, i) => (
             <li
-              key={title}
+              key={i}
               data-motion="deal tilt"
               data-tilt="4"
               className="relative flex flex-col gap-6 overflow-clip rounded-[20px] bg-stone p-6 lg:p-8"

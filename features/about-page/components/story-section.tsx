@@ -1,16 +1,25 @@
 import Image from "next/image"
 
+import type { BlockView } from "@/blocks/media-refs"
 import { Eyebrow } from "@/components/eyebrow"
 import { Container } from "@/components/layout/container"
+import { MediaImage } from "@/components/media-image"
 import { StatValue } from "@/components/stat-value"
-import storyImage from "@/public/images/about/story.png"
-import { ABOUT_STORY } from "../data/about-page-content"
 
-export function StorySection() {
-  const { eyebrow, title, body, quote, badge, role } = ABOUT_STORY
+export function StorySection({
+  id,
+  content,
+  siteName,
+}: {
+  id: string
+  content: BlockView<"about.story">
+  siteName: string
+}) {
+  const { eyebrow, title, paragraphs, quote, badge, role, photo } = content
 
   return (
     <section
+      id={id}
       aria-labelledby="story-heading"
       className="bg-white py-20 lg:py-30"
     >
@@ -21,11 +30,11 @@ export function StorySection() {
               data-motion="parallax"
               className="absolute inset-x-0 -inset-y-[8%]"
             >
-              <Image
-                src={storyImage}
+              <MediaImage
+                media={photo}
                 alt=""
                 fill
-                placeholder="blur"
+                blur
                 sizes="(min-width: 1024px) 568px, 100vw"
                 className="object-cover"
               />
@@ -63,8 +72,8 @@ export function StorySection() {
             data-motion="stagger"
             className="flex flex-col gap-5 text-base leading-[1.65] text-ink-muted"
           >
-            {body.map((paragraph) => (
-              <p key={paragraph}>{paragraph}</p>
+            {paragraphs.map((paragraph, i) => (
+              <p key={i}>{paragraph}</p>
             ))}
           </div>
 
@@ -88,7 +97,7 @@ export function StorySection() {
                 />
               </span>
               <span className="font-display text-2xl leading-[1.5] font-semibold text-forest [font-variation-settings:'SOFT'_0,'WONK'_1]">
-                Magda Kennedy
+                {siteName}
               </span>
             </div>
             <span aria-hidden className="h-5.5 w-px bg-[#cfcfcf]" />

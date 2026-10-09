@@ -3,7 +3,7 @@
 import { Accordion } from "@base-ui/react/accordion"
 
 import { ScrollTrigger } from "@/lib/gsap"
-import type { Faq } from "../data/faqs"
+import type { FaqView } from "@/lib/content/types"
 
 function ToggleIcon() {
   return (
@@ -14,10 +14,16 @@ function ToggleIcon() {
   )
 }
 
-export function FaqAccordion({ faqs }: { faqs: Faq[] }) {
+export function FaqAccordion({
+  items,
+  initiallyOpen,
+}: {
+  items: FaqView[]
+  initiallyOpen: number | null
+}) {
   return (
     <Accordion.Root
-      defaultValue={[0]}
+      defaultValue={initiallyOpen === null ? [] : [initiallyOpen]}
       onValueChange={() => {
         setTimeout(() => {
           ScrollTrigger.refresh()
@@ -25,9 +31,9 @@ export function FaqAccordion({ faqs }: { faqs: Faq[] }) {
       }}
       className="flex w-full flex-col gap-4"
     >
-      {faqs.map((faq, i) => (
+      {items.map((faq, i) => (
         <Accordion.Item
-          key={faq.question}
+          key={faq.id}
           value={i}
           data-motion="deal"
           className="group rounded-md border border-[#e1dbd0] bg-surface-warm transition-colors data-open:bg-brand"

@@ -1,6 +1,6 @@
+import type { BlockView } from "@/blocks/media-refs"
 import { Container } from "@/components/layout/container"
 import { StatValue } from "@/components/stat-value"
-import { ABOUT_STATS } from "../data/about-page-content"
 
 // Full class names so Tailwind can see them.
 const COLUMNS: Record<number, string> = {
@@ -8,10 +8,18 @@ const COLUMNS: Record<number, string> = {
   4: "lg:grid-cols-4",
 }
 
-export function StatsBand() {
-  const columns = COLUMNS[ABOUT_STATS.length] ?? "lg:grid-cols-4"
+export function StatsBand({
+  id,
+  content,
+}: {
+  id: string
+  content: BlockView<"about.stats">
+}) {
+  const { stats } = content
+  const columns = COLUMNS[stats.length] ?? "lg:grid-cols-4"
   return (
     <section
+      id={id}
       aria-label="Practice in numbers"
       className="bg-stone py-12 lg:py-16"
     >
@@ -22,9 +30,9 @@ export function StatsBand() {
           // item after the first on desktop.
           className={`grid grid-cols-2 gap-y-8 ${columns} [&>li:nth-child(even)]:border-l [&>li:nth-child(even)]:pl-5 lg:[&>li:nth-child(even)]:pl-8 lg:[&>li:nth-child(odd):not(:first-child)]:border-l lg:[&>li:nth-child(odd):not(:first-child)]:pl-8`}
         >
-          {ABOUT_STATS.map(({ value, label }) => (
+          {stats.map(({ value, label }, i) => (
             <li
-              key={label}
+              key={i}
               className="flex flex-col gap-2 border-line-rule py-2 pr-5 lg:pr-8"
             >
               <StatValue

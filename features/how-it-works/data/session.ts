@@ -2,6 +2,10 @@ export const HOW_IT_WORKS_HERO = {
   title: "How It Works",
   subtitle:
     "A clear, considered path from first conversation to lasting change.",
+  image: "/images/insights/post-decision-fatigue.png",
+  focal: null,
+  tint: 0.32,
+  mirror: true,
 }
 
 export const SESSION = {

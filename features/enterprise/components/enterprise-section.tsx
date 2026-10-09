@@ -1,33 +1,25 @@
-import Image from "next/image"
 import Link from "next/link"
 
 import { Container } from "@/components/layout/container"
+import { MediaImage } from "@/components/media-image"
 import { buttonVariants } from "@/components/ui/button"
+import type { CtaBandView } from "@/lib/content/types"
 import { tintStyle } from "@/lib/tint"
 import { cn } from "@/lib/utils"
-import enterpriseBg from "@/public/images/enterprise/enterprise-bg.png"
-import { ENTERPRISE_CONTENT } from "../data/enterprise-content"
 import { EnterpriseBackdrop } from "./enterprise-backdrop"
-
-type BandContent = {
-  eyebrow: string
-  title: string
-  bullets: readonly string[]
-  cta: { label: string; href: string }
-}
 
 // Full-bleed photo band with a centred call to action. The home page uses it
 // for enterprise programmes; other pages pass their own copy and tint.
 export function EnterpriseSection({
-  id = "enterprise",
-  content = ENTERPRISE_CONTENT,
-  tint = 0.9,
+  id,
+  band,
+  tint,
 }: {
-  id?: string
-  content?: BandContent
-  tint?: number
+  id: string
+  band: CtaBandView
+  tint?: number | null
 }) {
-  const { eyebrow, title, bullets, cta } = content
+  const { eyebrow, title, bullets, cta } = band
 
   return (
     <section
@@ -36,15 +28,18 @@ export function EnterpriseSection({
       className="relative flex min-h-145 items-center overflow-clip py-20"
     >
       <EnterpriseBackdrop>
-        <Image
-          src={enterpriseBg}
+        <MediaImage
+          media={band.image}
           alt=""
           fill
           sizes="100vw"
-          placeholder="blur"
+          blur
           className="object-cover"
         />
-        <div className="absolute inset-0" style={tintStyle(tint)} />
+        <div
+          className="absolute inset-0"
+          style={tintStyle(tint ?? band.tint)}
+        />
       </EnterpriseBackdrop>
 
       <Container className="relative flex flex-col items-center gap-7 text-center">
@@ -68,9 +63,9 @@ export function EnterpriseSection({
           data-motion="stagger"
           className="flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-x-10"
         >
-          {bullets.map((bullet) => (
+          {bullets.map((bullet, i) => (
             <li
-              key={bullet}
+              key={i}
               className="flex items-center gap-2.5 text-sm leading-[normal] whitespace-nowrap text-cream"
             >
               <span aria-hidden className="h-0.5 w-4 shrink-0 bg-clay" />

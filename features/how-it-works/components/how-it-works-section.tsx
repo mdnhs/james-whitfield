@@ -1,10 +1,11 @@
 import Link from "next/link"
 
+import type { BlockView } from "@/blocks/media-refs"
 import { Container } from "@/components/layout/container"
 import { buttonVariants } from "@/components/ui/button"
 import { stepsTimeline } from "@/lib/layout-math"
+import type { ProcessStepView } from "@/lib/content/types"
 import { cn } from "@/lib/utils"
-import { HOW_IT_WORKS, STEPS } from "../data/steps"
 import { StepCard } from "./step-card"
 import { StepsCarousel } from "./steps-carousel"
 import { StepsStory } from "./steps-story"
@@ -12,38 +13,42 @@ import { StepsStory } from "./steps-story"
 // "page" (the How It Works page) adds a tag above the heading and sets the
 // heading in the serif display face.
 export function HowItWorksSection({
-  variant = "home",
+  id,
+  content,
+  steps,
 }: {
-  variant?: "home" | "page"
+  id: string
+  content: BlockView<"process">
+  steps: ProcessStepView[]
 }) {
-  const { title, subtitle, cta, page: pageHeading } = HOW_IT_WORKS
-  const page = variant === "page"
+  const { title, subtitle, cta, tag } = content
+  const page = content.variant === "page"
 
   return (
     <section
-      id="how-it-works"
+      id={id}
       aria-labelledby="how-it-works-heading"
       // Pin heights for StepsStory: auto on mobile (no pin), a full-viewport
       // sticky frame with extra scroll room for the sideways walk on desktop.
       className="overflow-clip bg-brand [--steps-child:auto] [--steps-spacer:auto] lg:[--steps-child:100svh] lg:[--steps-spacer:var(--steps-spacer-lg)]"
       style={
         {
-          "--steps-spacer-lg": stepsTimeline(STEPS.length).spacer,
+          "--steps-spacer-lg": stepsTimeline(steps.length).spacer,
         } as React.CSSProperties
       }
     >
       <StepsStory
-        count={STEPS.length}
+        count={steps.length}
         header={
           <Container className="flex flex-col items-start gap-8 lg:flex-row lg:items-center lg:gap-14">
             <div className="flex min-w-0 flex-1 flex-col items-start gap-4">
-              {page && (
+              {page && tag && (
                 <span
                   data-motion="rise"
                   className="inline-flex h-8 items-center gap-1.5 rounded-full border-[0.8px] border-line-neutral bg-white px-3.5 text-sm leading-[1.5] font-medium whitespace-nowrap text-brand"
                 >
                   <span aria-hidden className="size-1 rounded-full bg-moss" />
-                  {pageHeading.tag}
+                  {tag}
                 </span>
               )}
               <h2
@@ -56,7 +61,7 @@ export function HowItWorksSection({
                     : "font-geist text-[32px] font-semibold sm:text-[40px]"
                 )}
               >
-                {page ? pageHeading.title : title}
+                {title}
               </h2>
               <p
                 data-motion="rise"
@@ -81,8 +86,8 @@ export function HowItWorksSection({
         }
       >
         <StepsCarousel>
-          {STEPS.map((step, i) => (
-            <StepCard key={step.title} step={step} index={i} />
+          {steps.map((step, i) => (
+            <StepCard key={step.id} step={step} index={i} />
           ))}
         </StepsCarousel>
       </StepsStory>

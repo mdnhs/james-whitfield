@@ -4,6 +4,10 @@ export const INSIGHTS_HERO = {
   title: "Insights",
   subtitle:
     "Practical perspectives on stress, confidence and meaningful change.",
+  image: "/images/insights/post-agency-expertise.png",
+  focal: null,
+  tint: 0.62,
+  mirror: false,
 }
 
 export const CATEGORIES = [

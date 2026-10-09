@@ -1,23 +1,28 @@
+import type { BlockView } from "@/blocks/media-refs"
 import { Eyebrow } from "@/components/eyebrow"
 import { Container } from "@/components/layout/container"
 import { splitColumns } from "@/lib/layout-math"
+import type { TestimonialView } from "@/lib/content/types"
 import { cn } from "@/lib/utils"
-import { TESTIMONIALS, TESTIMONIALS_HEADER } from "../data/testimonials"
 import { TestimonialCard } from "./testimonial-card"
 
 // "page" (inner pages) uses the pill eyebrow, the pine heading and two
 // top-aligned columns.
 export function TestimonialsSection({
-  variant = "home",
+  id,
+  content,
+  items,
 }: {
-  variant?: "home" | "page"
+  id: string
+  content: BlockView<"testimonials">
+  items: TestimonialView[]
 }) {
-  const { eyebrow, title } = TESTIMONIALS_HEADER
-  const page = variant === "page"
+  const { eyebrow, title } = content
+  const page = content.variant === "page"
 
   return (
     <section
-      id="testimonials"
+      id={id}
       aria-labelledby="testimonials-heading"
       className="bg-white py-20 lg:py-30"
     >
@@ -53,7 +58,7 @@ export function TestimonialsSection({
         </header>
 
         <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-2 lg:gap-8">
-          {splitColumns(TESTIMONIALS, 2).map((column, i) => (
+          {splitColumns(items, 2).map((column, i) => (
             // The right column sits lower on desktop so the cards read in
             // order, left then right, as each one rises in on scroll.
             <div
@@ -63,8 +68,8 @@ export function TestimonialsSection({
                 !page && i % 2 === 1 && "lg:mt-24"
               )}
             >
-              {column.map((testimonial, j) => (
-                <TestimonialCard key={`${i}-${j}`} {...testimonial} />
+              {column.map((item) => (
+                <TestimonialCard key={item.id} item={item} />
               ))}
             </div>
           ))}

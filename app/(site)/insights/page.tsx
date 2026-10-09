@@ -6,11 +6,13 @@ import { PageHero } from "@/components/page-hero"
 import { StackCard } from "@/components/stack-card"
 import {
   FeaturedArticle,
-  INSIGHTS_HERO,
   InsightsBrowser,
   NewsletterBand,
 } from "@/features/insights"
-import heroImage from "@/public/images/insights/post-agency-expertise.png"
+import { INSIGHTS_HERO } from "@/features/insights/data/articles"
+import { MICROCOPY } from "@/features/site/data/microcopy"
+
+import * as legacy from "../_legacy/views"
 
 export const metadata: Metadata = {
   title: "Insights",
@@ -30,7 +32,10 @@ export default function InsightsPage() {
   return (
     <main data-page-root className="bg-ink">
       <StackCard id="home" rounded={false}>
-        <PageHero {...INSIGHTS_HERO} image={heroImage} tint={0.62} />
+        <PageHero
+          content={legacy.pageHero(INSIGHTS_HERO)}
+          homeLabel={MICROCOPY.breadcrumbHome}
+        />
       </StackCard>
       <StackCard id="articles">
         <InsightsBrowser featured={<FeaturedArticle />} />

@@ -1,8 +1,9 @@
-import Image from "next/image"
+import { MediaImage } from "@/components/media-image"
+import type { TestimonialView } from "@/lib/content/types"
 
-import type { Testimonial } from "../data/testimonials"
+export function TestimonialCard({ item }: { item: TestimonialView }) {
+  const { quote, name, role, avatar } = item
 
-export function TestimonialCard({ quote, name, role, avatar }: Testimonial) {
   return (
     <figure
       data-motion="deal tilt"
@@ -13,8 +14,8 @@ export function TestimonialCard({ quote, name, role, avatar }: Testimonial) {
         {quote}
       </blockquote>
       <figcaption className="flex items-center gap-4.5">
-        <Image
-          src={avatar}
+        <MediaImage
+          media={avatar}
           alt=""
           width={60}
           height={60}

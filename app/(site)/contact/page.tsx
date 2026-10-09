@@ -4,9 +4,12 @@ import { JourneyRail } from "@/components/journey-rail"
 import { PageMotion } from "@/components/page-motion"
 import { PageHero } from "@/components/page-hero"
 import { StackCard } from "@/components/stack-card"
-import { ClinicSection, CONTACT_HERO, ContactSection } from "@/features/contact"
+import { ClinicSection, ContactSection } from "@/features/contact"
+import { CONTACT_HERO } from "@/features/contact/data/contact-content"
 import { FaqSection } from "@/features/faq"
-import heroImage from "@/public/images/contact/contact-hero.png"
+import { MICROCOPY } from "@/features/site/data/microcopy"
+
+import * as legacy from "../_legacy/views"
 
 export const metadata: Metadata = {
   title: "Contact",
@@ -27,9 +30,8 @@ export default function ContactPage() {
     <main data-page-root className="bg-ink">
       <StackCard id="home" rounded={false}>
         <PageHero
-          {...CONTACT_HERO}
-          image={heroImage}
-          imagePosition="center 38%"
+          content={legacy.pageHero(CONTACT_HERO)}
+          homeLabel={MICROCOPY.breadcrumbHome}
         />
       </StackCard>
       <StackCard>
@@ -39,7 +41,11 @@ export default function ContactPage() {
         <ClinicSection />
       </StackCard>
       <StackCard last>
-        <FaqSection />
+        <FaqSection
+          id="faq"
+          content={legacy.faqBlock("home")}
+          items={legacy.faqItems()}
+        />
       </StackCard>
       <JourneyRail chapters={CHAPTERS} />
       <PageMotion />

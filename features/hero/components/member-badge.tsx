@@ -1,11 +1,16 @@
-import Image from "next/image"
-
+import type { BlockView } from "@/blocks/media-refs"
+import { MediaImage } from "@/components/media-image"
 import { countAttrs, statText } from "@/lib/count"
 import { cn } from "@/lib/utils"
-import { HERO_CONTENT } from "../data/hero-content"
 
-export function MemberBadge({ className }: { className?: string }) {
-  const { count, label, avatars } = HERO_CONTENT.members
+export function MemberBadge({
+  members,
+  className,
+}: {
+  members: BlockView<"hero.home">["members"]
+  className?: string
+}) {
+  const { count, label, avatars } = members
 
   return (
     <div
@@ -17,10 +22,10 @@ export function MemberBadge({ className }: { className?: string }) {
       )}
     >
       <div className="flex items-center">
-        {avatars.map((src, i) => (
-          <Image
-            key={src}
-            src={src}
+        {avatars.map((avatar, i) => (
+          <MediaImage
+            key={i}
+            media={avatar}
             alt=""
             width={56}
             height={56}

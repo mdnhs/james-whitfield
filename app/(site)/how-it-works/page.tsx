@@ -4,16 +4,17 @@ import { JourneyRail } from "@/components/journey-rail"
 import { PageMotion } from "@/components/page-motion"
 import { PageHero } from "@/components/page-hero"
 import { StackCard } from "@/components/stack-card"
-import { ABOUT_CTA } from "@/features/about-page"
 import { EnterpriseSection } from "@/features/enterprise"
 import { FaqSection } from "@/features/faq"
 import {
   FitSection,
-  HOW_IT_WORKS_HERO,
   HowItWorksSection,
   SessionTimeline,
 } from "@/features/how-it-works"
-import heroImage from "@/public/images/insights/post-decision-fatigue.png"
+import { HOW_IT_WORKS_HERO } from "@/features/how-it-works/data/session"
+import { MICROCOPY } from "@/features/site/data/microcopy"
+
+import * as legacy from "../_legacy/views"
 
 export const metadata: Metadata = {
   title: "How It Works",
@@ -36,10 +37,17 @@ export default function HowItWorksPage() {
   return (
     <main data-page-root className="bg-ink">
       <StackCard id="home" rounded={false}>
-        <PageHero {...HOW_IT_WORKS_HERO} image={heroImage} mirror />
+        <PageHero
+          content={legacy.pageHero(HOW_IT_WORKS_HERO)}
+          homeLabel={MICROCOPY.breadcrumbHome}
+        />
       </StackCard>
       <StackCard>
-        <HowItWorksSection variant="page" />
+        <HowItWorksSection
+          id="how-it-works"
+          content={legacy.processBlock("page")}
+          steps={legacy.processSteps()}
+        />
       </StackCard>
       <StackCard id="session">
         <SessionTimeline />
@@ -48,10 +56,14 @@ export default function HowItWorksPage() {
         <FitSection />
       </StackCard>
       <StackCard>
-        <FaqSection variant="page" />
+        <FaqSection
+          id="faq"
+          content={legacy.faqBlock("page")}
+          items={legacy.faqItems()}
+        />
       </StackCard>
       <StackCard last>
-        <EnterpriseSection id="next-step" content={ABOUT_CTA} />
+        <EnterpriseSection id="next-step" band={legacy.ctaBand("about")} />
       </StackCard>
       <JourneyRail chapters={CHAPTERS} />
       <PageMotion />

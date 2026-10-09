@@ -10,6 +10,8 @@ import { HowItWorksSection } from "@/features/how-it-works"
 import { InsightsSection } from "@/features/insights"
 import { TestimonialsSection } from "@/features/testimonials"
 
+import * as legacy from "./_legacy/views"
+
 // Chapters of the scroll journey, in page order, for the side rail. Each
 // target is a section id (or the hero card); #contact lives in the footer.
 const CHAPTERS = [
@@ -29,26 +31,41 @@ export default function Page() {
   return (
     <main data-page-root className="bg-ink">
       <StackCard id="home" rounded={false}>
-        <HeroSection />
+        <HeroSection content={legacy.heroHome()} />
       </StackCard>
       <StackCard>
-        <CredibilitySection />
-        <AboutSection />
+        <CredibilitySection id="credibility" content={legacy.credibility()} />
+        <AboutSection id="about" content={legacy.aboutIntro()} />
       </StackCard>
       <StackCard>
-        <HowItWorksSection />
+        <HowItWorksSection
+          id="how-it-works"
+          content={legacy.processBlock("home")}
+          steps={legacy.processSteps()}
+        />
       </StackCard>
       <StackCard>
-        <TestimonialsSection />
+        <TestimonialsSection
+          id="testimonials"
+          content={legacy.testimonialsBlock("home")}
+          items={legacy.testimonialItems()}
+        />
       </StackCard>
       <StackCard>
-        <EnterpriseSection />
+        <EnterpriseSection
+          id="enterprise"
+          band={legacy.ctaBand("enterprise")}
+        />
       </StackCard>
       <StackCard>
         <InsightsSection />
       </StackCard>
       <StackCard last>
-        <FaqSection />
+        <FaqSection
+          id="faq"
+          content={legacy.faqBlock("home")}
+          items={legacy.faqItems()}
+        />
       </StackCard>
       <JourneyRail chapters={CHAPTERS} />
       <PageMotion />

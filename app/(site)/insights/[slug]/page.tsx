@@ -5,16 +5,18 @@ import { JourneyRail } from "@/components/journey-rail"
 import { PageMotion } from "@/components/page-motion"
 import { StackCard } from "@/components/stack-card"
 import {
-  ALL_ARTICLES,
   ArticleBody,
   ArticleHero,
+  NewsletterBand,
+  RelatedArticles,
+} from "@/features/insights"
+import {
+  ALL_ARTICLES,
   getArticle,
   getArticleBody,
-  NewsletterBand,
   readTime,
-  RelatedArticles,
   relatedArticles,
-} from "@/features/insights"
+} from "@/features/insights/data/articles"
 
 // Known slugs prerender at build. Any other slug renders on request and hits
 // notFound() below (dynamicParams is not allowed with Cache Components).

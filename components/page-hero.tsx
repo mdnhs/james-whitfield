@@ -1,29 +1,20 @@
-import Image, { type StaticImageData } from "next/image"
 import Link from "next/link"
 
+import type { BlockView } from "@/blocks/media-refs"
 import { Container } from "@/components/layout/container"
+import { MediaImage } from "@/components/media-image"
 
 // Title band for inner pages: photo under a dark gradient, breadcrumb, large
 // serif title and a short line of context. The fixed site header overlays its
 // top; the photo drifts inside an oversized frame as the band scrolls away.
 export function PageHero({
-  title,
-  subtitle,
-  image,
-  imagePosition = "center",
-  tint = 0.32,
-  mirror = false,
+  content,
+  homeLabel,
 }: {
-  title: string
-  subtitle: string
-  image: StaticImageData
-  // CSS object-position for the photo's crop.
-  imagePosition?: string
-  // Strength of the flat dark wash over the photo, on top of the gradient.
-  tint?: number
-  // Flip the photo horizontally, as some designs do.
-  mirror?: boolean
+  content: BlockView<"hero.page">
+  homeLabel: string
 }) {
+  const { title, subtitle, image, focal, tint, mirror } = content
   return (
     <section
       aria-labelledby="page-hero-heading"
@@ -34,14 +25,14 @@ export function PageHero({
           data-motion="parallax"
           className="absolute inset-x-0 -inset-y-[8%]"
         >
-          <Image
-            src={image}
+          <MediaImage
+            media={image}
+            focal={focal}
             alt=""
             fill
             priority
-            placeholder="blur"
+            blur
             sizes="100vw"
-            style={{ objectPosition: imagePosition }}
             className={mirror ? "-scale-x-100 object-cover" : "object-cover"}
           />
         </div>
@@ -68,7 +59,7 @@ export function PageHero({
             href="/"
             className="text-white/70 transition-colors hover:text-white"
           >
-            Home
+            {homeLabel}
           </Link>
           <span aria-hidden className="text-white/40">
             /

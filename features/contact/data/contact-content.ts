@@ -6,6 +6,10 @@ export const CONTACT_HERO = {
   title: "Contact",
   subtitle:
     "Start with a free 25-minute call, or send a message — I reply personally.",
+  image: "/images/contact/contact-hero.png",
+  focal: { x: 0.5, y: 0.38 },
+  tint: 0.32,
+  mirror: false,
 }
 
 // Details from the design; confirm before launch.

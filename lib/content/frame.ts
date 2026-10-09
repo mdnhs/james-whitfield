@@ -24,3 +24,29 @@ export const frameStyle = (frame: StepFrame) => ({
   width: percent(frame.w),
   height: percent(frame.h),
 })
+
+// The step media slot's shape (the design's 381.75 × 216 box).
+export const STEP_SLOT_ASPECT = 381.75 / 216
+
+type CropArea = { x: number; y: number; width: number; height: number }
+
+// react-easy-crop gives the visible part of the image in percent of the
+// image; the site stores where the whole image sits relative to the slot.
+// `+ 0` turns -0 into 0.
+export const cropAreaToFrame = (area: CropArea): StepFrame => {
+  const w = 100 / area.width
+  const h = 100 / area.height
+  return {
+    x: (-area.x / 100) * w + 0,
+    y: (-area.y / 100) * h + 0,
+    w,
+    h,
+  }
+}
+
+export const frameToCropArea = (frame: StepFrame): CropArea => ({
+  x: (-frame.x / frame.w) * 100 + 0,
+  y: (-frame.y / frame.h) * 100 + 0,
+  width: 100 / frame.w,
+  height: 100 / frame.h,
+})

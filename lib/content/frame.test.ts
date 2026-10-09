@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest"
 
-import { cropToFrame, frameStyle } from "./frame"
+import {
+  cropAreaToFrame,
+  cropToFrame,
+  frameStyle,
+  frameToCropArea,
+} from "./frame"
 
 describe("step frames", () => {
   it("round-trips today's hand-tuned crop boxes exactly", () => {
@@ -11,5 +16,24 @@ describe("step frames", () => {
     ]) {
       expect(frameStyle(cropToFrame(crop))).toEqual(crop)
     }
+  })
+})
+
+describe("cropper ↔ frame", () => {
+  // react-easy-crop reports the visible part of the image in percent; the
+  // site places the whole image relative to the slot.
+  it("turns a centred half crop into a doubled, shifted image box", () => {
+    expect(cropAreaToFrame({ x: 25, y: 25, width: 50, height: 50 })).toEqual({
+      x: -0.5,
+      y: -0.5,
+      w: 2,
+      h: 2,
+    })
+  })
+  it("round-trips a seeded frame", () => {
+    const frame = { x: -0.11, y: -0.2593, w: 1.3517, h: 1.5926 }
+    const back = cropAreaToFrame(frameToCropArea(frame))
+    for (const key of ["x", "y", "w", "h"] as const)
+      expect(back[key]).toBeCloseTo(frame[key], 4)
   })
 })

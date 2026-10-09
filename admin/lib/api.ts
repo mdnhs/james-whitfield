@@ -149,3 +149,8 @@ export async function parseResponse<T extends ClientResponse<unknown>>(
     throw toApiError(error, status)
   }
 }
+
+// For XMLHttpRequest uploads (progress events), which hc cannot make.
+export function apiErrorFrom(status: number, body: unknown) {
+  return fromStatus(status, (body as Envelope | null)?.error)
+}

@@ -22,6 +22,7 @@ export type Widget =
   | "collection"
   | "colour"
   | "focal"
+  | "frame"
 
 export type UiMeta = {
   // Optional: shared field schemas (field-ui.ts) take the field's own name.

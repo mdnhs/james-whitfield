@@ -25,7 +25,7 @@ export const COLLECTION_FIELD_UI: Record<CollectionSlug, FieldOverrides> = {
   },
   testimonials: { ...visible, avatar: { label: "Photo" } },
   faqs: { ...visible, answer: { widget: "textarea" } },
-  steps: { ...visible, frame: { label: "Image crop" } },
+  steps: { ...visible, frame: { widget: "frame", label: "Image crop" } },
   "cta-bands": { ...visible, cta: { label: "Button" } },
 }
 

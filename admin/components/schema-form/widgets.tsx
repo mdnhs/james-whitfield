@@ -43,6 +43,7 @@ import { emptyValue, rebase, type FormField } from "./to-fields"
 import { CollectionWidget } from "./widgets/collection-widget"
 import { ColourWidget } from "./widgets/colour-widget"
 import { FocalWidget } from "./widgets/focal-widget"
+import { FrameWidget } from "./widgets/frame-widget"
 import { IconWidget } from "./widgets/icon-widget"
 import { LinkWidget } from "./widgets/link-widget"
 import { MediaWidget } from "./widgets/media-widget"
@@ -74,6 +75,8 @@ export function FieldWidget({ field, control }: Props) {
       return <ListWidget field={field} control={control} />
     case "link":
       return <LinkWidget field={field} control={control} />
+    case "frame":
+      return <FrameWidget field={field} control={control} />
     default:
       return <LeafWidget field={field} control={control} />
   }

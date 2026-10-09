@@ -1,12 +1,23 @@
-import { afterAll, beforeEach, describe, expect, it } from "vitest"
+import { eq } from "drizzle-orm"
+import { afterAll, beforeEach, describe, expect, it, vi } from "vitest"
 
 import { closeDb, getDb } from "@/server/db/client"
-import { faqs, media, pages, services, settings } from "@/server/db/schema"
 import {
+  ctaBands,
+  faqs,
+  media,
+  pages,
+  services,
+  settings,
+  testimonials,
+} from "@/server/db/schema"
+import {
+  findCtaBand,
   findPageByPath,
   findSetting,
   listFaqs,
   listServices,
+  listTestimonials,
 } from "@/server/modules/content/repo"
 
 import { resetDb } from "../helpers/db"
@@ -43,6 +54,7 @@ describe("content repo", () => {
       .values({
         path: "/about",
         title: "About",
+        status: "published",
         draft: doc("Draft"),
         published: doc("Live"),
       })
@@ -62,6 +74,20 @@ describe("content repo", () => {
       .values({ path: "/privacy", title: "Privacy", draft: doc("Draft") })
     expect(await findPageByPath("/privacy", { draft: false })).toBeNull()
     expect(await findPageByPath("/nope", { draft: false })).toBeNull()
+  })
+
+  it("hides an unpublished page that still holds published JSON", async () => {
+    await getDb()
+      .insert(pages)
+      .values({
+        path: "/old",
+        title: "Old",
+        status: "draft",
+        draft: doc("Draft"),
+        published: doc("Was live"),
+      })
+    expect(await findPageByPath("/old", { draft: false })).toBeNull()
+    expect(await findPageByPath("/old", { draft: true })).not.toBeNull()
   })
 
   it("lists visible collection rows in sort order", async () => {
@@ -106,5 +132,45 @@ describe("content repo", () => {
     })
     const [row] = await getDb().select().from(media)
     expect(row.id).toBe(MEDIA_ID)
+  })
+
+  it("skips rows whose image was soft-deleted instead of failing", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
+    const asset = (key: string) => ({
+      driver: "static" as const,
+      key,
+      url: key,
+      filename: "x.png",
+      mimeType: "image/png",
+      sizeBytes: 1,
+    })
+    const [kept, gone] = await getDb()
+      .insert(media)
+      .values([asset("/images/kept.png"), asset("/images/gone.png")])
+      .returning()
+    await getDb()
+      .update(media)
+      .set({ deletedAt: new Date() })
+      .where(eq(media.id, gone.id))
+    await getDb()
+      .insert(testimonials)
+      .values([
+        { quote: "Q1", authorName: "A", authorRole: "R", avatarId: kept.id },
+        { quote: "Q2", authorName: "B", authorRole: "R", avatarId: gone.id },
+      ])
+    const [band] = await getDb()
+      .insert(ctaBands)
+      .values({
+        name: "n",
+        eyebrow: "e",
+        title: "t",
+        cta: { label: "l", href: "/contact" },
+        imageId: gone.id,
+      })
+      .returning()
+    expect((await listTestimonials()).map((r) => r.quote)).toEqual(["Q1"])
+    expect(await findCtaBand(band.id)).toBeNull()
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining(gone.id))
+    warn.mockRestore()
   })
 })

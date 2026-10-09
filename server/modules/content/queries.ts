@@ -20,8 +20,9 @@ const lifetime = (found: boolean) =>
 export async function getMedia(ids: string[]) {
   "use cache"
   cacheTag(tags.media)
-  const assets = await repo.findMedia(ids)
-  lifetime(assets.size === ids.length)
+  const unique = [...new Set(ids)]
+  const assets = await repo.findMedia(unique)
+  lifetime(assets.size === unique.length)
   return assets
 }
 
@@ -97,9 +98,18 @@ export async function getCategories() {
   return rows
 }
 
+// Articles join categories, authors, media and (for the CTA topic) services.
+const ARTICLE_TAGS = [
+  tags.articles,
+  tags.categories,
+  tags.authors,
+  tags.media,
+  tags.collection("services"),
+]
+
 export async function getArticleSummaries() {
   "use cache"
-  cacheTag(tags.articles, tags.categories, tags.authors, tags.media)
+  cacheTag(...ARTICLE_TAGS)
   const rows = await repo.listArticleSummaries()
   lifetime(rows.length > 0)
   return rows
@@ -107,7 +117,7 @@ export async function getArticleSummaries() {
 
 export async function getArticle(slug: string) {
   "use cache"
-  cacheTag(tags.articles, tags.categories, tags.authors, tags.media)
+  cacheTag(...ARTICLE_TAGS)
   const article = await repo.findArticleBySlug(slug)
   if (article) cacheTag(tags.article(article.id))
   lifetime(article !== null)
@@ -117,7 +127,7 @@ export async function getArticle(slug: string) {
 // Same category first, then the newest of the rest (the old helper's rule).
 export async function getRelatedArticles(slug: string, count: number) {
   "use cache"
-  cacheTag(tags.articles, tags.categories, tags.authors, tags.media)
+  cacheTag(...ARTICLE_TAGS)
   const all = await repo.listArticleSummaries()
   const current = all.find((a) => a.slug === slug)
   const others = all.filter((a) => a.slug !== slug)

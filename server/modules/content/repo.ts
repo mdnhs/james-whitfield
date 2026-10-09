@@ -51,10 +51,12 @@ export async function findMedia(ids: string[], db = getDb()) {
   return new Map(rows.map((r) => [r.id, toMediaAsset(r)]))
 }
 
+// A soft-deleted (or vanished) image drops the row that needs it instead of
+// failing the whole page: the restrict FKs only stop hard deletes.
 const need = (assets: Map<string, MediaAsset>, id: string) => {
   const asset = assets.get(id)
-  if (!asset) throw new Error(`Media ${id} is missing`)
-  return asset
+  if (!asset) console.warn(`[content] media ${id} is missing; row skipped`)
+  return asset ?? null
 }
 
 export async function findPageByPath(
@@ -67,8 +69,14 @@ export async function findPageByPath(
     .from(t.pages)
     .where(eq(t.pages.path, path))
     .limit(1)
-  const document = draft ? row?.draft : row?.published
-  if (!row || !document) return null
+  if (!row) return null
+  // Unpublishing keeps the last published JSON; status decides what is live.
+  const document = draft
+    ? row.draft
+    : row.status === "published"
+      ? row.published
+      : null
+  if (!document) return null
   return {
     id: row.id,
     path: row.path,
@@ -151,13 +159,12 @@ export async function listTestimonials(
     rows.map((r) => r.avatarId),
     db
   )
-  return rows.map((r) => ({
-    id: r.id,
-    quote: r.quote,
-    name: r.authorName,
-    role: r.authorRole,
-    avatar: need(assets, r.avatarId),
-  }))
+  return rows.flatMap((r) => {
+    const avatar = need(assets, r.avatarId)
+    if (!avatar) return []
+    const { id, quote, authorName: name, authorRole: role } = r
+    return [{ id, quote, name, role, avatar }]
+  })
 }
 
 export async function listFaqs(db = getDb()): Promise<FaqView[]> {
@@ -181,13 +188,12 @@ export async function listProcessSteps(
     rows.map((r) => r.imageId),
     db
   )
-  return rows.map((r) => ({
-    id: r.id,
-    title: r.title,
-    description: r.description,
-    image: need(assets, r.imageId),
-    frame: r.frame,
-  }))
+  return rows.flatMap((r) => {
+    const image = need(assets, r.imageId)
+    if (!image) return []
+    const { id, title, description, frame } = r
+    return [{ id, title, description, image, frame }]
+  })
 }
 
 export async function findCtaBand(
@@ -200,16 +206,10 @@ export async function findCtaBand(
     .where(and(eq(t.ctaBands.id, id), visible(t.ctaBands)))
     .limit(1)
   if (!r) return null
-  const assets = await findMedia([r.imageId], db)
-  return {
-    id: r.id,
-    eyebrow: r.eyebrow,
-    title: r.title,
-    bullets: r.bullets,
-    cta: r.cta,
-    image: need(assets, r.imageId),
-    tint: r.tint,
-  }
+  const image = need(await findMedia([r.imageId], db), r.imageId)
+  if (!image) return null
+  const { eyebrow, title, bullets, cta, tint } = r
+  return { id: r.id, eyebrow, title, bullets, cta, image, tint }
 }
 
 export async function listCategories(db = getDb()): Promise<CategoryView[]> {
@@ -258,15 +258,18 @@ type ArticleRow = Awaited<
 function toSummary(
   r: ArticleRow,
   assets: Map<string, MediaAsset>
-): ArticleSummary {
+): ArticleSummary | null {
+  const image = need(assets, r.a.coverId)
+  const avatar = need(assets, r.author.avatarId)
+  if (!image || !avatar) return null
   return {
     id: r.a.id,
     slug: r.a.slug,
     title: r.a.title,
     excerpt: r.a.excerpt,
-    image: need(assets, r.a.coverId),
+    image,
     category: { slug: r.category.slug, name: r.category.name },
-    author: { name: r.author.name, avatar: need(assets, r.author.avatarId) },
+    author: { name: r.author.name, avatar },
     date: articleDate(r.a.publishedAt ?? r.a.createdAt),
     readingMinutes: r.a.readingMinutes,
     featured: r.a.featured,
@@ -284,7 +287,7 @@ export async function listArticleSummaries(
     .where(eq(t.articles.status, "published"))
     .orderBy(desc(t.articles.publishedAt))
   const assets = await findMedia(mediaOf(rows), db)
-  return rows.map((r) => toSummary(r, assets))
+  return rows.flatMap((r) => toSummary(r, assets) ?? [])
 }
 
 export async function findArticleBySlug(
@@ -295,10 +298,11 @@ export async function findArticleBySlug(
     .where(and(eq(t.articles.slug, slug), eq(t.articles.status, "published")))
     .limit(1)
   if (!r) return null
+  const summary = toSummary(r, await findMedia(mediaOf([r]), db))
+  if (!summary) return null
   const [{ body }] = await db
     .select({ body: t.articles.body })
     .from(t.articles)
     .where(eq(t.articles.id, r.a.id))
-  const assets = await findMedia(mediaOf([r]), db)
-  return { ...toSummary(r, assets), body, topicSlug: r.topic }
+  return { ...summary, body, topicSlug: r.topic }
 }

@@ -51,3 +51,27 @@ describe("getEnv email validation", () => {
     expect(() => getEnv()).toThrow(/EMAIL_DRIVER/)
   })
 })
+
+describe("getEnv BETTER_AUTH_URL", () => {
+  const configure = (siteEnv: string, authUrl: string) => {
+    vi.stubEnv("SITE_ENV", siteEnv)
+    vi.stubEnv("BETTER_AUTH_URL", authUrl)
+    vi.stubEnv("EMAIL_DRIVER", "smtp")
+    vi.stubEnv("SMTP_URL", "smtp://localhost:1025")
+  }
+
+  it.each(["staging", "production"])("requires https in %s", (siteEnv) => {
+    configure(siteEnv, "http://admin.example.ie")
+    expect(() => getEnv()).toThrow(/BETTER_AUTH_URL must use https/)
+  })
+
+  it("accepts https in production", () => {
+    configure("production", "https://admin.example.ie")
+    expect(getEnv().BETTER_AUTH_URL).toBe("https://admin.example.ie")
+  })
+
+  it("allows http in development", () => {
+    configure("development", "http://localhost:3000")
+    expect(getEnv().BETTER_AUTH_URL).toBe("http://localhost:3000")
+  })
+})

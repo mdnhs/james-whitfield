@@ -1,9 +1,27 @@
-import { afterAll, beforeEach, describe, expect, it } from "vitest"
+import { sql } from "drizzle-orm"
+import { afterAll, beforeEach, describe, expect, it, vi } from "vitest"
 
 import { getAuth } from "@/server/auth/auth"
-import { closeDb } from "@/server/db/client"
+import { closeDb, getDb } from "@/server/db/client"
+import { users } from "@/server/db/schema"
 
 import { resetDb } from "../helpers/db"
+
+const templates = vi.hoisted(() => ({ throws: false }))
+
+vi.mock("@/server/lib/email/templates", async (importOriginal) => {
+  const original =
+    await importOriginal<typeof import("@/server/lib/email/templates")>()
+  return {
+    ...original,
+    passwordResetEmail: (
+      ...args: Parameters<typeof original.passwordResetEmail>
+    ) => {
+      if (templates.throws) throw new Error("template exploded")
+      return original.passwordResetEmail(...args)
+    },
+  }
+})
 
 const PASSWORD = "correct horse battery staple"
 
@@ -45,7 +63,7 @@ describe("Better Auth", () => {
     )
   })
 
-  it("rejects public sign-up", async () => {
+  it("rejects public sign-up and creates no user", async () => {
     const response = await getAuth().handler(
       new Request("http://localhost:3000/api/auth/sign-up/email", {
         method: "POST",
@@ -60,6 +78,63 @@ describe("Better Auth", () => {
         }),
       })
     )
-    expect(response.status).toBeGreaterThanOrEqual(400)
+    expect(response.status).toBe(400)
+    expect(await response.json()).toMatchObject({
+      code: "EMAIL_PASSWORD_SIGN_UP_DISABLED",
+    })
+    expect(await getDb().select().from(users)).toHaveLength(0)
+  })
+
+  it("stores every auth timestamp as timestamptz", async () => {
+    const { rows } = await getDb().execute<{
+      table_name: string
+      column_name: string
+      data_type: string
+    }>(sql`
+      select table_name, column_name, data_type
+      from information_schema.columns
+      where table_schema = 'public'
+        and table_name in ('users', 'sessions', 'accounts', 'verifications', 'two_factors', 'rate_limits')
+        and data_type like 'timestamp%'
+    `)
+    expect(rows.length).toBeGreaterThan(0)
+    expect(
+      rows.filter((row) => row.data_type !== "timestamp with time zone")
+    ).toEqual([])
+  })
+
+  describe("password reset when the template throws", () => {
+    const requestReset = (email: string) =>
+      getAuth().handler(
+        new Request("http://localhost:3000/api/auth/request-password-reset", {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            origin: "http://localhost:3000",
+          },
+          body: JSON.stringify({ email, redirectTo: "/admin/reset-password" }),
+        })
+      )
+
+    it("answers identically for existing and unknown emails", async () => {
+      await getAuth().api.createUser({
+        body: {
+          email: "real@example.com",
+          password: PASSWORD,
+          name: "Real",
+          role: "editor",
+        },
+      })
+      templates.throws = true
+      try {
+        const known = await requestReset("real@example.com")
+        const unknown = await requestReset("nobody@example.com")
+        expect(known.status).toBe(200)
+        expect(unknown.status).toBe(known.status)
+        expect(await known.json()).toEqual(await unknown.json())
+      } finally {
+        templates.throws = false
+      }
+    })
   })
 })

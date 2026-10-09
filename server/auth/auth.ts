@@ -8,13 +8,7 @@ import { ac, roles } from "@/lib/auth/permissions"
 import { getDb } from "@/server/db/client"
 import * as schema from "@/server/db/schema"
 import { getEnv } from "@/server/env"
-import { sendEmail } from "@/server/lib/email"
-import { inviteEmail, passwordResetEmail } from "@/server/lib/email/templates"
-
-// Invites reuse the reset flow (docs/brief.md §7.4). Their redirect target
-// carries ?invite=1, so the email can be worded as an invitation.
-const isInviteLink = (url: string) =>
-  decodeURIComponent(url).includes("invite=1")
+import { deliverResetEmail } from "./email"
 
 export function buildAuth() {
   const env = getEnv()
@@ -37,13 +31,7 @@ export function buildAuth() {
       revokeSessionsOnPasswordReset: true,
       resetPasswordTokenExpiresIn: 60 * 60 * 24,
       sendResetPassword: async ({ user, url }) => {
-        const message = isInviteLink(url)
-          ? inviteEmail({ name: user.name, url })
-          : passwordResetEmail({ name: user.name, url })
-        // Not awaited (avoids a timing side channel); failures are logged.
-        void sendEmail({ to: user.email, ...message }).catch((error) =>
-          console.error("[auth] could not send email", error)
-        )
+        deliverResetEmail(user, url)
       },
     },
     session: {

@@ -29,6 +29,16 @@ const EnvSchema = z
         message: 'SMTP_URL is required when EMAIL_DRIVER is "smtp"',
       })
     }
+    if (
+      env.SITE_ENV !== "development" &&
+      !env.BETTER_AUTH_URL.startsWith("https://")
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["BETTER_AUTH_URL"],
+        message: `BETTER_AUTH_URL must use https when SITE_ENV is "${env.SITE_ENV}"`,
+      })
+    }
     if (env.SITE_ENV === "production" && env.EMAIL_DRIVER === "log") {
       ctx.addIssue({
         code: "custom",

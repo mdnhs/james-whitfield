@@ -18,11 +18,20 @@ export async function createOwner({
     { email, name, role: "owner" },
     { as: "system" }
   )
-  await audit(null, {
-    action: "user.bootstrap-owner",
-    entityType: "user",
-    entityId: user.id,
-    summary: `Bootstrapped owner ${user.email} from the CLI`,
-  })
+  // The owner and invite already exist; a failed audit row must not turn
+  // this one-off bootstrap into a failure that blocks reruns.
+  try {
+    await audit(null, {
+      action: "user.bootstrap-owner",
+      entityType: "user",
+      entityId: user.id,
+      summary: `Bootstrapped owner ${user.email} from the CLI`,
+    })
+  } catch (error) {
+    console.warn(
+      "owner created and invite sent, but the audit entry failed:",
+      error instanceof Error ? error.message : error
+    )
+  }
   return { userId: user.id }
 }

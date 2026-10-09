@@ -51,3 +51,55 @@ jobs:
         env:
           DATABASE_URL: postgres://nobody:nothing@127.0.0.1:1/unreachable
           SITE_URL: https://example.com
+
+  e2e:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: mk
+          POSTGRES_PASSWORD: mk
+          POSTGRES_DB: mk_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U mk -d mk_e2e"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      mailpit:
+        image: axllent/mailpit:v1.31.4
+        ports:
+          - 1025:1025
+          - 8025:8025
+    env:
+      DATABASE_URL_E2E: postgres://mk:mk@localhost:5432/mk_e2e
+      SMTP_URL_E2E: smtp://localhost:1025
+      MAILPIT_URL: http://localhost:8025
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.32.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm build
+      # Fails fast on a migration or seeding problem; Playwright's global
+      # setup reseeds before the tests run.
+      - run: pnpm e2e:seed
+      # Visual-parity baselines are macOS-only (local), so CI skips them.
+      - name: E2E (desktop, without visual parity)
+        run: pnpm test:e2e --project=desktop --grep-invert "parity:"
+        env:
+          E2E_SKIP_BUILD: "1"
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-traces
+          path: test-results/
+          retention-days: 7

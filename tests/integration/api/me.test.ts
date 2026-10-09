@@ -1,11 +1,12 @@
 import { eq } from "drizzle-orm"
 import { afterAll, beforeEach, describe, expect, it } from "vitest"
 
+import { app } from "@/server/api/app"
 import { getAuth } from "@/server/auth/auth"
 import { closeDb, getDb } from "@/server/db/client"
-import { users } from "@/server/db/schema"
+import { sessions, users } from "@/server/db/schema"
 
-import { adminRequest, createUser, signIn } from "../helpers/auth"
+import { adminRequest, createUser, ORIGIN, signIn } from "../helpers/auth"
 import { resetDb } from "../helpers/db"
 
 beforeEach(resetDb)
@@ -56,5 +57,68 @@ describe("GET /api/v1/admin/me", () => {
     })
 
     expect((await adminRequest("/me", viewerCookie)).status).toBe(401)
+  })
+
+  it("treats banned=true set directly in the database as signed out", async () => {
+    await createUser("viewer")
+    const cookie = await signIn("viewer@example.com")
+    await getDb()
+      .update(users)
+      .set({ banned: true })
+      .where(eq(users.email, "viewer@example.com"))
+
+    expect((await adminRequest("/me", cookie)).status).toBe(401)
+  })
+
+  it("keeps a user signed in once their ban has expired", async () => {
+    await createUser("viewer")
+    const cookie = await signIn("viewer@example.com")
+    await getDb()
+      .update(users)
+      .set({ banned: true, banExpires: new Date(Date.now() - 60_000) })
+      .where(eq(users.email, "viewer@example.com"))
+
+    expect((await adminRequest("/me", cookie)).status).toBe(200)
+  })
+
+  it("forwards a refreshed session cookie", async () => {
+    await createUser("viewer")
+    const cookie = await signIn("viewer@example.com")
+    // Aging the session past updateAge (1 day) makes the next read refresh it.
+    await getDb()
+      .update(sessions)
+      .set({ updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000) })
+    const response = await adminRequest("/me", cookie)
+
+    expect(response.status).toBe(200)
+    expect(response.headers.getSetCookie().join(";")).toContain("mk.session_")
+  })
+})
+
+describe("sameOrigin on mutating admin routes", () => {
+  async function post(headers: Record<string, string>) {
+    await createUser("viewer")
+    const cookie = await signIn("viewer@example.com")
+    return app.request("/api/v1/admin/__nope", {
+      method: "POST",
+      headers: { cookie, "content-type": "application/json", ...headers },
+      body: "{}",
+    })
+  }
+
+  it("rejects a foreign Origin", async () => {
+    expect((await post({ origin: "https://evil.example" })).status).toBe(403)
+  })
+  it("rejects Origin: null", async () => {
+    expect((await post({ origin: "null" })).status).toBe(403)
+  })
+  it("rejects a missing Origin", async () => {
+    expect((await post({})).status).toBe(403)
+  })
+  it("rejects cross-site Sec-Fetch-Site without Origin", async () => {
+    expect((await post({ "sec-fetch-site": "cross-site" })).status).toBe(403)
+  })
+  it("allows the same origin through to routing", async () => {
+    expect((await post({ origin: ORIGIN })).status).toBe(404)
   })
 })

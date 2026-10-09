@@ -5,15 +5,13 @@ import { redirect } from "next/navigation"
 import { cache } from "react"
 
 import { toActor, type Actor } from "./actor"
-import { getAuth } from "./auth"
+import { getFreshSession } from "./fresh-session"
 
 // One full (database-checked) session read per request.
-export const getSession = cache(async () =>
-  getAuth().api.getSession({
-    headers: await headers(),
-    query: { disableCookieCache: true },
-  })
-)
+export const getSession = cache(async () => {
+  const { session } = await getFreshSession(await headers())
+  return session
+})
 
 export async function requireActor(next = "/admin"): Promise<Actor> {
   const session = await getSession()

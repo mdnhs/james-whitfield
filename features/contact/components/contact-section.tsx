@@ -36,7 +36,7 @@ export function ContactSection() {
           </div>
 
           <ul
-            data-motion="stagger"
+            data-motion="deal-group"
             className="flex flex-col gap-3 md:grid md:grid-cols-2 xl:flex"
           >
             {items.map(({ icon, label, value, href }) => {

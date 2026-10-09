@@ -14,7 +14,8 @@ export function StackCard({
   children: React.ReactNode
   id?: string
   className?: string
-  // Round the top corners the next card slides in with. Off for the first card.
+  // Round the top corners the next card slides in with. Off for the first card,
+  // which sits flush at the page top and only rounds as it sinks back.
   rounded?: boolean
   // The final card scrolls away normally instead of sticking.
   last?: boolean
@@ -23,6 +24,7 @@ export function StackCard({
     <div
       id={id}
       data-stack={last ? "last" : ""}
+      data-stack-flat={rounded ? undefined : ""}
       className={cn(
         "relative overflow-clip",
         rounded && "rounded-t-4xl",

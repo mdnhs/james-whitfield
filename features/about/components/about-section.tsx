@@ -56,7 +56,7 @@ export function AboutSection() {
           </div>
 
           <ul
-            data-motion="stagger"
+            data-motion="deal-group"
             className="grid w-full grid-cols-1 gap-3.5 pt-1.5 sm:grid-cols-3"
           >
             {stats.map((stat) => (

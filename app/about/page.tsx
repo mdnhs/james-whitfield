@@ -1,6 +1,8 @@
 import type { Metadata } from "next"
 
+import { JourneyRail } from "@/components/journey-rail"
 import { PageHero } from "@/components/page-hero"
+import { StackCard } from "@/components/stack-card"
 import {
   ABOUT_CTA,
   ABOUT_HERO,
@@ -19,16 +21,45 @@ export const metadata: Metadata = {
     "The person, the practice and the principles behind every session.",
 }
 
+const CHAPTERS = [
+  { label: "Welcome", target: "home" },
+  { label: "Story", target: "story" },
+  { label: "Approach", target: "approach" },
+  { label: "Credentials", target: "credentials" },
+  { label: "Stories", target: "testimonials" },
+  { label: "Next step", target: "next-step" },
+  { label: "Contact", target: "contact" },
+]
+
+// Same scroll stack as the home page: each chapter is a card that sticks while
+// the next slides over it.
 export default function AboutPage() {
   return (
-    <main className="bg-white">
-      <PageHero {...ABOUT_HERO} image={heroBg} />
-      <StorySection />
-      <StatsBand />
-      <ApproachSection />
-      <CredentialsSection />
-      <TestimonialsSection variant="page" />
-      <EnterpriseSection id="next-step" content={ABOUT_CTA} tint="bg-pine/70" />
+    <main className="bg-ink">
+      <StackCard id="home" rounded={false}>
+        <PageHero {...ABOUT_HERO} image={heroBg} />
+      </StackCard>
+      <StackCard id="story">
+        <StorySection />
+        <StatsBand />
+      </StackCard>
+      <StackCard id="approach">
+        <ApproachSection />
+      </StackCard>
+      <StackCard id="credentials">
+        <CredentialsSection />
+      </StackCard>
+      <StackCard>
+        <TestimonialsSection variant="page" />
+      </StackCard>
+      <StackCard last>
+        <EnterpriseSection
+          id="next-step"
+          content={ABOUT_CTA}
+          tint="bg-pine/70"
+        />
+      </StackCard>
+      <JourneyRail chapters={CHAPTERS} />
     </main>
   )
 }

@@ -19,7 +19,9 @@ export function EnterpriseBackdrop({
     // bottom reaches the viewport bottom and the next card covers it, so the
     // window must be fully open by then.
     <Scrollytelling.Root start="top bottom" end="bottom bottom" scrub={1}>
-      <div aria-hidden className="absolute inset-0">
+      {/* Solid pine behind the window: the band is a stacked card, and while
+          the window is still inset its edges must not show the card beneath. */}
+      <div aria-hidden className="absolute inset-0 bg-pine">
         <div ref={frame} className="absolute inset-0 overflow-clip">
           <div ref={media} className="absolute inset-0">
             {children}

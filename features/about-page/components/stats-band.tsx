@@ -9,7 +9,7 @@ export function StatsBand() {
     >
       <Container>
         <ul
-          data-motion="stagger"
+          data-motion="deal-group"
           className="grid grid-cols-2 gap-y-8 lg:grid-cols-4"
         >
           {ABOUT_STATS.map(({ value, label }, i) => (

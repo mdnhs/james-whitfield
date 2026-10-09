@@ -50,7 +50,7 @@ export function CredentialsSection() {
         </div>
 
         <ol
-          data-motion="stagger"
+          data-motion="deal-group"
           className="flex min-w-0 flex-1 flex-col gap-2"
         >
           {items.map(({ year, title, issuer }) => (

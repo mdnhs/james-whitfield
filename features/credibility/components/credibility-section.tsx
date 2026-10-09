@@ -8,7 +8,7 @@ export function CredibilitySection() {
       <Container>
         <div className="rounded-[8.455px] py-[25.364px] drop-shadow-[0px_1.057px_1.057px_rgba(0,0,0,0.05)]">
           <ul
-            data-motion="stagger"
+            data-motion="deal-group"
             className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4 xl:gap-[25.364px]"
           >
             {CREDENTIALS.map((credential, i) => (

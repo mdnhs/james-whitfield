@@ -22,14 +22,19 @@ export function Gauge({
   title,
   parts,
   centerLabel,
+  headlineKey,
 }: {
   title: string
   parts: readonly GaugePart[]
+  // Says what the percentage is, e.g. "Complete".
   centerLabel: string
+  // Key of the part whose share is the centred percentage. Defaults to the
+  // first part.
+  headlineKey?: string
 }) {
   const hatchId = `gauge-hatch-${useId().replace(/:/g, "")}`
   const reduced = useReducedMotion()
-  const summary = gaugeSummary(parts)
+  const summary = gaugeSummary(parts, headlineKey)
   const fill: Record<GaugePart["tone"], string> = {
     solid: "var(--chart-2)",
     dark: "var(--chart-4)",
@@ -101,7 +106,8 @@ export function Gauge({
             ) : (
               <RadialBar
                 dataKey="empty"
-                fill="var(--muted)"
+                // A neutral track: nothing to measure yet.
+                fill="var(--skeleton)"
                 cornerRadius={12}
                 isAnimationActive={false}
               />
@@ -110,13 +116,19 @@ export function Gauge({
         </ChartContainer>
         <div className="absolute inset-x-0 bottom-0 flex flex-col items-center">
           <p className="text-kpi tabular-nums">
-            {summary.total ? formatPercent(summary.ratio) : "—"}
+            {formatPercent(summary.ratio)}
           </p>
           <p className="text-sm text-muted-foreground">{centerLabel}</p>
         </div>
       </div>
       <table className="sr-only">
         <caption>{title}</caption>
+        <thead>
+          <tr>
+            <th scope="col">Part</th>
+            <th scope="col">Count</th>
+          </tr>
+        </thead>
         <tbody>
           {summary.parts.map((part) => (
             <tr key={part.key}>

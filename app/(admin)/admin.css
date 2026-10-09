@@ -67,6 +67,10 @@
   --color-warning-soft: var(--warning-soft);
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
+  --color-skeleton: var(--skeleton);
+  --color-hero-chip: var(--hero-chip);
+  --color-hero-chip-foreground: var(--hero-chip-foreground);
+  --color-hero-delta: var(--hero-delta);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -118,12 +122,18 @@
   --warning-soft: #fef3c7;
   --danger: #b91c1c;
   --danger-soft: #fee2e2;
+  /* Loading placeholders: visible on both the grey panel and white cards. */
+  --skeleton: #e2e6e2;
   /* Comparison-period stripes in charts and legends. */
   --hatch: #8fcca5;
   /* Hero KPI card and the sidebar's "Your website" card. */
   --hero-from: #0f4d23;
   --hero-to: #2b6e3e;
   --hero-foreground: #ffffff;
+  /* The white arrow chip and the light-green delta on the hero card. */
+  --hero-chip: #ffffff;
+  --hero-chip-foreground: #111411;
+  --hero-delta: #a6f0bd;
   --promo-from: #06120a;
   --promo-to: #12381f;
   --promo-foreground: #ffffff;
@@ -169,6 +179,12 @@
   --warning-soft: #33270c;
   --danger: #f87171;
   --danger-soft: #3a1414;
+  --skeleton: #2a352d;
+  /* The hero card keeps its dark-green gradient in both themes, so its
+     chip and delta do too. */
+  --hero-chip: #ffffff;
+  --hero-chip-foreground: #111411;
+  --hero-delta: #a6f0bd;
   --hatch: #2f7a45;
 }
 

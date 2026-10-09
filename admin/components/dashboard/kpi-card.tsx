@@ -48,7 +48,7 @@ export function KpiCard({
             className={cn(
               "flex size-10 shrink-0 items-center justify-center rounded-full transition-colors outline-none focus-visible:ring-3",
               hero
-                ? "bg-white text-[#111411] hover:bg-white/85 focus-visible:ring-white/60"
+                ? "bg-hero-chip text-hero-chip-foreground hover:bg-hero-chip/85 focus-visible:ring-white/60"
                 : "ring-1 ring-foreground/70 hover:bg-muted focus-visible:ring-ring/50"
             )}
           >
@@ -68,9 +68,7 @@ export function KpiCard({
             <span
               className={cn(
                 "font-semibold",
-                // The hero gradient is the same dark green in both themes,
-                // so its delta keeps one light green that reads on it.
-                hero && delta.direction === "up" && "text-[#a6f0bd]",
+                hero && delta.direction === "up" && "text-hero-delta",
                 !hero && delta.direction === "up" && "text-success",
                 !hero && delta.direction === "down" && "text-danger"
               )}

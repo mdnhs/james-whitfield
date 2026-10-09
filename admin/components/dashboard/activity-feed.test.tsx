@@ -28,6 +28,8 @@ it("lists entries with avatar initials, relative time and status", () => {
   expect(items[0].textContent).toContain("NW")
   expect(items[0].textContent).toContain("5 minutes ago")
   expect(screen.getByText("Published").dataset.tone).toBe("success")
+  // Named, so it makes sense when it takes focus to scroll.
+  expect(screen.getByRole("region", { name: "Recent activity" })).toBeTruthy()
 })
 
 it("shows the empty state when there is nothing", () => {

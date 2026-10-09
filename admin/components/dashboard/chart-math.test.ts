@@ -13,6 +13,16 @@ describe("gaugeSummary", () => {
     expect(summary.ratio).toBeCloseTo(0.41)
   })
 
+  it("headlines the part it is told to", () => {
+    const parts = [
+      { key: "done", label: "Complete", value: 41, tone: "solid" },
+      { key: "work", label: "Needs work", value: 30, tone: "dark" },
+      { key: "missing", label: "Missing", value: 29, tone: "hatched" },
+    ] as const
+    expect(gaugeSummary(parts, "missing").ratio).toBeCloseTo(0.29)
+    expect(gaugeSummary(parts, "nope").ratio).toBe(0)
+  })
+
   it("treats negative or missing values as zero", () => {
     const summary = gaugeSummary([
       { key: "a", label: "A", value: -3, tone: "solid" },

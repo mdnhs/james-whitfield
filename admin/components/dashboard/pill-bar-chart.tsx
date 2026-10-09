@@ -16,6 +16,9 @@ import { ChartContainer, type ChartConfig } from "@/components/ui/chart"
 import { peakIndex } from "./chart-math"
 import { formatNumber } from "./format"
 
+// At least 1, so an all-zero week keeps a real scale instead of [0, 0].
+const maxDomain = (dataMax: number) => Math.max(1, dataMax)
+
 export type PillBarDatum = {
   key: string
   label: string
@@ -39,7 +42,10 @@ export function PillBarChart({
 }) {
   const hatchId = `hatch-${useId().replace(/:/g, "")}`
   const reduced = useReducedMotion()
-  const peak = peakIndex(data.map((datum) => datum.current))
+  const currents = data.map((datum) => datum.current)
+  // A quiet week (all zeros) has no busiest day, so no tag.
+  const busiest = peakIndex(currents)
+  const peak = (currents[busiest] ?? 0) > 0 ? busiest : -1
   const config = {
     current: { label: currentLabel, color: "var(--chart-2)" },
     previous: { label: previousLabel, color: "var(--hatch)" },
@@ -77,7 +83,7 @@ export function PillBarChart({
             </pattern>
           </defs>
           {/* Tallest bar meets the top margin, which the value tag uses. */}
-          <YAxis hide domain={[0, "dataMax"]} />
+          <YAxis hide domain={[0, maxDomain]} />
           <XAxis
             dataKey="label"
             tickLine={false}

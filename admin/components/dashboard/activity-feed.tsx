@@ -29,11 +29,15 @@ export function ActivityFeed({
   now,
   emptyTitle,
   emptyDescription,
+  label = "Recent activity",
 }: {
   entries: readonly ActivityEntry[]
   now: number
   emptyTitle: string
   emptyDescription: string
+  // Names the scrollable list, which takes keyboard focus once it overflows
+  // so it can be scrolled without a mouse.
+  label?: string
 }) {
   if (entries.length === 0) {
     return <EmptyState title={emptyTitle} description={emptyDescription} />
@@ -41,7 +45,10 @@ export function ActivityFeed({
   // Taller on phones, where descriptions wrap; the right padding keeps the
   // pills clear of the scrollbar.
   return (
-    <ScrollArea className="max-h-[520px] sm:max-h-[360px]">
+    <ScrollArea
+      className="max-h-130 sm:max-h-90"
+      viewportProps={{ role: "region", "aria-label": label }}
+    >
       <ItemGroup className="gap-1 pr-3">
         {entries.map((entry) => (
           <Item key={entry.id} role="listitem" size="sm" className="px-0">

@@ -5,17 +5,26 @@ export type GaugePart = {
   tone: "solid" | "dark" | "hatched"
 }
 
-// The gauge's centred percentage is the first segment's share.
-export function gaugeSummary(parts: readonly GaugePart[]) {
+// `ratio` is the headline part's share of the total: the part whose key is
+// `headlineKey`, or the first part when no key is given. An empty gauge (or
+// an unknown key) has a ratio of 0, never NaN.
+export function gaugeSummary(
+  parts: readonly GaugePart[],
+  headlineKey?: string
+) {
   const clean = parts.map((part) => ({
     ...part,
     value: Number.isFinite(part.value) ? Math.max(0, part.value) : 0,
   }))
   const total = clean.reduce((sum, part) => sum + part.value, 0)
+  const headline =
+    headlineKey === undefined
+      ? clean[0]
+      : clean.find((part) => part.key === headlineKey)
   return {
     parts: clean,
     total,
-    ratio: total === 0 ? 0 : (clean[0]?.value ?? 0) / total,
+    ratio: total === 0 ? 0 : (headline?.value ?? 0) / total,
   }
 }
 

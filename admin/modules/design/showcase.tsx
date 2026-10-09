@@ -121,6 +121,7 @@ export function Showcase() {
               title="Content health"
               parts={SAMPLE_CONTENT_HEALTH}
               centerLabel="Complete"
+              headlineKey="complete"
             />
           </DashboardCard>
         </div>

@@ -7,11 +7,13 @@ vi.mock("next/cache", async (importOriginal) => ({
 }))
 
 import { ROLE_NAMES, type RoleName } from "@/lib/auth/permissions"
+import { app } from "@/server/api/app"
 import { closeDb } from "@/server/db/client"
 
 import {
   adminRequest,
   createUser,
+  ORIGIN,
   signIn,
   signInWithTwoFactor,
 } from "../helpers/auth"
@@ -302,5 +304,135 @@ describe.each(ROLE_NAMES)("collections routes for %s", (role) => {
       body,
     })
     expect(response.status).toBe(expected.write)
+  })
+})
+
+// docs/brief.md §7.2 globals write rows (contact is globals.update:
+// owner/admin/editor). Revision list is a read; restore is an update. 404 on
+// restore means "past can(), no such version".
+const GLOBALS_WRITER = { revisions: 200, put: 200, restore: 404 }
+const GLOBALS_WRITE: Record<
+  RoleName,
+  { revisions: number; put: number; restore: number }
+> = {
+  owner: GLOBALS_WRITER,
+  admin: GLOBALS_WRITER,
+  editor: GLOBALS_WRITER,
+  author: { revisions: 403, put: 403, restore: 403 },
+  marketer: { revisions: 200, put: 403, restore: 403 },
+  intake: { revisions: 403, put: 403, restore: 403 },
+  viewer: { revisions: 200, put: 403, restore: 403 },
+}
+
+describe.each(ROLE_NAMES)("globals write routes for %s", (role) => {
+  const expected = GLOBALS_WRITE[role]
+
+  it(`GET /globals/contact/revisions → ${expected.revisions}`, async () => {
+    const response = await adminRequest(
+      "/globals/contact/revisions",
+      await cookieFor(role)
+    )
+    expect(response.status).toBe(expected.revisions)
+  })
+
+  it(`PUT /globals/contact → ${expected.put}`, async () => {
+    const response = await adminRequest(
+      "/globals/contact",
+      await cookieFor(role),
+      { method: "PUT", body: { version: 0, value: {} } }
+    )
+    expect(response.status).toBe(expected.put)
+  })
+
+  it(`POST /globals/contact/revisions/:rev/restore → ${expected.restore}`, async () => {
+    const response = await adminRequest(
+      `/globals/contact/revisions/${crypto.randomUUID()}/restore`,
+      await cookieFor(role),
+      { method: "POST", body: { version: 0 } }
+    )
+    expect(response.status).toBe(expected.restore)
+  })
+})
+
+// POST /collections/:name (docs/brief.md §7.2 collection.create). 400 means
+// "past can(), empty body fails validation".
+describe.each(ROLE_NAMES)("collection create for %s", (role) => {
+  const status = ["owner", "admin", "editor"].includes(role) ? 400 : 403
+  it(`POST /collections/faqs → ${status}`, async () => {
+    const response = await adminRequest(
+      "/collections/faqs",
+      await cookieFor(role),
+      { method: "POST", body: {} }
+    )
+    expect(response.status).toBe(status)
+  })
+})
+
+// docs/brief.md §7.2 media rows. 404 means "past can(), no such file"; 400
+// means "past can(), no file in the form". The author's "own" limit is
+// covered in media.test.ts, where real files exist.
+const MEDIA_FULL = { list: 200, upload: 400, update: 404, remove: 404 }
+const MEDIA: Record<
+  RoleName,
+  { list: number; upload: number; update: number; remove: number }
+> = {
+  owner: MEDIA_FULL,
+  admin: MEDIA_FULL,
+  editor: MEDIA_FULL,
+  author: { list: 200, upload: 400, update: 404, remove: 403 },
+  marketer: { list: 200, upload: 400, update: 404, remove: 403 },
+  intake: { list: 403, upload: 403, update: 403, remove: 403 },
+  viewer: { list: 403, upload: 403, update: 403, remove: 403 },
+}
+
+describe.each(ROLE_NAMES)("media routes for %s", (role) => {
+  const missing = crypto.randomUUID()
+  const expected = MEDIA[role]
+  const emptyForm = async (path: string) =>
+    app.request(`/api/v1/admin${path}`, {
+      method: "POST",
+      headers: { cookie: await cookieFor(role), origin: ORIGIN },
+      body: new FormData(),
+    })
+
+  it(`GET /media → ${expected.list}`, async () => {
+    const response = await adminRequest("/media", await cookieFor(role))
+    expect(response.status).toBe(expected.list)
+  })
+
+  it(`GET /media/:id/usage → ${expected.list === 200 ? 404 : 403}`, async () => {
+    const response = await adminRequest(
+      `/media/${missing}/usage`,
+      await cookieFor(role)
+    )
+    expect(response.status).toBe(expected.list === 200 ? 404 : 403)
+  })
+
+  it(`POST /media → ${expected.upload}`, async () => {
+    expect((await emptyForm("/media")).status).toBe(expected.upload)
+  })
+
+  it(`POST /media/:id/replace → ${expected.upload === 400 ? 400 : 403}`, async () => {
+    expect((await emptyForm(`/media/${missing}/replace`)).status).toBe(
+      expected.upload
+    )
+  })
+
+  it(`PATCH /media/:id → ${expected.update}`, async () => {
+    const response = await adminRequest(
+      `/media/${missing}`,
+      await cookieFor(role),
+      { method: "PATCH", body: { alt: "A calm room" } }
+    )
+    expect(response.status).toBe(expected.update)
+  })
+
+  it(`DELETE /media/:id → ${expected.remove}`, async () => {
+    const response = await adminRequest(
+      `/media/${missing}`,
+      await cookieFor(role),
+      { method: "DELETE" }
+    )
+    expect(response.status).toBe(expected.remove)
   })
 })

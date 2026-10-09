@@ -130,6 +130,46 @@ describe("media API", () => {
     )
   })
 
+  // docs/brief.md §7.2: media.update is "own" for authors, delete is not theirs.
+  it("lets an author replace only their own file and never delete", async () => {
+    const editor = await cookieFor("editor")
+    const author = await cookieFor("author")
+    const marketer = await cookieFor("marketer")
+    const theirs = await (await upload(editor, await png(), "a.png")).json()
+    const mine = await (
+      await upload(author, await png(), "b-different.png")
+    ).json()
+    expect(
+      (
+        await upload(
+          author,
+          await png(),
+          "r.png",
+          `/media/${theirs.id}/replace`
+        )
+      ).status
+    ).toBe(403)
+    expect(
+      (await upload(author, await png(), "r2.png", `/media/${mine.id}/replace`))
+        .status
+    ).toBe(200)
+    for (const id of [mine.id, theirs.id]) {
+      for (const cookie of [author, marketer]) {
+        expect(
+          (await adminRequest(`/media/${id}`, cookie, { method: "DELETE" }))
+            .status
+        ).toBe(403)
+      }
+    }
+    expect(
+      (await adminRequest(`/media/${theirs.id}/usage`, author)).status
+    ).toBe(200)
+    expect(
+      (await adminRequest(`/media/${mine.id}`, editor, { method: "DELETE" }))
+        .status
+    ).toBe(200)
+  })
+
   it("replaces the file but keeps the id", async () => {
     const cookie = await cookieFor("editor")
     const item = await (await upload(cookie, await png(), "a.png")).json()

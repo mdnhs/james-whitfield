@@ -12,6 +12,12 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Local tooling output and editor worktrees:
+    ".kilo/**",
+    "dist/**",
+    "playwright-report/**",
+    "test-results/**",
+    "next-env.d.ts",
   ]),
 ]);
 

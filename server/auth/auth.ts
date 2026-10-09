@@ -8,6 +8,7 @@ import { ac, roles } from "@/lib/auth/permissions"
 import { getDb } from "@/server/db/client"
 import * as schema from "@/server/db/schema"
 import { getEnv } from "@/server/env"
+import { audit } from "@/server/lib/audit"
 import { deliverResetEmail } from "./email"
 
 export function buildAuth() {
@@ -39,6 +40,38 @@ export function buildAuth() {
       updateAge: 60 * 60 * 24,
       // Cheap reads for the UI. Admin checks bypass it (disableCookieCache).
       cookieCache: { enabled: true, maxAge: 5 * 60 },
+    },
+    databaseHooks: {
+      session: {
+        create: {
+          // Sign-ins and impersonation starts land in the audit log.
+          after: async (created) => {
+            const impersonatedBy = (
+              created as { impersonatedBy?: string | null }
+            ).impersonatedBy
+            await audit(
+              {
+                userId: impersonatedBy ?? created.userId,
+                ip: created.ipAddress ?? null,
+                userAgent: created.userAgent ?? null,
+              },
+              impersonatedBy
+                ? {
+                    action: "auth.impersonate",
+                    entityType: "user",
+                    entityId: created.userId,
+                    summary: "Started a View-as session",
+                  }
+                : {
+                    action: "auth.sign_in",
+                    entityType: "user",
+                    entityId: created.userId,
+                    summary: "Signed in",
+                  }
+            )
+          },
+        },
+      },
     },
     rateLimit: {
       // On for staging and production. Local and E2E runs sign in many times.

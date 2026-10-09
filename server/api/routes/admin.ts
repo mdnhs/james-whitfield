@@ -3,6 +3,7 @@ import "server-only"
 import { Hono } from "hono"
 
 import { auditRoutes } from "@/server/modules/audit/routes"
+import { dashboardRoutes } from "@/server/modules/dashboard/routes"
 import { searchRoutes } from "@/server/modules/search/routes"
 import { meRoutes } from "@/server/modules/session/routes"
 import { usersRoutes } from "@/server/modules/users/routes"
@@ -18,5 +19,6 @@ export const adminRoutes = new Hono<AppEnv>()
   // it: its handler answers before this runs.
   .use(twoFactorComplete)
   .route("/search", searchRoutes)
+  .route("/dashboard", dashboardRoutes)
   .route("/audit", auditRoutes)
   .route("/users", usersRoutes)

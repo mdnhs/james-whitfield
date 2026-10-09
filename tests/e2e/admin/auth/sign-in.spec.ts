@@ -5,9 +5,13 @@ import {
   UNREACHABLE,
 } from "../../../../admin/modules/auth/auth-errors"
 import { E2E_ORIGIN } from "../../fixtures/env"
-import { E2E_USERS, signIn } from "../../support/admin"
+import { E2E_USERS, signIn, signOut } from "../../support/admin"
 
-const welcome = (name: string) => ({ name: `Welcome, ${name}` })
+// The dashboard greets by first name, by the time of day in Ireland.
+const welcome = (name: string) => ({
+  level: 1 as const,
+  name: new RegExp(`^Good (morning|afternoon|evening), ${name.split(" ")[0]}$`),
+})
 
 test("a signed-out visit to /admin goes through sign-in and back", async ({
   page,
@@ -34,7 +38,7 @@ test("signing out returns to sign-in and the panel is gated again", async ({
 }) => {
   await page.goto("/admin/sign-in")
   await signIn(page, E2E_USERS.editor)
-  await page.getByRole("button", { name: "Sign out" }).click()
+  await signOut(page)
   await expect(page).toHaveURL(/\/admin\/sign-in/)
   await page.goto("/admin")
   await expect(page).toHaveURL(/\/admin\/sign-in/)
@@ -46,7 +50,7 @@ test("signing out and straight back in works", async ({ page }) => {
   await page.goto("/admin/sign-in")
   await signIn(page, E2E_USERS.editor)
   await expect(page).toHaveURL(/\/admin$/)
-  await page.getByRole("button", { name: "Sign out" }).click()
+  await signOut(page)
   await expect(page).toHaveURL(/\/admin\/sign-in/)
   await signIn(page, E2E_USERS.editor)
   await expect(page).toHaveURL(/\/admin$/)

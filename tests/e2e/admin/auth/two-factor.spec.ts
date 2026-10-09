@@ -1,7 +1,12 @@
 import { expect, test, type Page } from "@playwright/test"
 import { TOTP } from "otpauth"
 
-import { E2E_USERS, PASSWORD, signIn } from "../../support/admin"
+import {
+  E2E_USERS,
+  PASSWORD,
+  signIn,
+  signOut as signOutFromMenu,
+} from "../../support/admin"
 import { resetTwoFactor } from "../../support/db"
 
 const SETUP = /\/admin\/two-factor-setup$/
@@ -15,7 +20,7 @@ async function signInFresh(page: Page, user: { email: string }) {
 }
 
 async function signOut(page: Page) {
-  await page.getByRole("button", { name: "Sign out" }).click()
+  await signOutFromMenu(page)
   await expect(page).toHaveURL(/\/admin\/sign-in/)
 }
 
@@ -54,7 +59,10 @@ test.describe("an owner who sets up two-factor", () => {
     await page.getByRole("button", { name: "I've saved them" }).click()
     await expect(page).toHaveURL(PANEL)
     await expect(
-      page.getByRole("heading", { name: `Welcome, ${user.name}` })
+      page.getByRole("heading", {
+        level: 1,
+        name: /^Good (morning|afternoon|evening), Tess$/,
+      })
     ).toBeVisible()
     expect((await page.request.get("/api/v1/admin/audit")).status()).toBe(200)
 
@@ -87,7 +95,10 @@ test.describe("an owner who sets up two-factor", () => {
     await signIn(page, user)
     await expect(page).toHaveURL(PANEL)
     await expect(
-      page.getByRole("heading", { name: `Welcome, ${user.name}` })
+      page.getByRole("heading", {
+        level: 1,
+        name: /^Good (morning|afternoon|evening), Tess$/,
+      })
     ).toBeVisible()
   })
 
@@ -114,7 +125,9 @@ test("an owner without two-factor cannot reach the panel or the admin API", asyn
     await page.goto(path)
     await expect(page).toHaveURL(SETUP)
   }
-  await expect(page.getByRole("heading", { name: /Welcome/ })).toHaveCount(0)
+  await expect(
+    page.getByRole("heading", { name: /^Good (morning|afternoon|evening)/ })
+  ).toHaveCount(0)
 
   // The API refuses on its own, whatever the client does.
   const audit = await page.request.get("/api/v1/admin/audit")

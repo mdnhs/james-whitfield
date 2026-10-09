@@ -39,7 +39,11 @@ test("a forgotten password is reset from the emailed link", async ({
 
   await signIn(page, user, NEW_PASSWORD)
   await expect(
-    page.getByRole("heading", { name: `Welcome, ${user.name}` })
+    // The dashboard greets by first name, by the time of day in Ireland.
+    page.getByRole("heading", {
+      level: 1,
+      name: /^Good (morning|afternoon|evening), Rita$/,
+    })
   ).toBeVisible()
 })
 

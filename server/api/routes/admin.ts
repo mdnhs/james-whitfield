@@ -5,6 +5,7 @@ import { Hono } from "hono"
 import { accountRoutes } from "@/server/modules/account/routes"
 import { auditRoutes } from "@/server/modules/audit/routes"
 import { dashboardRoutes } from "@/server/modules/dashboard/routes"
+import { globalsRoutes } from "@/server/modules/globals/routes"
 import { pagesRoutes } from "@/server/modules/pages/routes"
 import { previewRoutes } from "@/server/modules/preview/routes"
 import { searchRoutes } from "@/server/modules/search/routes"
@@ -23,6 +24,7 @@ export const adminRoutes = new Hono<AppEnv>()
   .use(twoFactorComplete)
   .route("/preview", previewRoutes)
   .route("/pages", pagesRoutes)
+  .route("/globals", globalsRoutes)
   .route("/search", searchRoutes)
   .route("/dashboard", dashboardRoutes)
   .route("/audit", auditRoutes)

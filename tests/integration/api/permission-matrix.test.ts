@@ -226,3 +226,32 @@ describe("can() without a session", () => {
     expect((await adminRequest(path, "")).status).toBe(401)
   })
 })
+
+// docs/brief.md §6.4/§7.2 globals rows, one per permission family: identity
+// and notifications are settings.read (owner/admin), contact is globals.read,
+// seo is seo.read. 200 = past can(); the body is a defaults document.
+const GLOBALS_READ: Record<
+  RoleName,
+  { site: number; notifications: number; contact: number; seo: number }
+> = {
+  owner: { site: 200, notifications: 200, contact: 200, seo: 200 },
+  admin: { site: 200, notifications: 200, contact: 200, seo: 200 },
+  editor: { site: 403, notifications: 403, contact: 200, seo: 200 },
+  author: { site: 403, notifications: 403, contact: 403, seo: 403 },
+  marketer: { site: 403, notifications: 403, contact: 200, seo: 200 },
+  intake: { site: 403, notifications: 403, contact: 403, seo: 403 },
+  viewer: { site: 403, notifications: 403, contact: 200, seo: 200 },
+}
+
+describe.each(ROLE_NAMES)("globals read routes for %s", (role) => {
+  it.each(["site", "notifications", "contact", "seo"] as const)(
+    "GET /globals/%s",
+    async (key) => {
+      const response = await adminRequest(
+        `/globals/${key}`,
+        await cookieFor(role)
+      )
+      expect(response.status).toBe(GLOBALS_READ[role][key])
+    }
+  )
+})

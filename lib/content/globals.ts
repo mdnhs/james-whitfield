@@ -358,5 +358,13 @@ export function parseGlobal<K extends GlobalKey>(
   key: K,
   value: unknown
 ): GlobalValue<K> {
-  return GLOBALS[key].parse(value ?? {}) as GlobalValue<K>
+  const parsed = GLOBALS[key].safeParse(value ?? {})
+  if (parsed.success) return parsed.data as GlobalValue<K>
+  // Writes are validated, so this is drift (a hand edit, a schema change).
+  // Defaults keep the site up; the admin shows them and the next save heals.
+  console.warn(
+    `[content] global "${key}" is invalid; using defaults`,
+    z.prettifyError(parsed.error)
+  )
+  return GLOBALS[key].parse({}) as GlobalValue<K>
 }

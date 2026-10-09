@@ -1,7 +1,7 @@
 // lib/content/globals.test.ts
-import { describe, expect, it } from "vitest"
+import { describe, expect, it, vi } from "vitest"
 
-import { GLOBALS, parseGlobal } from "./globals"
+import { GLOBALS, parseGlobal, type GlobalKey } from "./globals"
 
 describe("globals", () => {
   it("every key parses an empty document to safe defaults", () => {
@@ -15,18 +15,16 @@ describe("globals", () => {
   })
   it("theme accepts hex colours only (it is written into a <style> tag)", () => {
     expect(() =>
-      parseGlobal("theme", { site: { brand: "#336060" } })
+      GLOBALS.theme.parse({ site: { brand: "#336060" } })
     ).not.toThrow()
-    expect(() => parseGlobal("theme", { site: { brand: "red" } })).toThrow()
+    expect(() => GLOBALS.theme.parse({ site: { brand: "red" } })).toThrow()
     expect(() =>
-      parseGlobal("theme", { site: { brand: "#000000;}</style>" } })
+      GLOBALS.theme.parse({ site: { brand: "#000000;}</style>" } })
     ).toThrow()
   })
   it("rejects a malformed E.164 number and a title template without %s", () => {
-    expect(() =>
-      parseGlobal("contact", { phone: { e164: "01 234" } })
-    ).toThrow()
-    expect(() => parseGlobal("seo", { titleTemplate: "Magda" })).toThrow()
+    expect(() => GLOBALS.contact.parse({ phone: { e164: "01 234" } })).toThrow()
+    expect(() => GLOBALS.seo.parse({ titleTemplate: "Magda" })).toThrow()
   })
   it("takes https-only urls for social and sameAs, hex-only admin theme", () => {
     for (const url of [
@@ -35,20 +33,36 @@ describe("globals", () => {
       "data:text/html,x",
     ]) {
       expect(
-        () => parseGlobal("site", { social: [{ label: "L", url }] }),
+        () => GLOBALS.site.parse({ social: [{ label: "L", url }] }),
         url
       ).toThrow()
       expect(
-        () => parseGlobal("seo", { business: { sameAs: [url] } }),
+        () => GLOBALS.seo.parse({ business: { sameAs: [url] } }),
         url
       ).toThrow()
     }
     expect(() =>
-      parseGlobal("site", { social: [{ label: "L", url: "https://x.ie/a" }] })
+      GLOBALS.site.parse({ social: [{ label: "L", url: "https://x.ie/a" }] })
     ).not.toThrow()
-    expect(() => parseGlobal("theme", { admin: { a: "red" } })).toThrow()
-    expect(() =>
-      parseGlobal("theme", { admin: { a: "#aabbcc" } })
-    ).not.toThrow()
+    expect(() => GLOBALS.theme.parse({ admin: { a: "red" } })).toThrow()
+    expect(() => GLOBALS.theme.parse({ admin: { a: "#aabbcc" } })).not.toThrow()
+  })
+})
+
+describe("parseGlobal fallbacks", () => {
+  it.each(Object.keys(GLOBALS) as GlobalKey[])(
+    "%s has complete defaults",
+    (key) => {
+      expect(GLOBALS[key].safeParse({}).success).toBe(true)
+    }
+  )
+  // One hand-edited row must not take the whole site down (P3 carry).
+  it("falls back to the defaults for an invalid stored value", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
+    expect(parseGlobal("navigation", { links: "nope" })).toEqual(
+      GLOBALS.navigation.parse({})
+    )
+    expect(warn).toHaveBeenCalledOnce()
+    warn.mockRestore()
   })
 })

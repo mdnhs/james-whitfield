@@ -93,7 +93,7 @@ export function StorySection() {
               </span>
             </div>
             <span aria-hidden className="h-5.5 w-px bg-[#cfcfcf]" />
-            <span className="text-base leading-[1.5] text-[#525252]">
+            <span className="text-base leading-[1.5] text-text-muted">
               {role}
             </span>
           </div>

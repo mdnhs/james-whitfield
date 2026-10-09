@@ -2,7 +2,6 @@ import {
   DM_Mono,
   Fraunces,
   Geist,
-  Geist_Mono,
   IBM_Plex_Mono,
   Inter,
   Plus_Jakarta_Sans,
@@ -13,12 +12,6 @@ import { cn } from "@/lib/utils"
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-sans",
-  display: "swap",
-})
-
-const fontMono = Geist_Mono({
-  subsets: ["latin"],
-  variable: "--font-mono",
   display: "swap",
 })
 
@@ -36,12 +29,14 @@ const fraunces = Fraunces({
 })
 
 const jakarta = Plus_Jakarta_Sans({
+  preload: false,
   subsets: ["latin"],
   variable: "--font-plus-jakarta",
   display: "swap",
 })
 
 const dmMono = DM_Mono({
+  preload: false,
   subsets: ["latin"],
   weight: "400",
   variable: "--font-dm-mono-family",
@@ -49,6 +44,7 @@ const dmMono = DM_Mono({
 })
 
 const plexMono = IBM_Plex_Mono({
+  preload: false,
   subsets: ["latin"],
   weight: ["400", "600"],
   variable: "--font-ibm-plex-mono",
@@ -59,7 +55,6 @@ const plexMono = IBM_Plex_Mono({
 // same fonts and base classes.
 export const siteFontClassName = cn(
   "antialiased",
-  fontMono.variable,
   geist.variable,
   fraunces.variable,
   jakarta.variable,

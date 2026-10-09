@@ -30,7 +30,7 @@ export function CredentialsSection() {
             </h2>
             <p
               data-motion="rise"
-              className="max-w-111.5 text-base leading-[1.6] text-[#525252]"
+              className="max-w-111.5 text-base leading-[1.6] text-text-muted"
             >
               {subtitle}
             </p>
@@ -62,10 +62,10 @@ export function CredentialsSection() {
                 {year}
               </span>
               <div className="flex min-w-0 flex-1 flex-col gap-1.5 transition-transform duration-500 ease-out group-hover:translate-x-1.5">
-                <h3 className="text-lg leading-[1.3] font-semibold text-[#0c0c0c] sm:text-xl">
+                <h3 className="text-lg leading-[1.3] font-semibold text-text-strong sm:text-xl">
                   {title}
                 </h3>
-                <p className="text-[15px] leading-[1.5] text-[#525252] sm:text-base">
+                <p className="text-[15px] leading-[1.5] text-text-muted sm:text-base">
                   {issuer}
                 </p>
               </div>

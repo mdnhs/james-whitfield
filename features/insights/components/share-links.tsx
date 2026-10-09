@@ -3,7 +3,7 @@
 import { useState } from "react"
 
 const button =
-  "flex h-10 cursor-pointer items-center justify-center rounded-full border border-[#dfe2d8] px-4 text-sm leading-[1.5] font-medium text-ink-muted transition-colors duration-300 outline-none hover:border-pine/40 hover:text-ink focus-visible:ring-3 focus-visible:ring-clay/50"
+  "flex h-10 cursor-pointer items-center justify-center rounded-full border border-line px-4 text-sm leading-[1.5] font-medium text-ink-muted transition-colors duration-300 outline-none hover:border-pine/40 hover:text-ink focus-visible:ring-3 focus-visible:ring-clay/50"
 
 // Copy the article link, or open a pre-filled email with it.
 export function ShareLinks({ title }: { title: string }) {

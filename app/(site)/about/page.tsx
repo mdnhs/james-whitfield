@@ -54,11 +54,7 @@ export default function AboutPage() {
         <TestimonialsSection variant="page" />
       </StackCard>
       <StackCard last>
-        <EnterpriseSection
-          id="next-step"
-          content={ABOUT_CTA}
-          tint="bg-pine/70"
-        />
+        <EnterpriseSection id="next-step" content={ABOUT_CTA} tint={0.7} />
       </StackCard>
       <JourneyRail chapters={CHAPTERS} />
       <PageMotion />

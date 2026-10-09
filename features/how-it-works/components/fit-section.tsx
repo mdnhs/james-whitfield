@@ -56,7 +56,7 @@ export function FitSection() {
           </h2>
           <p
             data-motion="rise"
-            className="max-w-113.5 text-base leading-[1.6] text-[#525252]"
+            className="max-w-113.5 text-base leading-[1.6] text-text-muted"
           >
             {subtitle}
           </p>
@@ -83,16 +83,16 @@ export function FitSection() {
                 className="group bg-stone transition-colors duration-300 hover:bg-mist/60"
               >
                 <td
-                  className={`border-y border-l border-[#f2f2f2] p-9 pr-0 ${i === 0 ? "rounded-tl-3xl" : ""} ${i === rows.length - 1 ? "rounded-bl-3xl" : ""}`}
+                  className={`border-y border-l border-line-faint p-9 pr-0 ${i === 0 ? "rounded-tl-3xl" : ""} ${i === rows.length - 1 ? "rounded-bl-3xl" : ""}`}
                 >
                   <Item good>{yes}</Item>
                 </td>
-                <td aria-hidden className="w-4 border-y border-[#f2f2f2]" />
-                <td aria-hidden className="border-y border-[#f2f2f2] py-6">
+                <td aria-hidden className="w-4 border-y border-line-faint" />
+                <td aria-hidden className="border-y border-line-faint py-6">
                   <span className={`block h-full min-h-8 ${divider}`} />
                 </td>
                 <td
-                  className={`border-y border-r border-[#f2f2f2] p-9 pl-14 ${i === 0 ? "rounded-tr-3xl" : ""} ${i === rows.length - 1 ? "rounded-br-3xl" : ""}`}
+                  className={`border-y border-r border-line-faint p-9 pl-14 ${i === 0 ? "rounded-tr-3xl" : ""} ${i === rows.length - 1 ? "rounded-br-3xl" : ""}`}
                 >
                   <Item good={false}>{no}</Item>
                 </td>
@@ -115,7 +115,7 @@ export function FitSection() {
                 {list.items.map((item) => (
                   <li
                     key={item}
-                    className="border border-[#f2f2f2] bg-stone p-6"
+                    className="border border-line-faint bg-stone p-6"
                   >
                     <Item good={n === 0}>{item}</Item>
                   </li>

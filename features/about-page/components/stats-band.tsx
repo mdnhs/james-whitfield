@@ -19,9 +19,9 @@ export function StatsBand() {
                 // Rules sit between columns: every second item on mobile,
                 // every item after the first on desktop.
                 i % 2 === 1
-                  ? "flex flex-col gap-2 border-l border-[#d8dccf] px-5 py-2 lg:px-8"
+                  ? "flex flex-col gap-2 border-l border-line-rule px-5 py-2 lg:px-8"
                   : i > 0
-                    ? "flex flex-col gap-2 py-2 pr-5 lg:border-l lg:border-[#d8dccf] lg:px-8"
+                    ? "flex flex-col gap-2 py-2 pr-5 lg:border-l lg:border-line-rule lg:px-8"
                     : "flex flex-col gap-2 py-2 pr-5 lg:pr-8"
               }
             >

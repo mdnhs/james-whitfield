@@ -1,3 +1,5 @@
+import type { IconName } from "@/lib/icons"
+
 export const ABOUT_HERO = {
   title: "About",
   subtitle: "The person, the practice and the principles behind every session.",
@@ -30,17 +32,17 @@ export const ABOUT_APPROACH = {
     "Whatever brings you here, the way we work together stays consistent calm, structured and grounded in evidence.",
   principles: [
     {
-      icon: "/images/about/icon-evidence.svg",
+      icon: "evidence" as IconName,
       title: "Evidence over mysticism",
       body: "Every technique is grounded in clinical research on attention, memory and neuroplasticity. You will always understand what we are doing and why.",
     },
     {
-      icon: "/images/about/icon-control.svg",
+      icon: "control" as IconName,
       title: "You stay in control",
       body: "Hypnosis is a state of focused attention, not sleep. You are aware, safe and in charge throughout — nothing happens without your consent.",
     },
     {
-      icon: "/images/about/icon-real-life.svg",
+      icon: "real-life" as IconName,
       title: "Built for real life",
       body: "Sessions end with practical tools — self-hypnosis recordings, reframes and small daily practices — so progress holds outside the room.",
     },

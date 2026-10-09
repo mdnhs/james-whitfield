@@ -94,7 +94,7 @@ export function ArticleBody({
   return (
     <section aria-label="Article" className="bg-white py-20 lg:py-30">
       <Container className="flex flex-col gap-16 lg:flex-row lg:items-start lg:gap-16 xl:gap-28">
-        <aside className="order-last flex shrink-0 flex-col gap-8 border-t border-[#e7e9e0] pt-10 lg:sticky lg:top-28 lg:order-first lg:w-60 lg:border-0 lg:pt-2">
+        <aside className="order-last flex shrink-0 flex-col gap-8 border-t border-line-soft pt-10 lg:sticky lg:top-28 lg:order-first lg:w-60 lg:border-0 lg:pt-2">
           <div data-motion="rise" className="flex items-center gap-3">
             <Image
               src={author.avatar}
@@ -104,7 +104,7 @@ export function ArticleBody({
               className="size-12 shrink-0 rounded-full object-cover"
             />
             <div className="flex flex-col">
-              <span className="text-xs leading-[1.5] tracking-[0.08em] text-[#8a8f88] uppercase">
+              <span className="text-xs leading-[1.5] tracking-[0.08em] text-text-subtle uppercase">
                 Written by
               </span>
               <span className="font-display text-xl leading-[1.3] font-semibold text-forest [font-variation-settings:'SOFT'_0,'WONK'_1]">
@@ -113,7 +113,7 @@ export function ArticleBody({
             </div>
           </div>
           <div data-motion="rise" className="flex flex-col gap-3">
-            <span className="text-xs leading-[1.5] tracking-[0.08em] text-[#8a8f88] uppercase">
+            <span className="text-xs leading-[1.5] tracking-[0.08em] text-text-subtle uppercase">
               Share
             </span>
             <ShareLinks title={title} />

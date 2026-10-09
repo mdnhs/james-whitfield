@@ -1,11 +1,11 @@
+import type { IconName } from "@/lib/icons"
+
 export const SERVICES_HERO = {
   title: "Services",
   subtitle: "Hypnotherapy and coaching shaped around where you are right now.",
 }
 
-export type Service = { icon: string; title: string; body: string }
-
-const icon = (name: string) => `/images/services/icon-${name}.svg`
+export type Service = { icon: IconName; title: string; body: string }
 
 export const SERVICES = {
   eyebrow: "What I Help With",
@@ -16,32 +16,32 @@ export const SERVICES = {
   more: { label: "Learn more  →", href: "#formats" },
   items: [
     {
-      icon: icon("anxiety"),
+      icon: "anxiety",
       title: "Anxiety & Stress",
       body: "Calm an over-active stress response and build a steadier baseline for everyday pressure.",
     },
     {
-      icon: icon("confidence"),
+      icon: "confidence",
       title: "Confidence & Self-Belief",
       body: "Quieten the inner critic and replace old self-limiting stories with grounded confidence.",
     },
     {
-      icon: icon("performance"),
+      icon: "performance",
       title: "Performance & Leadership",
       body: "Executive coaching for leaders who want clearer thinking and calmer decision-making.",
     },
     {
-      icon: icon("habits"),
+      icon: "habits",
       title: "Habits & Behaviour Change",
       body: "Break the loops that keep pulling you back — from smoking and snacking to scrolling.",
     },
     {
-      icon: icon("sleep"),
+      icon: "sleep",
       title: "Sleep & Rest",
       body: "Retrain the mind to switch off, using hypnotherapy and simple evening routines.",
     },
     {
-      icon: icon("workplace"),
+      icon: "workplace",
       title: "Workplace Wellbeing",
       body: "Workshops and coaching programmes that help teams handle pressure sustainably.",
     },

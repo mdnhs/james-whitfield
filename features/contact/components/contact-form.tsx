@@ -31,7 +31,7 @@ function validate(data: FormData): Errors {
 }
 
 const control =
-  "w-full rounded-xl border border-transparent bg-[#f8f9f5] px-4 text-sm leading-[1.5] text-ink outline-none transition-colors placeholder:text-[#8a8f88] hover:border-[#dfe2d8] focus:border-pine/40 focus:bg-white aria-invalid:border-clay/60"
+  "w-full rounded-xl border border-transparent bg-surface-soft px-4 text-sm leading-[1.5] text-ink outline-none transition-colors placeholder:text-text-subtle hover:border-line focus:border-pine/40 focus:bg-white aria-invalid:border-clay/60"
 
 function Label({
   htmlFor,
@@ -45,7 +45,7 @@ function Label({
   return (
     <label
       htmlFor={htmlFor}
-      className="text-sm leading-[1.5] font-medium text-[#0c0c0c]"
+      className="text-sm leading-[1.5] font-medium text-text-strong"
     >
       {children}
       {required && (
@@ -145,7 +145,7 @@ function EnquiryForm({ prefill }: { prefill: Prefill }) {
           {title}
         </h2>
         {!sent && (
-          <p className="text-sm leading-[1.5] text-[#525252]">
+          <p className="text-sm leading-[1.5] text-text-muted">
             Fields marked <span className="text-clay">*</span> are required.
           </p>
         )}
@@ -159,7 +159,7 @@ function EnquiryForm({ prefill }: { prefill: Prefill }) {
           <p className="text-xl leading-[1.4] font-semibold text-pine">
             {success.title}
           </p>
-          <p className="text-base leading-[1.6] text-[#525252]">
+          <p className="text-base leading-[1.6] text-text-muted">
             {success.body}
           </p>
           <button
@@ -235,7 +235,7 @@ function EnquiryForm({ prefill }: { prefill: Prefill }) {
                   onChange={() => clear("topic")}
                   className={cn(
                     control,
-                    "h-12 cursor-pointer appearance-none pr-10 invalid:text-[#8a8f88]"
+                    "h-12 cursor-pointer appearance-none pr-10 invalid:text-text-subtle"
                   )}
                   required
                   {...invalid("topic")}
@@ -262,7 +262,7 @@ function EnquiryForm({ prefill }: { prefill: Prefill }) {
           </div>
 
           <fieldset className="flex flex-col gap-2.5">
-            <legend className="mb-2.5 text-sm leading-[1.5] font-medium text-[#0c0c0c]">
+            <legend className="mb-2.5 text-sm leading-[1.5] font-medium text-text-strong">
               Preferred format
             </legend>
             <div className="flex flex-wrap gap-2.5">
@@ -277,7 +277,7 @@ function EnquiryForm({ prefill }: { prefill: Prefill }) {
                     }
                     className="peer sr-only"
                   />
-                  <span className="inline-flex rounded-full border border-[#dfe2d8] bg-white px-4.5 py-2.5 text-[14.5px] leading-[1.5] font-medium text-ink-muted/60 transition-colors duration-300 peer-checked:border-pine peer-checked:bg-pine peer-checked:text-cream peer-focus-visible:ring-3 peer-focus-visible:ring-clay/50 hover:border-pine/40">
+                  <span className="inline-flex rounded-full border border-line bg-white px-4.5 py-2.5 text-[14.5px] leading-[1.5] font-medium text-ink-muted/60 transition-colors duration-300 peer-checked:border-pine peer-checked:bg-pine peer-checked:text-cream peer-focus-visible:ring-3 peer-focus-visible:ring-clay/50 hover:border-pine/40">
                     {format}
                   </span>
                 </label>
@@ -315,7 +315,7 @@ function EnquiryForm({ prefill }: { prefill: Prefill }) {
                   className="pointer-events-none absolute top-1/2 left-1/2 -translate-1/2 opacity-0 transition-opacity peer-checked:opacity-100"
                 />
               </span>
-              <span className="text-sm leading-[1.5] text-[#525252]">
+              <span className="text-sm leading-[1.5] text-text-muted">
                 {consent}
               </span>
             </label>

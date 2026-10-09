@@ -1,4 +1,4 @@
-import Image from "next/image"
+import { Icon } from "@/components/icons/icon"
 
 import { Eyebrow } from "@/components/eyebrow"
 import { Container } from "@/components/layout/container"
@@ -26,7 +26,7 @@ export function ApproachSection() {
           </h2>
           <p
             data-motion="rise"
-            className="max-w-152 text-base leading-[1.6] text-[#525252]"
+            className="max-w-152 text-base leading-[1.6] text-text-muted"
           >
             {subtitle}
           </p>
@@ -44,13 +44,13 @@ export function ApproachSection() {
               className="relative flex flex-col gap-6 overflow-clip rounded-[20px] bg-stone p-6 lg:p-8"
             >
               <span className="flex self-start rounded-[14px] bg-mist p-3.5">
-                <Image src={icon} alt="" width={24} height={24} />
+                <Icon name={icon} className="text-pine" />
               </span>
               <div className="flex flex-col gap-3.5">
-                <h3 className="font-geist text-xl leading-[1.3] font-semibold text-[#0c0c0c] lg:text-2xl">
+                <h3 className="font-geist text-xl leading-[1.3] font-semibold text-text-strong lg:text-2xl">
                   {title}
                 </h3>
-                <p className="text-sm leading-[1.65] text-[#525252]">{body}</p>
+                <p className="text-sm leading-[1.65] text-text-muted">{body}</p>
               </div>
             </li>
           ))}

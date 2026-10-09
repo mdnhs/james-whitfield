@@ -39,7 +39,7 @@ export function FeaturedArticle() {
       <div className="flex min-w-0 flex-1 flex-col items-start gap-6">
         <div data-motion="rise" className="flex items-center gap-3">
           <CategoryTag className="h-7 px-3">Featured</CategoryTag>
-          <span className="text-sm leading-[1.5] text-[#525252]">
+          <span className="text-sm leading-[1.5] text-text-muted">
             {readTime(slug)}
           </span>
         </div>
@@ -57,7 +57,7 @@ export function FeaturedArticle() {
           </h2>
           <p
             data-motion="rise"
-            className="text-base leading-[1.61] tracking-[-0.16px] text-[#525252]"
+            className="text-base leading-[1.61] tracking-[-0.16px] text-text-muted"
           >
             {excerpt}
           </p>

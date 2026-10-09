@@ -118,7 +118,7 @@ function FilterBar({ state, update }: { state: State; update: Update }) {
   const active = state.category ? BY_SLUG.get(state.category) : ALL
 
   return (
-    <div className="flex flex-col gap-5 border-b border-[#e7e9e0] pb-7 lg:flex-row lg:items-center lg:justify-between">
+    <div className="flex flex-col gap-5 border-b border-line-soft pb-7 lg:flex-row lg:items-center lg:justify-between">
       <div
         role="group"
         aria-label="Filter by category"
@@ -150,7 +150,7 @@ function FilterBar({ state, update }: { state: State; update: Update }) {
         })}
       </div>
 
-      <label className="flex shrink-0 items-center gap-2 rounded-full border border-[#dfe2d8] px-4.5 py-2.75 transition-colors focus-within:border-pine/50">
+      <label className="flex shrink-0 items-center gap-2 rounded-full border border-line px-4.5 py-2.75 transition-colors focus-within:border-pine/50">
         <Image
           src="/images/insights/icon-search.svg"
           alt=""
@@ -166,7 +166,7 @@ function FilterBar({ state, update }: { state: State; update: Update }) {
             update({ q: event.target.value || null, page: null }, "replace")
           }
           placeholder="Search articles"
-          className="w-full bg-transparent text-base leading-[1.5] text-ink outline-none placeholder:text-[#8a8f88] lg:w-42.5"
+          className="w-full bg-transparent text-base leading-[1.5] text-ink outline-none placeholder:text-text-subtle lg:w-42.5"
         />
       </label>
     </div>
@@ -204,7 +204,7 @@ function useResults(state: State) {
 function Count({ state }: { state: State; update: Update }) {
   const { filtered, visible } = useResults(state)
   return (
-    <p aria-live="polite" className="text-base leading-[1.5] text-[#525252]">
+    <p aria-live="polite" className="text-base leading-[1.5] text-text-muted">
       Showing {visible.length} of {filtered.length}
     </p>
   )

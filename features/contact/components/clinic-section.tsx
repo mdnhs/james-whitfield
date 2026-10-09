@@ -30,7 +30,7 @@ export function ClinicSection() {
           </div>
           <p
             data-motion="rise"
-            className="max-w-118 text-base leading-[1.5] text-[#525252]"
+            className="max-w-118 text-base leading-[1.5] text-text-muted"
           >
             {subtitle}
           </p>
@@ -64,7 +64,7 @@ export function ClinicSection() {
             <p className="max-w-58 text-base leading-[1.6] text-white/80">
               {address}
             </p>
-            <span aria-hidden className="h-px w-full bg-[#e7e9e0]" />
+            <span aria-hidden className="h-px w-full bg-line-soft" />
             <p className="text-base leading-[1.6] text-white/80">{online}</p>
             <a
               href={directions.href}

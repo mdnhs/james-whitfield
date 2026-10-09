@@ -3,6 +3,7 @@ import Link from "next/link"
 
 import { Container } from "@/components/layout/container"
 import { buttonVariants } from "@/components/ui/button"
+import { tintStyle } from "@/lib/tint"
 import { cn } from "@/lib/utils"
 import enterpriseBg from "@/public/images/enterprise/enterprise-bg.png"
 import { ENTERPRISE_CONTENT } from "../data/enterprise-content"
@@ -20,11 +21,11 @@ type BandContent = {
 export function EnterpriseSection({
   id = "enterprise",
   content = ENTERPRISE_CONTENT,
-  tint = "bg-pine/90",
+  tint = 0.9,
 }: {
   id?: string
   content?: BandContent
-  tint?: string
+  tint?: number
 }) {
   const { eyebrow, title, bullets, cta } = content
 
@@ -43,15 +44,15 @@ export function EnterpriseSection({
           placeholder="blur"
           className="object-cover"
         />
-        <div className={cn("absolute inset-0", tint)} />
+        <div className="absolute inset-0" style={tintStyle(tint)} />
       </EnterpriseBackdrop>
 
       <Container className="relative flex flex-col items-center gap-7 text-center">
         <span
           data-motion="rise"
-          className="inline-flex h-8 items-center gap-1.5 rounded-full border-[0.8px] border-[#ececec] bg-white px-3.5 font-geist text-sm leading-4.5 tracking-[-0.28px] whitespace-nowrap text-[#315d44]"
+          className="inline-flex h-8 items-center gap-1.5 rounded-full border-[0.8px] border-line-neutral bg-white px-3.5 font-geist text-sm leading-4.5 tracking-[-0.28px] whitespace-nowrap text-moss"
         >
-          <span aria-hidden className="size-1 rounded-full bg-[#315d44]" />
+          <span aria-hidden className="size-1 rounded-full bg-moss" />
           {eyebrow}
         </span>
 

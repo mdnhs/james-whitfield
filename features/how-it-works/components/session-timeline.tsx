@@ -112,7 +112,7 @@ export function SessionTimeline() {
           </h2>
           <p
             data-motion="rise"
-            className="max-w-113.5 text-base leading-[1.6] text-[#525252]"
+            className="max-w-113.5 text-base leading-[1.6] text-text-muted"
           >
             {subtitle}
           </p>
@@ -161,7 +161,7 @@ export function SessionTimeline() {
                     <h3 className="text-2xl leading-[1.2] font-semibold tracking-[-0.28px] text-[#111] sm:text-[28px]">
                       {beat.title}
                     </h3>
-                    <p className="max-w-98.5 text-base leading-[1.6] text-[#525252]">
+                    <p className="max-w-98.5 text-base leading-[1.6] text-text-muted">
                       {beat.body}
                     </p>
                   </div>

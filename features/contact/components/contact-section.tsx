@@ -1,4 +1,4 @@
-import Image from "next/image"
+import { Icon } from "@/components/icons/icon"
 
 import { Eyebrow } from "@/components/eyebrow"
 import { Container } from "@/components/layout/container"
@@ -29,7 +29,7 @@ export function ContactSection() {
             </h2>
             <p
               data-motion="rise"
-              className="max-w-118 text-base leading-[1.6] text-[#525252]"
+              className="max-w-118 text-base leading-[1.6] text-text-muted"
             >
               {subtitle}
             </p>
@@ -43,13 +43,13 @@ export function ContactSection() {
               const body = (
                 <>
                   <span className="flex shrink-0 rounded-xl bg-mist p-3 transition-colors duration-300 group-hover:bg-brand-mint">
-                    <Image src={icon} alt="" width={22} height={22} />
+                    <Icon name={icon} className="text-pine" />
                   </span>
                   <span className="flex min-w-0 flex-col gap-0.5 leading-[1.5]">
                     <span className="text-xs tracking-[0.72px] text-clay uppercase">
                       {label}
                     </span>
-                    <span className="text-base font-medium whitespace-pre-wrap text-[#0c0c0c]">
+                    <span className="text-base font-medium whitespace-pre-wrap text-text-strong">
                       {value}
                     </span>
                   </span>

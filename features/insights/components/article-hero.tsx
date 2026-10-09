@@ -20,7 +20,7 @@ export function ArticleHero({
   return (
     <section
       aria-labelledby="article-heading"
-      className="relative flex min-h-svh w-full flex-col overflow-clip bg-[#0d120f] lg:min-h-190"
+      className="relative flex min-h-svh w-full flex-col overflow-clip bg-hero-base lg:min-h-190"
     >
       <div aria-hidden className="absolute inset-0">
         <div

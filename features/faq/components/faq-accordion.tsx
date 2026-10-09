@@ -30,7 +30,7 @@ export function FaqAccordion({ faqs }: { faqs: Faq[] }) {
           key={faq.question}
           value={i}
           data-motion="deal"
-          className="group rounded-md border border-[#e1dbd0] bg-[#fcfaf7] transition-colors data-open:bg-brand"
+          className="group rounded-md border border-[#e1dbd0] bg-surface-warm transition-colors data-open:bg-brand"
         >
           <Accordion.Header>
             <Accordion.Trigger className="flex w-full cursor-pointer items-center justify-between gap-4 rounded-md p-[23px] text-left text-base leading-[normal] font-semibold text-pine outline-none group-data-open:pb-3.5 group-data-open:text-white focus-visible:ring-3 focus-visible:ring-clay/50">

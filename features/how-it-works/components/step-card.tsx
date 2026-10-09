@@ -32,7 +32,7 @@ export function StepCard({ step, index }: { step: Step; index: number }) {
         <h3 className="font-geist text-[19px] leading-[1.3] font-semibold tracking-[-0.2px] text-ink">
           {title}
         </h3>
-        <p className="text-[14.5px] leading-[1.65] text-[#525252]">
+        <p className="text-[14.5px] leading-[1.65] text-text-muted">
           {description}
         </p>
       </div>

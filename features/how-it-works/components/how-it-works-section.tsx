@@ -33,12 +33,9 @@ export function HowItWorksSection({
               {page && (
                 <span
                   data-motion="rise"
-                  className="inline-flex h-8 items-center gap-1.5 rounded-full border-[0.8px] border-[#ececec] bg-white px-3.5 text-sm leading-[1.5] font-medium whitespace-nowrap text-brand"
+                  className="inline-flex h-8 items-center gap-1.5 rounded-full border-[0.8px] border-line-neutral bg-white px-3.5 text-sm leading-[1.5] font-medium whitespace-nowrap text-brand"
                 >
-                  <span
-                    aria-hidden
-                    className="size-1 rounded-full bg-[#315d44]"
-                  />
+                  <span aria-hidden className="size-1 rounded-full bg-moss" />
                   {pageHeading.tag}
                 </span>
               )}

@@ -4,6 +4,7 @@ import Image from "next/image"
 import { useState } from "react"
 
 import { EnterpriseBackdrop } from "@/features/enterprise/components/enterprise-backdrop"
+import { tintStyle } from "@/lib/tint"
 import enterpriseBg from "@/public/images/enterprise/enterprise-bg.png"
 import { NEWSLETTER } from "../data/articles"
 
@@ -29,16 +30,16 @@ export function NewsletterBand() {
           placeholder="blur"
           className="object-cover"
         />
-        <div className="absolute inset-0 bg-pine/90" />
+        <div className="absolute inset-0" style={tintStyle(0.9)} />
       </EnterpriseBackdrop>
 
       <div className="relative mx-auto flex w-full max-w-150 flex-col items-center gap-7 px-4 text-center">
         <div className="flex flex-col items-center gap-4">
           <span
             data-motion="rise"
-            className="inline-flex h-8 items-center gap-1.5 rounded-full border-[0.8px] border-[#ececec] bg-white px-3.5 text-sm leading-4.5 font-medium tracking-[-0.28px] whitespace-nowrap text-[#315d44]"
+            className="inline-flex h-8 items-center gap-1.5 rounded-full border-[0.8px] border-line-neutral bg-white px-3.5 text-sm leading-4.5 font-medium tracking-[-0.28px] whitespace-nowrap text-moss"
           >
-            <span aria-hidden className="size-1 rounded-full bg-[#315d44]" />
+            <span aria-hidden className="size-1 rounded-full bg-moss" />
             {eyebrow}
           </span>
           <h2

@@ -23,7 +23,7 @@ function PlanCard({ plan }: { plan: Plan }) {
         <h3
           className={cn(
             "text-xl leading-[1.5] font-semibold tracking-[-0.2px]",
-            featured ? "text-cream" : "text-[#0c0c0c]"
+            featured ? "text-cream" : "text-text-strong"
           )}
         >
           {name}
@@ -48,7 +48,7 @@ function PlanCard({ plan }: { plan: Plan }) {
           <span
             className={cn(
               "text-[15px] leading-[1.5]",
-              featured ? "text-cream/55" : "text-[#525252]/70"
+              featured ? "text-cream/55" : "text-text-muted/70"
             )}
           >
             {unit}
@@ -57,7 +57,7 @@ function PlanCard({ plan }: { plan: Plan }) {
         <p
           className={cn(
             "max-w-71.25 text-sm leading-[1.6]",
-            featured ? "text-cream/80" : "text-[#525252]"
+            featured ? "text-cream/80" : "text-text-muted"
           )}
         >
           {summary}
@@ -68,7 +68,7 @@ function PlanCard({ plan }: { plan: Plan }) {
       <ul
         className={cn(
           "flex flex-1 flex-col gap-3.5 border-t pt-5",
-          featured ? "border-white/15" : "border-[#dfe2d8]"
+          featured ? "border-white/15" : "border-line"
         )}
       >
         {features.map((feature) => (
@@ -142,7 +142,7 @@ export function FormatsSection() {
           </h2>
           <p
             data-motion="rise"
-            className="max-w-120 text-base leading-[1.6] text-[#525252]"
+            className="max-w-120 text-base leading-[1.6] text-text-muted"
           >
             {subtitle}
           </p>

@@ -1,4 +1,4 @@
-import Image from "next/image"
+import { Icon } from "@/components/icons/icon"
 import Link from "next/link"
 
 import { Eyebrow } from "@/components/eyebrow"
@@ -48,13 +48,13 @@ export function ServicesGrid() {
               className="group relative flex flex-col items-start gap-5 overflow-clip rounded-[20px] bg-white p-8 transition-shadow duration-500 hover:shadow-[0_24px_48px_-24px_rgba(30,79,80,0.25)]"
             >
               <span className="flex rounded-[14px] bg-mist p-3.5 transition-colors duration-500 group-hover:bg-brand-mint">
-                <Image src={icon} alt="" width={24} height={24} />
+                <Icon name={icon} className="text-pine" />
               </span>
               <div className="flex flex-col gap-3">
-                <h3 className="font-geist text-2xl leading-[1.3] font-semibold text-[#0c0c0c]">
+                <h3 className="font-geist text-2xl leading-[1.3] font-semibold text-text-strong">
                   {title}
                 </h3>
-                <p className="text-[15.5px] leading-[1.65] text-[#525252]">
+                <p className="text-[15.5px] leading-[1.65] text-text-muted">
                   {body}
                 </p>
               </div>

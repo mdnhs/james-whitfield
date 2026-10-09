@@ -20,6 +20,21 @@
   --color-pine: #1e4f50;
   --color-ink: #030303;
   --color-ink-muted: #3d3d3d;
+  /* Semantic tokens (docs/brief.md §10.3). Each holds the exact literal it
+     replaced, so tokenising changes no pixel; Phase 9 overrides them. */
+  --color-text-strong: #0c0c0c;
+  --color-text-muted: #525252;
+  --color-text-subtle: #8a8f88;
+  --color-line: #dfe2d8;
+  --color-line-soft: #e7e9e0;
+  --color-line-neutral: #ececec;
+  --color-line-faint: #f2f2f2;
+  --color-line-rule: #d8dccf;
+  --color-surface-soft: #f8f9f5;
+  --color-surface-warm: #fcfaf7;
+  --color-hero-base: #0d120f;
+  --color-moss: #315d44;
+  --color-spruce: #002620;
 }
 
 @theme inline {

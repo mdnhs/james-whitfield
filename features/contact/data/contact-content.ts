@@ -1,3 +1,5 @@
+import type { IconName } from "@/lib/icons"
+
 import { SERVICES } from "@/features/services/data/services-content"
 
 export const CONTACT_HERO = {
@@ -16,25 +18,25 @@ export const CONTACT_INFO = {
     "All enquiries are completely confidential. If you are unsure where to start, the free discovery call is the easiest first step.",
   items: [
     {
-      icon: "/images/contact/icon-email.svg",
+      icon: "email" as IconName,
       label: "Email",
       value: "hello@jameswhitfield.ie",
       href: "mailto:hello@jameswhitfield.ie",
     },
     {
-      icon: "/images/contact/icon-phone.svg",
+      icon: "phone" as IconName,
       label: "Phone",
       value: "+353 1 234 5678",
       href: "tel:+35312345678",
     },
     {
-      icon: "/images/contact/icon-clinic.svg",
+      icon: "clinic" as IconName,
       label: "Clinic",
       value: ADDRESS,
       href: "#clinic",
     },
     {
-      icon: "/images/contact/icon-hours.svg",
+      icon: "hours" as IconName,
       label: "Hours",
       value: "Mon – Thu 8am–7pm  •  Fri 8am–2pm",
     },

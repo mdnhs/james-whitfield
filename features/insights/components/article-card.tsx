@@ -74,7 +74,7 @@ export function ArticleCard({ article }: { article: Article }) {
             {title}
           </Link>
         </h3>
-        <p className="text-base leading-[1.5] tracking-[-0.32px] text-[#525252]">
+        <p className="text-base leading-[1.5] tracking-[-0.32px] text-text-muted">
           {excerpt}
         </p>
       </div>

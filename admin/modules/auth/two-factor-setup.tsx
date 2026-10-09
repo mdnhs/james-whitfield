@@ -3,7 +3,7 @@
 import { CheckIcon, CopyIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
 import QRCode from "qrcode"
-import { useState } from "react"
+import { useId, useState } from "react"
 import { toast } from "sonner"
 
 import { authClient } from "@/admin/lib/auth-client"
@@ -28,6 +28,8 @@ type Step = "password" | "scan" | "codes"
 const STEPS: Step[] = ["password", "scan", "codes"]
 
 export function TwoFactorSetup() {
+  // Hidden auth routes stay in the DOM (Activity), so ids must be unique.
+  const uid = useId()
   const router = useRouter()
   const [step, setStep] = useState<Step>("password")
   const [secret, setSecret] = useState("")
@@ -131,9 +133,11 @@ export function TwoFactorSetup() {
         <form onSubmit={enable} noValidate>
           <FieldGroup>
             <Field data-invalid={error ? true : undefined}>
-              <FieldLabel htmlFor="password">Current password</FieldLabel>
+              <FieldLabel htmlFor={`${uid}-password`}>
+                Current password
+              </FieldLabel>
               <PasswordInput
-                id="password"
+                id={`${uid}-password`}
                 name="password"
                 autoComplete="current-password"
                 required
@@ -181,9 +185,9 @@ export function TwoFactorSetup() {
           </div>
           <FieldGroup>
             <Field data-invalid={error ? true : undefined}>
-              <FieldLabel htmlFor="code">6-digit code</FieldLabel>
+              <FieldLabel htmlFor={`${uid}-code`}>6-digit code</FieldLabel>
               <Input
-                id="code"
+                id={`${uid}-code`}
                 name="code"
                 inputMode="numeric"
                 autoComplete="one-time-code"

@@ -2,9 +2,10 @@
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useId, useState } from "react"
 
 import { authClient } from "@/admin/lib/auth-client"
+import { getQueryClient } from "@/admin/lib/query-client"
 import { useResetOnHide } from "@/admin/lib/use-reset-on-hide"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -29,6 +30,8 @@ const CHALLENGE_OVER = new Set([
 
 // `next` is already sanitised by the page (safeNext).
 export function TwoFactorForm({ next }: { next: string }) {
+  // Hidden auth routes stay in the DOM (Activity), so ids must be unique.
+  const uid = useId()
   const router = useRouter()
   const [backup, setBackup] = useState(false)
   const [trust, setTrust] = useState(false)
@@ -66,6 +69,9 @@ export function TwoFactorForm({ next }: { next: string }) {
       }
       return setError(failure.message ?? "That code didn't work. Try again.")
     }
+    // A new session starts with an empty cache (sign-out already clears it;
+    // this covers a session that ended any other way).
+    getQueryClient().clear()
     // Stays pending: the panel replaces this screen.
     router.replace(next)
     router.refresh()
@@ -94,13 +100,13 @@ export function TwoFactorForm({ next }: { next: string }) {
     <form onSubmit={onSubmit} noValidate>
       <FieldGroup>
         <Field data-invalid={error ? true : undefined}>
-          <FieldLabel htmlFor="code">
+          <FieldLabel htmlFor={`${uid}-code`}>
             {backup ? "Backup code" : "6-digit code"}
           </FieldLabel>
           <Input
             // A fresh input per mode: the two codes have different shapes.
             key={backup ? "backup" : "totp"}
-            id="code"
+            id={`${uid}-code`}
             name="code"
             inputMode={backup ? "text" : "numeric"}
             autoComplete="one-time-code"
@@ -115,11 +121,11 @@ export function TwoFactorForm({ next }: { next: string }) {
         </Field>
         <Field orientation="horizontal">
           <Checkbox
-            id="trust"
+            id={`${uid}-trust`}
             checked={trust}
             onCheckedChange={(checked) => setTrust(checked)}
           />
-          <FieldLabel htmlFor="trust" className="font-normal">
+          <FieldLabel htmlFor={`${uid}-trust`} className="font-normal">
             Trust this device for 30 days
           </FieldLabel>
         </Field>

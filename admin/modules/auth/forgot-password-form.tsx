@@ -1,7 +1,7 @@
 "use client"
 
 import { MailCheckIcon } from "lucide-react"
-import { useState } from "react"
+import { useId, useState } from "react"
 
 import { authClient } from "@/admin/lib/auth-client"
 import { Button } from "@/components/ui/button"
@@ -17,6 +17,8 @@ import { authRequest, UNREACHABLE } from "./auth-errors"
 import { authButtonClass, authInputClass } from "./styles"
 
 export function ForgotPasswordForm() {
+  // Hidden auth routes stay in the DOM (Activity), so ids must be unique.
+  const uid = useId()
   const [sent, setSent] = useState(false)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -62,9 +64,9 @@ export function ForgotPasswordForm() {
     <form onSubmit={onSubmit}>
       <FieldGroup>
         <Field data-invalid={error ? true : undefined}>
-          <FieldLabel htmlFor="email">Email</FieldLabel>
+          <FieldLabel htmlFor={`${uid}-email`}>Email</FieldLabel>
           <Input
-            id="email"
+            id={`${uid}-email`}
             name="email"
             type="email"
             autoComplete="email"

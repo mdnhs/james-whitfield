@@ -22,6 +22,12 @@ export const E2E_USERS = {
     name: "Sam Shell",
     role: "owner",
   },
+  // Only the handover spec signs this one in, sets up 2FA and signs out.
+  handoverOwner: {
+    email: "owner-handover@e2e.test",
+    name: "Hana Handover",
+    role: "owner",
+  },
   // Only the account spec changes this one (name, sessions).
   accountUser: {
     email: "account@e2e.test",

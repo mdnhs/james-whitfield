@@ -2,9 +2,10 @@
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useId, useState } from "react"
 
 import { authClient } from "@/admin/lib/auth-client"
+import { getQueryClient } from "@/admin/lib/query-client"
 import { useResetOnHide } from "@/admin/lib/use-reset-on-hide"
 import { Button } from "@/components/ui/button"
 import {
@@ -21,6 +22,8 @@ import { authButtonClass, authInputClass } from "./styles"
 
 // `next` is already sanitised by the page (safeNext).
 export function SignInForm({ next }: { next: string }) {
+  // Hidden auth routes stay in the DOM (Activity), so ids must be unique.
+  const uid = useId()
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
@@ -51,6 +54,9 @@ export function SignInForm({ next }: { next: string }) {
     if (data && "twoFactorRedirect" in data && data.twoFactorRedirect) {
       return router.push(`/admin/two-factor?next=${encodeURIComponent(next)}`)
     }
+    // A new session starts with an empty cache (sign-out already clears it;
+    // this covers a session that ended any other way).
+    getQueryClient().clear()
     // Stays pending: the panel replaces this screen.
     router.replace(next)
     router.refresh()
@@ -60,9 +66,9 @@ export function SignInForm({ next }: { next: string }) {
     <form onSubmit={onSubmit} noValidate>
       <FieldGroup>
         <Field>
-          <FieldLabel htmlFor="email">Email</FieldLabel>
+          <FieldLabel htmlFor={`${uid}-email`}>Email</FieldLabel>
           <Input
-            id="email"
+            id={`${uid}-email`}
             name="email"
             type="email"
             autoComplete="email"
@@ -73,7 +79,7 @@ export function SignInForm({ next }: { next: string }) {
         </Field>
         <Field data-invalid={error ? true : undefined}>
           <div className="flex items-center justify-between gap-2">
-            <FieldLabel htmlFor="password">Password</FieldLabel>
+            <FieldLabel htmlFor={`${uid}-password`}>Password</FieldLabel>
             <Link
               href="/admin/forgot-password"
               className="rounded-sm text-sm font-medium text-primary underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
@@ -82,7 +88,7 @@ export function SignInForm({ next }: { next: string }) {
             </Link>
           </div>
           <PasswordInput
-            id="password"
+            id={`${uid}-password`}
             name="password"
             autoComplete="current-password"
             required

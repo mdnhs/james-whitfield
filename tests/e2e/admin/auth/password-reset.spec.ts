@@ -17,7 +17,8 @@ test("a forgotten password is reset from the emailed link", async ({
   await expect(page).toHaveURL(/\/admin\/forgot-password$/)
 
   const since = new Date(Date.now() - 1000)
-  await page.getByLabel("Email").fill(user.email)
+  // By role: the sign-in form's Email field stays in the DOM, hidden.
+  await page.getByRole("textbox", { name: "Email" }).fill(user.email)
   await page.getByRole("button", { name: "Send reset link" }).click()
   await expect(page.getByRole("status")).toContainText("Check your inbox")
 
@@ -63,7 +64,8 @@ test("a failed reset request is not reported as sent", async ({ page }) => {
     route.fulfill({ status, json: { message: "nope" } })
   )
   await page.goto("/admin/forgot-password")
-  await page.getByLabel("Email").fill(user.email)
+  // By role: the sign-in form's Email field stays in the DOM, hidden.
+  await page.getByRole("textbox", { name: "Email" }).fill(user.email)
   await page.getByRole("button", { name: "Send reset link" }).click()
   await expect(page.getByText(RATE_LIMITED)).toBeVisible()
 

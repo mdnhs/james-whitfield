@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useId, useState } from "react"
 import { toast } from "sonner"
 
 import { authClient } from "@/admin/lib/auth-client"
@@ -29,6 +29,8 @@ export function ResetPasswordForm({
   invite: boolean
 }) {
   const router = useRouter()
+  // Hidden auth routes stay in the DOM (Activity), so ids must be unique.
+  const uid = useId()
   // Each message sits under, and marks, the field it is about.
   const [error, setError] = useState<{
     field: "password" | "confirm"
@@ -81,19 +83,19 @@ export function ResetPasswordForm({
     <form onSubmit={onSubmit} noValidate>
       <FieldGroup>
         <Field data-invalid={passwordError ? true : undefined}>
-          <FieldLabel htmlFor="password">
+          <FieldLabel htmlFor={`${uid}-password`}>
             {invite ? "Choose a password" : "New password"}
           </FieldLabel>
           <PasswordInput
-            id="password"
+            id={`${uid}-password`}
             name="password"
             autoComplete="new-password"
             minLength={MIN_LENGTH}
             required
-            aria-describedby="password-hint"
+            aria-describedby={`${uid}-password-hint`}
             aria-invalid={passwordError ? true : undefined}
           />
-          <FieldDescription id="password-hint">
+          <FieldDescription id={`${uid}-password-hint`}>
             At least {MIN_LENGTH} characters. A short phrase is easiest to
             remember.
           </FieldDescription>
@@ -102,9 +104,9 @@ export function ResetPasswordForm({
           )}
         </Field>
         <Field data-invalid={confirmError ? true : undefined}>
-          <FieldLabel htmlFor="confirm">Repeat password</FieldLabel>
+          <FieldLabel htmlFor={`${uid}-confirm`}>Repeat password</FieldLabel>
           <PasswordInput
-            id="confirm"
+            id={`${uid}-confirm`}
             name="confirm"
             autoComplete="new-password"
             required

@@ -1,6 +1,7 @@
 import { getAuth } from "@/server/auth/auth"
 import { closeDb } from "@/server/db/client"
 import { runMigrations } from "@/server/db/migrate"
+import { seedContent } from "@/server/db/seed"
 import { E2E_ENV } from "@/tests/e2e/fixtures/env"
 import { E2E_USERS, PASSWORD } from "@/tests/e2e/fixtures/users"
 import { resetDb } from "@/tests/integration/helpers/db"
@@ -19,6 +20,7 @@ async function main() {
     await getAuth().api.createUser({ body: { ...user, password: PASSWORD } })
   }
   console.log(`Seeded ${Object.keys(E2E_USERS).length} E2E users.`)
+  console.log("Seeded content", await seedContent())
 }
 
 main()

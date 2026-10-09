@@ -20,10 +20,9 @@ export const CONTACT_INFO = {
     "All enquiries are completely confidential. If you are unsure where to start, the free discovery call is the easiest first step.",
 }
 
-// Seed input for the `contact` global (photo as a path).
-export const CONTACT: Omit<GlobalValue<"contact">, "clinic"> & {
-  clinic: Omit<GlobalValue<"contact">["clinic"], "photo"> & { photo: string }
-} = {
+// Seed input for the `contact` global. The clinic photo is the
+// `contact.clinic` block's (CLINIC.photo); the global keeps none.
+export const CONTACT: GlobalValue<"contact"> = {
   email: "hello@jameswhitfield.ie",
   phone: { display: "+353 1 234 5678", e164: "+35312345678" },
   address: {
@@ -43,7 +42,7 @@ export const CONTACT: Omit<GlobalValue<"contact">, "clinic"> & {
   clinic: {
     name: "Merrion Square Clinic",
     description: "",
-    photo: "/images/insights/post-host-podcast.png",
+    photo: null,
     onlineNote: "Online sessions available worldwide via secure Zoom.",
     geo: null,
   },

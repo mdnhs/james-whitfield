@@ -234,7 +234,7 @@ export const contactClinic = (): BlockView<"contact.clinic"> => ({
 
 export const contact = (): GlobalView<"contact"> => ({
   ...CONTACT,
-  clinic: { ...CONTACT.clinic, photo: fromPath(CONTACT.clinic.photo) },
+  clinic: { ...CONTACT.clinic, photo: null },
 })
 
 export const contactForm = () => ({

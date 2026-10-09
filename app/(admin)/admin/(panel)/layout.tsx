@@ -1,6 +1,7 @@
 import { Suspense } from "react"
 
 import { AdminActorProvider } from "@/admin/lib/actor-context"
+import { AdminQueryProvider } from "@/admin/lib/query-provider"
 import { toMePayload } from "@/lib/auth/me"
 import { requireActor } from "@/server/auth/session"
 
@@ -24,7 +25,9 @@ async function Guarded({ children }: { children: React.ReactNode }) {
   const actor = await requireActor()
   return (
     <AdminActorProvider value={toMePayload(actor)}>
-      <div className="min-h-svh bg-background p-3 sm:p-4">{children}</div>
+      <AdminQueryProvider>
+        <div className="min-h-svh bg-background p-3 sm:p-4">{children}</div>
+      </AdminQueryProvider>
     </AdminActorProvider>
   )
 }

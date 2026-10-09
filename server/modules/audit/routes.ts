@@ -21,3 +21,5 @@ export const auditRoutes = new Hono<AppEnv>().get(
   zValidator("query", ListQuery, validationHook),
   async (c) => c.json(await listAuditEntries(c.req.valid("query")))
 )
+
+export type AuditRoutes = typeof auditRoutes

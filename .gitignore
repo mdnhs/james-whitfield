@@ -41,6 +41,8 @@ next-env.d.ts
 # test output
 /playwright-report
 /test-results
+# Playwright storage states (tests/e2e/admin/auth.setup.ts)
+/tests/e2e/.auth/
 
 # bundled scripts
 /dist
@@ -50,4 +52,3 @@ next-env.d.ts
 
 # keep the documented example env
 !.env.example
-/tests/e2e/.auth/

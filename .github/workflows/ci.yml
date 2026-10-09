@@ -94,7 +94,7 @@ jobs:
       - run: pnpm e2e:seed
       # Visual-parity baselines are macOS-only (local), so CI skips them.
       - name: E2E (desktop, without visual parity)
-        run: pnpm test:e2e --project=desktop --grep-invert "parity:"
+        run: pnpm test:e2e --project=desktop --project=admin-desktop --grep-invert "parity:"
         env:
           E2E_SKIP_BUILD: "1"
       - uses: actions/upload-artifact@v4

@@ -2,12 +2,12 @@
 
 **Project brief and architecture**
 
-|                 |                                                                                                    |
-| --------------- | -------------------------------------------------------------------------------------------------- |
-| Status          | Draft for review                                                                                   |
-| Date            | 2026-10-09                                                                                         |
-| Scope           | Turn the static marketing site into a database-driven full-stack Next.js app with a premium admin |
-| Companion       | [`plan.md`](./plan.md), the phased implementation plan                                             |
+|                 |                                                                                                                                                      |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Status          | Draft for review                                                                                                                                     |
+| Date            | 2026-10-09                                                                                                                                           |
+| Scope           | Turn the static marketing site into a database-driven full-stack Next.js app with a premium admin                                                    |
+| Companion       | [`plan.md`](./plan.md), the phased implementation plan                                                                                               |
 | Source analysis | Full read of `app/`, `components/`, `features/`, `lib/`, the build output and the bundled Next 16.3.6 docs, plus current library docs (October 2026) |
 
 ---
@@ -17,7 +17,7 @@
 The site is a hand-built Next.js 16 marketing site for **Magda Kennedy**, a coach and clinical hypnotherapist with a practice at Merrion Square, Dublin. The visuals, the GSAP scroll journey and the WebGL hero are high quality. Everything else is hardcoded:
 
 - every word, price, image and link lives in TypeScript files under `features/*/data`;
-- the contact form and the newsletter form only *simulate* a submit;
+- the contact form and the newsletter form only _simulate_ a submit;
 - the home page has no `<title>`, there is no sitemap or robots file, and all 30 images have empty `alt` text.
 
 We will turn it into one full-stack Next.js application with these parts:
@@ -37,49 +37,49 @@ All of this ships without changing how the public site looks or moves.
 
 ### 2.1 What you asked for
 
-| #   | Requirement                                                                                  |
-| --- | -------------------------------------------------------------------------------------------- |
-| R1  | Backend built with **Hono**                                                                  |
-| R2  | A **Next.js full-stack** app (one codebase)                                                  |
-| R3  | **PostgreSQL** database                                                                      |
-| R4  | **Better Auth** for authentication                                                           |
-| R5  | **RBAC**                                                                                     |
-| R6  | Next.js 16 **`proxy.ts`**                                                                    |
-| R7  | The **whole website dynamic** (content comes from the database)                              |
-| R8  | **SEO and Open Graph** settings, customisable from the admin                                 |
-| R9  | **GTM, Facebook (Meta) data layer** and similar, customisable from the admin                 |
-| R10 | Admin panel built with **shadcn/ui**, visually matching the attached inspiration image       |
-| R11 | **Theme colour customisation** from the admin panel                                          |
+| #   | Requirement                                                                                    |
+| --- | ---------------------------------------------------------------------------------------------- |
+| R1  | Backend built with **Hono**                                                                    |
+| R2  | A **Next.js full-stack** app (one codebase)                                                    |
+| R3  | **PostgreSQL** database                                                                        |
+| R4  | **Better Auth** for authentication                                                             |
+| R5  | **RBAC**                                                                                       |
+| R6  | Next.js 16 **`proxy.ts`**                                                                      |
+| R7  | The **whole website dynamic** (content comes from the database)                                |
+| R8  | **SEO and Open Graph** settings, customisable from the admin                                   |
+| R9  | **GTM, Facebook (Meta) data layer** and similar, customisable from the admin                   |
+| R10 | Admin panel built with **shadcn/ui**, visually matching the attached inspiration image         |
+| R11 | **Theme colour customisation** from the admin panel                                            |
 | R12 | Everything else at our discretion, built "the best way possible" so the client loves the admin |
-| R13 | `docs/brief.md` and `docs/plan.md`, with the architecture based on deep codebase analysis    |
+| R13 | `docs/brief.md` and `docs/plan.md`, with the architecture based on deep codebase analysis      |
 
 ### 2.2 Decisions taken on your behalf (confirm or correct)
 
-| #   | Decision                                                                                                                                  | Why                                                                                                                       |
-| --- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| D1  | Keep **Dokploy + Docker standalone**, one container                                                                                        | It is the current deploy path (`Dockerfile`, `.github/workflows/ci.yml`)                                                  |
-| D2  | **Drizzle ORM 0.45 (stable) + node-postgres**                                                                                             | Type-safe SQL and an official Better Auth adapter. Drizzle v1 is still a release candidate                                |
-| D3  | **Hono mounted inside Next** at `app/api/[...route]/route.ts`                                                                             | One deploy, shared TypeScript types, typed RPC client                                                                     |
-| D4  | Public pages **read the DB directly through cached server queries**. Hono serves the admin and the forms                                    | The Next docs say not to fetch your own Route Handlers from Server Components                                             |
-| D5  | **Cache Components on**, and the **database is never touched at build time**                                                                | `'use cache'` replaces `unstable_cache` in Next 16. The Docker build has no database                                      |
-| D6  | Pages become **ordered, typed blocks** (one block type per existing section), plus **collections** and **globals**                        | Keeps the bespoke design and motion while giving real editing power                                                       |
-| D7  | **Draft → preview → publish**, with revision history, for pages, articles and the theme                                                   | Expected of a premium CMS. Lets the client experiment safely                                                              |
-| D8  | Seven roles: **owner, admin, editor, author, marketer, intake, viewer**                                                                   | Fits a small practice plus an agency. Enquiries (health-adjacent data) stay restricted                                     |
-| D9  | Media on **S3-compatible storage** (Cloudflare R2, EU jurisdiction, recommended), with a local-disk driver for development                | Durable, off-server and cheap. Next cannot serve files added to `public/` after the build                                 |
-| D10 | Email through **Resend** in production and **Mailpit** in development                                                                      | Simple API and React Email templates. Local mail capture                                                                  |
-| D11 | **Public site is light-only**; the admin supports light and dark                                                                           | The site has no dark design. The current system-dark and "d" hotkey half-darken it                                        |
-| D12 | **Consent-first tracking** (Irish DPC rules) with Google **Consent Mode v2 in Basic mode**: no tag loads before consent                    | The practice is in Ireland, and enquiries can reveal health information                                                   |
-| D13 | The **home hero background stays code-managed**; its text, CTAs and avatars are editable                                                 | The WebGL depth and hair maps are generated offline for that single photo                                                 |
-| D14 | Admin typeface: **Plus Jakarta Sans** (already a dependency)                                                                               | Closest to the inspiration's geometric sans                                                                               |
+| #   | Decision                                                                                                                   | Why                                                                                        |
+| --- | -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| D1  | Keep **Dokploy + Docker standalone**, one container                                                                        | It is the current deploy path (`Dockerfile`, `.github/workflows/ci.yml`)                   |
+| D2  | **Drizzle ORM 0.45 (stable) + node-postgres**                                                                              | Type-safe SQL and an official Better Auth adapter. Drizzle v1 is still a release candidate |
+| D3  | **Hono mounted inside Next** at `app/api/[...route]/route.ts`                                                              | One deploy, shared TypeScript types, typed RPC client                                      |
+| D4  | Public pages **read the DB directly through cached server queries**. Hono serves the admin and the forms                   | The Next docs say not to fetch your own Route Handlers from Server Components              |
+| D5  | **Cache Components on**, and the **database is never touched at build time**                                               | `'use cache'` replaces `unstable_cache` in Next 16. The Docker build has no database       |
+| D6  | Pages become **ordered, typed blocks** (one block type per existing section), plus **collections** and **globals**         | Keeps the bespoke design and motion while giving real editing power                        |
+| D7  | **Draft → preview → publish**, with revision history, for pages, articles and the theme                                    | Expected of a premium CMS. Lets the client experiment safely                               |
+| D8  | Seven roles: **owner, admin, editor, author, marketer, intake, viewer**                                                    | Fits a small practice plus an agency. Enquiries (health-adjacent data) stay restricted     |
+| D9  | Media on **S3-compatible storage** (Cloudflare R2, EU jurisdiction, recommended), with a local-disk driver for development | Durable, off-server and cheap. Next cannot serve files added to `public/` after the build  |
+| D10 | Email through **Resend** in production and **Mailpit** in development                                                      | Simple API and React Email templates. Local mail capture                                   |
+| D11 | **Public site is light-only**; the admin supports light and dark                                                           | The site has no dark design. The current system-dark and "d" hotkey half-darken it         |
+| D12 | **Consent-first tracking** (Irish DPC rules) with Google **Consent Mode v2 in Basic mode**: no tag loads before consent    | The practice is in Ireland, and enquiries can reveal health information                    |
+| D13 | The **home hero background stays code-managed**; its text, CTAs and avatars are editable                                   | The WebGL depth and hair maps are generated offline for that single photo                  |
+| D14 | Admin typeface: **Plus Jakarta Sans** (already a dependency)                                                               | Closest to the inspiration's geometric sans                                                |
 
 ### 2.3 Open questions (the default applies if there is no answer)
 
-1. **Media storage.** A Cloudflare R2 bucket, or a Dokploy volume? *Default: R2 in production, local disk in development.*
-2. **Email sending domain.** Which domain will Resend verify (for example `magdakennedy.ie`)? *Default: Resend, with the domain set by env.*
-3. **Content fixes found during analysis** (§4.6). Apply them during seeding? *Default: import the content as-is, list the issues in the admin "Content health" panel, and fix the obvious rebrand leftovers (James → Magda, `jameswhitfield.ie`) only once you approve.*
-4. **Admin users.** Who will log in, and with which roles? *Default: you as **owner**, the client as **admin**.*
-5. **Environments.** What is the production domain, and should there be a staging app on Dokploy? *Default: staging exists and is always `noindex`.*
-6. **Privacy sign-off.** Advanced consent mode, and Meta "enhanced matching" (hashed email and phone), need the practice's DPO or legal approval (§12). *Default: Basic consent mode, and CAPI without email or phone hashes.*
+1. **Media storage.** A Cloudflare R2 bucket, or a Dokploy volume? _Default: R2 in production, local disk in development._
+2. **Email sending domain.** Which domain will Resend verify (for example `magdakennedy.ie`)? _Default: Resend, with the domain set by env._
+3. **Content fixes found during analysis** (§4.6). Apply them during seeding? _Default: import the content as-is, list the issues in the admin "Content health" panel, and fix the obvious rebrand leftovers (James → Magda, `jameswhitfield.ie`) only once you approve._
+4. **Admin users.** Who will log in, and with which roles? _Default: you as **owner**, the client as **admin**._
+5. **Environments.** What is the production domain, and should there be a staging app on Dokploy? _Default: staging exists and is always `noindex`._
+6. **Privacy sign-off.** Advanced consent mode, and Meta "enhanced matching" (hashed email and phone), need the practice's DPO or legal approval (§12). _Default: Basic consent mode, and CAPI without email or phone hashes._
 
 ---
 
@@ -100,15 +100,15 @@ All of this ships without changing how the public site looks or moves.
 
 ### 4.1 Stack and structure
 
-| Area       | Today                                                                                                                                                                                       |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Framework  | Next.js **16.3.6**, React **19.2.8**, TypeScript 5, pnpm 10.32.1, Node 22                                                                                                                   |
-| Styling    | Tailwind CSS 4. Brand tokens in `app/globals.css` `@theme`. shadcn CLI **4.21** with the `base-nova` style, on **Base UI 1.8**                                                              |
-| Motion     | GSAP 3.15 (ScrollTrigger, SplitText), Lenis 1.3, `@bsmnt/scrollytelling`, a three.js WebGL hero                                                                                             |
-| Other      | nuqs 2.10 for URL state, next-themes, sharp                                                                                                                                                 |
-| Structure  | Feature-sliced `features/<name>/{components,data,lib}` with barrels. Shared code in `components/` and `lib/`. The `@/*` alias points at the repo root (there is no `src/`)                  |
-| Rendering  | Every route is SSG: 16 prerendered pages, including 7 articles. `generateStaticParams` + `dynamicParams = false` on `insights/[slug]`                                                       |
-| Deploy     | Multi-stage `Dockerfile` with `output: "standalone"`, built by Dokploy on push to `main`. CI runs lint, typecheck and build, and the deploy does not wait for it                            |
+| Area      | Today                                                                                                                                                                      |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Framework | Next.js **16.3.6**, React **19.2.8**, TypeScript 5, pnpm 10.32.1, Node 22                                                                                                  |
+| Styling   | Tailwind CSS 4. Brand tokens in `app/globals.css` `@theme`. shadcn CLI **4.21** with the `base-nova` style, on **Base UI 1.8**                                             |
+| Motion    | GSAP 3.15 (ScrollTrigger, SplitText), Lenis 1.3, `@bsmnt/scrollytelling`, a three.js WebGL hero                                                                            |
+| Other     | nuqs 2.10 for URL state, next-themes, sharp                                                                                                                                |
+| Structure | Feature-sliced `features/<name>/{components,data,lib}` with barrels. Shared code in `components/` and `lib/`. The `@/*` alias points at the repo root (there is no `src/`) |
+| Rendering | Every route is SSG: 16 prerendered pages, including 7 articles. `generateStaticParams` + `dynamicParams = false` on `insights/[slug]`                                      |
+| Deploy    | Multi-stage `Dockerfile` with `output: "standalone"`, built by Dokploy on push to `main`. CI runs lint, typecheck and build, and the deploy does not wait for it           |
 
 ### 4.2 Routes and content inventory
 
@@ -126,17 +126,17 @@ There are about **22 distinct section types**:
 
 Repeating content:
 
-| Entity              | Count                                        | Notes                                                                                                                            |
-| ------------------- | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| Articles            | 7 (1 featured), in 5 categories              | Body blocks are `p` / `h2` / `quote` / `list`, plain strings only. The first `p` renders as the lead. Read time = words ÷ 220     |
-| Testimonials        | 7 cards                                      | Only 4 unique quotes, all signed "Verified Client". Columns are pre-split in the data                                            |
-| FAQs                | 7                                            | Used on 4 pages, in `home` and `page` variants                                                                                    |
-| Services            | 6                                            | They also feed the contact-form topics and its URL params                                                                         |
-| Plans (formats)     | 3                                            | Free / €840 / €160. Plan slugs prefill the contact form                                                                           |
-| Steps               | 4                                            | Each has an image with a hand-tuned crop box. Shared by `/` and `/how-it-works`                                                   |
-| Other lists         | session beats 4, credential badges 4, credentials timeline 5, principles 3, stats (3 + 4 + 2), fit items 4 + 4 | All page-specific                                                                                                                 |
-| Navigation & footer | 5 nav links, 2 footer columns, 3 legal links | The legal links `/privacy`, `/terms` and `/disclaimer` **return 404**                                                            |
-| Contact & clinic    | 4 channels, 1 clinic                         | Opening hours are one preformatted string. There are no map coordinates                                                          |
+| Entity              | Count                                                                                                          | Notes                                                                                                                         |
+| ------------------- | -------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Articles            | 7 (1 featured), in 5 categories                                                                                | Body blocks are `p` / `h2` / `quote` / `list`, plain strings only. The first `p` renders as the lead. Read time = words ÷ 220 |
+| Testimonials        | 7 cards                                                                                                        | Only 4 unique quotes, all signed "Verified Client". Columns are pre-split in the data                                         |
+| FAQs                | 7                                                                                                              | Used on 4 pages, in `home` and `page` variants                                                                                |
+| Services            | 6                                                                                                              | They also feed the contact-form topics and its URL params                                                                     |
+| Plans (formats)     | 3                                                                                                              | Free / €840 / €160. Plan slugs prefill the contact form                                                                       |
+| Steps               | 4                                                                                                              | Each has an image with a hand-tuned crop box. Shared by `/` and `/how-it-works`                                               |
+| Other lists         | session beats 4, credential badges 4, credentials timeline 5, principles 3, stats (3 + 4 + 2), fit items 4 + 4 | All page-specific                                                                                                             |
+| Navigation & footer | 5 nav links, 2 footer columns, 3 legal links                                                                   | The legal links `/privacy`, `/terms` and `/disclaimer` **return 404**                                                         |
+| Contact & clinic    | 4 channels, 1 clinic                                                                                           | Opening hours are one preformatted string. There are no map coordinates                                                       |
 
 UI copy is also hardcoded inside components: form labels and errors, "Read article →", "Showing n of m", breadcrumbs, the article CTA card and the "Book a Call" button.
 
@@ -217,30 +217,30 @@ The design response is in §5.7.
 
 ### 5.2 Technology choices
 
-| Concern            | Choice                                                                                              | Version (Oct 2026)                  |
-| ------------------ | --------------------------------------------------------------------------------------------------- | ----------------------------------- |
-| Framework          | Next.js App Router, Cache Components, `proxy.ts`                                                    | 16.3.x (16.4 is optional later)     |
-| UI runtime         | React                                                                                               | 19.2.x                              |
-| Language           | TypeScript, `strict`                                                                                | 5.x (TS 7 native not yet adopted)   |
-| Styling            | Tailwind CSS                                                                                        | 4.x                                 |
-| Admin UI kit       | shadcn/ui `base-nova` on Base UI (`render` prop, not `asChild`)                                     | shadcn 4.21+, @base-ui/react 1.8    |
-| API                | Hono + `@hono/vercel` `handle()` adapter + `@hono/zod-validator`                                    | 4.13.x · 1.0.x · 0.9.x              |
-| Auth               | Better Auth: admin plugin with custom access control, two-factor (TOTP); `auth` CLI for the schema  | 1.7.x                               |
-| Database           | PostgreSQL (managed by Dokploy)                                                                     | 17 (18 is compatible)               |
-| ORM                | Drizzle ORM + drizzle-kit, node-postgres (`pg`) pool                                                | 0.45.x · 0.31.x · pg 8.23           |
-| Validation         | Zod (shared by API, forms and types)                                                                | 4.6.x                               |
-| Admin data         | TanStack Query; TanStack Table v9 (`useTable` + `tableFeatures`)                                    | 5.104 · 9.2                         |
-| Forms              | react-hook-form + `@hookform/resolvers` (Zod 4), shadcn `Field`                                     | 7.89 · 5.9                          |
-| Charts             | Recharts through the shadcn `chart` component                                                       | 3.8+                                |
-| Rich text          | TipTap, with `@tiptap/static-renderer` to render JSON in RSC                                        | 3.31.x                              |
-| Drag and drop      | `@dnd-kit/core` + `@dnd-kit/sortable`                                                               | 6.3 · 10.0                          |
-| Colour             | culori (OKLCH, gamut mapping, WCAG contrast) + react-colorful (picker)                              | 4.0 · 5.8                           |
-| Toasts / palette   | sonner / cmdk (inside shadcn `command`)                                                             | 2.0 · 1.1                           |
-| Dates              | date-fns + `@date-fns/tz`, Europe/Dublin                                                            | 4.4                                 |
-| Email              | Resend SDK + React Email (`react-email` package); nodemailer to Mailpit in development              | resend 6.x · react-email 6.x · nodemailer 10.x |
-| Storage            | `@aws-sdk/client-s3` (R2, S3; RustFS for an optional local emulator) + a local-disk driver          | v3                                  |
-| Images             | sharp (already installed) for metadata, blur placeholders and crops                                 | 0.35                                |
-| Tests              | Vitest (unit and integration against real Postgres), Playwright (E2E and visual parity)             | latest                              |
+| Concern          | Choice                                                                                             | Version (Oct 2026)                             |
+| ---------------- | -------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| Framework        | Next.js App Router, Cache Components, `proxy.ts`                                                   | 16.3.x (16.4 is optional later)                |
+| UI runtime       | React                                                                                              | 19.2.x                                         |
+| Language         | TypeScript, `strict`                                                                               | 5.x (TS 7 native not yet adopted)              |
+| Styling          | Tailwind CSS                                                                                       | 4.x                                            |
+| Admin UI kit     | shadcn/ui `base-nova` on Base UI (`render` prop, not `asChild`)                                    | shadcn 4.21+, @base-ui/react 1.8               |
+| API              | Hono + `@hono/vercel` `handle()` adapter + `@hono/zod-validator`                                   | 4.13.x · 1.0.x · 0.9.x                         |
+| Auth             | Better Auth: admin plugin with custom access control, two-factor (TOTP); `auth` CLI for the schema | 1.7.x                                          |
+| Database         | PostgreSQL (managed by Dokploy)                                                                    | 17 (18 is compatible)                          |
+| ORM              | Drizzle ORM + drizzle-kit, node-postgres (`pg`) pool                                               | 0.45.x · 0.31.x · pg 8.23                      |
+| Validation       | Zod (shared by API, forms and types)                                                               | 4.6.x                                          |
+| Admin data       | TanStack Query; TanStack Table v9 (`useTable` + `tableFeatures`)                                   | 5.104 · 9.2                                    |
+| Forms            | react-hook-form + `@hookform/resolvers` (Zod 4), shadcn `Field`                                    | 7.89 · 5.9                                     |
+| Charts           | Recharts through the shadcn `chart` component                                                      | 3.8+                                           |
+| Rich text        | TipTap, with `@tiptap/static-renderer` to render JSON in RSC                                       | 3.31.x                                         |
+| Drag and drop    | `@dnd-kit/core` + `@dnd-kit/sortable`                                                              | 6.3 · 10.0                                     |
+| Colour           | culori (OKLCH, gamut mapping, WCAG contrast) + react-colorful (picker)                             | 4.0 · 5.8                                      |
+| Toasts / palette | sonner / cmdk (inside shadcn `command`)                                                            | 2.0 · 1.1                                      |
+| Dates            | date-fns + `@date-fns/tz`, Europe/Dublin                                                           | 4.4                                            |
+| Email            | Resend SDK + React Email (`react-email` package); nodemailer to Mailpit in development             | resend 6.x · react-email 6.x · nodemailer 10.x |
+| Storage          | `@aws-sdk/client-s3` (R2, S3; RustFS for an optional local emulator) + a local-disk driver         | v3                                             |
+| Images           | sharp (already installed) for metadata, blur placeholders and crops                                | 0.35                                           |
+| Tests            | Vitest (unit and integration against real Postgres), Playwright (E2E and visual parity)            | latest                                         |
 
 > **Library-version traps for implementers**
 >
@@ -366,14 +366,14 @@ The rules that follow:
 
 **Cache tag catalogue** (constants in `server/lib/cache.ts`):
 
-| Tag                                                          | Read by                                              | Invalidated by                                 |
-| ------------------------------------------------------------ | ---------------------------------------------------- | ---------------------------------------------- |
-| `settings:<key>` (site, contact, navigation, footer, newsletter, contactForm, microcopy, seo, tracking, consent, theme, scripts) | site frame, blocks, metadata | settings / globals services |
-| `page:<id>`, `routes`                                        | `CmsPage`, sitemap, `[...slug]` resolver             | pages service                                  |
-| `articles`, `article:<id>`, `categories`, `authors`          | insights blocks, article route, sitemap, OG images   | articles service                               |
-| `collection:<name>` (services, plans, testimonials, faqs, steps, bands) | blocks that use them                      | collections service                            |
-| `media`                                                      | media lookups (alt text, focal point)                | media service                                  |
-| `redirects`                                                  | `[...slug]` resolver                                 | redirects service, article slug changes        |
+| Tag                                                                                                                              | Read by                                            | Invalidated by                          |
+| -------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- | --------------------------------------- |
+| `settings:<key>` (site, contact, navigation, footer, newsletter, contactForm, microcopy, seo, tracking, consent, theme, scripts) | site frame, blocks, metadata                       | settings / globals services             |
+| `page:<id>`, `routes`                                                                                                            | `CmsPage`, sitemap, `[...slug]` resolver           | pages service                           |
+| `articles`, `article:<id>`, `categories`, `authors`                                                                              | insights blocks, article route, sitemap, OG images | articles service                        |
+| `collection:<name>` (services, plans, testimonials, faqs, steps, bands)                                                          | blocks that use them                               | collections service                     |
+| `media`                                                                                                                          | media lookups (alt text, focal point)              | media service                           |
+| `redirects`                                                                                                                      | `[...slug]` resolver                               | redirects service, article slug changes |
 
 ### 5.7 Adapting the motion system
 
@@ -398,13 +398,13 @@ The motion system is what makes the site special. It has to keep working when th
 
 ### 6.1 Concepts
 
-| Concept        | What it is                                                                                                   | Examples                                                    |
-| -------------- | ------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------- |
+| Concept        | What it is                                                                                                                                              | Examples                                                                                                                    |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
 | **Page**       | A URL whose document is an ordered list of blocks plus page settings. System pages have fixed paths and cannot be deleted. Custom pages can be created. | `/`, `/about`, `/services`, `/how-it-works`, `/insights`, `/contact` (system); `/privacy`, `/terms`, `/disclaimer` (custom) |
-| **Block**      | One instance of a registered block type. There is one type per existing section design, holding typed `data` | `services.grid`, `fit`, `hero.page`                         |
-| **Collection** | Reusable entities with their own table and admin screen                                                      | articles, services, plans, testimonials, FAQs, steps, CTA bands |
-| **Global**     | A single-instance settings document                                                                          | site identity, contact & clinic, navigation, footer, microcopy, SEO, tracking, theme |
-| **Media**      | An uploaded or built-in asset with metadata: dimensions, blur placeholder, alt text, focal point             | photos, avatars, OG images                                  |
+| **Block**      | One instance of a registered block type. There is one type per existing section design, holding typed `data`                                            | `services.grid`, `fit`, `hero.page`                                                                                         |
+| **Collection** | Reusable entities with their own table and admin screen                                                                                                 | articles, services, plans, testimonials, FAQs, steps, CTA bands                                                             |
+| **Global**     | A single-instance settings document                                                                                                                     | site identity, contact & clinic, navigation, footer, microcopy, SEO, tracking, theme                                        |
+| **Media**      | An uploaded or built-in asset with metadata: dimensions, blur placeholder, alt text, focal point                                                        | photos, avatars, OG images                                                                                                  |
 
 **Modelling rule.** Content that appears on more than one page, or needs its own URL, becomes a collection or a global. Lists used on only one page stay inside that block's data.
 
@@ -445,30 +445,30 @@ type BlockInstance = {
 
 **Block catalogue**, mapped 1:1 from the existing sections:
 
-| Type                | Component (today)                         | Editable data                                                                                     | Data source                         | Constraints                     |
-| ------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------- | ----------------------------------- | ------------------------------- |
-| `hero.home`         | `features/hero` HeroSection               | eyebrow; headline {lead, muted, tail}; description; primary/secondary CTA; members {count stat, label, 3 avatars} | inline                              | home only, first, max 1. Background locked (D13) |
-| `hero.page`         | `components/page-hero`                    | title, subtitle, image + focal point, tint 0–0.9, mirror                                          | inline                              | first, max 1                    |
-| `credibility`       | `features/credibility`                    | badges 3–5 {title, subtitle, icon}                                                                | inline                              |                                 |
-| `about.intro`       | `features/about` AboutSection             | eyebrow, headline, quote, paragraphs 1–3, stats 2–4, CTA                                          | inline                              |                                 |
-| `process`           | `features/how-it-works` (+ StepsStory)    | variant `home` \| `page`, tag, title, subtitle, CTA                                               | `process_steps`                     | 3–6 visible steps               |
-| `testimonials`      | `features/testimonials`                   | variant, eyebrow, title, selection (all \| chosen ids)                                            | `testimonials`                      | auto columns                    |
-| `band`              | `features/enterprise` EnterpriseSection   | band reference, tint override                                                                     | `cta_bands`                         |                                 |
-| `insights.latest`   | `features/insights` InsightsSection       | title, subtitle, CTA, count (1–6), mode latest \| chosen                                          | `articles`                          |                                 |
-| `faq`               | `features/faq`                            | variant, title, subtitle, selection, initially-open item                                          | `faqs`                              |                                 |
-| `about.story`       | about-page StorySection                   | eyebrow, title, paragraphs, quote, badge stat, role line, photo                                   | inline + `site` global (name, logo) |                                 |
-| `about.stats`       | StatsBand                                 | 3–4 stats {value, decimals, prefix, suffix, label}                                                | inline                              |                                 |
-| `about.approach`    | ApproachSection                           | eyebrow, title, subtitle, 3 principles {icon, title, body}                                        | inline                              | exactly 3                       |
-| `about.credentials` | CredentialsSection                        | eyebrow, title, subtitle, CTA, 3–8 items {year, title, issuer, url?}                              | inline                              |                                 |
-| `services.grid`     | ServicesGrid                              | eyebrow, title, intro, "learn more" link                                                          | `services`                          |                                 |
-| `services.plans`    | FormatsSection                            | eyebrow, title, subtitle, featured-tag label                                                      | `plans`                             | 1–4 plans                       |
-| `session.timeline`  | SessionTimeline                           | eyebrow, title, subtitle, 3–6 beats {time, title, body}                                           | inline                              |                                 |
-| `fit`               | FitSection                                | eyebrow, title, subtitle, good {heading, items}, poor {heading, items}                            | inline                              | 2–6 items per list              |
-| `insights.browser`  | InsightsBrowser + FeaturedArticle         | heading, page size                                                                                | `articles`, `article_categories`    | insights page only              |
-| `newsletter`        | NewsletterBand                            | optional copy override                                                                            | `newsletter` global                 |                                 |
-| `contact.details`   | ContactSection + ContactForm              | eyebrow, title, subtitle, body                                                                    | `contact`, `contactForm` globals; `services`, `plans` | contact page only |
-| `contact.clinic`    | ClinicSection                             | eyebrow, title, subtitle, photo                                                                   | `contact` global (clinic)           |                                 |
-| `richtext`          | new (legal and custom pages)              | TipTap document, width (narrow \| wide)                                                           | inline                              | custom pages                    |
+| Type                | Component (today)                       | Editable data                                                                                                     | Data source                                           | Constraints                                      |
+| ------------------- | --------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- | ------------------------------------------------ |
+| `hero.home`         | `features/hero` HeroSection             | eyebrow; headline {lead, muted, tail}; description; primary/secondary CTA; members {count stat, label, 3 avatars} | inline                                                | home only, first, max 1. Background locked (D13) |
+| `hero.page`         | `components/page-hero`                  | title, subtitle, image + focal point, tint 0–0.9, mirror                                                          | inline                                                | first, max 1                                     |
+| `credibility`       | `features/credibility`                  | badges 3–5 {title, subtitle, icon}                                                                                | inline                                                |                                                  |
+| `about.intro`       | `features/about` AboutSection           | eyebrow, headline, quote, paragraphs 1–3, stats 2–4, CTA                                                          | inline                                                |                                                  |
+| `process`           | `features/how-it-works` (+ StepsStory)  | variant `home` \| `page`, tag, title, subtitle, CTA                                                               | `process_steps`                                       | 3–6 visible steps                                |
+| `testimonials`      | `features/testimonials`                 | variant, eyebrow, title, selection (all \| chosen ids)                                                            | `testimonials`                                        | auto columns                                     |
+| `band`              | `features/enterprise` EnterpriseSection | band reference, tint override                                                                                     | `cta_bands`                                           |                                                  |
+| `insights.latest`   | `features/insights` InsightsSection     | title, subtitle, CTA, count (1–6), mode latest \| chosen                                                          | `articles`                                            |                                                  |
+| `faq`               | `features/faq`                          | variant, title, subtitle, selection, initially-open item                                                          | `faqs`                                                |                                                  |
+| `about.story`       | about-page StorySection                 | eyebrow, title, paragraphs, quote, badge stat, role line, photo                                                   | inline + `site` global (name, logo)                   |                                                  |
+| `about.stats`       | StatsBand                               | 3–4 stats {value, decimals, prefix, suffix, label}                                                                | inline                                                |                                                  |
+| `about.approach`    | ApproachSection                         | eyebrow, title, subtitle, 3 principles {icon, title, body}                                                        | inline                                                | exactly 3                                        |
+| `about.credentials` | CredentialsSection                      | eyebrow, title, subtitle, CTA, 3–8 items {year, title, issuer, url?}                                              | inline                                                |                                                  |
+| `services.grid`     | ServicesGrid                            | eyebrow, title, intro, "learn more" link                                                                          | `services`                                            |                                                  |
+| `services.plans`    | FormatsSection                          | eyebrow, title, subtitle, featured-tag label                                                                      | `plans`                                               | 1–4 plans                                        |
+| `session.timeline`  | SessionTimeline                         | eyebrow, title, subtitle, 3–6 beats {time, title, body}                                                           | inline                                                |                                                  |
+| `fit`               | FitSection                              | eyebrow, title, subtitle, good {heading, items}, poor {heading, items}                                            | inline                                                | 2–6 items per list                               |
+| `insights.browser`  | InsightsBrowser + FeaturedArticle       | heading, page size                                                                                                | `articles`, `article_categories`                      | insights page only                               |
+| `newsletter`        | NewsletterBand                          | optional copy override                                                                                            | `newsletter` global                                   |                                                  |
+| `contact.details`   | ContactSection + ContactForm            | eyebrow, title, subtitle, body                                                                                    | `contact`, `contactForm` globals; `services`, `plans` | contact page only                                |
+| `contact.clinic`    | ClinicSection                           | eyebrow, title, subtitle, photo                                                                                   | `contact` global (clinic)                             |                                                  |
+| `richtext`          | new (legal and custom pages)            | TipTap document, width (narrow \| wide)                                                                           | inline                                                | custom pages                                     |
 
 The **article page** (`/insights/[slug]`) has a fixed template: article hero → body + CTA card (copy from `microcopy`) → related articles → newsletter band. Its content comes from the article.
 
@@ -476,17 +476,17 @@ The **article page** (`/insights/[slug]`) has a fixed template: article hero →
 
 All collection rows share these columns: `id` (uuid), `sort`, `is_visible`, `created_at`, `updated_at`, `created_by`, `updated_by`, `version`.
 
-| Collection           | Fields                                                                                                                                                                  | Replaces / notes                                                                        |
-| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Collection           | Fields                                                                                                                                                                                                                                      | Replaces / notes                                                                                                             |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | `articles`           | slug, title, excerpt, cover (media), category, author, body (TipTap JSON), featured, status (`draft` \| `scheduled` \| `published` \| `archived`), published_at, scheduled_for, seo; derived: body_text, reading_minutes, search (tsvector) | `articles.ts`, `article-bodies.ts`, `posts.ts`, `FEATURED_ARTICLE` (now a flag). Slug changes create redirects automatically |
-| `article_categories` | slug, name, description, related service                                                                                                                                | `CATEGORIES`. The related service replaces `TOPIC_FOR` for the article CTA prefill      |
-| `authors`            | name, slug, role title, bio, avatar, optional link to a user                                                                                                            | Inline `author{name, avatar}`                                                           |
-| `services`           | slug (stable, e.g. `anxiety-stress`), title, body, icon                                                                                                                 | `SERVICES`. Also drives contact topics and `?topic=` URL params                         |
-| `plans`              | slug, name, price label ("€840"), price amount in cents (optional, for JSON-LD offers), unit, summary, features[], CTA label, featured                                 | `FORMATS.plans`. Also drives `?plan=` prefill                                           |
-| `testimonials`       | quote, author name, author role, avatar                                                                                                                                 | `testimonials.ts`. Columns are no longer encoded in the data                            |
-| `faqs`               | question, answer (plain paragraphs)                                                                                                                                     | `faqs.ts`                                                                               |
-| `process_steps`      | title, description, image, frame {x, y, w, h} as fractions                                                                                                              | `steps.ts`. The frame replaces the hand-written `%` crop strings, edited with a visual cropper |
-| `cta_bands`          | name, eyebrow, title, bullets[], CTA {label, href}, image, tint                                                                                                         | `ENTERPRISE_CONTENT`, `ABOUT_CTA`                                                       |
+| `article_categories` | slug, name, description, related service                                                                                                                                                                                                    | `CATEGORIES`. The related service replaces `TOPIC_FOR` for the article CTA prefill                                           |
+| `authors`            | name, slug, role title, bio, avatar, optional link to a user                                                                                                                                                                                | Inline `author{name, avatar}`                                                                                                |
+| `services`           | slug (stable, e.g. `anxiety-stress`), title, body, icon                                                                                                                                                                                     | `SERVICES`. Also drives contact topics and `?topic=` URL params                                                              |
+| `plans`              | slug, name, price label ("€840"), price amount in cents (optional, for JSON-LD offers), unit, summary, features[], CTA label, featured                                                                                                      | `FORMATS.plans`. Also drives `?plan=` prefill                                                                                |
+| `testimonials`       | quote, author name, author role, avatar                                                                                                                                                                                                     | `testimonials.ts`. Columns are no longer encoded in the data                                                                 |
+| `faqs`               | question, answer (plain paragraphs)                                                                                                                                                                                                         | `faqs.ts`                                                                                                                    |
+| `process_steps`      | title, description, image, frame {x, y, w, h} as fractions                                                                                                                                                                                  | `steps.ts`. The frame replaces the hand-written `%` crop strings, edited with a visual cropper                               |
+| `cta_bands`          | name, eyebrow, title, bullets[], CTA {label, href}, image, tint                                                                                                                                                                             | `ENTERPRISE_CONTENT`, `ABOUT_CTA`                                                                                            |
 
 Saving a collection item makes it live immediately; `is_visible` is the soft "unpublish". Articles are the exception and follow §6.5.
 
@@ -494,22 +494,22 @@ Saving a collection item makes it live immediately; `is_visible` is the soft "un
 
 The `settings` table has one row per key. Each value is a Zod-validated JSON document.
 
-| Key             | Contents                                                                                                                                                                  | Update permission (§7.2) |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
-| `site`          | name, legal name, professional title, footer blurb, logo, icon/favicon, locale `en-IE`, time zone `Europe/Dublin`, social profiles                                        | `settings.update`        |
-| `contact`       | email; phone {display, E.164}; address {lines, city, Eircode, country}; structured weekly hours + note; clinic {name, description, photo, online note, geo lat/lng} (maps URL derived) | `globals.update`         |
-| `navigation`    | header links[], CTA {label, href}                                                                                                                                         | `globals.update`         |
-| `footer`        | blurb, columns[] (with an "auto sitemap" option), contact note, legal links[], copyright name                                                                             | `globals.update`         |
-| `newsletter`    | band copy (eyebrow, title, subtitle, placeholder, button, success), image, tint, confirmation-email copy                                                                  | `globals.update`         |
-| `contactForm`   | title, field labels, placeholders, extra topics ("Something else"), formats[], consent text, button, success copy, error messages                                        | `globals.update`         |
-| `microcopy`     | strings currently inline in components (insights browser, article chrome and CTA card, breadcrumbs, share labels, "Book a call")                                          | `globals.update`         |
-| `seo`           | title template, default title and description, default OG image, robots policy, search-console verification, business JSON-LD (type, price range, `sameAs`)              | `seo.update`             |
-| `tracking`      | GTM ID, GA4 ID, Meta Pixel ID, CAPI token (**encrypted**), test event code, per-channel enable flags                                                                      | `tracking.update`        |
-| `consent`       | banner on/off, copy, policy link, category descriptions, re-consent interval, consent version                                                                             | `tracking.update`        |
-| `scripts`       | custom head/body snippets, each with a placement and a consent category                                                                                                   | `code.update` (owner)    |
-| `theme`         | site tokens + admin tokens, with draft and published (§10)                                                                                                                | `appearance.update` / `appearance.publish` |
-| `notifications` | enquiry recipients, auto-reply on/off and copy                                                                                                                            | `settings.update`        |
-| `privacy`       | enquiry retention (months), newsletter double opt-in, IP-hash salt rotation                                                                                               | `settings.update`        |
+| Key             | Contents                                                                                                                                                                               | Update permission (§7.2)                   |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| `site`          | name, legal name, professional title, footer blurb, logo, icon/favicon, locale `en-IE`, time zone `Europe/Dublin`, social profiles                                                     | `settings.update`                          |
+| `contact`       | email; phone {display, E.164}; address {lines, city, Eircode, country}; structured weekly hours + note; clinic {name, description, photo, online note, geo lat/lng} (maps URL derived) | `globals.update`                           |
+| `navigation`    | header links[], CTA {label, href}                                                                                                                                                      | `globals.update`                           |
+| `footer`        | blurb, columns[] (with an "auto sitemap" option), contact note, legal links[], copyright name                                                                                          | `globals.update`                           |
+| `newsletter`    | band copy (eyebrow, title, subtitle, placeholder, button, success), image, tint, confirmation-email copy                                                                               | `globals.update`                           |
+| `contactForm`   | title, field labels, placeholders, extra topics ("Something else"), formats[], consent text, button, success copy, error messages                                                      | `globals.update`                           |
+| `microcopy`     | strings currently inline in components (insights browser, article chrome and CTA card, breadcrumbs, share labels, "Book a call")                                                       | `globals.update`                           |
+| `seo`           | title template, default title and description, default OG image, robots policy, search-console verification, business JSON-LD (type, price range, `sameAs`)                            | `seo.update`                               |
+| `tracking`      | GTM ID, GA4 ID, Meta Pixel ID, CAPI token (**encrypted**), test event code, per-channel enable flags                                                                                   | `tracking.update`                          |
+| `consent`       | banner on/off, copy, policy link, category descriptions, re-consent interval, consent version                                                                                          | `tracking.update`                          |
+| `scripts`       | custom head/body snippets, each with a placement and a consent category                                                                                                                | `code.update` (owner)                      |
+| `theme`         | site tokens + admin tokens, with draft and published (§10)                                                                                                                             | `appearance.update` / `appearance.publish` |
+| `notifications` | enquiry recipients, auto-reply on/off and copy                                                                                                                                         | `settings.update`                          |
+| `privacy`       | enquiry retention (months), newsletter double opt-in, IP-hash salt rotation                                                                                                            | `settings.update`                          |
 
 Reading is governed by the matching `read` permission. Public rendering reads every key except the secrets in `tracking`.
 
@@ -531,23 +531,23 @@ Reading is governed by the matching `read` permission. Public rendering reads ev
 
 Conventions: snake_case, `uuid` primary keys (`gen_random_uuid()`), `timestamptz`, foreign keys with explicit `on delete` rules, and Drizzle `relations()` (0.45 API).
 
-| Table                                                                           | Key columns                                                                                                                                                                                                          |
-| ------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `users`, `sessions`, `accounts`, `verifications`, `two_factors`, `rate_limits`  | Generated by the Better Auth CLI (`auth generate --adapter drizzle --dialect postgresql`, `usePlural: true`, uuid ids). The admin plugin adds `role`, `banned`, `ban_reason`, `ban_expires` and `sessions.impersonated_by` |
-| `media`                                                                         | driver (`static` \| `local` \| `s3`), key (unique, content-hashed), url, filename, mime_type, size_bytes, width, height, blur_data_url, dominant_color, alt, caption, focal_x, focal_y, is_decorative, created_by, deleted_at |
-| `pages`                                                                         | system_key (unique, nullable), path (unique), title, status, draft (jsonb), published (jsonb), seo (jsonb), settings (jsonb), version, published_at, published_by                                                     |
-| `revisions`                                                                     | entity_type, entity_id, version, snapshot (jsonb), note, created_by, created_at. Index on (entity_type, entity_id, created_at desc)                                                                                 |
-| `articles`                                                                      | slug (unique), title, excerpt, cover_id, category_id, author_id, body (jsonb), body_text, reading_minutes, featured, status, published_at, scheduled_for, draft (jsonb), seo (jsonb), version, `search` tsvector generated from title (A), excerpt (B) and body_text (C), with a GIN index |
-| `article_categories`, `authors`                                                 | see §6.3                                                                                                                                                                                                             |
-| `services`, `plans`, `testimonials`, `faqs`, `process_steps`, `cta_bands`       | see §6.3                                                                                                                                                                                                             |
-| `settings`                                                                      | key (pk), value (jsonb), draft (jsonb, theme only), version, updated_by, updated_at                                                                                                                                  |
-| `leads`                                                                         | name, email, phone, topic_slug, format_slug, plan_slug, message, privacy_consent_at, marketing_consent, status (`new` \| `contacted` \| `booked` \| `closed` \| `spam`), assigned_to, source_path, referrer, utm (jsonb), ip_hash, user_agent, meta_event_id, created_at |
-| `lead_activities`                                                               | lead_id (cascade), actor_id, type (`note` \| `status` \| `email` \| `assignment`), body, data (jsonb), created_at                                                                                                   |
-| `newsletter_subscribers`                                                        | email (unique, lower-cased), status (`pending` \| `confirmed` \| `unsubscribed`), token_hash, source_path, consent_text, confirmed_at, unsubscribed_at, ip_hash                                                      |
-| `redirects`                                                                     | source_path (unique), destination, status_code (301/302/307/308), is_active, hit_count, last_hit_at, note                                                                                                            |
-| `audit_logs`                                                                    | actor_id, actor_email, action (e.g. `page.publish`), entity_type, entity_id, summary, diff (jsonb), ip_hash, user_agent, created_at. Index on created_at desc; **no PII in diffs** for leads                         |
-| `api_rate_limits`                                                               | key (pk), count, reset_at. A fixed-window limiter for public endpoints (atomic upsert)                                                                                                                              |
-| `consent_events`                                                                | consent_id, analytics, marketing, revision, banner_hash, action (`accept` \| `reject` \| `custom` \| `withdraw`), created_at. Append-only proof of consent; no raw IP (§12.2)                                         |
+| Table                                                                          | Key columns                                                                                                                                                                                                                                                                                |
+| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `users`, `sessions`, `accounts`, `verifications`, `two_factors`, `rate_limits` | Generated by the Better Auth CLI (`auth generate --adapter drizzle --dialect postgresql`, `usePlural: true`, uuid ids). The admin plugin adds `role`, `banned`, `ban_reason`, `ban_expires` and `sessions.impersonated_by`                                                                 |
+| `media`                                                                        | driver (`static` \| `local` \| `s3`), key (unique, content-hashed), url, filename, mime_type, size_bytes, width, height, blur_data_url, dominant_color, alt, caption, focal_x, focal_y, is_decorative, created_by, deleted_at                                                              |
+| `pages`                                                                        | system_key (unique, nullable), path (unique), title, status, draft (jsonb), published (jsonb), seo (jsonb), settings (jsonb), version, published_at, published_by                                                                                                                          |
+| `revisions`                                                                    | entity_type, entity_id, version, snapshot (jsonb), note, created_by, created_at. Index on (entity_type, entity_id, created_at desc)                                                                                                                                                        |
+| `articles`                                                                     | slug (unique), title, excerpt, cover_id, category_id, author_id, body (jsonb), body_text, reading_minutes, featured, status, published_at, scheduled_for, draft (jsonb), seo (jsonb), version, `search` tsvector generated from title (A), excerpt (B) and body_text (C), with a GIN index |
+| `article_categories`, `authors`                                                | see §6.3                                                                                                                                                                                                                                                                                   |
+| `services`, `plans`, `testimonials`, `faqs`, `process_steps`, `cta_bands`      | see §6.3                                                                                                                                                                                                                                                                                   |
+| `settings`                                                                     | key (pk), value (jsonb), draft (jsonb, theme only), version, updated_by, updated_at                                                                                                                                                                                                        |
+| `leads`                                                                        | name, email, phone, topic_slug, format_slug, plan_slug, message, privacy_consent_at, marketing_consent, status (`new` \| `contacted` \| `booked` \| `closed` \| `spam`), assigned_to, source_path, referrer, utm (jsonb), ip_hash, user_agent, meta_event_id, created_at                   |
+| `lead_activities`                                                              | lead_id (cascade), actor_id, type (`note` \| `status` \| `email` \| `assignment`), body, data (jsonb), created_at                                                                                                                                                                          |
+| `newsletter_subscribers`                                                       | email (unique, lower-cased), status (`pending` \| `confirmed` \| `unsubscribed`), token_hash, source_path, consent_text, confirmed_at, unsubscribed_at, ip_hash                                                                                                                            |
+| `redirects`                                                                    | source_path (unique), destination, status_code (301/302/307/308), is_active, hit_count, last_hit_at, note                                                                                                                                                                                  |
+| `audit_logs`                                                                   | actor_id, actor_email, action (e.g. `page.publish`), entity_type, entity_id, summary, diff (jsonb), ip_hash, user_agent, created_at. Index on created_at desc; **no PII in diffs** for leads                                                                                               |
+| `api_rate_limits`                                                              | key (pk), count, reset_at. A fixed-window limiter for public endpoints (atomic upsert)                                                                                                                                                                                                     |
+| `consent_events`                                                               | consent_id, analytics, marketing, revision, banner_hash, action (`accept` \| `reject` \| `custom` \| `withdraw`), created_at. Append-only proof of consent; no raw IP (§12.2)                                                                                                              |
 
 ### 6.7 Content migration (seed)
 
@@ -622,32 +622,32 @@ Users can hold several roles; any role that grants a permission is enough.
 
 ✓ = allowed · **own** = only the actor's own records (enforced in the service) · — = denied
 
-| Permission                                        | Owner | Admin               | Editor | Author        | Marketer | Intake | Viewer |
-| ------------------------------------------------- | :---: | :-----------------: | :----: | :-----------: | :------: | :----: | :----: |
-| dashboard.view                                    | ✓     | ✓                   | ✓      | ✓             | ✓        | ✓      | ✓      |
-| page.read                                         | ✓     | ✓                   | ✓      | ✓             | ✓        | —      | ✓      |
-| page.update · publish · create · delete (custom)  | ✓     | ✓                   | ✓      | —             | —        | —      | —      |
-| article.read                                      | ✓     | ✓                   | ✓      | ✓             | ✓        | —      | ✓      |
-| article.create · update                           | ✓     | ✓                   | ✓      | own           | —        | —      | —      |
-| article.publish                                   | ✓     | ✓                   | ✓      | — (submits)   | —        | —      | —      |
-| article.delete                                    | ✓     | ✓                   | ✓      | own drafts    | —        | —      | —      |
-| collection.read                                   | ✓     | ✓                   | ✓      | ✓             | ✓        | —      | ✓      |
-| collection.create · update · delete               | ✓     | ✓                   | ✓      | —             | —        | —      | —      |
-| globals.read / update                             | ✓ / ✓ | ✓ / ✓               | ✓ / ✓  | — / —         | ✓ / —    | — / —  | ✓ / —  |
-| media.read · upload                               | ✓     | ✓                   | ✓      | ✓             | ✓        | —      | —      |
-| media.update / delete                             | ✓ / ✓ | ✓ / ✓               | ✓ / ✓  | own / —       | ✓ / —    | —      | —      |
-| lead.read · update                                | ✓     | ✓                   | —      | —             | —        | ✓      | —      |
-| lead.export · delete                              | ✓     | ✓                   | —      | —             | —        | —      | —      |
-| newsletter.read · export / delete                 | ✓ / ✓ | ✓ / ✓               | —      | —             | ✓ / —    | —      | —      |
-| seo.read / update                                 | ✓ / ✓ | ✓ / ✓               | ✓ / ✓  | — / —         | ✓ / ✓    | — / —  | ✓ / —  |
-| redirect.read · manage                            | ✓     | ✓                   | ✓      | —             | ✓        | —      | —      |
-| tracking.read · update                            | ✓     | ✓                   | —      | —             | ✓        | —      | —      |
-| code.update (custom scripts)                      | ✓     | —                   | —      | —             | —        | —      | —      |
-| appearance.read · update · publish                | ✓     | ✓                   | —      | —             | —        | —      | —      |
-| settings.read · update                            | ✓     | ✓                   | —      | —             | —        | —      | —      |
-| audit.read                                        | ✓     | ✓                   | —      | —             | —        | —      | —      |
-| user.* and session.* (invite, role, ban, revoke)  | ✓     | ✓ (never on owners) | —      | —             | —        | —      | —      |
-| user.impersonate / impersonate-admins             | ✓ / ✓ | ✓ / —               | —      | —             | —        | —      | —      |
+| Permission                                       | Owner |        Admin        | Editor |   Author    | Marketer | Intake | Viewer |
+| ------------------------------------------------ | :---: | :-----------------: | :----: | :---------: | :------: | :----: | :----: |
+| dashboard.view                                   |   ✓   |          ✓          |   ✓    |      ✓      |    ✓     |   ✓    |   ✓    |
+| page.read                                        |   ✓   |          ✓          |   ✓    |      ✓      |    ✓     |   —    |   ✓    |
+| page.update · publish · create · delete (custom) |   ✓   |          ✓          |   ✓    |      —      |    —     |   —    |   —    |
+| article.read                                     |   ✓   |          ✓          |   ✓    |      ✓      |    ✓     |   —    |   ✓    |
+| article.create · update                          |   ✓   |          ✓          |   ✓    |     own     |    —     |   —    |   —    |
+| article.publish                                  |   ✓   |          ✓          |   ✓    | — (submits) |    —     |   —    |   —    |
+| article.delete                                   |   ✓   |          ✓          |   ✓    | own drafts  |    —     |   —    |   —    |
+| collection.read                                  |   ✓   |          ✓          |   ✓    |      ✓      |    ✓     |   —    |   ✓    |
+| collection.create · update · delete              |   ✓   |          ✓          |   ✓    |      —      |    —     |   —    |   —    |
+| globals.read / update                            | ✓ / ✓ |        ✓ / ✓        | ✓ / ✓  |    — / —    |  ✓ / —   | — / —  | ✓ / —  |
+| media.read · upload                              |   ✓   |          ✓          |   ✓    |      ✓      |    ✓     |   —    |   —    |
+| media.update / delete                            | ✓ / ✓ |        ✓ / ✓        | ✓ / ✓  |   own / —   |  ✓ / —   |   —    |   —    |
+| lead.read · update                               |   ✓   |          ✓          |   —    |      —      |    —     |   ✓    |   —    |
+| lead.export · delete                             |   ✓   |          ✓          |   —    |      —      |    —     |   —    |   —    |
+| newsletter.read · export / delete                | ✓ / ✓ |        ✓ / ✓        |   —    |      —      |  ✓ / —   |   —    |   —    |
+| seo.read / update                                | ✓ / ✓ |        ✓ / ✓        | ✓ / ✓  |    — / —    |  ✓ / ✓   | — / —  | ✓ / —  |
+| redirect.read · manage                           |   ✓   |          ✓          |   ✓    |      —      |    ✓     |   —    |   —    |
+| tracking.read · update                           |   ✓   |          ✓          |   —    |      —      |    ✓     |   —    |   —    |
+| code.update (custom scripts)                     |   ✓   |          —          |   —    |      —      |    —     |   —    |   —    |
+| appearance.read · update · publish               |   ✓   |          ✓          |   —    |      —      |    —     |   —    |   —    |
+| settings.read · update                           |   ✓   |          ✓          |   —    |      —      |    —     |   —    |   —    |
+| audit.read                                       |   ✓   |          ✓          |   —    |      —      |    —     |   —    |   —    |
+| user.* and session.* (invite, role, ban, revoke) |   ✓   | ✓ (never on owners) |   —    |      —      |    —     |   —    |   —    |
+| user.impersonate / impersonate-admins            | ✓ / ✓ |        ✓ / —        |   —    |      —      |    —     |   —    |   —    |
 
 The service layer also enforces these invariants:
 
@@ -693,7 +693,14 @@ import { handle } from "@hono/vercel"
 import { app } from "@/server/api/app"
 
 const handler = handle(app)
-export { handler as GET, handler as POST, handler as PUT, handler as PATCH, handler as DELETE, handler as OPTIONS }
+export {
+  handler as GET,
+  handler as POST,
+  handler as PUT,
+  handler as PATCH,
+  handler as DELETE,
+  handler as OPTIONS,
+}
 ```
 
 `app = new Hono<AppEnv>().basePath("/api")`, assembled in this order:
@@ -718,24 +725,24 @@ Each domain is a chained sub-app (`.route()`), so `export type AdminApi = typeof
 
 ### 8.3 Route map (`/api/v1`)
 
-| Area           | Endpoints                                                                                                                                                  |
-| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Public         | `POST /public/leads` · `POST /public/newsletter` · `GET /public/newsletter/confirm` · `POST /public/newsletter/unsubscribe` · `POST /public/consent` · `GET /health` |
-| Session        | `GET /admin/me` (user, roles, permission map, 2FA status) · `GET /admin/search?q=` (⌘K) · `GET /admin/dashboard` · `GET /admin/notifications`               |
-| Pages          | `GET /admin/pages` · `POST` (custom page) · `GET /:id` · `PATCH /:id/draft` · `PATCH /:id/seo` · `POST /:id/publish` · `POST /:id/discard` · `GET /:id/revisions` · `POST /:id/revisions/:rev/restore` · `DELETE /:id` |
-| Preview        | `GET /admin/preview?path=` (enables draft mode, then redirects) · `POST /admin/preview/exit`                                                              |
-| Articles       | CRUD + `/publish`, `/schedule`, `/unpublish`, `/revisions` · `/admin/categories` · `/admin/authors`                                                        |
-| Collections    | `GET\|POST /admin/collections/:name` · `PATCH\|DELETE /:id` · `PATCH /admin/collections/:name/order`. One generic router driven by the collection registry |
-| Globals        | `GET\|PUT /admin/globals/:key` · `GET /:key/revisions` · `POST /:key/revisions/:rev/restore`. The permission is resolved per key (§6.4); `tracking`, `consent`, `scripts` and `theme` use their dedicated endpoints below |
-| Media          | `GET /admin/media` (filters: type, missing alt, search) · `POST` (multipart, then sharp) · `PATCH /:id` · `DELETE /:id` · `GET /:id/usage`                |
-| Enquiries      | `GET /admin/leads` · `GET\|PATCH /:id` · `POST /:id/notes` · `GET /admin/leads/export.csv` · `DELETE /:id` (GDPR erase)                                    |
-| Newsletter     | `GET /admin/newsletter` · `GET /export.csv` · `DELETE /:id`                                                                                                |
-| SEO            | `GET /admin/seo/overview` (health) · `GET\|PUT /admin/seo/defaults` · redirects CRUD                                                                       |
-| Marketing      | `GET\|PUT /admin/tracking` · `POST /admin/tracking/test-capi` · `GET\|PUT /admin/consent` · `GET\|PUT /admin/scripts` (owner)                              |
-| Appearance     | `GET /admin/theme` · `PUT /admin/theme/draft` · `POST /admin/theme/publish` · `POST /admin/theme/reset`                                                    |
-| Users          | `GET /admin/users` · `POST /invite` · `PATCH /:id/role` · `POST /:id/ban` · `POST /:id/unban` · `DELETE /:id/sessions` · `POST /:id/impersonate` · `DELETE /:id` |
-| Audit          | `GET /admin/audit` (filters: actor, entity, action, date)                                                                                                  |
-| Cron           | `POST /cron/tick`                                                                                                                                          |
+| Area        | Endpoints                                                                                                                                                                                                                 |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Public      | `POST /public/leads` · `POST /public/newsletter` · `GET /public/newsletter/confirm` · `POST /public/newsletter/unsubscribe` · `POST /public/consent` · `GET /health`                                                      |
+| Session     | `GET /admin/me` (user, roles, permission map, 2FA status) · `GET /admin/search?q=` (⌘K) · `GET /admin/dashboard` · `GET /admin/notifications`                                                                             |
+| Pages       | `GET /admin/pages` · `POST` (custom page) · `GET /:id` · `PATCH /:id/draft` · `PATCH /:id/seo` · `POST /:id/publish` · `POST /:id/discard` · `GET /:id/revisions` · `POST /:id/revisions/:rev/restore` · `DELETE /:id`    |
+| Preview     | `GET /admin/preview?path=` (enables draft mode, then redirects) · `POST /admin/preview/exit`                                                                                                                              |
+| Articles    | CRUD + `/publish`, `/schedule`, `/unpublish`, `/revisions` · `/admin/categories` · `/admin/authors`                                                                                                                       |
+| Collections | `GET\|POST /admin/collections/:name` · `PATCH\|DELETE /:id` · `PATCH /admin/collections/:name/order`. One generic router driven by the collection registry                                                                |
+| Globals     | `GET\|PUT /admin/globals/:key` · `GET /:key/revisions` · `POST /:key/revisions/:rev/restore`. The permission is resolved per key (§6.4); `tracking`, `consent`, `scripts` and `theme` use their dedicated endpoints below |
+| Media       | `GET /admin/media` (filters: type, missing alt, search) · `POST` (multipart, then sharp) · `PATCH /:id` · `DELETE /:id` · `GET /:id/usage`                                                                                |
+| Enquiries   | `GET /admin/leads` · `GET\|PATCH /:id` · `POST /:id/notes` · `GET /admin/leads/export.csv` · `DELETE /:id` (GDPR erase)                                                                                                   |
+| Newsletter  | `GET /admin/newsletter` · `GET /export.csv` · `DELETE /:id`                                                                                                                                                               |
+| SEO         | `GET /admin/seo/overview` (health) · `GET\|PUT /admin/seo/defaults` · redirects CRUD                                                                                                                                      |
+| Marketing   | `GET\|PUT /admin/tracking` · `POST /admin/tracking/test-capi` · `GET\|PUT /admin/consent` · `GET\|PUT /admin/scripts` (owner)                                                                                             |
+| Appearance  | `GET /admin/theme` · `PUT /admin/theme/draft` · `POST /admin/theme/publish` · `POST /admin/theme/reset`                                                                                                                   |
+| Users       | `GET /admin/users` · `POST /invite` · `PATCH /:id/role` · `POST /:id/ban` · `POST /:id/unban` · `DELETE /:id/sessions` · `POST /:id/impersonate` · `DELETE /:id`                                                          |
+| Audit       | `GET /admin/audit` (filters: actor, entity, action, date)                                                                                                                                                                 |
+| Cron        | `POST /cron/tick`                                                                                                                                                                                                         |
 
 ### 8.4 Admin client
 
@@ -779,7 +786,7 @@ The **topbar** holds:
 
 ### 9.2 Design language: "Evergreen" (from the inspiration)
 
-**Layout.** Floating rounded panels sit on a soft grey canvas with 16 px gutters: a 288 px sidebar panel, a 72 px topbar panel and the content panel. Cards have a radius of about 22 px and 20–24 px of padding.
+**Layout.** Floating rounded grey panels sit on a white canvas with 16 px gutters, and cards on the panels are white: a 288 px sidebar panel, a 72 px topbar panel and the content panel. Cards have a radius of about 22 px and 20–24 px of padding.
 
 **Typography.** Plus Jakarta Sans throughout:
 
@@ -789,23 +796,23 @@ The **topbar** holds:
 - body 14 px;
 - Geist Mono for IDs and code.
 
-| Token (light)                        | Value                          | Token (dark)    | Value     |
-| ------------------------------------ | ------------------------------ | --------------- | --------- |
-| canvas `--background`                | `#F2F3F2`                      | `--background`  | `#0C100D` |
-| panel `--sidebar`                    | `#F7F8F7`                      | `--sidebar`     | `#111712` |
-| `--card`                             | `#FFFFFF`                      | `--card`        | `#151C17` |
-| `--foreground`                       | `#111411`                      | `--foreground`  | `#EEF2EE` |
-| `--muted-foreground`                 | `#6B716C`                      |                 | `#9AA39C` |
-| `--primary`                          | `#16823A`                      |                 | `#34B567` |
-| `--primary-foreground`               | `#FFFFFF`                      |                 | `#06130A` |
-| `--accent`                           | `#E6F4EB`                      |                 | `#18301F` |
-| `--border`                           | `#E5E8E5`                      |                 | `#243026` |
-| `--ring`                             | `#22A055`                      |                 | `#3FCB75` |
-| `--chart-1..5`                       | `#1E6B35 · #3F9D5E · #6CC08C · #2F4F38 · #A7D9B8` | | lighter steps |
-| status success / warning / danger    | soft fill + strong text (`#DCFCE7/#15803D`, `#FEF3C7/#B45309`, `#FEE2E2/#B91C1C`) | | tinted equivalents |
-| `--radius`                           | `0.75rem` (cards use `rounded-2xl`, about 22 px)       |                 |           |
+| Token (light)                     | Value                                                                             | Token (dark)   | Value              |
+| --------------------------------- | --------------------------------------------------------------------------------- | -------------- | ------------------ |
+| canvas `--background`             | `#FFFFFF`                                                                         | `--background` | `#0C100D`          |
+| panel `--sidebar`                 | `#F2F3F2`                                                                         | `--sidebar`    | `#141B16`          |
+| `--card`                          | `#FFFFFF`                                                                         | `--card`       | `#1C251F`          |
+| `--foreground`                    | `#111411`                                                                         | `--foreground` | `#EEF2EE`          |
+| `--muted-foreground`              | `#666C67`                                                                         |                | `#9AA39C`          |
+| `--primary`                       | `#157D38`                                                                         |                | `#34B567`          |
+| `--primary-foreground`            | `#FFFFFF`                                                                         |                | `#06130A`          |
+| `--accent`                        | `#E6F4EB`                                                                         |                | `#18301F`          |
+| `--border`                        | `#E5E8E5`                                                                         |                | `#243026`          |
+| `--ring`                          | `#22A055`                                                                         |                | `#3FCB75`          |
+| `--chart-1..5`                    | `#1E6B35 · #3F9D5E · #6CC08C · #2F4F38 · #A7D9B8`                                 |                | lighter steps      |
+| status success / warning / danger | soft fill + strong text (`#DCFCE7/#15803D`, `#FEF3C7/#B45309`, `#FEE2E2/#B91C1C`) |                | tinted equivalents |
+| `--radius`                        | `0.75rem` (cards use `rounded-2xl`, about 22 px)                                  |                |                    |
 
-Tokens are stored as OKLCH and generated by the theme engine (§10). Hex is shown here for readability.
+Canvas, panel and card values are aligned to the inspiration image (`docs/design/admin-inspiration.png`); muted text and primary are a step darker so they keep AA contrast on the grey panels. Tokens are stored as OKLCH and generated by the theme engine (§10). Hex is shown here for readability.
 
 **Signature components** (built once in `admin/components`):
 
@@ -823,21 +830,21 @@ Tokens are stored as OKLCH and generated by the theme engine (§10). Hex is show
 
 ### 9.3 Key screens
 
-| Screen         | Highlights                                                                                                                                                                                                                                    |
-| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Sign-in        | Split layout: brand panel with gradient and swirl, form on the right. 2FA step, forgot and reset password, invite acceptance                                                                                                                  |
-| **Dashboard**  | "Good morning, {name}" with **New article** / **View site** buttons. KPI row: **New enquiries** (hero card, change vs last month), published articles, newsletter subscribers, SEO health %. **Enquiries this week** pill chart (solid = this week, hatched = last week). **Next up** card (next scheduled article, or the oldest uncontacted enquiry, with a CTA). **Team activity** feed with avatars and status pills. **Content health** gauge (complete / needs work / missing SEO or alt). Every widget respects RBAC |
-| **Page builder** | Three panes: (1) block outline with drag handles, visibility and "same card" toggles, and an add-block library with thumbnails; (2) the schema form for the selected block, with character counters; (3) a **live preview iframe** in draft mode with desktop, tablet and phone sizes, refreshed on autosave. The toolbar shows status, "Saved 2 s ago", Preview, Discard, **Publish** and a History drawer (restore). The SEO tab has a SERP preview, social-card preview and checks |
-| Articles       | Filterable table and a TipTap editor: headings, lists, quote, links, images from the library, bubble menu, live reading time. Side panel: status, schedule, category, author, cover with focal point, excerpt counter, featured flag, slug with an auto-redirect notice. SEO panel. Authors can "Submit for review" |
-| Collections    | Sortable tables (drag to reorder), edit drawers built from the schemas, visibility toggles, "Used on Home, About" hints                                                                                                                       |
-| Media library  | Grid and list views, drag-and-drop upload with progress, a "missing alt" filter, and a details drawer (alt, caption, focal-point picker, usage). Replace keeps the references. Deletion is blocked while an asset is in use              |
-| **Enquiries**  | Kanban (New → Contacted → Booked → Closed) plus a table view. The detail drawer has the message, mailto/tel buttons, consent record, source/UTM, a notes and status timeline, and an assignee. Also CSV export, GDPR erase and a spam folder |
-| SEO center     | Health gauge and an issue list with "Fix" deep links. Defaults, sitemap and robots preview, redirects with hit counts, verification codes                                                                                                      |
-| Marketing      | GTM, GA4 and Pixel IDs with format validation and status. Consent-banner editor with live preview. Custom code (owner only) with consent categories. CAPI test event. Event-catalogue reference                                             |
-| **Appearance** | Preset gallery. Colour pickers with **contrast badges** (AA/AAA) and automatic foregrounds. Radius. Side-by-side live preview of site and admin components. Draft → publish → reset. Logo and favicon                                     |
-| Users & roles  | Users table (role badges, 2FA status, last active), invite dialog, role change, ban, sessions, **View as**. A read-only permission-matrix tab                                                                                                 |
-| Activity log   | Filterable timeline with before/after field diffs                                                                                                                                                                                              |
-| Account        | Profile, password, 2FA setup (QR code and backup codes), active sessions                                                                                                                                                                       |
+| Screen           | Highlights                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Sign-in          | Split layout: brand panel with gradient and swirl, form on the right. 2FA step, forgot and reset password, invite acceptance                                                                                                                                                                                                                                                                                                                                                                                                |
+| **Dashboard**    | "Good morning, {name}" with **New article** / **View site** buttons. KPI row: **New enquiries** (hero card, change vs last month), published articles, newsletter subscribers, SEO health %. **Enquiries this week** pill chart (solid = this week, hatched = last week). **Next up** card (next scheduled article, or the oldest uncontacted enquiry, with a CTA). **Team activity** feed with avatars and status pills. **Content health** gauge (complete / needs work / missing SEO or alt). Every widget respects RBAC |
+| **Page builder** | Three panes: (1) block outline with drag handles, visibility and "same card" toggles, and an add-block library with thumbnails; (2) the schema form for the selected block, with character counters; (3) a **live preview iframe** in draft mode with desktop, tablet and phone sizes, refreshed on autosave. The toolbar shows status, "Saved 2 s ago", Preview, Discard, **Publish** and a History drawer (restore). The SEO tab has a SERP preview, social-card preview and checks                                       |
+| Articles         | Filterable table and a TipTap editor: headings, lists, quote, links, images from the library, bubble menu, live reading time. Side panel: status, schedule, category, author, cover with focal point, excerpt counter, featured flag, slug with an auto-redirect notice. SEO panel. Authors can "Submit for review"                                                                                                                                                                                                         |
+| Collections      | Sortable tables (drag to reorder), edit drawers built from the schemas, visibility toggles, "Used on Home, About" hints                                                                                                                                                                                                                                                                                                                                                                                                     |
+| Media library    | Grid and list views, drag-and-drop upload with progress, a "missing alt" filter, and a details drawer (alt, caption, focal-point picker, usage). Replace keeps the references. Deletion is blocked while an asset is in use                                                                                                                                                                                                                                                                                                 |
+| **Enquiries**    | Kanban (New → Contacted → Booked → Closed) plus a table view. The detail drawer has the message, mailto/tel buttons, consent record, source/UTM, a notes and status timeline, and an assignee. Also CSV export, GDPR erase and a spam folder                                                                                                                                                                                                                                                                                |
+| SEO center       | Health gauge and an issue list with "Fix" deep links. Defaults, sitemap and robots preview, redirects with hit counts, verification codes                                                                                                                                                                                                                                                                                                                                                                                   |
+| Marketing        | GTM, GA4 and Pixel IDs with format validation and status. Consent-banner editor with live preview. Custom code (owner only) with consent categories. CAPI test event. Event-catalogue reference                                                                                                                                                                                                                                                                                                                             |
+| **Appearance**   | Preset gallery. Colour pickers with **contrast badges** (AA/AAA) and automatic foregrounds. Radius. Side-by-side live preview of site and admin components. Draft → publish → reset. Logo and favicon                                                                                                                                                                                                                                                                                                                       |
+| Users & roles    | Users table (role badges, 2FA status, last active), invite dialog, role change, ban, sessions, **View as**. A read-only permission-matrix tab                                                                                                                                                                                                                                                                                                                                                                               |
+| Activity log     | Filterable timeline with before/after field diffs                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| Account          | Profile, password, 2FA setup (QR code and backup codes), active sessions                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 
 ### 9.4 UX standards
 
@@ -983,7 +990,7 @@ Photos and the navbar texture stay as they are. Tokenisation must produce **zero
   - re-confirming consent at least every **6 months**;
   - withdrawal as easy as giving consent, through a persistent "Cookie settings" link in the footer.
 - **Basic consent mode.** No Google or Meta script loads until the visitor consents. Advanced mode (cookieless pings before consent) is only an option with the practice's DPO or legal sign-off (§2.3).
-- **Health-data minimisation.** Under GDPR Art. 9, as read in CJEU *Lindenapotheke* (C-21/23), health information inferred from data counts as special-category data. So:
+- **Health-data minimisation.** Under GDPR Art. 9, as read in CJEU _Lindenapotheke_ (C-21/23), health information inferred from data counts as special-category data. So:
   - Topics, message text and condition-revealing URLs or query strings (e.g. `/contact?topic=anxiety-stress`, or article slugs that name techniques) are **never** sent to Google or Meta.
   - Vendor payloads use standard event names only, and URLs are sanitised: origin + path, no query or hash, with article paths collapsed to `/insights`.
   - Meta prohibits "mental health and psychological states" data in URLs, custom events and custom data.
@@ -1017,6 +1024,7 @@ Photos and the navbar texture stay as they are. Tokenisation must produce **zero
    - `url_passthrough` stays off: it rewrites internal links, which clashes with nuqs URL state.
    - GTM's `<noscript>` iframe is omitted, because it would bypass consent.
    - `@next/third-parties` was not used. It is experimental, has no consent support, and its `afterInteractive` scripts only load after hydration.
+
 2. **`ConsentBanner`** (client). On a choice it sends `gtag("consent", "update", …)`, pushes `{ event: "consent_update" }`, calls `__loadGtm()`, loads the Pixel if marketing consent was given, and logs the event.
 3. **`MarketingScripts`** (client). Injects the Meta Pixel and custom snippets, each only once its consent category is granted (§12.6).
 4. **`RouteTracker`** (client, in Suspense). Pushes `{ event: "virtual_page_view", page_location, page_path, page_title }` once per **pathname** change.
@@ -1034,14 +1042,14 @@ Photos and the navbar texture stay as they are. Tokenisation must produce **zero
 
 Pushing to the dataLayer is always allowed; tags are gated by consent inside GTM. GA4 limits apply: event names of up to 40 characters, up to 25 parameters per event, parameter values of up to 100 characters.
 
-| dataLayer event     | Fires when                                  | Params                                                     | GA4                         | Meta (standard events only)                                       |
-| ------------------- | ------------------------------------------- | ---------------------------------------------------------- | --------------------------- | ----------------------------------------------------------------- |
-| `virtual_page_view` | each pathname change                        | `page_location`, `page_path` (both sanitised), `page_title` | `page_view`                 | `PageView` (allowlisted routes)                                   |
-| `generate_lead`     | the API **accepted** the enquiry            | `lead_source: "contact_form"`, `form_id`, `event_id`       | `generate_lead` (key event) | `Lead`, deduplicated with CAPI via `event_id`                     |
-| `contact_click`     | phone or email links                        | `method: "phone" \| "email"`, `event_id`                   | custom                      | `Contact`                                                         |
-| `book_appointment`  | "Book a discovery call" CTAs                | `cta_location`, `event_id`                                 | custom                      | `Schedule`                                                        |
-| `sign_up`           | newsletter double opt-in requested          | `method: "newsletter"`, `event_id`                         | `sign_up`                   | `CompleteRegistration` (not `Subscribe`, which means a paid plan) |
-| `share`             | share link or copy                          | `method`, `content_type: "article"`                        | `share`                     | —                                                                 |
+| dataLayer event     | Fires when                         | Params                                                      | GA4                         | Meta (standard events only)                                       |
+| ------------------- | ---------------------------------- | ----------------------------------------------------------- | --------------------------- | ----------------------------------------------------------------- |
+| `virtual_page_view` | each pathname change               | `page_location`, `page_path` (both sanitised), `page_title` | `page_view`                 | `PageView` (allowlisted routes)                                   |
+| `generate_lead`     | the API **accepted** the enquiry   | `lead_source: "contact_form"`, `form_id`, `event_id`        | `generate_lead` (key event) | `Lead`, deduplicated with CAPI via `event_id`                     |
+| `contact_click`     | phone or email links               | `method: "phone" \| "email"`, `event_id`                    | custom                      | `Contact`                                                         |
+| `book_appointment`  | "Book a discovery call" CTAs       | `cta_location`, `event_id`                                  | custom                      | `Schedule`                                                        |
+| `sign_up`           | newsletter double opt-in requested | `method: "newsletter"`, `event_id`                          | `sign_up`                   | `CompleteRegistration` (not `Subscribe`, which means a paid plan) |
+| `share`             | share link or copy                 | `method`, `content_type: "article"`                         | `share`                     | —                                                                 |
 
 GA4 enhanced measurement covers scrolls, outbound clicks and file downloads. Its **form interactions** are switched off, because they fire even when validation fails; `generate_lead` is pushed only after the server confirms.
 
@@ -1195,13 +1203,13 @@ It ships first as **Report-Only**, then is enforced. A nonce-based CSP was rejec
 
 ## 16. Testing strategy
 
-| Level                     | Tooling                                    | What is covered                                                                                                                                                                                         |
-| ------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Unit                      | Vitest                                     | Permission matrix (every role × permission); theme engine (contrast, gamut, preset snapshots); block schemas (fixtures validate, limits hold); SEO builders and JSON-LD escaping; slugs and redirects; CAPI normalisation and hashing; rate limiter; consent state machine |
-| Integration               | Vitest + real PostgreSQL (docker compose / CI service) | Hono routes through `app.request()` with seeded users per role (401/403/200 matrix); publish, revision and restore flows; 409 on concurrent edits; scheduled publishing; enquiry spam rules; migrations from zero; seed idempotency |
-| End-to-end                | Playwright                                 | Sign-in + 2FA; edit → preview → publish → public page updated; author cannot publish; enquiry appears in the inbox; theme publish changes CSS variables; consent banner blocks GTM until accepted |
-| **Visual parity**         | Playwright screenshots                     | Baseline captured from **today's static site before migration**, then compared after every content-platform change (3 viewports, all routes, motion settled)                                           |
-| Quality                   | Lighthouse CI, axe in Playwright           | Performance, SEO and accessibility budgets on key pages                                                                                                                                                  |
+| Level             | Tooling                                                | What is covered                                                                                                                                                                                                                                                            |
+| ----------------- | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Unit              | Vitest                                                 | Permission matrix (every role × permission); theme engine (contrast, gamut, preset snapshots); block schemas (fixtures validate, limits hold); SEO builders and JSON-LD escaping; slugs and redirects; CAPI normalisation and hashing; rate limiter; consent state machine |
+| Integration       | Vitest + real PostgreSQL (docker compose / CI service) | Hono routes through `app.request()` with seeded users per role (401/403/200 matrix); publish, revision and restore flows; 409 on concurrent edits; scheduled publishing; enquiry spam rules; migrations from zero; seed idempotency                                        |
+| End-to-end        | Playwright                                             | Sign-in + 2FA; edit → preview → publish → public page updated; author cannot publish; enquiry appears in the inbox; theme publish changes CSS variables; consent banner blocks GTM until accepted                                                                          |
+| **Visual parity** | Playwright screenshots                                 | Baseline captured from **today's static site before migration**, then compared after every content-platform change (3 viewports, all routes, motion settled)                                                                                                               |
+| Quality           | Lighthouse CI, axe in Playwright                       | Performance, SEO and accessibility budgets on key pages                                                                                                                                                                                                                    |
 
 Locators must be role- or visibility-aware, because Activity keeps hidden routes in the DOM.
 
@@ -1233,17 +1241,17 @@ Locators must be role- or visibility-aware, because Activity keeps hidden routes
 
 **Environment variables** (runtime; validated lazily by `server/env.ts`):
 
-| Variable                                                                            | Purpose                                                   |
-| ----------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| `DATABASE_URL`                                                                      | PostgreSQL connection                                     |
-| `SITE_URL`, `SITE_ENV`                                                              | Canonical origin; `production` \| `staging` \| `development` |
-| `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`                                             | Auth                                                      |
-| `APP_ENCRYPTION_KEY`                                                                | Encrypting stored secrets (the CAPI token)                |
-| `CRON_SECRET`                                                                       | Scheduler endpoint                                        |
-| `STORAGE_DRIVER`, `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `MEDIA_PUBLIC_URL` | Media storage           |
-| `EMAIL_DRIVER`, `RESEND_API_KEY`, `EMAIL_FROM`, `SMTP_URL`                          | Email                                                     |
-| `TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`                                        | Optional spam protection                                  |
-| `SEED_OWNER_EMAIL`                                                                  | First owner (seed only)                                   |
+| Variable                                                                                                                  | Purpose                                                      |
+| ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `DATABASE_URL`                                                                                                            | PostgreSQL connection                                        |
+| `SITE_URL`, `SITE_ENV`                                                                                                    | Canonical origin; `production` \| `staging` \| `development` |
+| `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`                                                                                   | Auth                                                         |
+| `APP_ENCRYPTION_KEY`                                                                                                      | Encrypting stored secrets (the CAPI token)                   |
+| `CRON_SECRET`                                                                                                             | Scheduler endpoint                                           |
+| `STORAGE_DRIVER`, `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `MEDIA_PUBLIC_URL` | Media storage                                                |
+| `EMAIL_DRIVER`, `RESEND_API_KEY`, `EMAIL_FROM`, `SMTP_URL`                                                                | Email                                                        |
+| `TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`                                                                              | Optional spam protection                                     |
+| `SEED_OWNER_EMAIL`                                                                                                        | First owner (seed only)                                      |
 
 **Local development.**
 
@@ -1264,36 +1272,36 @@ A committed `.env.example` documents the variables.
 
 The full detail is in [`plan.md`](./plan.md). Each phase ends with something you can demo.
 
-| Phase | Theme                              | Demo outcome                                                                                                       |
-| ----- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| 0     | Foundations and guardrails         | Route groups split, DB tooling, test infra, CI fixed, visual-parity baseline captured. The site is unchanged       |
-| 1     | Auth, RBAC and API core            | Sign in to `/admin` with 2FA. `proxy.ts` gate. Hono API with the permission matrix proven by tests                 |
-| 2     | Admin shell and design system      | The Evergreen admin: sidebar, topbar, ⌘K, dashboard layout and charts on sample data, light and dark               |
-| 3     | Content platform                   | The public site renders entirely from PostgreSQL (seeded), visually identical, motion refactored, colours tokenised |
-| 4     | Content editing                    | Page builder with live preview, draft, publish and history; collections; globals; media library                    |
-| 5     | Insights                           | Article editor, categories, authors, scheduling, search, automatic redirects                                        |
-| 6     | Enquiries, forms and email         | Real contact form → enquiries CRM, notifications, auto-reply, newsletter double opt-in                              |
-| 7     | SEO center                         | Metadata everywhere, OG images, sitemap, robots, JSON-LD, health score, redirects                                   |
-| 8     | Marketing and tracking             | Consent banner + Consent Mode v2, GTM/GA4, Pixel + CAPI, event catalogue, custom code                              |
-| 9     | Appearance                         | Theme presets, colour pickers with contrast guard, live preview, publish and reset, logo and favicon                |
-| 10    | Users, roles and security          | Invites, roles, bans, sessions, View as, activity log, security headers and CSP                                     |
-| 11    | Dashboard data, polish and launch  | Real KPIs, notifications, performance and a11y pass, E2E suite, runbook, production cut-over                        |
+| Phase | Theme                             | Demo outcome                                                                                                        |
+| ----- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| 0     | Foundations and guardrails        | Route groups split, DB tooling, test infra, CI fixed, visual-parity baseline captured. The site is unchanged        |
+| 1     | Auth, RBAC and API core           | Sign in to `/admin` with 2FA. `proxy.ts` gate. Hono API with the permission matrix proven by tests                  |
+| 2     | Admin shell and design system     | The Evergreen admin: sidebar, topbar, ⌘K, dashboard layout and charts on sample data, light and dark                |
+| 3     | Content platform                  | The public site renders entirely from PostgreSQL (seeded), visually identical, motion refactored, colours tokenised |
+| 4     | Content editing                   | Page builder with live preview, draft, publish and history; collections; globals; media library                     |
+| 5     | Insights                          | Article editor, categories, authors, scheduling, search, automatic redirects                                        |
+| 6     | Enquiries, forms and email        | Real contact form → enquiries CRM, notifications, auto-reply, newsletter double opt-in                              |
+| 7     | SEO center                        | Metadata everywhere, OG images, sitemap, robots, JSON-LD, health score, redirects                                   |
+| 8     | Marketing and tracking            | Consent banner + Consent Mode v2, GTM/GA4, Pixel + CAPI, event catalogue, custom code                               |
+| 9     | Appearance                        | Theme presets, colour pickers with contrast guard, live preview, publish and reset, logo and favicon                |
+| 10    | Users, roles and security         | Invites, roles, bans, sessions, View as, activity log, security headers and CSP                                     |
+| 11    | Dashboard data, polish and launch | Real KPIs, notifications, performance and a11y pass, E2E suite, runbook, production cut-over                        |
 
 ---
 
 ## 19. Risks and mitigations
 
-| Risk                                                         | Mitigation                                                                                                           |
-| ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
-| Motion regressions once content is dynamic                   | A parity baseline before migration; motion refactored in isolation; screenshot diffs plus a manual motion QA checklist |
-| Cache Components strictness (build errors, Activity side effects) | A Phase 0 spike on one route; the no-DB build in CI; page-scoped motion                                        |
-| Library churn (Drizzle v1, Hono v5, Next 16.4, TS 7)         | Pin minor versions now and upgrade deliberately in a later maintenance phase                                         |
-| Cache lives per process                                      | One replica (documented). Path to a Redis `cacheHandlers` implementation if scaling is ever needed                  |
-| Health-data leakage to ad platforms                          | Basic consent mode; sanitised URLs; standard events only; CAPI without email or phone hashes by default; a GTM container template reviewed by us |
-| Content quality and missing legal pages                      | Content-health panel, flagged placeholder legal copy, client sign-off before launch                                  |
-| Scope creep in the admin                                     | Phased delivery with a demo per phase. The YAGNI list (§20) stays out until requested                               |
-| Email deliverability                                         | Verified domain, SPF/DKIM/DMARC, Resend                                                                               |
-| Owner lockout                                                | Bootstrap CLI, 2FA backup codes, recovery steps in the runbook                                                        |
+| Risk                                                              | Mitigation                                                                                                                                       |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Motion regressions once content is dynamic                        | A parity baseline before migration; motion refactored in isolation; screenshot diffs plus a manual motion QA checklist                           |
+| Cache Components strictness (build errors, Activity side effects) | A Phase 0 spike on one route; the no-DB build in CI; page-scoped motion                                                                          |
+| Library churn (Drizzle v1, Hono v5, Next 16.4, TS 7)              | Pin minor versions now and upgrade deliberately in a later maintenance phase                                                                     |
+| Cache lives per process                                           | One replica (documented). Path to a Redis `cacheHandlers` implementation if scaling is ever needed                                               |
+| Health-data leakage to ad platforms                               | Basic consent mode; sanitised URLs; standard events only; CAPI without email or phone hashes by default; a GTM container template reviewed by us |
+| Content quality and missing legal pages                           | Content-health panel, flagged placeholder legal copy, client sign-off before launch                                                              |
+| Scope creep in the admin                                          | Phased delivery with a demo per phase. The YAGNI list (§20) stays out until requested                                                            |
+| Email deliverability                                              | Verified domain, SPF/DKIM/DMARC, Resend                                                                                                          |
+| Owner lockout                                                     | Bootstrap CLI, 2FA backup codes, recovery steps in the runbook                                                                                   |
 
 ---
 
@@ -1314,15 +1322,15 @@ The full detail is in [`plan.md`](./plan.md). Each phase ends with something you
 
 ## Appendix A: Decision log (alternatives considered)
 
-| Topic             | Options                                                       | Chosen                       | Reason                                                                                         |
-| ----------------- | ------------------------------------------------------------- | ---------------------------- | ---------------------------------------------------------------------------------------------- |
-| API placement     | Separate Hono service · **inside Next**                       | Inside Next                  | One deploy, shared types; Hono runs fine on the Node runtime                                    |
-| Admin mutations   | Server Actions · **Hono**                                     | Hono                         | Your requirement; typed RPC; easy to test; reusable by future integrations                      |
-| ORM               | Prisma · **Drizzle**                                          | Drizzle 0.45                 | SQL-like and light, no engine binary on Alpine, Better Auth CLI output                          |
-| Caching model     | Legacy (`unstable_cache`) · **Cache Components**              | Cache Components             | `unstable_cache` is replaced in Next 16; draft-mode integration; Activity navigation UX         |
-| Data at build     | Prerender with DB access · **render on request from cache**   | Request-time                 | The Docker build has no database, and pages never ship stale build-time content                 |
-| Page editing      | Free-form builder · **typed section blocks**                  | Typed blocks                 | Protects the bespoke design and motion while editing stays flexible                             |
-| CMS               | Payload / Sanity / Strapi · **custom on Hono**                | Custom                       | Hono, Better Auth, custom RBAC and a bespoke admin design were all required; no second app      |
-| Redirects         | DB lookup in `proxy.ts` · **route-level resolver**            | Route-level                  | The Next docs say to avoid database checks in proxy                                             |
-| CSP               | Nonce · **allowlist**                                         | Allowlist                    | A nonce forces dynamic rendering everywhere, and GTM breaks it                                  |
-| Media             | `public/` folder · **storage drivers**                        | R2 / local                   | Next only serves `public/` files that existed at build time                                     |
+| Topic           | Options                                                     | Chosen           | Reason                                                                                     |
+| --------------- | ----------------------------------------------------------- | ---------------- | ------------------------------------------------------------------------------------------ |
+| API placement   | Separate Hono service · **inside Next**                     | Inside Next      | One deploy, shared types; Hono runs fine on the Node runtime                               |
+| Admin mutations | Server Actions · **Hono**                                   | Hono             | Your requirement; typed RPC; easy to test; reusable by future integrations                 |
+| ORM             | Prisma · **Drizzle**                                        | Drizzle 0.45     | SQL-like and light, no engine binary on Alpine, Better Auth CLI output                     |
+| Caching model   | Legacy (`unstable_cache`) · **Cache Components**            | Cache Components | `unstable_cache` is replaced in Next 16; draft-mode integration; Activity navigation UX    |
+| Data at build   | Prerender with DB access · **render on request from cache** | Request-time     | The Docker build has no database, and pages never ship stale build-time content            |
+| Page editing    | Free-form builder · **typed section blocks**                | Typed blocks     | Protects the bespoke design and motion while editing stays flexible                        |
+| CMS             | Payload / Sanity / Strapi · **custom on Hono**              | Custom           | Hono, Better Auth, custom RBAC and a bespoke admin design were all required; no second app |
+| Redirects       | DB lookup in `proxy.ts` · **route-level resolver**          | Route-level      | The Next docs say to avoid database checks in proxy                                        |
+| CSP             | Nonce · **allowlist**                                       | Allowlist        | A nonce forces dynamic rendering everywhere, and GTM breaks it                             |
+| Media           | `public/` folder · **storage drivers**                      | R2 / local       | Next only serves `public/` files that existed at build time                                |

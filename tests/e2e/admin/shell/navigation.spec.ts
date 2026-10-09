@@ -4,7 +4,7 @@ import { E2E_ORIGIN } from "../../fixtures/env"
 import { E2E_USERS, signIn, signOut } from "../../support/admin"
 import { STORAGE } from "../../support/storage"
 
-const onDesktop = () => test.info().project.name === "desktop"
+const onDesktop = () => test.info().project.name === "admin-desktop"
 
 // The main navigation, opening the sheet first below 1024px.
 async function mainNav(page: Page): Promise<Locator> {
@@ -169,6 +169,34 @@ test.describe("as an owner", () => {
       nav.getByRole("link", { name: "SEO", exact: true })
     ).toHaveAttribute("aria-current", "page")
     await expect(nav.getByRole("link", { name: "Redirects" })).toBeVisible()
+  })
+})
+
+// Review 2.5 #1: the owner's menu is taller than 900px. The end of it (Help,
+// Log out) must be reachable by scrolling and never sit under another element.
+test.describe("as an owner at 1440×900", () => {
+  test.use({ storageState: STORAGE.owner })
+
+  test("can scroll to Help and Log out, uncovered", async ({ page }) => {
+    test.skip(!onDesktop(), "desktop only: below 1024px it is a sheet")
+    await page.goto("/admin")
+    const account = page.getByRole("navigation", { name: "Account" })
+    for (const target of [
+      account.getByRole("link", { name: "Help" }),
+      account.getByRole("button", { name: "Log out" }),
+    ]) {
+      await target.scrollIntoViewIfNeeded()
+      await expect(target).toBeInViewport({ ratio: 1 })
+      const box = (await target.boundingBox())!
+      const onTop = await target.evaluate(
+        (el, [x, y]) => {
+          const hit = document.elementFromPoint(x!, y!)
+          return hit !== null && el.contains(hit)
+        },
+        [box.x + box.width / 2, box.y + box.height / 2]
+      )
+      expect(onTop).toBe(true)
+    }
   })
 })
 

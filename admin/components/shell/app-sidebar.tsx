@@ -10,7 +10,6 @@ import { useSignOut } from "@/admin/modules/auth/use-sign-out"
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarGroup,
   SidebarGroupLabel,
   SidebarHeader,
@@ -50,7 +49,7 @@ export function AppSidebar({
 
   return (
     <Sidebar variant="floating" collapsible="icon" className="p-4">
-      <SidebarHeader className="px-4 pt-6 pb-4 group-data-[collapsible=icon]:px-1">
+      <SidebarHeader className="px-4 pt-5 pb-2 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:px-1">
         <Link
           href="/admin"
           onClick={onNavigate}
@@ -66,11 +65,11 @@ export function AppSidebar({
             const inGroup = items.filter((item) => item.group === group.id)
             if (inGroup.length === 0) return null
             return (
-              <SidebarGroup key={group.id}>
-                <SidebarGroupLabel className="px-3 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+              <SidebarGroup key={group.id} className="py-1">
+                <SidebarGroupLabel className="h-7 px-3 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
                   {group.label}
                 </SidebarGroupLabel>
-                <SidebarMenu className="gap-1">
+                <SidebarMenu className="gap-0.5">
                   {inGroup.map((item) => (
                     <NavEntry
                       key={item.id}
@@ -86,8 +85,8 @@ export function AppSidebar({
           })}
         </nav>
         <nav aria-label="Account" className="mt-auto">
-          <SidebarGroup>
-            <SidebarMenu className="gap-1">
+          <SidebarGroup className="py-1">
+            <SidebarMenu className="gap-0.5">
               <SidebarMenuItem>
                 <SidebarMenuButton
                   size="lg"
@@ -115,10 +114,11 @@ export function AppSidebar({
             </SidebarMenu>
           </SidebarGroup>
         </nav>
+        {/* Scrolls with the menu, so a tall menu is never hidden under it. */}
+        <div className="p-3 pt-2">
+          <WebsiteCard siteUrl={siteUrl} />
+        </div>
       </SidebarContent>
-      <SidebarFooter className="p-3">
-        <WebsiteCard siteUrl={siteUrl} />
-      </SidebarFooter>
     </Sidebar>
   )
 }

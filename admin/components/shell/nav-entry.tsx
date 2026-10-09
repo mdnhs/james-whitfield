@@ -16,9 +16,10 @@ import { formatBadge } from "./format-badge"
 import { NAV_ICONS } from "./nav-icons"
 
 // Muted label and icon; the active item gets a bold label and a filled
-// green icon (docs/brief.md §9.2, signature component 1).
+// green icon (docs/brief.md §9.2, signature component 1). In the icon rail
+// the label turns sr-only: out of the layout, still the link's name.
 export const NAV_BUTTON =
-  "h-11 gap-3 rounded-xl px-3 text-[15px] text-muted-foreground hover:bg-sidebar-accent/60 data-active:bg-transparent data-active:font-semibold data-active:text-foreground [&_svg]:size-5 data-active:[&_svg]:fill-primary/15 data-active:[&_svg]:text-primary"
+  "h-10 gap-3 rounded-xl px-3 text-[15px] group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:[&>span]:sr-only text-muted-foreground hover:bg-sidebar-accent/60 data-active:bg-transparent data-active:font-semibold data-active:text-foreground [&_svg]:size-5 data-active:[&_svg]:fill-primary/15 data-active:[&_svg]:text-primary"
 
 export function NavEntry({
   item,

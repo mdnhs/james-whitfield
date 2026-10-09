@@ -45,7 +45,7 @@ export default function AuthLayout({
           </ul>
         </div>
       </section>
-      <section className="flex flex-col rounded-[28px] bg-card px-6 py-8 sm:px-10 lg:px-12">
+      <section className="flex flex-col rounded-[28px] bg-sidebar px-6 py-8 sm:px-10 lg:px-12">
         <BrandMark className="lg:hidden" />
         <div className="flex flex-1 items-center justify-center py-12">
           <div className="w-full max-w-[400px]">{children}</div>

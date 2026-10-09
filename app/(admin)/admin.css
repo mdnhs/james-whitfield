@@ -77,19 +77,21 @@
 }
 
 :root[data-theme="admin"] {
+  /* Aligned to docs/design/admin-inspiration.png: a white canvas, grey
+     panels (sidebar, topbar, content) and white cards on the panels. */
   --radius: 0.75rem;
-  --background: #f2f3f2;
+  --background: #ffffff;
   --foreground: #111411;
   --card: #ffffff;
   --card-foreground: #111411;
   --popover: #ffffff;
   --popover-foreground: #111411;
-  --primary: #16823a;
+  --primary: #157d38;
   --primary-foreground: #ffffff;
   --secondary: #e9ece9;
   --secondary-foreground: #111411;
   --muted: #eef0ee;
-  --muted-foreground: #6b716c;
+  --muted-foreground: #666c67;
   --accent: #e6f4eb;
   --accent-foreground: #14532d;
   --destructive: #dc2626;
@@ -101,9 +103,9 @@
   --chart-3: #6cc08c;
   --chart-4: #2f4f38;
   --chart-5: #a7d9b8;
-  --sidebar: #f7f8f7;
+  --sidebar: #f2f3f2;
   --sidebar-foreground: #111411;
-  --sidebar-primary: #16823a;
+  --sidebar-primary: #157d38;
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #e6f4eb;
   --sidebar-accent-foreground: #14532d;
@@ -128,11 +130,13 @@
 }
 
 :root[data-theme="admin"].dark {
+  /* Same hierarchy as light, as elevation: canvas darkest, then panels,
+     then cards. */
   --background: #0c100d;
   --foreground: #eef2ee;
-  --card: #151c17;
+  --card: #1c251f;
   --card-foreground: #eef2ee;
-  --popover: #151c17;
+  --popover: #1c251f;
   --popover-foreground: #eef2ee;
   --primary: #34b567;
   --primary-foreground: #06130a;
@@ -151,7 +155,7 @@
   --chart-3: #a7d9b8;
   --chart-4: #2f7a45;
   --chart-5: #1f4a2b;
-  --sidebar: #111712;
+  --sidebar: #141b16;
   --sidebar-foreground: #eef2ee;
   --sidebar-primary: #34b567;
   --sidebar-primary-foreground: #06130a;

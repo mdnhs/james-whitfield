@@ -80,6 +80,8 @@ const PAIRS: [text: string, surface: string][] = [
   ["muted-foreground", "sidebar"],
   ["primary-foreground", "primary"],
   ["primary", "card"],
+  // Links and active nav icons sit directly on the panels.
+  ["primary", "sidebar"],
   ["accent-foreground", "accent"],
   ["success", "success-soft"],
   ["warning", "warning-soft"],
@@ -98,6 +100,15 @@ describe.each([
 
   it.each(PAIRS)("%s on %s meets WCAG AA (4.5:1)", (text, surface) => {
     expect(contrast(tokens[text], tokens[surface])).toBeGreaterThanOrEqual(4.5)
+  })
+
+  // The inspiration's layering: panels stand off the canvas and cards stand
+  // off the panels, rather than reading as one flat surface.
+  it.each([
+    ["sidebar", "background"],
+    ["card", "sidebar"],
+  ])("--%s is distinct from --%s", (a, b) => {
+    expect(contrast(tokens[a], tokens[b])).toBeGreaterThanOrEqual(1.08)
   })
 })
 

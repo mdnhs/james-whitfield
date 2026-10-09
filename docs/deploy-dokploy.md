@@ -8,7 +8,7 @@
    - `EMAIL_DRIVER=smtp` with `SMTP_URL` (until Phase 6); `EMAIL_DRIVER=log` is rejected when `SITE_ENV=production`.
    - `EMAIL_FROM`.
 4. Build arg `NEXT_DEPLOYMENT_ID`: set it to a unique value per deploy (for example the git SHA) so Next.js can protect against version skew between old clients and new servers.
-5. Set the health check path to `/api/v1/health` and attach the staging domain.
+5. Health endpoints: use `/api/v1/health/live` (liveness, no database; this is the image's Docker `HEALTHCHECK`, so a database blip never restarts the container) for container/restart checks, and `/api/v1/health` (readiness, 503 when the database is down) for the Traefik/Dokploy routing check and uptime monitors. Attach the staging domain.
 6. Proxy headers: Traefik must set or overwrite `X-Real-IP` and `X-Forwarded-For` (never pass through client-supplied values). Better Auth keys its rate limits on them.
 7. Deploy. The container applies pending migrations (advisory-locked) before the server starts.
 8. Create the owner once, inside the running container, so it uses the container's own env (database, email driver, URLs):

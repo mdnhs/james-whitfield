@@ -37,5 +37,5 @@ COPY --chown=nextjs:nodejs --chmod=755 docker-entrypoint.sh ./docker-entrypoint.
 USER nextjs
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
-  CMD wget -qO- http://127.0.0.1:3000/api/v1/health > /dev/null || exit 1
+  CMD wget -qO- http://127.0.0.1:3000/api/v1/health/live > /dev/null || exit 1
 ENTRYPOINT ["./docker-entrypoint.sh"]

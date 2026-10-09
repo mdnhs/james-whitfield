@@ -12,6 +12,13 @@ describe("api core", () => {
     expect(await response.json()).toEqual({ status: "ok", db: "ok" })
   })
 
+  it("reports liveness without touching the database", async () => {
+    const response = await app.request("/api/v1/health/live")
+    expect(response.status).toBe(200)
+    expect(response.headers.get("x-robots-tag")).toBe("noindex")
+    expect(await response.json()).toEqual({ status: "ok" })
+  })
+
   it("returns the error envelope for unknown routes", async () => {
     const response = await app.request("/api/v1/nope")
     expect(response.status).toBe(404)

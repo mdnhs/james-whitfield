@@ -24,7 +24,9 @@ const notViewingAs = createMiddleware<AppEnv>(async (c, next) => {
   await next()
 })
 
-// The same gate as the Account page (every role holds it).
+// Read from the nav registry, unlike other API routes (which name the
+// permission): this API exists only to serve the Account page, so it shares
+// that page's gate (every role holds it).
 const ownAccount = can(permissionFor("/admin/account"))
 
 const SessionParam = z.object({ id: z.uuid() })

@@ -27,7 +27,8 @@ type CallerSession = {
   }
 }
 
-const SELF_SERVICE_PATHS = new Set(["/change-password", "/update-user"])
+// Also held to the 2FA rule in ./hooks, like the Hono /account routes.
+export const SELF_SERVICE_PATHS = new Set(["/change-password", "/update-user"])
 
 function actorOf(session: CallerSession): AuditActor {
   return {

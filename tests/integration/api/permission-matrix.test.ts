@@ -97,6 +97,62 @@ describe.each(ROLE_NAMES)("can() for %s", (role) => {
   })
 })
 
+// Every role manages its own account (docs/brief.md §7.2): the same gate as
+// the Account page. 404 on DELETE means "past can(), no such device of yours".
+describe.each(ROLE_NAMES)("account self-service for %s", (role) => {
+  it("GET /account/sessions → 200", async () => {
+    const response = await adminRequest(
+      "/account/sessions",
+      await cookieFor(role)
+    )
+    expect(response.status).toBe(200)
+  })
+
+  it("DELETE /account/sessions/:id → 404 for an unknown device", async () => {
+    const response = await adminRequest(
+      `/account/sessions/${crypto.randomUUID()}`,
+      await cookieFor(role),
+      { method: "DELETE" }
+    )
+    expect(response.status).toBe(404)
+  })
+
+  it("POST /account/sessions/revoke-others → 200", async () => {
+    const response = await adminRequest(
+      "/account/sessions/revoke-others",
+      await cookieFor(role),
+      { method: "POST" }
+    )
+    expect(response.status).toBe(200)
+  })
+})
+
+// Mounted after twoFactorComplete (server/api/routes/admin.ts): an owner or
+// admin without two-factor reaches /me and two-factor setup, nothing else.
+describe.each(["owner", "admin"] as const)(
+  "an %s without two-factor",
+  (role) => {
+    it.each([
+      ["GET", "/dashboard"],
+      ["GET", "/search"],
+      ["GET", "/audit"],
+      ["GET", "/audit/facets"],
+      ["GET", "/account/sessions"],
+      ["DELETE", `/account/sessions/${crypto.randomUUID()}`],
+      ["POST", "/account/sessions/revoke-others"],
+    ])("%s %s → 403 TWO_FACTOR_REQUIRED", async (method, path) => {
+      await createUser(role)
+      const response = await adminRequest(
+        path,
+        await signIn(`${role}@example.com`),
+        { method }
+      )
+      expect(response.status).toBe(403)
+      expect((await response.json()).error.code).toBe("TWO_FACTOR_REQUIRED")
+    })
+  }
+)
+
 describe("can() without a session", () => {
   it.each(["/me", "/audit"])("GET %s → 401", async (path) => {
     expect((await adminRequest(path, "")).status).toBe(401)

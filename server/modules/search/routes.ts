@@ -16,6 +16,7 @@ const SearchQuery = z.object({
 
 export const searchRoutes = new Hono<AppEnv>().get(
   "/",
+  // API routes gate on the permission itself; pages gate via the nav registry.
   can({ dashboard: ["view"] }),
   zValidator("query", SearchQuery, validationHook),
   (c) => {

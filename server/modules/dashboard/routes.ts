@@ -9,6 +9,7 @@ import { getDashboard } from "./service"
 
 export const dashboardRoutes = new Hono<AppEnv>().get(
   "/",
+  // API routes gate on the permission itself; pages gate via the nav registry.
   can({ dashboard: ["view"] }),
   async (c) => c.json(await getDashboard(c.get("actor")!))
 )

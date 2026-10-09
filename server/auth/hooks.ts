@@ -9,6 +9,8 @@ import {
 import { parseRoles } from "@/lib/auth/permissions"
 import { mustSetUpTwoFactor } from "@/lib/auth/two-factor-policy"
 
+import { SELF_SERVICE_PATHS } from "./account-hooks"
+
 // Better Auth hooks key on `ctx.path`, the matched endpoint's declared path,
 // so URL variants (trailing slash, case, encoded segments) that Better Auth's
 // router still routes cannot slip past them the way they could slip past a
@@ -47,17 +49,22 @@ export const beforeHook = createAuthMiddleware(async (ctx) => {
       message: "Manage devices through the admin API",
     })
   }
-  if (!isAdminPath(ctx.path)) return
-  if (ctx.request && !HTTP_ADMIN_PATHS.has(ctx.path)) {
-    throw new APIError("FORBIDDEN", {
-      code: "ADMIN_ENDPOINT_DISABLED",
-      message: "Manage users through the admin API",
-    })
+  if (isAdminPath(ctx.path)) {
+    if (ctx.request && !HTTP_ADMIN_PATHS.has(ctx.path)) {
+      throw new APIError("FORBIDDEN", {
+        code: "ADMIN_ENDPOINT_DISABLED",
+        message: "Manage users through the admin API",
+      })
+    }
+    if (HTTP_ADMIN_PATHS.has(ctx.path)) return
+  } else if (!SELF_SERVICE_PATHS.has(ctx.path)) {
+    return
   }
-  if (HTTP_ADMIN_PATHS.has(ctx.path)) return
 
-  // A server-side call made as a user still obeys the 2FA rule
-  // (docs/brief.md §7.4). Fresh read (role or 2FA could have changed within
+  // A server-side admin call made as a user still obeys the 2FA rule
+  // (docs/brief.md §7.4), and so do the Account page's password and name
+  // changes over HTTP, as the Hono /account routes do: an owner or admin
+  // without 2FA gets as far as setting it up and no further. Fresh read (role or 2FA could have changed within
   // the cookie cache's five minutes). Cached on ctx, so the endpoint reuses
   // this same session.
   const session = await getSessionFromCtx(ctx, { disableCookieCache: true })

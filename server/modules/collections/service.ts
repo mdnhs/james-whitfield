@@ -2,6 +2,7 @@ import "server-only"
 
 import { and, asc, desc, eq, sql } from "drizzle-orm"
 
+import { collectMediaIds } from "@/blocks/media-refs"
 import { hasPermission } from "@/lib/auth/permissions"
 import {
   COLLECTION_SCHEMAS,
@@ -19,6 +20,7 @@ import {
   isUniqueViolation,
   topLevelDiff,
 } from "@/server/lib/conflict"
+import { assertMediaExists } from "@/server/modules/media/assert-media"
 
 import {
   entryFor,
@@ -60,7 +62,10 @@ export async function listItems(name: CollectionSlug) {
 function parseValues(name: CollectionSlug, values: unknown) {
   const parsed = COLLECTION_SCHEMAS[name].safeParse(values)
   if (!parsed.success) throw invalid(parsed.error)
-  return toRow(name, parsed.data as Record<string, unknown>)
+  return {
+    row: toRow(name, parsed.data as Record<string, unknown>),
+    mediaIds: collectMediaIds(parsed.data),
+  }
 }
 
 const slugTaken = () =>
@@ -74,29 +79,36 @@ export async function createItem(
   values: unknown
 ) {
   const e = entryFor(name)
-  const db = getDb()
-  const row = parseValues(name, values)
-  const [last] = await db
-    .select({ next: sql<number>`coalesce(max(${e.table.sort}), -1) + 1` })
-    .from(e.table)
+  const { row, mediaIds } = parseValues(name, values)
   try {
-    const [created] = await db
-      .insert(e.table)
-      .values({
-        ...(row as SharedInsert),
-        sort: last?.next ?? 0,
-        createdBy: actor.userId,
-        updatedBy: actor.userId,
-      })
-      .returning()
-    await audit(actor, {
-      action: "collection.create",
-      entityType: name,
-      entityId: created!.id,
-      summary: `Added "${titleOf(name, created!)}" to ${name}`,
+    const created = await getDb().transaction(async (tx) => {
+      await assertMediaExists(tx, mediaIds)
+      const [last] = await tx
+        .select({ next: sql<number>`coalesce(max(${e.table.sort}), -1) + 1` })
+        .from(e.table)
+      const [inserted] = await tx
+        .insert(e.table)
+        .values({
+          ...(row as SharedInsert),
+          sort: last?.next ?? 0,
+          createdBy: actor.userId,
+          updatedBy: actor.userId,
+        })
+        .returning()
+      await audit(
+        actor,
+        {
+          action: "collection.create",
+          entityType: name,
+          entityId: inserted!.id,
+          summary: `Added "${titleOf(name, inserted!)}" to ${name}`,
+        },
+        tx
+      )
+      return inserted!
     })
     invalidate([tags.collection(e.tag)])
-    return toItem(name, created!, [])
+    return toItem(name, created, [])
   } catch (error) {
     if (isUniqueViolation(error)) throw slugTaken()
     throw error
@@ -123,33 +135,41 @@ export async function updateItem(
   input: { version: number; values: Record<string, unknown> }
 ) {
   const e = entryFor(name)
-  const db = getDb()
   const current = await findItem(name, id)
   const before = fromRow(name, current)
-  const row = parseValues(name, { ...before, ...input.values })
+  const { row, mediaIds } = parseValues(name, { ...before, ...input.values })
   let updated
   try {
-    ;[updated] = await db
-      .update(e.table)
-      .set({
-        ...(row as Partial<SharedInsert>),
-        updatedBy: actor.userId,
-        version: sql`${e.table.version} + 1`,
-      })
-      .where(and(eq(e.table.id, id), eq(e.table.version, input.version)))
-      .returning()
+    updated = await getDb().transaction(async (tx) => {
+      await assertMediaExists(tx, mediaIds)
+      const [next] = await tx
+        .update(e.table)
+        .set({
+          ...(row as Partial<SharedInsert>),
+          updatedBy: actor.userId,
+          version: sql`${e.table.version} + 1`,
+        })
+        .where(and(eq(e.table.id, id), eq(e.table.version, input.version)))
+        .returning()
+      if (!next) return null
+      await audit(
+        actor,
+        {
+          action: "collection.update",
+          entityType: name,
+          entityId: id,
+          summary: `Updated "${titleOf(name, next)}" in ${name}`,
+          diff: topLevelDiff(before, fromRow(name, next)),
+        },
+        tx
+      )
+      return next
+    })
   } catch (error) {
     if (isUniqueViolation(error)) throw slugTaken()
     throw error
   }
-  if (!updated) throw await conflictError(db, await findItem(name, id))
-  await audit(actor, {
-    action: "collection.update",
-    entityType: name,
-    entityId: id,
-    summary: `Updated "${titleOf(name, updated)}" in ${name}`,
-    diff: topLevelDiff(before, fromRow(name, updated)),
-  })
+  if (!updated) throw await conflictError(getDb(), await findItem(name, id))
   invalidate([tags.collection(e.tag)])
   return toItem(name, updated, [])
 }

@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm"
 
 import type { EditableGlobalKey } from "@/lib/content/global-access"
 import { GLOBALS, parseGlobal } from "@/lib/content/globals"
+import { collectMediaIds } from "@/blocks/media-refs"
 import { ApiError, invalid } from "@/server/api/errors"
 import type { Actor } from "@/server/auth/actor"
 import { getDb, type DbLike } from "@/server/db/client"
@@ -16,6 +17,7 @@ import {
   listRevisions,
   writeRevision,
 } from "@/server/lib/revisions"
+import { assertMediaExists } from "@/server/modules/media/assert-media"
 
 async function findRow(db: DbLike, key: string, lock = false) {
   const query = db.select().from(settings).where(eq(settings.key, key)).limit(1)
@@ -45,6 +47,7 @@ export async function saveGlobal(
   if (!parsed.success) throw invalid(parsed.error)
   const value = parsed.data
   const saved = await getDb().transaction(async (tx) => {
+    await assertMediaExists(tx, collectMediaIds(value))
     const before = await findRow(tx, key, true)
     if ((before?.version ?? 0) !== input.version) {
       throw await conflictError(tx, {

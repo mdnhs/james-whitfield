@@ -1,6 +1,6 @@
 import "server-only"
 
-import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm"
+import { and, asc, eq, sql } from "drizzle-orm"
 
 import { collectMediaIds } from "@/blocks/media-refs"
 import {
@@ -15,7 +15,7 @@ import type { NewPageInput } from "@/lib/content/page-path"
 import { ApiError, invalid } from "@/server/api/errors"
 import type { Actor } from "@/server/auth/actor"
 import { getDb, type DbLike } from "@/server/db/client"
-import { media, pages } from "@/server/db/schema"
+import { pages } from "@/server/db/schema"
 import { audit } from "@/server/lib/audit"
 import { invalidate, tags } from "@/server/lib/cache"
 import { conflictError, userName } from "@/server/lib/conflict"
@@ -25,6 +25,7 @@ import {
   listRevisions,
   writeRevision,
 } from "@/server/lib/revisions"
+import { assertMediaExists } from "@/server/modules/media/assert-media"
 
 const changedSincePublish = sql<boolean>`${pages.draft} is distinct from ${pages.published}`
 // Section ids in the working copy, for the link widget's anchor picker.
@@ -117,22 +118,6 @@ export async function saveDraft(
   return { version: row.version, updatedAt: row.updatedAt }
 }
 
-async function assertMediaExists(db: DbLike, ids: string[]) {
-  if (ids.length === 0) return
-  const found = await db
-    .select({ id: media.id })
-    .from(media)
-    .where(and(inArray(media.id, ids), isNull(media.deletedAt)))
-  const missing = ids.filter((id) => !found.some((row) => row.id === id))
-  if (missing.length > 0) {
-    throw new ApiError(
-      "VALIDATION_FAILED",
-      "Some images were deleted. Choose new ones before publishing.",
-      { _media: missing.map((id) => `Image ${id} no longer exists`) }
-    )
-  }
-}
-
 export async function publishPage(actor: Actor, id: string, version: number) {
   const saved = await getDb().transaction(async (tx) => {
     const row = await findPage(tx, id, true)
@@ -184,22 +169,27 @@ export async function publishPage(actor: Actor, id: string, version: number) {
 }
 
 export async function discardDraft(actor: Actor, id: string, version: number) {
-  const db = getDb()
-  const current = await findPage(db, id)
-  if (!current.published) {
-    throw new ApiError("BAD_REQUEST", "This page has never been published")
-  }
-  const row = await writeIfVersion(db, id, version, {
-    draft: current.published,
-    updatedBy: actor.userId,
+  return getDb().transaction(async (tx) => {
+    const current = await findPage(tx, id)
+    if (!current.published) {
+      throw new ApiError("BAD_REQUEST", "This page has never been published")
+    }
+    const row = await writeIfVersion(tx, id, version, {
+      draft: current.published,
+      updatedBy: actor.userId,
+    })
+    await audit(
+      actor,
+      {
+        action: "page.discard",
+        entityType: "page",
+        entityId: id,
+        summary: `Discarded unpublished changes on ${row.path}`,
+      },
+      tx
+    )
+    return { version: row.version }
   })
-  await audit(actor, {
-    action: "page.discard",
-    entityType: "page",
-    entityId: id,
-    summary: `Discarded unpublished changes on ${row.path}`,
-  })
-  return { version: row.version }
 }
 
 export async function restoreRevision(
@@ -208,20 +198,25 @@ export async function restoreRevision(
   revisionId: string,
   version: number
 ) {
-  const db = getDb()
-  const revision = await findRevision(db, "page", id, revisionId)
-  if (!revision) throw new ApiError("NOT_FOUND", "That version doesn't exist")
-  const row = await writeIfVersion(db, id, version, {
-    draft: revision.snapshot as PageDocument,
-    updatedBy: actor.userId,
+  return getDb().transaction(async (tx) => {
+    const revision = await findRevision(tx, "page", id, revisionId)
+    if (!revision) throw new ApiError("NOT_FOUND", "That version doesn't exist")
+    const row = await writeIfVersion(tx, id, version, {
+      draft: revision.snapshot as PageDocument,
+      updatedBy: actor.userId,
+    })
+    await audit(
+      actor,
+      {
+        action: "page.restore",
+        entityType: "page",
+        entityId: id,
+        summary: `Loaded version ${revision.version} of ${row.path} into the draft`,
+      },
+      tx
+    )
+    return { version: row.version }
   })
-  await audit(actor, {
-    action: "page.restore",
-    entityType: "page",
-    entityId: id,
-    summary: `Loaded version ${revision.version} of ${row.path} into the draft`,
-  })
-  return { version: row.version }
 }
 
 export async function updateMeta(
@@ -238,48 +233,56 @@ export async function updateMeta(
   ) {
     throw new ApiError("FORBIDDEN", "You can't change this page")
   }
-  const db = getDb()
-  const before = await findPage(db, id)
   const merge = (
     column: typeof pages.seo | typeof pages.settings,
     value?: object
   ) => (value ? sql`${column} || ${JSON.stringify(value)}::jsonb` : undefined)
-  // Field-level merge, no version bump: SEO edits never conflict with an
-  // editor's builder session.
-  const [row] = await db
-    .update(pages)
-    .set({
-      title: patch.title,
-      seo: merge(pages.seo, patch.seo),
-      settings: merge(pages.settings, patch.settings),
-      updatedBy: actor.userId,
-    })
-    .where(eq(pages.id, id))
-    .returning()
-  const diff: Record<string, { from: unknown; to: unknown }> = {}
-  if (patch.title !== undefined)
-    diff.title = { from: before.title, to: patch.title }
-  for (const [key, to] of Object.entries(patch.seo ?? {})) {
-    diff[`seo.${key}`] = {
-      from: (before.seo as Record<string, unknown>)[key] ?? null,
-      to,
+  const saved = await getDb().transaction(async (tx) => {
+    // Locked so a concurrent delete 404s instead of crashing below.
+    const before = await findPage(tx, id, true)
+    await assertMediaExists(tx, collectMediaIds(patch.seo ?? {}))
+    // Field-level merge, no version bump: SEO edits never conflict with an
+    // editor's builder session.
+    const [row] = await tx
+      .update(pages)
+      .set({
+        title: patch.title,
+        seo: merge(pages.seo, patch.seo),
+        settings: merge(pages.settings, patch.settings),
+        updatedBy: actor.userId,
+      })
+      .where(eq(pages.id, id))
+      .returning()
+    const diff: Record<string, { from: unknown; to: unknown }> = {}
+    if (patch.title !== undefined)
+      diff.title = { from: before.title, to: patch.title }
+    for (const [key, to] of Object.entries(patch.seo ?? {})) {
+      diff[`seo.${key}`] = {
+        from: (before.seo as Record<string, unknown>)[key] ?? null,
+        to,
+      }
     }
-  }
-  for (const [key, to] of Object.entries(patch.settings ?? {})) {
-    diff[`settings.${key}`] = {
-      from: (before.settings as Record<string, unknown>)[key] ?? null,
-      to,
+    for (const [key, to] of Object.entries(patch.settings ?? {})) {
+      diff[`settings.${key}`] = {
+        from: (before.settings as Record<string, unknown>)[key] ?? null,
+        to,
+      }
     }
-  }
-  await audit(actor, {
-    action: "page.meta",
-    entityType: "page",
-    entityId: id,
-    summary: `Updated SEO and settings of ${before.path}`,
-    diff,
+    await audit(
+      actor,
+      {
+        action: "page.meta",
+        entityType: "page",
+        entityId: id,
+        summary: `Updated SEO and settings of ${before.path}`,
+        diff,
+      },
+      tx
+    )
+    return row!
   })
   invalidate([tags.page(id)])
-  return { title: row!.title, seo: row!.seo, settings: row!.settings }
+  return { title: saved.title, seo: saved.seo, settings: saved.settings }
 }
 
 export async function createPage(actor: Actor, input: NewPageInput) {
@@ -299,29 +302,36 @@ export async function createPage(actor: Actor, input: NewPageInput) {
       },
     ],
   }
-  const [row] = await getDb()
-    .insert(pages)
-    .values({
-      path: input.path,
-      title: input.title,
-      status: "draft",
-      draft: document,
-      settings: { showContactChapter: true, needsReview: false },
-      createdBy: actor.userId,
-      updatedBy: actor.userId,
-    })
-    .onConflictDoNothing({ target: pages.path })
-    .returning()
-  if (!row) {
-    throw new ApiError("CONFLICT", "A page already lives at that address", {
-      path: ["A page already lives at that address"],
-    })
-  }
-  await audit(actor, {
-    action: "page.create",
-    entityType: "page",
-    entityId: row.id,
-    summary: `Created ${row.path}`,
+  const row = await getDb().transaction(async (tx) => {
+    const [created] = await tx
+      .insert(pages)
+      .values({
+        path: input.path,
+        title: input.title,
+        status: "draft",
+        draft: document,
+        settings: { showContactChapter: true, needsReview: false },
+        createdBy: actor.userId,
+        updatedBy: actor.userId,
+      })
+      .onConflictDoNothing({ target: pages.path })
+      .returning()
+    if (!created) {
+      throw new ApiError("CONFLICT", "A page already lives at that address", {
+        path: ["A page already lives at that address"],
+      })
+    }
+    await audit(
+      actor,
+      {
+        action: "page.create",
+        entityType: "page",
+        entityId: created.id,
+        summary: `Created ${created.path}`,
+      },
+      tx
+    )
+    return created
   })
   // A visit before creation cached "no page here" under routes.
   invalidate([tags.routes])

@@ -4,6 +4,7 @@ import { Hono } from "hono"
 
 import { permissionMap } from "@/lib/auth/permissions"
 import { auditRoutes } from "@/server/modules/audit/routes"
+import { usersRoutes } from "@/server/modules/users/routes"
 
 import { session, signedIn } from "../middleware/auth"
 import { sameOrigin } from "../middleware/same-origin"
@@ -22,3 +23,4 @@ export const adminRoutes = new Hono<AppEnv>()
     })
   })
   .route("/audit", auditRoutes)
+  .route("/users", usersRoutes)

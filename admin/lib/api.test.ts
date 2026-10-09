@@ -34,6 +34,29 @@ const fake = new Hono()
     )
   )
   .get("/gateway", (c) => c.html("<h1>Bad gateway</h1>", 502))
+  .get("/proxy401", (c) => c.html("<h1>Login</h1>", 401))
+  .get("/proxy404", (c) => c.html("<h1>Missing</h1>", 404))
+  .get("/proxy429", (c) => c.text("slow down", 429))
+  .get("/proxy503", (c) => c.html("<h1>Down</h1>", 503))
+  .get("/unknown", (c) =>
+    c.json({ error: { code: "WAT", message: "x", fieldErrors: 5 } }, 403)
+  )
+  .get(
+    "/badjson",
+    () =>
+      new Response("{nope", {
+        status: 502,
+        headers: { "content-type": "application/json" },
+      })
+  )
+  .get(
+    "/badjson200",
+    () =>
+      new Response("{nope", {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      })
+  )
 
 const client = hc<typeof fake>("http://test", { fetch: fake.request })
 
@@ -78,5 +101,41 @@ describe("parseResponse", () => {
       Promise.reject(new TypeError("fetch failed"))
     ).catch((e: unknown) => e)
     expect(error).toMatchObject({ code: "NETWORK", status: 0 })
+  })
+
+  it.each([
+    ["proxy401", "UNAUTHENTICATED", 401],
+    ["proxy404", "NOT_FOUND", 404],
+    ["proxy429", "RATE_LIMITED", 429],
+    ["proxy503", "UNAVAILABLE", 503],
+    ["unknown", "FORBIDDEN", 403],
+    ["badjson", "INTERNAL", 502],
+    ["badjson200", "BAD_REQUEST", 200],
+  ] as const)(
+    "falls back to a status-based code for %s",
+    async (path, code, status) => {
+      const error = await parseResponse(
+        (client as never as Record<string, { $get(): Promise<never> }>)[
+          path
+        ].$get()
+      ).catch((e: unknown) => e)
+      expect(error).toBeInstanceOf(ApiError)
+      expect(error).toMatchObject({ code, status, fieldErrors: {} })
+    }
+  )
+
+  it("rethrows an aborted request untouched", async () => {
+    const abort = new DOMException("aborted", "AbortError")
+    const error = await parseResponse(Promise.reject(abort)).catch(
+      (e: unknown) => e
+    )
+    expect(error).toBe(abort)
+  })
+
+  it("does not call a non-fetch failure a network error", async () => {
+    const error = await parseResponse(Promise.reject(new Error("boom"))).catch(
+      (e: unknown) => e
+    )
+    expect(error).toMatchObject({ code: "INTERNAL", status: 0 })
   })
 })

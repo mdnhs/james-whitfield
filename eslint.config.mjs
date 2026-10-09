@@ -1,16 +1,19 @@
-import { defineConfig, globalIgnores } from "eslint/config"
-import nextVitals from "eslint-config-next/core-web-vitals"
-import nextTs from "eslint-config-next/typescript"
+import { defineConfig, globalIgnores } from "eslint/config";
+import nextVitals from "eslint-config-next/core-web-vitals";
+import nextTs from "eslint-config-next/typescript";
 
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
   // docs/brief.md §5.4: dependencies point downward. Client and shared code
   // may use server types, never server values (they would pull secrets and
-  // the database into the browser bundle).
+  // the database into the browser bundle). Files under app/** are not listed:
+  // routes and layouts are server code, and ESLint cannot select "use client"
+  // files by directive; those must keep their imports type-only by review.
   {
     files: [
       "admin/**/*.{ts,tsx}",
+      "hooks/**/*.{ts,tsx}",
       "components/**/*.{ts,tsx}",
       "features/**/*.{ts,tsx}",
       "lib/**/*.{ts,tsx}",
@@ -22,7 +25,14 @@ const eslintConfig = defineConfig([
         {
           patterns: [
             {
-              group: ["@/server", "@/server/**"],
+              group: [
+                "@/server",
+                "@/server/**",
+                "../server",
+                "../server/**",
+                "../**/server",
+                "../**/server/**",
+              ],
               allowTypeImports: true,
               message:
                 "Client and shared code must not import server modules (docs/brief.md §5.4). Type-only imports are fine.",
@@ -46,6 +56,6 @@ const eslintConfig = defineConfig([
     "test-results/**",
     "next-env.d.ts",
   ]),
-])
+]);
 
-export default eslintConfig
+export default eslintConfig;

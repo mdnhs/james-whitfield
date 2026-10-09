@@ -41,3 +41,26 @@ describe("client and shared code never import server modules", () => {
     ).toHaveLength(0)
   }, 30_000)
 })
+
+describe("other ways in", () => {
+  it("allows an inline type specifier", async () => {
+    const code =
+      'import { type Actor } from "@/server/auth/actor"\nexport type A = Actor\n'
+    expect(await restricted(code, "admin/lib/probe.ts")).toHaveLength(0)
+  }, 30_000)
+
+  it("refuses a re-export from a server module", async () => {
+    const code = 'export { getDb } from "@/server/db/client"\n'
+    expect(await restricted(code, "lib/probe.ts")).toHaveLength(1)
+  }, 30_000)
+
+  it("refuses a relative path into server", async () => {
+    const code =
+      'import { getDb } from "../server/db/client"\nexport const db = getDb\n'
+    expect(await restricted(code, "lib/probe.ts")).toHaveLength(1)
+  }, 30_000)
+
+  it("covers hooks/", async () => {
+    expect(await restricted(VALUE, "hooks/probe.ts")).toHaveLength(1)
+  }, 30_000)
+})

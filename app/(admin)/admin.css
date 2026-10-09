@@ -218,3 +218,16 @@
     cursor: pointer;
   }
 }
+
+/* docs/brief.md §9.2: restrained motion, and none for people who ask for
+   less. Charts read the same preference and skip their grow-in. */
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="admin"] *,
+  :root[data-theme="admin"] *::before,
+  :root[data-theme="admin"] *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

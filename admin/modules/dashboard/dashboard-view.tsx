@@ -168,6 +168,9 @@ function DashboardBody({ data }: { data: Dashboard }) {
 
   return (
     <>
+      {/* The KPI cards title themselves with h3s; this keeps the outline
+          from jumping from the page's h1 straight to them. */}
+      <h2 className="sr-only">Key figures</h2>
       <div
         className={cn(
           "grid gap-4 sm:grid-cols-2",

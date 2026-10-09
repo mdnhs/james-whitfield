@@ -92,9 +92,11 @@ jobs:
       # Fails fast on a migration or seeding problem; Playwright's global
       # setup reseeds before the tests run.
       - run: pnpm e2e:seed
-      # Visual-parity baselines are macOS-only (local), so CI skips them.
-      - name: E2E (desktop, without visual parity)
-        run: pnpm test:e2e --project=desktop --project=admin-desktop --grep-invert "parity:"
+      # Visual baselines (public parity, admin "visual:") are macOS-only until
+      # Phase 11 records Linux ones, and Lighthouse runs locally only, so CI
+      # skips all three.
+      - name: E2E (desktop, without visual baselines or Lighthouse)
+        run: pnpm test:e2e --project=desktop --project=admin-desktop --grep-invert "parity:|visual:|lighthouse:"
         env:
           E2E_SKIP_BUILD: "1"
       - uses: actions/upload-artifact@v4

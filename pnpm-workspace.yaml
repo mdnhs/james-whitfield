@@ -4,3 +4,9 @@ allowBuilds:
   sharp: true
   unrs-resolver: true
   msw: false
+auditConfig:
+  ignoreGhsas:
+    # braces <=3.0.3 ReDoS: no patched release exists. Reached only through
+    # micromatch/fast-glob in eslint-config-next and the shadcn CLI (dev-time
+    # tooling on trusted globs), never in the deployed runtime.
+    - GHSA-vfj7-8cjw-p6xm

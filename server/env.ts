@@ -13,6 +13,10 @@ const EnvSchema = z.object({
     .default("development"),
   SITE_URL: z.url(),
   DATABASE_URL: z.url(),
+  // "resend" is added in Phase 6.
+  EMAIL_DRIVER: z.enum(["log", "smtp"]).default("log"),
+  SMTP_URL: z.string().optional(),
+  EMAIL_FROM: z.string().min(3).default("Magda Kennedy <hello@localhost>"),
 })
 
 export type Env = z.infer<typeof EnvSchema>

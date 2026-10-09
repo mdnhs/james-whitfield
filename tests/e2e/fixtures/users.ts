@@ -16,6 +16,8 @@ export const E2E_USERS = {
   // Shared, read-only sessions for the shell specs (tests/e2e/admin/auth.setup.ts).
   intake: { email: "intake@e2e.test", name: "Ivy Intake", role: "intake" },
   viewer: { email: "viewer@e2e.test", name: "Vera Viewer", role: "viewer" },
+  // Read-only on pages: the builder's RBAC spec.
+  author: { email: "author@e2e.test", name: "Abe Author", role: "author" },
   // An owner the setup project enrols in 2FA; never signs out.
   shellOwner: {
     email: "owner-shell@e2e.test",

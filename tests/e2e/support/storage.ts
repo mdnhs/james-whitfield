@@ -8,6 +8,7 @@ export const STORAGE = {
   editor: path.join(dir, "editor.json"),
   intake: path.join(dir, "intake.json"),
   viewer: path.join(dir, "viewer.json"),
+  author: path.join(dir, "author.json"),
   owner: path.join(dir, "owner.json"),
   account: path.join(dir, "account.json"),
 } as const

@@ -175,17 +175,33 @@ export function RichTextWidget({
   })
   // External changes (reset, restore, reconcile) replace the editor content;
   // the editor's own edits come back here as `emitted` and are skipped.
+  // react-hook-form hands the value back as a clone (useWatch), so equal
+  // JSON counts as our own edit: comparing against the editor's JSON instead
+  // differs (link attrs the schema strips) and setContent throws the cursor
+  // to the end.
   useEffect(() => {
     if (!editor || value === emitted.current) return
+    if (JSON.stringify(value) === JSON.stringify(emitted.current)) {
+      emitted.current = value
+      return
+    }
     const next = (value as object | undefined) ?? EMPTY
     if (JSON.stringify(next) !== JSON.stringify(editor.getJSON())) {
       editor.commands.setContent(next, { emitUpdate: false })
     }
     emitted.current = value
   }, [editor, value])
+  // A read-only form wraps its fields in a disabled <fieldset>, which
+  // disables inputs and buttons but not contentEditable.
+  const host = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!editor) return
+    const disabled = host.current?.closest("fieldset:disabled") != null
+    if (editor.isEditable === disabled) editor.setEditable(!disabled, false)
+  })
   return (
     <WidgetShell id={id} field={field} error={error}>
-      <div className="rounded-xl border">
+      <div ref={host} className="rounded-xl border">
         {editor ? <Toolbar editor={editor} /> : null}
         <EditorContent editor={editor} />
       </div>

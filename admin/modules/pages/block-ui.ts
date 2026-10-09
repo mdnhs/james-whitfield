@@ -42,4 +42,5 @@ export const BLOCK_FIELD_UI: Partial<Record<BlockType, FieldOverrides>> = {
     focal: { label: "Focal point override" },
   },
   newsletter: { override: { label: "Custom copy for this page" } },
+  richtext: { doc: { label: "Text" } },
 }

@@ -5,6 +5,7 @@ import { toast } from "sonner"
 
 import { authClient } from "@/admin/lib/auth-client"
 import { getQueryClient } from "@/admin/lib/query-client"
+import { cancelSignOut, prepareSignOut } from "@/admin/lib/sign-out-guard"
 import { useResetOnHide } from "@/admin/lib/use-reset-on-hide"
 
 // The one sign-out path: the user menu, the sidebar's "Log out", the
@@ -15,6 +16,8 @@ export function useSignOut() {
 
   const signOut = useCallback(async () => {
     setPending(true)
+    // Unsaved drafts are saved first; nothing is sent after this point.
+    await prepareSignOut()
     let failed = false
     try {
       failed = Boolean((await authClient.signOut()).error)
@@ -22,6 +25,7 @@ export function useSignOut() {
       failed = true
     }
     if (failed) {
+      cancelSignOut()
       setPending(false)
       toast.error("Couldn't sign out. Try again.")
       return

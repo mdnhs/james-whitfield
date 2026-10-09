@@ -10,6 +10,7 @@ const PLAIN = [
   ["editor", E2E_USERS.editor],
   ["intake", E2E_USERS.intake],
   ["viewer", E2E_USERS.viewer],
+  ["author", E2E_USERS.author],
   ["account", E2E_USERS.accountUser],
 ] as const
 

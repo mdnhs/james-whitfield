@@ -15,29 +15,19 @@ import {
 import { Gauge } from "@/admin/components/dashboard/gauge"
 import { KpiCard } from "@/admin/components/dashboard/kpi-card"
 import {
+  LINK_PRIMARY,
+  LINK_SECONDARY,
   PageHeader,
   PRIMARY_ACTION,
-  SECONDARY_ACTION,
 } from "@/admin/components/dashboard/page-header"
 import { PillBarChart } from "@/admin/components/dashboard/pill-bar-chart"
 import { usePermission } from "@/admin/lib/actor-context"
-import { Button, buttonVariants } from "@/components/ui/button"
+import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 import { DashboardSkeleton } from "./dashboard-skeleton"
 import { actionStatus } from "./present"
 import { dashboardQuery, type Dashboard } from "./queries"
-
-// Navigation styled as buttons stays a real link (role "link"), unlike
-// Base UI's Button rendered as an anchor (nativeButton={false}), which
-// announces as a button. The admin's one pattern for button-looking links.
-// cn() so the action classes win over the variant's (border-primary over
-// the outline's border-border), as Button itself merges them.
-const LINK_PRIMARY = cn(buttonVariants(), PRIMARY_ACTION)
-const LINK_SECONDARY = cn(
-  buttonVariants({ variant: "outline" }),
-  SECONDARY_ACTION
-)
 
 // With a baseline the caption compares ("+20% vs last week"); without one
 // it says what the number is, rather than "vs last week" beside nothing.

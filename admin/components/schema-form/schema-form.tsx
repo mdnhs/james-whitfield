@@ -10,6 +10,7 @@ import {
 } from "react-hook-form"
 import type * as z from "zod"
 
+import { FORM_ACTION } from "@/admin/components/dashboard/page-header"
 import { Button } from "@/components/ui/button"
 import { FieldGroup } from "@/components/ui/field"
 import { Spinner } from "@/components/ui/spinner"
@@ -81,11 +82,7 @@ export function SchemaForm<S extends z.ZodObject>({
         </p>
       ) : null}
       <div>
-        <Button
-          type="submit"
-          disabled={pending}
-          className="h-11 rounded-xl px-5 font-semibold"
-        >
+        <Button type="submit" disabled={pending} className={FORM_ACTION}>
           {pending ? <Spinner data-icon="inline-start" /> : null}
           {submitLabel}
         </Button>

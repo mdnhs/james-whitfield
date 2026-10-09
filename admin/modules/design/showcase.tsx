@@ -10,6 +10,7 @@ import { EmptyState } from "@/admin/components/dashboard/empty-state"
 import { Gauge } from "@/admin/components/dashboard/gauge"
 import { KpiCard } from "@/admin/components/dashboard/kpi-card"
 import {
+  LINK_PRIMARY,
   PageHeader,
   PRIMARY_ACTION,
   SECONDARY_ACTION,
@@ -23,8 +24,7 @@ import {
   StatusPill,
   toneForStatus,
 } from "@/admin/components/dashboard/status-pill"
-import { Button, buttonVariants } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
 
 import { DemoForm } from "./demo-form"
 import {
@@ -102,7 +102,7 @@ export function Showcase() {
               <Link
                 href="/admin/leads"
                 data-slot="button"
-                className={cn(buttonVariants(), PRIMARY_ACTION)}
+                className={LINK_PRIMARY}
               >
                 <InboxIcon data-icon="inline-start" />
                 Open enquiry

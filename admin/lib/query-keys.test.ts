@@ -4,6 +4,8 @@ import { queryKeys } from "./query-keys"
 
 it("normalises search terms so equal searches share a cache entry", () => {
   expect(queryKeys.search("  Users ")).toEqual(queryKeys.search("users"))
+  // The same normaliser as the search service, so accents fold too.
+  expect(queryKeys.search("Café")).toEqual(queryKeys.search("cafe"))
 })
 
 it("nests every audit key under one prefix for invalidation", () => {

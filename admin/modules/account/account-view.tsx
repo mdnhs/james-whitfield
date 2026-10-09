@@ -6,12 +6,10 @@ import { parseAsStringLiteral, useQueryState } from "nuqs"
 
 import { DashboardCard } from "@/admin/components/dashboard/dashboard-card"
 import { EmptyState } from "@/admin/components/dashboard/empty-state"
-import { PageHeader } from "@/admin/components/dashboard/page-header"
+import { LINK_FORM, PageHeader } from "@/admin/components/dashboard/page-header"
 import { StatusPill } from "@/admin/components/dashboard/status-pill"
 import { useActor } from "@/admin/lib/actor-context"
-import { buttonVariants } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { cn } from "@/lib/utils"
 
 import { PasswordForm } from "./password-form"
 import { ProfileForm } from "./profile-form"
@@ -85,10 +83,7 @@ export function AccountView() {
                 <Link
                   href="/admin/two-factor-setup"
                   data-slot="button"
-                  className={cn(
-                    buttonVariants(),
-                    "h-11 rounded-xl px-5 font-semibold"
-                  )}
+                  className={LINK_FORM}
                 >
                   <ShieldCheckIcon data-icon="inline-start" />
                   Set up two-factor

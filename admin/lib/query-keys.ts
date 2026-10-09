@@ -1,3 +1,5 @@
+import { normaliseSearch } from "@/lib/search/normalize"
+
 // The admin's query-key factory (docs/brief.md §8.4). Table state from the
 // URL is part of the key, so each filter combination is its own entry.
 export type AuditListParams = {
@@ -10,7 +12,7 @@ export type AuditListParams = {
 }
 
 export const queryKeys = {
-  search: (q: string) => ["search", q.trim().toLowerCase()] as const,
+  search: (q: string) => ["search", normaliseSearch(q)] as const,
   dashboard: ["dashboard"] as const,
   audit: {
     all: ["audit"] as const,

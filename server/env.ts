@@ -4,20 +4,38 @@ import * as z from "zod"
 
 // Validated lazily on first use, never at module scope: `next build` runs
 // without production secrets or a database (docs/brief.md §5.6).
-const EnvSchema = z.object({
-  NODE_ENV: z
-    .enum(["development", "test", "production"])
-    .default("development"),
-  SITE_ENV: z
-    .enum(["development", "staging", "production"])
-    .default("development"),
-  SITE_URL: z.url(),
-  DATABASE_URL: z.url(),
-  // "resend" is added in Phase 6.
-  EMAIL_DRIVER: z.enum(["log", "smtp"]).default("log"),
-  SMTP_URL: z.string().optional(),
-  EMAIL_FROM: z.string().min(3).default("Magda Kennedy <hello@localhost>"),
-})
+const EnvSchema = z
+  .object({
+    NODE_ENV: z
+      .enum(["development", "test", "production"])
+      .default("development"),
+    SITE_ENV: z
+      .enum(["development", "staging", "production"])
+      .default("development"),
+    SITE_URL: z.url(),
+    DATABASE_URL: z.url(),
+    // "resend" is added in Phase 6.
+    EMAIL_DRIVER: z.enum(["log", "smtp"]).default("log"),
+    SMTP_URL: z.string().optional(),
+    EMAIL_FROM: z.string().min(3).default("Magda Kennedy <hello@localhost>"),
+  })
+  .superRefine((env, ctx) => {
+    if (env.EMAIL_DRIVER === "smtp" && !env.SMTP_URL) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["SMTP_URL"],
+        message: 'SMTP_URL is required when EMAIL_DRIVER is "smtp"',
+      })
+    }
+    if (env.SITE_ENV === "production" && env.EMAIL_DRIVER === "log") {
+      ctx.addIssue({
+        code: "custom",
+        path: ["EMAIL_DRIVER"],
+        message:
+          'EMAIL_DRIVER "log" is not allowed when SITE_ENV is "production"',
+      })
+    }
+  })
 
 export type Env = z.infer<typeof EnvSchema>
 

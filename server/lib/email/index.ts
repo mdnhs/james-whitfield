@@ -14,18 +14,20 @@ export type EmailMessage = {
 type Envelope = EmailMessage & { from: string }
 type EmailDriver = { send(message: Envelope): Promise<void> }
 
-// The log driver keeps messages in memory (tests read them) and prints them in
-// development, so invite links are usable without a mail server.
+// The log driver keeps messages in memory (tests read them). Only development
+// prints the body (so invite links work without a mail server); elsewhere just
+// metadata is logged, since bodies carry live reset/invite tokens.
+const oneLine = (value: string) => value.replace(/[\r\n]+/g, " ")
+
 const outbox: Envelope[] = []
 
 const logDriver: EmailDriver = {
   async send(message) {
     outbox.push(message)
-    if (getEnv().NODE_ENV !== "test") {
-      console.info(
-        `[email] to=${message.to} subject="${message.subject}"\n${message.text}`
-      )
-    }
+    const { NODE_ENV } = getEnv()
+    if (NODE_ENV === "test") return
+    const meta = `[email] to=${oneLine(message.to)} subject="${oneLine(message.subject)}"`
+    console.info(NODE_ENV === "development" ? `${meta}\n${message.text}` : meta)
   },
 }
 
@@ -43,10 +45,8 @@ let driver: EmailDriver | undefined
 function getDriver(): EmailDriver {
   if (driver) return driver
   const env = getEnv()
-  driver =
-    env.EMAIL_DRIVER === "smtp" && env.SMTP_URL
-      ? smtpDriver(env.SMTP_URL)
-      : logDriver
+  // env validation guarantees SMTP_URL whenever the driver is "smtp".
+  driver = env.EMAIL_DRIVER === "smtp" ? smtpDriver(env.SMTP_URL!) : logDriver
   return driver
 }
 

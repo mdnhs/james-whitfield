@@ -30,3 +30,24 @@ describe("getEnv", () => {
     expect(message).toMatch(/DATABASE_URL/)
   })
 })
+
+describe("getEnv email validation", () => {
+  const base = () => {
+    vi.stubEnv("SITE_URL", "https://www.example.ie")
+    vi.stubEnv("DATABASE_URL", "postgres://user:pass@db:5432/app")
+  }
+
+  it("requires SMTP_URL for the smtp driver", () => {
+    base()
+    vi.stubEnv("EMAIL_DRIVER", "smtp")
+    vi.stubEnv("SMTP_URL", undefined)
+    expect(() => getEnv()).toThrow(/SMTP_URL/)
+  })
+
+  it("rejects the log driver in production", () => {
+    base()
+    vi.stubEnv("SITE_ENV", "production")
+    vi.stubEnv("EMAIL_DRIVER", "log")
+    expect(() => getEnv()).toThrow(/EMAIL_DRIVER/)
+  })
+})

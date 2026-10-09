@@ -1,4 +1,6 @@
-import { afterEach, describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
+
+import { resetEnvForTests } from "@/server/env"
 
 import { clearOutbox, readOutbox, sendEmail } from "./index"
 import { inviteEmail, passwordResetEmail } from "./templates"
@@ -41,5 +43,37 @@ describe("templates", () => {
     expect(
       passwordResetEmail({ name: "Ann", url: "https://example.com/r" }).subject
     ).toBe("Reset your admin password")
+  })
+})
+
+describe("log driver output", () => {
+  const message = {
+    to: "ann@example.com\r\nBcc: x@y.z",
+    subject: "Hi\nthere",
+    html: "<p>t</p>",
+    text: "https://example.com/reset?token=SECRET",
+  }
+  const logged = async (nodeEnv: string) => {
+    vi.stubEnv("NODE_ENV", nodeEnv)
+    resetEnvForTests()
+    const spy = vi.spyOn(console, "info").mockImplementation(() => {})
+    await sendEmail(message)
+    return spy.mock.calls.flat().join("\n")
+  }
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+    resetEnvForTests()
+  })
+
+  it("omits the body outside development and strips CR/LF", async () => {
+    const out = await logged("production")
+    expect(out).not.toContain("SECRET")
+    expect(out).toContain("to=ann@example.com Bcc: x@y.z")
+    expect(out).not.toMatch(/[\r\n]/)
+  })
+
+  it("prints the body in development", async () => {
+    expect(await logged("development")).toContain("SECRET")
   })
 })

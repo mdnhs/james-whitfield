@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:migrate": "esbuild scripts/migrate.ts --bundle --platform=node --target=node22 --format=cjs --outfile=dist/migrate.cjs",
+    "build:admin-create": "esbuild scripts/admin-create.ts --bundle --platform=node --target=node22 --format=cjs --alias:server-only=./node_modules/server-only/empty.js --outfile=dist/admin-create.cjs",
     "start": "next start",
     "lint": "eslint",
     "format": "prettier --write \"**/*.{ts,tsx}\"",

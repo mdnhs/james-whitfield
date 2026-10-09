@@ -6,3 +6,4 @@ node_modules
 *.md
 .env*
 npm-debug.log*
+dist

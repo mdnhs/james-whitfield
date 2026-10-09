@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest"
 
-import { ALL_ARTICLES } from "@/features/insights/data/articles"
+import { ALL_ARTICLES } from "@/server/db/seed/fixtures/articles"
 
-import { ARTICLE_SHELL_SLUG, ArticleSlug } from "./article-slug"
+import { ARTICLE_SHELL_SLUG, ArticleSlug } from "@/lib/content/article-slug"
 
 describe("ArticleSlug", () => {
   it("rejects the build-shell slug", () => {

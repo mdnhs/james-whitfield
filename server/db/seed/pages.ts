@@ -3,36 +3,36 @@ import "server-only"
 import type { PageKind } from "@/blocks/define-block"
 import { pageDocumentFor, type PageDocument } from "@/blocks/page"
 import type { BlockData, BlockInstance, BlockType } from "@/blocks/registry"
-import { ABOUT_CONTENT } from "@/features/about/data/about-content"
+import { ABOUT_CONTENT } from "@/server/db/seed/fixtures/about-content"
 import {
   ABOUT_APPROACH,
   ABOUT_CREDENTIALS,
   ABOUT_HERO,
   ABOUT_STATS,
   ABOUT_STORY,
-} from "@/features/about-page/data/about-page-content"
+} from "@/server/db/seed/fixtures/about-page-content"
 import {
   CLINIC,
   CONTACT_HERO,
   CONTACT_INFO,
-} from "@/features/contact/data/contact-content"
-import { CREDENTIALS } from "@/features/credibility/data/credentials"
-import { FAQ_HEADER } from "@/features/faq/data/faqs"
-import { HERO_CONTENT } from "@/features/hero/data/hero-content"
+} from "@/server/db/seed/fixtures/contact-content"
+import { CREDENTIALS } from "@/server/db/seed/fixtures/credentials"
+import { FAQ_HEADER } from "@/server/db/seed/fixtures/faqs"
+import { HERO_CONTENT } from "@/server/db/seed/fixtures/hero-content"
 import {
   FIT,
   HOW_IT_WORKS_HERO,
   SESSION,
-} from "@/features/how-it-works/data/session"
-import { HOW_IT_WORKS } from "@/features/how-it-works/data/steps"
-import { INSIGHTS_HERO, PAGE_SIZE } from "@/features/insights/data/articles"
-import { INSIGHTS_HEADER } from "@/features/insights/data/posts"
+} from "@/server/db/seed/fixtures/session"
+import { HOW_IT_WORKS } from "@/server/db/seed/fixtures/steps"
+import { INSIGHTS_HERO, PAGE_SIZE } from "@/server/db/seed/fixtures/articles"
+import { INSIGHTS_HEADER } from "@/server/db/seed/fixtures/posts"
 import {
   FORMATS,
   SERVICES,
   SERVICES_HERO,
-} from "@/features/services/data/services-content"
-import { TESTIMONIALS_HEADER } from "@/features/testimonials/data/testimonials"
+} from "@/server/db/seed/fixtures/services-content"
+import { TESTIMONIALS_HEADER } from "@/server/db/seed/fixtures/testimonials"
 import type { Db } from "@/server/db/client"
 import { pages } from "@/server/db/schema"
 

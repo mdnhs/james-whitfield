@@ -1,18 +1,18 @@
 import "server-only"
 
 import { RichTextDoc } from "@/blocks/rich-text"
-import { ABOUT_CTA } from "@/features/about-page/data/about-page-content"
-import { ENTERPRISE_CONTENT } from "@/features/enterprise/data/enterprise-content"
-import { FAQS } from "@/features/faq/data/faqs"
-import { STEPS } from "@/features/how-it-works/data/steps"
-import { ARTICLE_BODIES } from "@/features/insights/data/article-bodies"
+import { ABOUT_CTA } from "@/server/db/seed/fixtures/about-page-content"
+import { ENTERPRISE_CONTENT } from "@/server/db/seed/fixtures/enterprise-content"
+import { FAQS } from "@/server/db/seed/fixtures/faqs"
+import { STEPS } from "@/server/db/seed/fixtures/steps"
+import { ARTICLE_BODIES } from "@/server/db/seed/fixtures/article-bodies"
 import {
   ALL_ARTICLES,
   CATEGORIES,
   FEATURED_ARTICLE,
-} from "@/features/insights/data/articles"
-import { FORMATS, SERVICES } from "@/features/services/data/services-content"
-import { TESTIMONIALS } from "@/features/testimonials/data/testimonials"
+} from "@/server/db/seed/fixtures/articles"
+import { FORMATS, SERVICES } from "@/server/db/seed/fixtures/services-content"
+import { TESTIMONIALS } from "@/server/db/seed/fixtures/testimonials"
 import { ArticleSlug } from "@/lib/content/article-slug"
 import { cropToFrame } from "@/lib/content/frame"
 import { slugify } from "@/lib/utils"

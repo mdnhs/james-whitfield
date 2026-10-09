@@ -1,13 +1,5 @@
-import type { StatValue } from "@/lib/count"
+import { count } from "./count"
 import type { IconName } from "@/lib/icons"
-
-const count = (value: number, suffix = "", decimals = 0): StatValue => ({
-  kind: "count",
-  value,
-  decimals,
-  prefix: "",
-  suffix,
-})
 
 export const ABOUT_HERO = {
   title: "About",

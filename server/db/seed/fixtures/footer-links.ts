@@ -1,4 +1,4 @@
-import type { NavLink } from "../../navbar/data/nav-links"
+import type { NavLink } from "./nav-links"
 
 export const FOOTER_BLURB =
   "Coach & Clinical Hypnotherapist. Supporting individuals, professionals, and forward-thinking organizations from the inside out."

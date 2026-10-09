@@ -1,12 +1,15 @@
 import "server-only"
 
-import { CONTACT, CONTACT_FORM } from "@/features/contact/data/contact-content"
-import { FOOTER } from "@/features/footer/data/footer-links"
-import { HERO_CONTENT } from "@/features/hero/data/hero-content"
-import { NEWSLETTER } from "@/features/insights/data/articles"
-import { NAVIGATION } from "@/features/navbar/data/nav-links"
-import { MICROCOPY } from "@/features/site/data/microcopy"
-import { SITE } from "@/features/site/data/site"
+import {
+  CONTACT,
+  CONTACT_FORM,
+} from "@/server/db/seed/fixtures/contact-content"
+import { FOOTER } from "@/server/db/seed/fixtures/footer-links"
+import { HERO_CONTENT } from "@/server/db/seed/fixtures/hero-content"
+import { NEWSLETTER } from "@/server/db/seed/fixtures/articles"
+import { NAVIGATION } from "@/server/db/seed/fixtures/nav-links"
+import { MICROCOPY } from "@/server/db/seed/fixtures/microcopy"
+import { SITE } from "@/server/db/seed/fixtures/site"
 import { parseGlobal, SITE_TOKENS, type GlobalKey } from "@/lib/content/globals"
 import type { Db } from "@/server/db/client"
 import { settings } from "@/server/db/schema"

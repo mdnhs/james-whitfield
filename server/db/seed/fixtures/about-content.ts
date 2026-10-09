@@ -1,12 +1,6 @@
 import type { StatValue } from "@/lib/count"
 
-const count = (value: number, suffix = "", decimals = 0): StatValue => ({
-  kind: "count",
-  value,
-  decimals,
-  prefix: "",
-  suffix,
-})
+import { count } from "./count"
 
 export const ABOUT_CONTENT = {
   eyebrow: "About Magda Kennedy",

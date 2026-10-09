@@ -95,8 +95,8 @@ jobs:
       # Visual baselines (public parity, admin "visual:") are macOS-only until
       # Phase 11 records Linux ones, and Lighthouse runs locally only, so CI
       # skips all three.
-      - name: E2E (desktop, without visual baselines or Lighthouse)
-        run: pnpm test:e2e --project=desktop --project=admin-desktop --grep-invert "parity:|visual:|lighthouse:"
+      - name: E2E (desktop, without visual baselines, Lighthouse or perf)
+        run: pnpm test:e2e --project=desktop --project=admin-desktop --grep-invert "parity:|visual:|lighthouse:|perf:"
         env:
           E2E_SKIP_BUILD: "1"
       - uses: actions/upload-artifact@v4

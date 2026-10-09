@@ -1,5 +1,3 @@
-import { ARTICLE_BODIES, type Block } from "./article-bodies"
-
 export const INSIGHTS_HERO = {
   title: "Insights",
   subtitle:
@@ -109,31 +107,6 @@ export const ARTICLES: Article[] = [
 
 // Every article that has its own page, featured first.
 export const ALL_ARTICLES = [FEATURED_ARTICLE, ...ARTICLES]
-
-export const getArticle = (slug: string) =>
-  ALL_ARTICLES.find((article) => article.slug === slug)
-
-export const getArticleBody = (slug: string): Block[] =>
-  ARTICLE_BODIES[slug] ?? []
-
-// Reading time at roughly 220 words a minute.
-export function readTime(slug: string) {
-  const words = getArticleBody(slug)
-    .flatMap((block) => (block.type === "list" ? block.items : [block.text]))
-    .join(" ")
-    .split(/\s+/).length
-  return `${Math.max(1, Math.round(words / 220))} min read`
-}
-
-// Same category first, then the newest of the rest.
-export function relatedArticles(slug: string, count = 3) {
-  const current = getArticle(slug)
-  const others = ALL_ARTICLES.filter((article) => article.slug !== slug)
-  return [
-    ...others.filter((article) => article.category === current?.category),
-    ...others.filter((article) => article.category !== current?.category),
-  ].slice(0, count)
-}
 
 export const PAGE_SIZE = 6
 

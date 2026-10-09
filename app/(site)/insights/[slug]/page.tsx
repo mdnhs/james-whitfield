@@ -1,6 +1,8 @@
 import type { Metadata } from "next"
+import { io } from "next/cache"
 import { notFound } from "next/navigation"
 
+import { collectMediaIds, resolveMedia } from "@/blocks/media-refs"
 import { JourneyRail } from "@/components/journey-rail"
 import { PageMotion } from "@/components/page-motion"
 import { StackCard } from "@/components/stack-card"
@@ -12,28 +14,27 @@ import {
 } from "@/features/insights"
 import { contactHref } from "@/lib/contact-href"
 import {
-  ALL_ARTICLES,
   getArticle,
-  relatedArticles,
-} from "@/features/insights/data/articles"
-import { MICROCOPY } from "@/features/site/data/microcopy"
+  getMedia,
+  getRelatedArticles,
+  getSetting,
+} from "@/server/modules/content/queries"
 
-import * as legacy from "../../_legacy/views"
-
-// Known slugs prerender at build. Any other slug renders on request and hits
-// notFound() below (dynamicParams is not allowed with Cache Components).
-
+// Articles render on request from cached data. Cache Components needs at least
+// one param to build the route's shell; a sentinel slug gives it one without
+// reading the database (it has no article, so it renders not-found). Unknown
+// slugs render not-found inside the streamed shell: 200 + noindex.
 export function generateStaticParams() {
-  return ALL_ARTICLES.map(({ slug }) => ({ slug }))
+  return [{ slug: "__shell" }]
 }
 
 export async function generateMetadata({
   params,
 }: PageProps<"/insights/[slug]">): Promise<Metadata> {
+  await io()
   const { slug } = await params
-  const article = getArticle(slug)
-  if (!article) return {}
-
+  const article = await getArticle(slug)
+  if (!article) notFound()
   return {
     title: article.title,
     description: article.excerpt,
@@ -43,55 +44,58 @@ export async function generateMetadata({
       description: article.excerpt,
       publishedTime: article.date.iso,
       authors: [article.author.name],
-      images: [article.image],
+      images: [article.image.src],
     },
   }
 }
 
-const CHAPTERS = [
-  { label: "Welcome", target: "home" },
-  { label: "Article", target: "article" },
-  { label: "Keep reading", target: "keep-reading" },
-  { label: "Newsletter", target: "newsletter" },
-  { label: "Contact", target: "contact" },
-]
-
-// Same scroll stack as the other pages: each chapter is a card that sticks
+// Fixed template (docs/brief.md §6.2): each chapter is a card that sticks
 // while the next slides over it.
 export default async function ArticlePage({
   params,
 }: PageProps<"/insights/[slug]">) {
+  await io()
   const { slug } = await params
-  const article = getArticle(slug)
+  const [article, related, copy, newsletter] = await Promise.all([
+    getArticle(slug),
+    getRelatedArticles(slug, 3),
+    getSetting("microcopy"),
+    getSetting("newsletter"),
+  ])
   if (!article) notFound()
-  const detail = legacy.articleDetail(article)
-
+  const band = resolveMedia(
+    newsletter,
+    await getMedia(collectMediaIds(newsletter))
+  )
+  const chapters = [
+    { label: copy.articleChapters.welcome, target: "home" },
+    { label: copy.articleChapters.article, target: "article" },
+    { label: copy.articleChapters.keepReading, target: "keep-reading" },
+    { label: copy.articleChapters.newsletter, target: "newsletter" },
+    { label: copy.contactChapter, target: "contact" },
+  ]
   return (
-    <main data-page-root className="bg-ink">
+    <main key={slug} data-page-root className="bg-ink">
       <StackCard id="home" rounded={false}>
-        <ArticleHero article={detail} copy={MICROCOPY} />
+        <ArticleHero article={article} copy={copy} />
       </StackCard>
       <StackCard id="article">
         <ArticleBody
-          article={detail}
-          copy={MICROCOPY}
+          article={article}
+          copy={copy}
           ctaHref={contactHref({
             plan: "discovery-call",
-            topic: detail.topicSlug,
+            topic: article.topicSlug,
           })}
         />
       </StackCard>
       <StackCard>
-        <RelatedArticles
-          id="keep-reading"
-          articles={relatedArticles(slug).map(legacy.articleSummary)}
-          copy={MICROCOPY}
-        />
+        <RelatedArticles id="keep-reading" articles={related} copy={copy} />
       </StackCard>
       <StackCard last>
-        <NewsletterBand id="newsletter" content={legacy.newsletter()} />
+        <NewsletterBand id="newsletter" content={band} />
       </StackCard>
-      <JourneyRail chapters={CHAPTERS} />
+      <JourneyRail chapters={chapters} />
       <PageMotion />
     </main>
   )

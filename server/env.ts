@@ -14,6 +14,8 @@ const EnvSchema = z
       .default("development"),
     SITE_URL: z.url(),
     DATABASE_URL: z.url(),
+    BETTER_AUTH_SECRET: z.string().min(32),
+    BETTER_AUTH_URL: z.url(),
     // "resend" is added in Phase 6.
     EMAIL_DRIVER: z.enum(["log", "smtp"]).default("log"),
     SMTP_URL: z.string().optional(),

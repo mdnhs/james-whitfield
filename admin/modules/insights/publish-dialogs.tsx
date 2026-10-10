@@ -182,7 +182,7 @@ function UnpublishForm({
   const options = (published.data?.items ?? [])
     .filter((item) => item.id !== id)
     .map((item) => ({
-      value: `/insights/${item.slug}`,
+      value: `/insights/${item.liveSlug}`,
       label: item.title,
     }))
   const redirectTo =

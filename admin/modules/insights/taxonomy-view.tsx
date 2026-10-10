@@ -400,10 +400,16 @@ function EditSheet({
                   onClose()
                 } catch (error) {
                   if (!(error instanceof ApiError)) throw error
-                  if (error.code === "CONFLICT" && editing !== "new")
-                    void queryClient.invalidateQueries({
+                  // Someone saved first: this row's version is stale, so
+                  // reload the list and close rather than 409 on every retry.
+                  if (error.code === "CONFLICT" && editing !== "new") {
+                    await queryClient.invalidateQueries({
                       queryKey: queryKeys[name],
                     })
+                    toast.error(error.message)
+                    onClose()
+                    return
+                  }
                   return {
                     formError: error.message,
                     fieldErrors: error.fieldErrors,

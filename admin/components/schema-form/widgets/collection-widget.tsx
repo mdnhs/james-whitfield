@@ -17,6 +17,7 @@ import {
 
 import { describedBy, WidgetShell, type WidgetProps } from "./shell"
 
+const NONE = "__none__"
 type Selection = { mode: "all" } | { mode: "chosen"; ids: string[] }
 
 // A single row id (a band) or a Selection: "all" in collection order, or
@@ -34,13 +35,19 @@ export function CollectionWidget({
   })
   const items = options.data?.items ?? []
   if (field.node.type === "string") {
-    const list = items.map((item) => ({ value: item.id, label: item.label }))
+    // A nullable single pick can be cleared.
+    const list = [
+      ...(field.nullable ? [{ value: NONE, label: "None" }] : []),
+      ...items.map((item) => ({ value: item.id, label: item.label })),
+    ]
     return (
       <WidgetShell id={id} field={field} error={error}>
         <Select
           items={list}
           value={typeof value === "string" ? value : null}
-          onValueChange={(next) => onChange(next as string)}
+          onValueChange={(next) =>
+            onChange(next === NONE ? (null as never) : (next as string))
+          }
         >
           <SelectTrigger
             id={id}

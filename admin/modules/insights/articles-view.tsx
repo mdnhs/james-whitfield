@@ -117,7 +117,6 @@ const columns = helper.columns([
     cell: (info) => (
       <Link
         href={`/admin/insights/${info.row.original.id}`}
-        prefetch={false}
         className="font-semibold underline-offset-4 hover:text-primary hover:underline"
       >
         {info.getValue() || "Untitled article"}
@@ -301,7 +300,6 @@ export function ArticlesView() {
               <div className="flex flex-col gap-2 text-sm">
                 <Link
                   href={`/admin/insights/${row.original.id}`}
-                  prefetch={false}
                   className="font-semibold"
                 >
                   {row.original.title || "Untitled article"}

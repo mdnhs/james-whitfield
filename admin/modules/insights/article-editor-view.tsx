@@ -12,6 +12,7 @@ import {
   XIcon,
 } from "lucide-react"
 import Link from "next/link"
+import { useParams } from "next/navigation"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 
@@ -53,7 +54,16 @@ import {
   type ArticleDetail,
 } from "./queries"
 
+// The URL is the truth about which article is open: a reused router segment
+// can carry another article's server-rendered id. Keyed on the URL id, so a
+// different article is always a fresh editor (the old one flushes on unmount).
 export function ArticleEditorView({ id }: { id: string }) {
+  const params = useParams<{ id?: string | string[] }>()
+  const urlId = typeof params.id === "string" ? params.id : id
+  return <ArticleLoader key={urlId} id={urlId} />
+}
+
+function ArticleLoader({ id }: { id: string }) {
   const query = useQuery(articleDetailQuery(id))
   // Review / restore load the server copy into a fresh editor.
   const [generation, setGeneration] = useState(0)

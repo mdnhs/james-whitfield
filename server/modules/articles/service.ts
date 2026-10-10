@@ -117,6 +117,8 @@ export async function listArticles(query: ArticleListQuery) {
       id: articles.id,
       title: workingTitle,
       slug: workingSlug,
+      // What readers see now: the target of an unpublish redirect.
+      liveSlug: articles.slug,
       status: articles.status,
       featured: articles.featured,
       category: articleCategories.name,

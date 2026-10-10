@@ -13,6 +13,7 @@ import {
   XIcon,
 } from "lucide-react"
 import Link from "next/link"
+import { useParams } from "next/navigation"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { toast } from "sonner"
 
@@ -49,7 +50,14 @@ import { SaveIndicator } from "./save-indicator"
 import { SeoForm } from "./seo-form"
 import { conflictOf, useAutosave, type Conflict } from "./use-autosave"
 
+// The URL is the truth about which page is open (see ArticleEditorView).
 export function PageBuilder({ id }: { id: string }) {
+  const params = useParams<{ id?: string | string[] }>()
+  const urlId = typeof params.id === "string" ? params.id : id
+  return <PageLoader key={urlId} id={urlId} />
+}
+
+function PageLoader({ id }: { id: string }) {
   const query = useQuery(pageDetailQuery(id))
   // Review / restore / discard load the server copy into a fresh builder.
   const [generation, setGeneration] = useState(0)

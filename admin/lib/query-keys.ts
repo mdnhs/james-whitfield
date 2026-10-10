@@ -47,6 +47,14 @@ export const queryKeys = {
     detail: (key: string) => ["globals", key] as const,
     revisions: (key: string) => ["globals", key, "revisions"] as const,
   },
+  leads: {
+    all: ["leads"] as const,
+    list: (params: Record<string, unknown>) =>
+      ["leads", "list", params] as const,
+    detail: (id: string) => ["leads", "detail", id] as const,
+    stats: ["leads", "stats"] as const,
+    assignees: ["leads", "assignees"] as const,
+  },
   account: {
     sessions: ["account", "sessions"] as const,
   },

@@ -7,6 +7,7 @@ import { articlesRoutes } from "@/server/modules/articles/routes"
 import { auditRoutes } from "@/server/modules/audit/routes"
 import { collectionsRoutes } from "@/server/modules/collections/routes"
 import { dashboardRoutes } from "@/server/modules/dashboard/routes"
+import { leadsRoutes } from "@/server/modules/leads/routes"
 import { mediaRoutes } from "@/server/modules/media/routes"
 import { globalsRoutes } from "@/server/modules/globals/routes"
 import { pagesRoutes } from "@/server/modules/pages/routes"
@@ -41,4 +42,5 @@ export const adminRoutes = new Hono<AppEnv>()
   .route("/dashboard", dashboardRoutes)
   .route("/audit", auditRoutes)
   .route("/users", usersRoutes)
+  .route("/leads", leadsRoutes)
   .route("/account", accountRoutes)

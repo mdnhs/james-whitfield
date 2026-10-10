@@ -18,6 +18,7 @@ const NO_PURGE = {
   spam: 0,
   pendingSubscribers: 0,
   rateLimits: 0,
+  aiConversations: 0,
 }
 
 // docs/brief.md §5.5(f). One transaction holds the lock; due rows are locked

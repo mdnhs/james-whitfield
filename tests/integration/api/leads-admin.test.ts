@@ -170,6 +170,7 @@ describe("leads API", () => {
     const data = await exported.json()
     expect(data.leads).toHaveLength(2)
     expect(data.newsletter.status).toBe("confirmed")
+    expect(data.aiConversations).toEqual([])
     const erased = await (
       await adminRequest("/leads/dsar?email=dsar%40example.com", cookie, {
         method: "DELETE",

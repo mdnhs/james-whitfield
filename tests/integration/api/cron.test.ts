@@ -374,6 +374,7 @@ describe("retention purge", () => {
       spam: 1,
       pendingSubscribers: 1,
       rateLimits: 1,
+      aiConversations: 0,
     })
     expect(
       (await getDb().select({ id: leads.id }).from(leads))

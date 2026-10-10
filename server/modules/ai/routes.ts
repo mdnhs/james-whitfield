@@ -4,7 +4,12 @@ import "server-only"
 import { zValidator } from "@hono/zod-validator"
 import { Hono } from "hono"
 
-import { AiSettingsUpdate, ChatInput, ListModelsInput } from "@/lib/ai/schema"
+import {
+  AiSettingsUpdate,
+  ChatInput,
+  ConversationParam,
+  ListModelsInput,
+} from "@/lib/ai/schema"
 import { validationHook } from "@/server/api/errors"
 import { actorLimit } from "@/server/api/middleware/actor-limit"
 import { can } from "@/server/api/middleware/auth"
@@ -12,6 +17,11 @@ import { notViewingAs } from "@/server/api/middleware/view-as"
 import type { AppEnv } from "@/server/api/types"
 
 import { startChat } from "./chat"
+import {
+  deleteConversation,
+  getConversation,
+  listConversations,
+} from "./conversations"
 import {
   getAiAdmin,
   getAiStatus,
@@ -65,6 +75,26 @@ export const aiRoutes = new Hono<AppEnv>()
     zValidator("json", ChatInput, validationHook),
     async (c) =>
       startChat(c.get("actor")!, c.req.valid("json"), c.req.raw.signal)
+  )
+  .get("/conversations", can({ ai: ["use"] }), async (c) =>
+    c.json({ items: await listConversations(c.get("actor")!.userId) })
+  )
+  .get(
+    "/conversations/:id",
+    can({ ai: ["use"] }),
+    zValidator("param", ConversationParam, validationHook),
+    async (c) =>
+      c.json(
+        await getConversation(c.get("actor")!.userId, c.req.valid("param").id)
+      )
+  )
+  .delete(
+    "/conversations/:id",
+    can({ ai: ["use"] }),
+    notViewingAs("You can't delete conversations while viewing as someone"),
+    zValidator("param", ConversationParam, validationHook),
+    async (c) =>
+      c.json(await deleteConversation(c.get("actor")!, c.req.valid("param").id))
   )
 
 export type AiRoutes = typeof aiRoutes

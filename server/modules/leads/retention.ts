@@ -11,6 +11,7 @@ import {
   settings,
 } from "@/server/db/schema"
 import { audit } from "@/server/lib/audit"
+import { purgeStaleConversations } from "@/server/modules/ai/conversations"
 
 const DAY = 86_400_000
 const PENDING_DAYS = 30
@@ -80,6 +81,7 @@ export async function purgeExpired(tx: Tx, now: Date) {
       )
       .returning({ key: apiRateLimits.key })
   )
+  const aiConversations = await purgeStaleConversations(tx, now)
   if (closed + spam + pendingSubscribers > 0) {
     await audit(
       null,
@@ -91,5 +93,16 @@ export async function purgeExpired(tx: Tx, now: Date) {
       tx
     )
   }
-  return { closed, spam, pendingSubscribers, rateLimits }
+  if (aiConversations > 0) {
+    await audit(
+      null,
+      {
+        action: "ai.purge",
+        entityType: "ai_conversation",
+        summary: `Retention purge: ${aiConversations} AI assistant conversations older than 90 days`,
+      },
+      tx
+    )
+  }
+  return { closed, spam, pendingSubscribers, rateLimits, aiConversations }
 }

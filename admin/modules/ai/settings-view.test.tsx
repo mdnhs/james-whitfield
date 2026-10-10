@@ -154,6 +154,17 @@ describe("AiSettingsView", () => {
     ).toBeTruthy()
   })
 
+  it("treats Remove key as an unsaved change, so Test waits for Save", async () => {
+    setup()
+    const test = (await screen.findByRole("button", {
+      name: "Test connection",
+    })) as HTMLButtonElement
+    expect(test.disabled).toBe(false)
+    await userEvent.click(screen.getByRole("button", { name: "Remove key" }))
+    expect(test.disabled).toBe(true)
+    expect(test.title).toBe("Save first")
+  })
+
   it("saves the form and disables Test until saved (Ruling R21)", async () => {
     mocks.put.mockImplementation(() => json(doc({ enabled: true })))
     setup()

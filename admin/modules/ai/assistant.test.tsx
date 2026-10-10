@@ -10,22 +10,26 @@ import type { MePayload } from "@/lib/auth/me"
 
 import { AiAssistant } from "./assistant"
 
-const mocks = vi.hoisted(() => ({ status: vi.fn() }))
+const mocks = vi.hoisted(() => ({ status: vi.fn(), chatLoaded: 0 }))
 vi.mock("@/admin/lib/api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/admin/lib/api")>()),
   aiApi: { status: { $get: mocks.status } },
 }))
-vi.mock("@ai-sdk/react", () => ({
-  useChat: () => ({
-    messages: [],
-    status: "ready",
-    error: undefined,
-    stop: vi.fn(),
-    setMessages: vi.fn(),
-    clearError: vi.fn(),
-    sendMessage: vi.fn(),
-  }),
-}))
+// The factory runs when the module is first imported.
+vi.mock("@ai-sdk/react", () => {
+  mocks.chatLoaded++
+  return {
+    useChat: () => ({
+      messages: [],
+      status: "ready",
+      error: undefined,
+      stop: vi.fn(),
+      setMessages: vi.fn(),
+      clearError: vi.fn(),
+      sendMessage: vi.fn(),
+    }),
+  }
+})
 
 const me: MePayload = {
   user: { id: "u1", email: "e@x.ie", name: "Eddie" },
@@ -54,6 +58,22 @@ beforeEach(() => {
 })
 
 describe("AiAssistant focus", () => {
+  // First: the module cache keeps the chat chunk once any test has loaded it.
+  it("keeps the AI SDK client out of the first load: the chat chunk loads when the button is used", async () => {
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <AdminActorProvider value={me}>
+          <AiAssistant />
+        </AdminActorProvider>
+      </QueryClientProvider>
+    )
+    const trigger = await screen.findByRole("button", { name: "AI assistant" })
+    expect(mocks.chatLoaded).toBe(0)
+    await userEvent.click(trigger)
+    await screen.findByLabelText("Message the AI assistant")
+    expect(mocks.chatLoaded).toBe(1)
+  })
+
   it("focuses the message box on open and returns focus to the topbar button on close", async () => {
     render(
       <QueryClientProvider client={new QueryClient()}>

@@ -137,6 +137,9 @@ function SettingsForm({ doc }: { doc: AiAdmin }) {
     (!oac || normaliseBaseUrl(baseUrl) === saved.baseUrl)
   const showKeyInput =
     !doc.apiKey.hasKey || !keyFollows || keyMode === "replace"
+  // "Remove key" is component state, not form state, so it counts here: Test
+  // uses the saved settings, which still hold the key until Save.
+  const unsaved = isDirty || keyMode === "remove"
   const losesKey =
     doc.apiKey.hasKey && !keyFollows && keyMode !== "remove" && !newKey.trim()
 
@@ -510,8 +513,8 @@ function SettingsForm({ doc }: { doc: AiAdmin }) {
           type="button"
           variant="outline"
           className={FORM_ACTION}
-          disabled={isDirty || test.isPending}
-          title={isDirty ? "Save first" : undefined}
+          disabled={unsaved || test.isPending}
+          title={unsaved ? "Save first" : undefined}
           onClick={() => test.mutate()}
         >
           {test.isPending ? <Spinner data-icon="inline-start" /> : null}Test

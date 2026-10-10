@@ -54,13 +54,29 @@ export function parseBlocks(source: string): Block[] {
 }
 
 // Relative paths, https and mailto only: no http, javascript:, data: or
-// protocol-relative (`//host`, `/\host`) targets.
+// protocol-relative (`//host`, `/\host`) targets. Two more are refused, since
+// a click on text the model wrote (and a page could steer) must not reach the
+// API, where a GET can download the enquiries or a privacy export, or open a
+// prefilled email: `/api/` paths, and `mailto:` with a query (subject, body,
+// cc). A plain `mailto:address` is fine.
 export function safeHref(raw: string): string | null {
   if (/[\u0000-\u001f\u007f]/.test(raw)) return null
-  if (raw.startsWith("/")) return /^\/[/\\]/.test(raw) ? null : raw
+  if (raw.startsWith("/")) {
+    if (/^\/[/\\]/.test(raw)) return null
+    // Resolve dot segments and decode before looking at the path.
+    let path: string
+    try {
+      path = decodeURIComponent(new URL(raw, "https://admin.invalid").pathname)
+    } catch {
+      return null
+    }
+    return /^\/api(\/|$)/i.test(path) ? null : raw
+  }
   try {
     const url = new URL(raw)
-    return ["https:", "mailto:"].includes(url.protocol) ? url.href : null
+    if (url.protocol === "mailto:")
+      return url.search || raw.includes("?") ? null : url.href
+    return url.protocol === "https:" ? url.href : null
   } catch {
     return null
   }

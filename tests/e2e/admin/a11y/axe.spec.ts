@@ -29,6 +29,9 @@ const PANEL = [
   "/admin/insights/categories",
   "/admin/insights/authors",
   "/admin/leads",
+  "/admin/seo",
+  "/admin/seo/defaults",
+  "/admin/seo/redirects",
   "/admin/no-access?from=%2Fadmin%2Fpages",
 ]
 

@@ -4,6 +4,7 @@ import { cacheLife, cacheTag } from "next/cache"
 
 import { tags } from "@/server/lib/cache"
 
+import { computeSeoHealth } from "./health"
 import { isIndexable, listLiveEntities } from "./live"
 
 // Callers have awaited connection(): the build has no database.
@@ -17,4 +18,15 @@ export async function getSitemapEntries() {
   return live
     .filter(isIndexable)
     .map((e) => ({ path: e.path, lastModified: e.updatedAt.toISOString() }))
+}
+
+// Ruling R11: cached; page SEO saves expire page:<id>, article SEO saves
+// expire `articles`, media edits `media`, defaults `settings:seo`.
+export async function getSeoHealth() {
+  "use cache"
+  cacheTag(tags.routes, tags.articles, tags.media, tags.setting("seo"))
+  cacheLife("max")
+  for (const e of await listLiveEntities())
+    if (e.kind === "page") cacheTag(tags.page(e.id))
+  return computeSeoHealth()
 }

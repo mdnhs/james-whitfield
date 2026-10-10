@@ -18,6 +18,7 @@ export type LiveEntity = {
   updatedAt: Date
   document: PageDocument | null
   body: ArticleBodyDoc | null
+  coverId: string | null
 }
 
 // Everything a visitor can reach (Ruling R11): published pages and articles.
@@ -44,6 +45,7 @@ export async function listLiveEntities(
         slug: articles.slug,
         title: articles.title,
         excerpt: articles.excerpt,
+        coverId: articles.coverId,
         seo: articles.seo,
         body: articles.body,
         updatedAt: articles.updatedAt,
@@ -64,6 +66,7 @@ export async function listLiveEntities(
       updatedAt: p.publishedAt ?? p.updatedAt,
       document: p.published as PageDocument | null,
       body: null,
+      coverId: null,
     })),
     ...articleRows.map((a) => ({
       kind: "article" as const,
@@ -76,6 +79,7 @@ export async function listLiveEntities(
       updatedAt: a.updatedAt,
       document: null,
       body: a.body as ArticleBodyDoc,
+      coverId: a.coverId,
     })),
   ]
 }

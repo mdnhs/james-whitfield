@@ -13,13 +13,17 @@ import { validationHook } from "@/server/api/errors"
 import { can } from "@/server/api/middleware/auth"
 import type { AppEnv } from "@/server/api/types"
 
+import { getSeoHealth } from "./queries"
 import * as service from "./redirects-service"
 
 const id = zValidator("param", z.object({ id: z.uuid() }), validationHook)
 const manage = can({ redirect: ["manage"] })
 
-// docs/brief.md §8.3 SEO row. GET /overview joins in Task 8.
+// docs/brief.md §8.3 SEO row.
 export const seoRoutes = new Hono<AppEnv>()
+  .get("/overview", can({ seo: ["read"] }), async (c) =>
+    c.json(await getSeoHealth())
+  )
   .get(
     "/redirects",
     can({ redirect: ["read"] }),

@@ -174,6 +174,23 @@ test.describe("as an owner", () => {
     await expect(nav.getByRole("link", { name: "Redirects" })).toBeVisible()
   })
 
+  test("the SEO pages are real pages, not placeholders", async ({ page }) => {
+    for (const [href, heading] of [
+      ["/admin/seo", "SEO"],
+      ["/admin/seo/defaults", "SEO defaults"],
+      ["/admin/seo/redirects", "Redirects"],
+    ] as const) {
+      await page.goto(href)
+      await expect(
+        page.getByRole("heading", { level: 1, name: heading })
+      ).toBeVisible()
+      await expect(page.getByText("arrives in a later release")).toHaveCount(0)
+    }
+    await expect(
+      page.getByRole("button", { name: "New redirect" })
+    ).toBeVisible()
+  })
+
   // Regression: the placeholder route once served the first placeholder the
   // client router had fetched for every later link (Enquiries opened Media).
   // Built pages (Enquiries) and placeholders (Newsletter, Appearance) alike.

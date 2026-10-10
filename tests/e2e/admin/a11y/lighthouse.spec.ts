@@ -11,8 +11,8 @@ const PORT = 9333
 
 // Acceptance: Lighthouse accessibility ≥ 95 on /admin. Lighthouse drives
 // its own tab, so it runs in a persistent context that holds the owner's
-// cookies and exposes a debugging port. It runs locally only (Lighthouse
-// 13.5 needs Node ≥ 22.19): CI skips titles starting "lighthouse:", and the
+// cookies and exposes a debugging port. CI runs it in the e2e job's
+// budgets step (Node 22 ≥ 22.19, which Lighthouse 13.5 needs), and the
 // import is lazy so loading this file never needs it.
 test("lighthouse: accessibility is at least 95 on /admin", async () => {
   test.skip(test.info().project.name !== "admin-desktop", "one run is enough")

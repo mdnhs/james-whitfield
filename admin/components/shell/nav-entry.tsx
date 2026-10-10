@@ -63,7 +63,7 @@ export function NavEntry({
       {badge ? (
         <SidebarMenuBadge
           role="img"
-          aria-label={`${badge} new enquiries`}
+          aria-label={`${badge} new ${item.label.toLowerCase()}`}
           className="top-3! right-2 h-6 rounded-full bg-primary px-2 text-[11px] font-semibold text-primary-foreground"
         >
           {formatBadge(badge)}

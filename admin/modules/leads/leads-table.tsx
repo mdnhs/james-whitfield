@@ -53,7 +53,11 @@ export function LeadsTable({
       cell: (info) => (
         <button
           type="button"
-          onClick={() => onOpen(info.row.original.id)}
+          onClick={(event) => {
+            // The row's own click handler would open it a second time.
+            event.stopPropagation()
+            onOpen(info.row.original.id)
+          }}
           className="text-left font-semibold outline-none focus-visible:underline"
         >
           {info.getValue()}

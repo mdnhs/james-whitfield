@@ -11,8 +11,10 @@ import {
   type DragEndEvent,
 } from "@dnd-kit/core"
 import { GripVerticalIcon } from "lucide-react"
+import Link from "next/link"
 import { useState } from "react"
 
+import { usePermission } from "@/admin/lib/actor-context"
 import { relativeTime } from "@/admin/components/dashboard/format"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { BOARD_STATUSES, type LeadStatus } from "@/lib/leads/schema"
@@ -35,32 +37,36 @@ const initials = (name: string) =>
 function Card({
   lead,
   now,
+  canMove,
   onOpen,
 }: {
   lead: LeadRow
   now: number
+  canMove: boolean
   onOpen(id: string): void
 }) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, isDragging } =
-    useDraggable({ id: lead.id })
+    useDraggable({ id: lead.id, disabled: !canMove })
   return (
     <li
       ref={setNodeRef}
-      {...listeners}
+      {...(canMove ? listeners : {})}
       className={cn(
-        "flex touch-none items-start gap-2 rounded-xl bg-card p-3 shadow-xs",
+        "flex items-start gap-2 rounded-xl bg-card p-3 shadow-xs",
         isDragging && "opacity-50"
       )}
     >
-      <button
-        type="button"
-        ref={setActivatorNodeRef}
-        {...attributes}
-        aria-label={`Move ${lead.name}`}
-        className="mt-0.5 rounded-md text-muted-foreground outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-      >
-        <GripVerticalIcon className="size-4" aria-hidden />
-      </button>
+      {canMove ? (
+        <button
+          type="button"
+          ref={setActivatorNodeRef}
+          {...attributes}
+          aria-label={`Move ${lead.name}`}
+          className="mt-0.5 touch-none rounded-md text-muted-foreground outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        >
+          <GripVerticalIcon className="size-4" aria-hidden />
+        </button>
+      ) : null}
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <button
           type="button"
@@ -90,12 +96,16 @@ function Card({
 function Column({
   status,
   leads,
+  total,
   now,
+  canMove,
   onOpen,
 }: {
   status: BoardStatus
   leads: LeadRow[]
+  total: number | undefined
   now: number
+  canMove: boolean
   onOpen(id: string): void
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: status })
@@ -113,7 +123,7 @@ function Column({
       >
         <span>{statusLabel(status)}</span>
         <span className="text-muted-foreground tabular-nums">
-          {leads.length}
+          {total ?? leads.length}
         </span>
       </h2>
       <ul
@@ -123,9 +133,26 @@ function Column({
         className="flex flex-1 flex-col gap-2"
       >
         {leads.map((lead) => (
-          <Card key={lead.id} lead={lead} now={now} onOpen={onOpen} />
+          <Card
+            key={lead.id}
+            lead={lead}
+            now={now}
+            canMove={canMove}
+            onOpen={onOpen}
+          />
         ))}
       </ul>
+      {total !== undefined && total > leads.length ? (
+        <p className="text-xs text-muted-foreground">
+          Showing {leads.length} of {total} ·{" "}
+          <Link
+            className="underline"
+            href={`/admin/leads?view=table&status=${status}`}
+          >
+            open table view
+          </Link>
+        </p>
+      ) : null}
     </div>
   )
 }
@@ -134,12 +161,15 @@ function Column({
 // status Select is the non-drag way (WCAG 2.5.7).
 export function LeadsBoard({
   leads,
+  totals,
   onOpen,
 }: {
   leads: LeadRow[]
+  totals: Partial<Record<BoardStatus, number>>
   onOpen(id: string): void
 }) {
   const update = useUpdateLead()
+  const canMove = usePermission({ lead: ["update"] })
   const [now] = useState(Date.now)
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -148,7 +178,7 @@ export function LeadsBoard({
   const onDragEnd = ({ active, over }: DragEndEvent) => {
     const to = over?.id as LeadStatus | undefined
     const lead = leads.find((l) => l.id === active.id)
-    if (!lead || !to || to === lead.status) return
+    if (!canMove || !lead || !to || to === lead.status) return
     if (!(BOARD_STATUSES as readonly string[]).includes(to)) return
     update.mutate({ id: lead.id, patch: { status: to } })
   }
@@ -160,7 +190,9 @@ export function LeadsBoard({
             key={status}
             status={status}
             leads={leads.filter((l) => l.status === status)}
+            total={totals[status]}
             now={now}
+            canMove={canMove}
             onOpen={onOpen}
           />
         ))}

@@ -1,6 +1,6 @@
 "use client"
 
-import { keepPreviousData, useQuery } from "@tanstack/react-query"
+import { keepPreviousData, useQueries, useQuery } from "@tanstack/react-query"
 import { DownloadIcon, ShieldIcon } from "lucide-react"
 import { useQueryStates } from "nuqs"
 import { useEffect, useState } from "react"
@@ -32,14 +32,32 @@ import { LeadsTable } from "./leads-table"
 import { leadsParams } from "./params"
 import { PrivacyRequestDialog } from "./privacy-request-dialog"
 import { statusLabel } from "./present"
-import { exportHref, leadsListQuery, type LeadsListParams } from "./queries"
+import {
+  exportHref,
+  leadsListQuery,
+  type LeadRow,
+  type LeadsListParams,
+  type LeadsPage,
+} from "./queries"
 
 const PAGE_SIZE = 25
+const BOARD_COLUMN_SIZE = 25
 const ALL = "__all__"
 const STATUS_ITEMS = [
   { value: ALL, label: "All statuses" },
   ...BOARD_STATUSES.map((value) => ({ value, label: statusLabel(value) })),
 ]
+
+// Every loaded column merged, newest first. A card that was just moved is
+// still in its old column's result, so grouping is by its own status.
+function boardLeads(pages: (LeadsPage | undefined)[]) {
+  const byId = new Map<string, LeadRow>()
+  for (const page of pages)
+    for (const item of page?.items ?? []) byId.set(item.id, item)
+  return [...byId.values()].sort((a, b) =>
+    b.createdAt.localeCompare(a.createdAt)
+  )
+}
 
 export function LeadsView() {
   const [state, setState] = useQueryStates(leadsParams, { history: "replace" })
@@ -49,20 +67,33 @@ export function LeadsView() {
 
   // Spam is always a table; the board only holds the inbox.
   const view = state.folder === "spam" ? "table" : state.view
-  const params: LeadsListParams =
-    view === "board"
-      ? { folder: "inbox", q: state.q || undefined, page: 1, pageSize: 100 }
-      : {
-          folder: state.folder,
-          status:
-            state.folder === "inbox" ? (state.status ?? undefined) : undefined,
-          q: state.q || undefined,
-          page: Math.max(1, state.page),
-          pageSize: PAGE_SIZE,
-        }
+  const params: LeadsListParams = {
+    folder: state.folder,
+    status: state.folder === "inbox" ? (state.status ?? undefined) : undefined,
+    q: state.q || undefined,
+    page: Math.max(1, state.page),
+    pageSize: PAGE_SIZE,
+  }
   const list = useQuery({
     ...leadsListQuery(params),
     placeholderData: keepPreviousData,
+    enabled: view === "table",
+  })
+  // The board asks for each column on its own, so a column's count is the
+  // server's total for that status and a busy status cannot push another
+  // one out of view.
+  const columns = useQueries({
+    queries: BOARD_STATUSES.map((status) => ({
+      ...leadsListQuery({
+        folder: "inbox",
+        status,
+        q: state.q || undefined,
+        page: 1,
+        pageSize: BOARD_COLUMN_SIZE,
+      }),
+      placeholderData: keepPreviousData,
+      enabled: view === "board",
+    })),
   })
 
   const [search, setSearch] = useState(state.q)
@@ -184,7 +215,29 @@ export function LeadsView() {
           onChange={(event) => setSearch(event.target.value)}
         />
       </div>
-      {list.isPending ? (
+      {view === "board" ? (
+        columns.some((c) => c.isPending) ? (
+          <CardSkeleton />
+        ) : columns.find((c) => c.isError) ? (
+          <EmptyState
+            title="Enquiries didn't load"
+            description={columns.find((c) => c.isError)!.error!.message}
+            action={
+              <Button onClick={() => columns.forEach((c) => void c.refetch())}>
+                Try again
+              </Button>
+            }
+          />
+        ) : (
+          <LeadsBoard
+            leads={boardLeads(columns.map((c) => c.data))}
+            totals={Object.fromEntries(
+              BOARD_STATUSES.map((s, i) => [s, columns[i]!.data?.total])
+            )}
+            onOpen={open}
+          />
+        )
+      ) : list.isPending ? (
         <CardSkeleton />
       ) : list.isError ? (
         <EmptyState
@@ -192,8 +245,6 @@ export function LeadsView() {
           description={list.error.message}
           action={<Button onClick={() => list.refetch()}>Try again</Button>}
         />
-      ) : view === "board" ? (
-        <LeadsBoard leads={list.data.items} onOpen={open} />
       ) : (
         <LeadsTable
           rows={list.data.items}

@@ -29,7 +29,8 @@ const url = (origin: string, src: string) =>
   /^https?:\/\//.test(src) ? src : abs(origin, src)
 
 // docs/brief.md §11 / §15: < > & and the line separators are escaped, so no
-// string can end the script element; the result is still valid JSON.
+// string can end the script element; the result is still valid JSON (and
+// JavaScript). Also used for the tracking bootstrap's config.
 const ESCAPES: Record<string, string> = {
   "<": "\\u003c",
   ">": "\\u003e",
@@ -37,9 +38,10 @@ const ESCAPES: Record<string, string> = {
   "\u2028": "\\u2028",
   "\u2029": "\\u2029",
 }
-export function jsonLd(value: Graph) {
+export function scriptJson(value: unknown) {
   return JSON.stringify(value).replace(/[<>&\u2028\u2029]/g, (c) => ESCAPES[c]!)
 }
+export const jsonLd = (value: Graph) => scriptJson(value)
 
 export const graph = (nodes: Thing[]): Graph => ({
   "@context": "https://schema.org",

@@ -1,28 +1,48 @@
 import { io } from "next/cache"
 
 import { SmoothScroll } from "@/components/smooth-scroll"
+import { PreviewBar } from "@/components/preview-bar"
+import { TrackingBootstrap } from "@/components/tracking/tracking-bootstrap"
 import { SiteFooter } from "@/features/footer"
 import { SiteHeader } from "@/features/navbar"
 import { themeCss } from "@/lib/content/theme"
-import { PreviewBar } from "@/components/preview-bar"
+import { bootstrapScript } from "@/lib/tracking/bootstrap"
+import { trackingFrame } from "@/lib/tracking/frame"
+import { getEnv } from "@/server/env"
 import { isPreviewing } from "@/server/modules/content/preview"
 import { getSetting } from "@/server/modules/content/queries"
+import { getPublicTracking } from "@/server/modules/tracking/public"
 
 // Site chrome from the globals (docs/brief.md §5.5a). io() suspends during
 // prerender, so the build never reaches the database; at request time the
-// settings come from the tag cache.
+// settings come from the tag cache. No cookies() here (Ruling R2): consent is
+// read in the browser by the bootstrap.
 export async function SiteFrame({ children }: { children: React.ReactNode }) {
   await io()
-  const [site, navigation, footer, theme, preview] = await Promise.all([
-    getSetting("site"),
-    getSetting("navigation"),
-    getSetting("footer"),
-    getSetting("theme"),
-    isPreviewing(),
-  ])
+  const [site, navigation, footer, theme, preview, consent, scripts, tracking] =
+    await Promise.all([
+      getSetting("site"),
+      getSetting("navigation"),
+      getSetting("footer"),
+      getSetting("theme"),
+      isPreviewing(),
+      getSetting("consent"),
+      getSetting("scripts"),
+      getPublicTracking(),
+    ])
+  const frame = trackingFrame({
+    consent,
+    scripts,
+    tracking,
+    preview,
+    scriptsDisabled: getEnv().DISABLE_CUSTOM_SCRIPTS,
+  })
   const css = themeCss(theme.site)
   return (
     <>
+      {frame.active ? (
+        <TrackingBootstrap script={bootstrapScript(frame)} />
+      ) : null}
       {css && <style>{css}</style>}
       <SmoothScroll>
         <SiteHeader site={site} navigation={navigation} />

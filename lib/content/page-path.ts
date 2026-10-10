@@ -8,6 +8,7 @@ export const RESERVED_SEGMENTS = [
   "uploads",
   "images",
   "og",
+  "site-icon",
   "insights",
 ] as const
 

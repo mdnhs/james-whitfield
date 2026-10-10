@@ -145,7 +145,7 @@ describe("rootMetadata", () => {
       siteUrl: "https://magdakennedy.ie",
       seo,
       siteName: "Magda Kennedy",
-      icon: asset({ src: "/uploads/icon.png" }),
+      iconVersion: "abcd1234",
       defaultOgImage: null,
     })
     expect(m.metadataBase?.toString()).toBe("https://magdakennedy.ie/")
@@ -158,8 +158,21 @@ describe("rootMetadata", () => {
       other: { "msvalidate.01": "b-code" },
     })
     expect(m.icons).toEqual({
-      icon: "/uploads/icon.png",
-      apple: "/uploads/icon.png",
+      icon: [
+        { url: "/site-icon/32?v=abcd1234", sizes: "32x32", type: "image/png" },
+        {
+          url: "/site-icon/192?v=abcd1234",
+          sizes: "192x192",
+          type: "image/png",
+        },
+      ],
+      apple: [
+        {
+          url: "/site-icon/180?v=abcd1234",
+          sizes: "180x180",
+          type: "image/png",
+        },
+      ],
     })
     expect(m.formatDetection).toEqual({
       email: false,
@@ -177,7 +190,7 @@ describe("rootMetadata", () => {
         verification: { google: "", bing: "" },
       },
       siteName: "X",
-      icon: null,
+      iconVersion: null,
       defaultOgImage: null,
     })
     expect(m.robots).toEqual({ index: false, follow: false })

@@ -278,6 +278,7 @@ describe("matcher", () => {
     "/favicon.icon",
     "/admin",
     "/admin/pages",
+    "/site-icons",
   ])("runs for %s", (url) => expect(matches(url)).toBe(true))
 
   it.each([
@@ -287,6 +288,7 @@ describe("matcher", () => {
     "/images/a.png",
     "/og",
     "/og/about",
+    "/site-icon/32",
     "/favicon.ico",
     "/robots.txt",
     "/sitemap.xml",

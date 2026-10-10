@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next"
 import { connection } from "next/server"
 
+import { iconHref, iconVersion } from "@/lib/seo/icons"
 import { toHex } from "@/lib/theme/color"
 import { resolveSiteTokens } from "@/lib/theme/site"
 import {
@@ -8,14 +9,6 @@ import {
   getSetting,
   getThemeConfig,
 } from "@/server/modules/content/queries"
-
-const iconType = (src: string) => {
-  const ext = /\.([a-z0-9]+)(?:\?|$)/i.exec(src)?.[1]?.toLowerCase()
-  if (ext === "jpg" || ext === "jpeg") return "image/jpeg"
-  if (ext === "webp") return "image/webp"
-  if (ext === "svg") return "image/svg+xml"
-  return "image/png"
-}
 
 export default async function manifest(): Promise<MetadataRoute.Manifest> {
   await connection()
@@ -38,13 +31,11 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
     icons: [
       { src: "/favicon.ico", sizes: "any", type: "image/x-icon" },
       ...(icon
-        ? [
-            {
-              src: icon.src,
-              sizes: `${icon.width}x${icon.height}`,
-              type: iconType(icon.src),
-            },
-          ]
+        ? [192, 512].map((size) => ({
+            src: iconHref(size, iconVersion(icon.src)),
+            sizes: `${size}x${size}`,
+            type: "image/png",
+          }))
         : []),
     ],
   }

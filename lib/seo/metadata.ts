@@ -4,6 +4,7 @@ import type { PageSeo } from "@/blocks/page"
 import type { GlobalValue } from "@/lib/content/globals"
 import type { MediaAsset } from "@/lib/media"
 
+import { iconHref } from "./icons"
 import { documentTitle } from "./title"
 
 export const OG_SIZE = { width: 1200, height: 630 } as const
@@ -116,7 +117,7 @@ export type RootMetadataInput = {
   siteUrl: string
   seo: GlobalValue<"seo">
   siteName: string
-  icon: MediaAsset | null
+  iconVersion: string | null
   defaultOgImage: MediaAsset | null
 }
 
@@ -133,7 +134,31 @@ export function rootMetadata(i: RootMetadataInput): Metadata {
     description: i.seo.defaultDescription || undefined,
     applicationName: i.siteName || undefined,
     formatDetection: { email: false, address: false, telephone: false },
-    ...(i.icon ? { icons: { icon: i.icon.src, apple: i.icon.src } } : {}),
+    ...(i.iconVersion
+      ? {
+          icons: {
+            icon: [
+              {
+                url: iconHref(32, i.iconVersion),
+                sizes: "32x32",
+                type: "image/png",
+              },
+              {
+                url: iconHref(192, i.iconVersion),
+                sizes: "192x192",
+                type: "image/png",
+              },
+            ],
+            apple: [
+              {
+                url: iconHref(180, i.iconVersion),
+                sizes: "180x180",
+                type: "image/png",
+              },
+            ],
+          },
+        }
+      : {}),
     ...(hasVerification
       ? {
           verification: {

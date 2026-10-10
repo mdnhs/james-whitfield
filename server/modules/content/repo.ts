@@ -346,3 +346,13 @@ export async function findArticleBySlug(
     updatedAt: r.a.updatedAt.toISOString(),
   }
 }
+
+// The storage location of one live media row (favicon rasteriser).
+export async function findMediaFile(id: string, db = getDb()) {
+  const [row] = await db
+    .select({ driver: t.media.driver, key: t.media.key, url: t.media.url })
+    .from(t.media)
+    .where(and(eq(t.media.id, id), isNull(t.media.deletedAt)))
+    .limit(1)
+  return row ?? null
+}

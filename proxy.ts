@@ -150,6 +150,6 @@ export const config = {
     // Every public page path; assets, the API, share cards and metadata
     // files never pay for a resolver hop. The lookahead is segment-bound, so
     // custom pages like /apiary or /images-old still reach the resolver.
-    "/((?!(?:api|_next|uploads|images|og|admin)(?:/|$)|favicon\\.ico$|robots\\.txt$|sitemap\\.xml$|manifest\\.webmanifest$).*)",
+    "/((?!(?:api|_next|uploads|images|og|admin|site-icon)(?:/|$)|favicon\\.ico$|robots\\.txt$|sitemap\\.xml$|manifest\\.webmanifest$).*)",
   ],
 }

@@ -5,6 +5,7 @@ import { Suspense } from "react"
 
 import { AttributionCapture } from "@/components/attribution-capture"
 import { getEnv } from "@/server/env"
+import { iconVersion } from "@/lib/seo/icons"
 import { rootMetadata } from "@/lib/seo/metadata"
 import { getMedia, getSetting } from "@/server/modules/content/queries"
 
@@ -20,11 +21,12 @@ export async function generateMetadata(): Promise<Metadata> {
     (id): id is string => Boolean(id)
   )
   const assets = ids.length ? await getMedia(ids) : new Map()
+  const icon = (site.icon && assets.get(site.icon.mediaId)) ?? null
   return rootMetadata({
     siteUrl: getEnv().SITE_URL,
     seo,
     siteName: site.name,
-    icon: (site.icon && assets.get(site.icon.mediaId)) ?? null,
+    iconVersion: icon ? iconVersion(icon.src) : null,
     defaultOgImage:
       (seo.defaultOgImage && assets.get(seo.defaultOgImage.mediaId)) ?? null,
   })

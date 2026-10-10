@@ -17,7 +17,7 @@ vi.mock("next/cache", async (importOriginal) => ({
 
 import { app } from "@/server/api/app"
 import { closeDb, getDb } from "@/server/db/client"
-import { articles, auditLogs } from "@/server/db/schema"
+import { articles, auditLogs, revisions } from "@/server/db/schema"
 import { findArticleBySlug } from "@/server/modules/content/repo"
 import { TICK_LOCK_KEY } from "@/server/modules/scheduler/service"
 
@@ -158,5 +158,151 @@ describe("cron tick", () => {
         .where(eq(auditLogs.action, "article.schedule_failed"))
     ).toHaveLength(1)
     expect((await (await tick()).json()).failed).toEqual([])
+  })
+})
+
+// An author's article that an editor has scheduled (Ruling: author edits to a
+// scheduled article unschedule it, so the tick never publishes unreviewed copy).
+async function authorScheduled() {
+  const author = await cookieFor("author")
+  const editor = await cookieFor("editor")
+  const refs = await insertTaxonomy("own")
+  const created = await (
+    await adminRequest("/articles", author, {
+      method: "POST",
+      body: { title: "Mine", categoryId: refs.category.id },
+    })
+  ).json()
+  const [row] = await getDb()
+    .select()
+    .from(articles)
+    .where(eq(articles.id, created.id))
+  const reviewed = content(
+    {
+      categoryId: refs.category.id,
+      authorId: row!.authorId,
+      coverId: refs.media.id,
+    },
+    { slug: "reviewed", title: "Reviewed copy" }
+  )
+  const saved = await (
+    await adminRequest(`/articles/${created.id}/draft`, author, {
+      method: "PATCH",
+      body: { version: 1, draft: reviewed },
+    })
+  ).json()
+  const at = new Date(Date.now() + 2 * 60_000).toISOString()
+  const sched = await adminRequest(`/articles/${created.id}/schedule`, editor, {
+    method: "POST",
+    body: { version: saved.version, at },
+  })
+  expect(sched.status).toBe(200)
+  return {
+    id: created.id as string,
+    author,
+    editor,
+    reviewed,
+    version: (await sched.json()).version as number,
+  }
+}
+const rowOf = async (id: string) =>
+  (await getDb().select().from(articles).where(eq(articles.id, id)))[0]!
+
+describe("author edits to a scheduled article", () => {
+  it("unschedules the article, asks for review, and the tick publishes nothing", async () => {
+    vi.useFakeTimers({ toFake: ["Date"], now: new Date() })
+    const { id, author, reviewed, version } = await authorScheduled()
+    const res = await adminRequest(`/articles/${id}/draft`, author, {
+      method: "PATCH",
+      body: {
+        version,
+        draft: { ...reviewed, title: "Sneaky rewrite", featured: true },
+      },
+    })
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body).toMatchObject({
+      status: "draft",
+      scheduledFor: null,
+      version: version + 1,
+    })
+    expect(body.reviewRequestedAt).not.toBeNull()
+    const row = await rowOf(id)
+    expect(row).toMatchObject({
+      status: "draft",
+      scheduledFor: null,
+      scheduledBy: null,
+    })
+    expect(row.reviewRequestedAt).not.toBeNull()
+    expect(
+      await getDb()
+        .select()
+        .from(auditLogs)
+        .where(eq(auditLogs.action, "article.unscheduled"))
+    ).toHaveLength(1)
+    vi.setSystemTime(new Date(Date.now() + 5 * 60_000))
+    expect(await (await tick()).json()).toEqual({
+      skipped: false,
+      published: [],
+      failed: [],
+    })
+    const after = await rowOf(id)
+    expect(after).toMatchObject({
+      status: "draft",
+      slug: row.slug,
+      title: row.title,
+      publishedAt: null,
+      featured: false,
+    })
+    expect(await findArticleBySlug("reviewed")).toBeNull()
+  })
+
+  it("does the same when an old version is restored", async () => {
+    vi.useFakeTimers({ toFake: ["Date"], now: new Date() })
+    const { id, author, reviewed, version } = await authorScheduled()
+    await getDb()
+      .insert(revisions)
+      .values({
+        entityType: "article",
+        entityId: id,
+        version: 1,
+        snapshot: { ...reviewed, title: "Old snapshot" },
+      })
+    const [rev] = await getDb()
+      .select()
+      .from(revisions)
+      .where(eq(revisions.entityId, id))
+    const res = await adminRequest(
+      `/articles/${id}/revisions/${rev!.id}/restore`,
+      author,
+      { method: "POST", body: { version } }
+    )
+    expect(res.status).toBe(200)
+    expect(await res.json()).toMatchObject({
+      status: "draft",
+      scheduledFor: null,
+    })
+    const row = await rowOf(id)
+    expect(row.status).toBe("draft")
+    expect(row.reviewRequestedAt).not.toBeNull()
+    vi.setSystemTime(new Date(Date.now() + 5 * 60_000))
+    expect((await (await tick()).json()).published).toEqual([])
+    expect((await rowOf(id)).publishedAt).toBeNull()
+  })
+
+  it("keeps the article scheduled when an editor edits it", async () => {
+    vi.useFakeTimers({ toFake: ["Date"], now: new Date() })
+    const { id, editor, reviewed, version } = await authorScheduled()
+    const res = await adminRequest(`/articles/${id}/draft`, editor, {
+      method: "PATCH",
+      body: { version, draft: { ...reviewed, title: "Editor polish" } },
+    })
+    expect(res.status).toBe(200)
+    expect(await res.json()).toMatchObject({ status: "scheduled" })
+    const row = await rowOf(id)
+    expect(row.status).toBe("scheduled")
+    expect(row.scheduledFor).not.toBeNull()
+    vi.setSystemTime(new Date(Date.now() + 5 * 60_000))
+    expect((await (await tick()).json()).published).toEqual([id])
   })
 })

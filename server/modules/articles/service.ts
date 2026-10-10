@@ -22,7 +22,12 @@ import { slugify } from "@/lib/utils"
 import { ApiError } from "@/server/api/errors"
 import type { Actor } from "@/server/auth/actor"
 import { getDb, type DbLike } from "@/server/db/client"
-import { articleCategories, articles, authors } from "@/server/db/schema"
+import {
+  articleCategories,
+  articles,
+  authors,
+  redirects,
+} from "@/server/db/schema"
 import { audit } from "@/server/lib/audit"
 import { invalidate, tags } from "@/server/lib/cache"
 import { conflictError, userName } from "@/server/lib/conflict"
@@ -256,6 +261,35 @@ export async function createArticle(
   })
 }
 
+// A non-publisher's edit to a scheduled article would otherwise go live at
+// the tick unreviewed: the write also unschedules it and asks for review.
+function editedWhileScheduled(actor: Actor, row: ArticleRow) {
+  return !canPublish(actor) && row.status === "scheduled"
+}
+const UNSCHEDULED_SET = {
+  status: "draft",
+  scheduledFor: null,
+  scheduledBy: null,
+} as const
+async function auditUnscheduled(
+  actor: Actor,
+  tx: DbLike,
+  row: ArticleRow,
+  title: string
+) {
+  await audit(
+    actor,
+    {
+      action: "article.unscheduled",
+      entityType: "article",
+      entityId: row.id,
+      summary: `Unscheduled “${title}”: edited by author`,
+      diff: { reason: { from: null, to: "edited_by_author" } },
+    },
+    tx
+  )
+}
+
 // Autosave (~1.2 s): not audited, like pages.
 export async function saveArticleDraft(
   actor: Actor,
@@ -274,11 +308,26 @@ export async function saveArticleDraft(
       throw new ApiError("FORBIDDEN", "You can't credit another author")
     }
     if (row.version !== input.version) throw await conflictError(tx, row)
+    const unschedule = editedWhileScheduled(actor, row)
     const saved = await writeIfVersion(tx, id, input.version, {
       draft: input.draft,
       updatedBy: actor.userId,
+      ...(unschedule
+        ? {
+            ...UNSCHEDULED_SET,
+            reviewRequestedAt: new Date(),
+            reviewRequestedBy: actor.userId,
+          }
+        : {}),
     })
-    return { version: saved.version, updatedAt: saved.updatedAt }
+    if (unschedule) await auditUnscheduled(actor, tx, row, current.title)
+    return {
+      version: saved.version,
+      updatedAt: saved.updatedAt,
+      status: saved.status,
+      scheduledFor: saved.scheduledFor,
+      reviewRequestedAt: saved.reviewRequestedAt,
+    }
   })
 }
 
@@ -348,11 +397,21 @@ export async function submitForReview(actor: Actor, id: string) {
 }
 
 export async function deleteArticle(actor: Actor, id: string) {
-  const row = await getDb().transaction(async (tx) => {
+  const { row, redirectsChanged } = await getDb().transaction(async (tx) => {
     const row = await findArticle(tx, id, true)
     await assertCanEdit(tx, actor, row, draftOf(row).authorId)
     assertCanDelete(actor, row)
     await deleteRevisions(tx, "article", id)
+    // Redirects into or out of a deleted article would 301 to a 404.
+    const gone = await tx
+      .delete(redirects)
+      .where(
+        or(
+          eq(redirects.articleId, id),
+          eq(redirects.destination, articlePath(row.slug))
+        )
+      )
+      .returning({ id: redirects.id })
     await tx.delete(articles).where(eq(articles.id, id))
     await audit(
       actor,
@@ -364,9 +423,10 @@ export async function deleteArticle(actor: Actor, id: string) {
       },
       tx
     )
-    return row
+    return { row, redirectsChanged: gone.length > 0 }
   })
-  if (row.status === "published") invalidate(articleTags(id))
+  if (row.status === "published" || redirectsChanged)
+    invalidate(articleTags(id, redirectsChanged ? [tags.redirects] : []))
   return { ok: true as const }
 }
 
@@ -411,7 +471,7 @@ export async function scheduleArticle(
   const at = new Date(input.at)
   if (at.getTime() <= Date.now() + 30_000) {
     throw new ApiError("VALIDATION_FAILED", "Pick a time in the future", {
-      at: ["Pick a time at least a minute ahead"],
+      at: ["Pick a time at least 30 seconds ahead"],
     })
   }
   return getDb().transaction(async (tx) => {
@@ -530,10 +590,19 @@ export async function restoreArticleRevision(
     await assertCanEdit(tx, actor, row, draftOf(row).authorId)
     const revision = await findRevision(tx, "article", id, revisionId)
     if (!revision) throw new ApiError("NOT_FOUND", "That version doesn't exist")
+    const unschedule = editedWhileScheduled(actor, row)
     const saved = await writeIfVersion(tx, id, version, {
       draft: revision.snapshot as ArticleDraft,
       updatedBy: actor.userId,
+      ...(unschedule
+        ? {
+            ...UNSCHEDULED_SET,
+            reviewRequestedAt: new Date(),
+            reviewRequestedBy: actor.userId,
+          }
+        : {}),
     })
+    if (unschedule) await auditUnscheduled(actor, tx, row, draftOf(row).title)
     await audit(
       actor,
       {
@@ -544,6 +613,11 @@ export async function restoreArticleRevision(
       },
       tx
     )
-    return { version: saved.version }
+    return {
+      version: saved.version,
+      status: saved.status,
+      scheduledFor: saved.scheduledFor,
+      reviewRequestedAt: saved.reviewRequestedAt,
+    }
   })
 }

@@ -235,6 +235,23 @@ describe("publishing", () => {
     })
   })
 
+  it("deleting a published article removes its redirects and expires the tag", async () => {
+    const owner = await cookieFor("owner")
+    const { id, version, draft } = await drafted(owner, { slug: "alpha" })
+    const { version: v } = await json(
+      await post(owner, `/articles/${id}/publish`, { version })
+    )
+    await rename(owner, id, v, draft, "beta")
+    expect(await redirectMap()).toEqual({ "/insights/alpha": "/insights/beta" })
+    next.revalidateTag.mockReset()
+    const res = await adminRequest(`/articles/${id}`, owner, {
+      method: "DELETE",
+    })
+    expect(res.status).toBe(200)
+    expect(await redirectMap()).toEqual({})
+    expect(expired()).toContain("redirects")
+  })
+
   it("republishing keeps the original date (Ruling R6)", async () => {
     const editor = await cookieFor("editor")
     const { id, version, draft } = await drafted(editor)

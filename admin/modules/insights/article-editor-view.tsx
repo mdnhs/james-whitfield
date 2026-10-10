@@ -54,6 +54,9 @@ import {
   type ArticleDetail,
 } from "./queries"
 
+const UNSCHEDULED_NOTICE =
+  "Your edit moved this article back to draft; an editor must re-schedule it"
+
 // The URL is the truth about which article is open: a reused router segment
 // can carry another article's server-rendered id. Keyed on the URL id, so a
 // different article is always a fresh editor (the old one flushes on unmount).
@@ -152,7 +155,12 @@ function Editor({
           draft: value as ArticleDetail["draft"],
           version: result.version,
           updatedAt: result.updatedAt,
+          status: result.status,
+          scheduledFor: result.scheduledFor,
+          reviewRequestedAt: result.reviewRequestedAt,
         })
+        if (article.status === "scheduled" && result.status === "draft")
+          toast.info(UNSCHEDULED_NOTICE, { duration: 10_000 })
         return result
       },
     })
@@ -452,14 +460,17 @@ function Editor({
         open={historyOpen}
         onOpenChange={setHistoryOpen}
         revisions={articleRevisionsQuery(id)}
-        restore={(rev, version) =>
-          parseResponse(
+        restore={async (rev, version) => {
+          const result = await parseResponse(
             articlesApi[":id"].revisions[":rev"].restore.$post({
               param: { id, rev },
               json: { version },
             })
           )
-        }
+          if (article.status === "scheduled" && result.status === "draft")
+            toast.info(UNSCHEDULED_NOTICE, { duration: 10_000 })
+          return result
+        }}
         exclusive={exclusive}
         canRestore={canEdit}
         onRestored={replaceWithServer}

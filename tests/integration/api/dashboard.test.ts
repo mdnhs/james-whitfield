@@ -1,20 +1,25 @@
-import { afterAll, beforeEach, describe, expect, it } from "vitest"
+import { afterAll, beforeEach, describe, expect, it, vi } from "vitest"
 
-import type { Actor } from "@/server/auth/actor"
+vi.mock("next/cache", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("next/cache")>()),
+  cacheTag: vi.fn(),
+  cacheLife: vi.fn(),
+  revalidateTag: vi.fn(),
+}))
+
+import { eq, ne } from "drizzle-orm"
+
 import { closeDb, getDb } from "@/server/db/client"
-import { eq } from "drizzle-orm"
-
-import { auditLogs, users } from "@/server/db/schema"
-import { getDashboard } from "@/server/modules/dashboard/service"
+import { articles, auditLogs, newsletterSubscribers } from "@/server/db/schema"
 import { weekWindow } from "@/server/modules/dashboard/week"
 
-import {
-  adminRequest,
-  createUser,
-  signIn,
-  signInWithTwoFactor,
-} from "../helpers/auth"
+import { insertArticle, insertTaxonomy } from "../helpers/articles"
+import { adminRequest, cookieFor } from "../helpers/auth"
 import { resetDb } from "../helpers/db"
+import { insertLead } from "../helpers/leads"
+
+const eqId = (id: string) => eq(articles.id, id)
+const notEqId = (id: string) => ne(articles.id, id)
 
 beforeEach(resetDb)
 afterAll(closeDb)
@@ -23,230 +28,200 @@ const HOUR = 3_600_000
 const DAY = 24 * HOUR
 const at = (base: Date, ms: number) => new Date(base.getTime() + ms)
 
-async function signedIn(actorId: string, createdAt: Date) {
-  await getDb().insert(auditLogs).values({
-    actorId,
-    action: "auth.sign_in",
-    entityType: "user",
-    entityId: actorId,
-    summary: "Signed in",
-    createdAt,
-  })
-}
-
 async function dashboard(cookie: string) {
   const response = await adminRequest("/dashboard", cookie)
   expect(response.status).toBe(200)
   return response.json()
 }
 
-describe("GET /api/v1/admin/dashboard", () => {
-  it("counts sign-ins per Irish day, this week against last", async () => {
-    const owner = await createUser("owner")
-    const cookie = await signInWithTwoFactor("owner@example.com")
-    // Drop the sign-in the helper just recorded; only fixtures count.
-    await getDb().delete(auditLogs)
-    const week = weekWindow(new Date())
-    await signedIn(owner.id, at(week.start, 2 * HOUR))
-    await signedIn(owner.id, at(week.start, 3 * HOUR))
-    await signedIn(owner.id, at(week.previousStart, 2 * HOUR))
-
-    const body = await dashboard(cookie)
-
-    expect(body.signIns).toMatchObject({ current: 2, previous: 1 })
-    expect(body.signIns.days).toHaveLength(7)
-    expect(body.signIns.days[0]).toEqual({
-      key: week.days[0].key,
-      label: "Mon",
-      current: 2,
-      previous: 1,
-    })
-  })
-
-  it("counts distinct people signing in over 30 days against the 30 before", async () => {
-    const owner = await createUser("owner")
-    const viewer = await createUser("viewer")
-    const cookie = await signInWithTwoFactor("owner@example.com")
-    await getDb().delete(auditLogs)
+describe("GET /api/v1/admin/dashboard — enquiries", () => {
+  it("counts non-spam enquiries over 30 days against the 30 before", async () => {
+    const cookie = await cookieFor("owner")
     const now = new Date()
-    await signedIn(owner.id, at(now, -1 * DAY))
-    await signedIn(owner.id, at(now, -2 * DAY))
-    await signedIn(viewer.id, at(now, -3 * DAY))
-    await signedIn(viewer.id, at(now, -40 * DAY))
+    await insertLead({ createdAt: at(now, -1 * DAY) })
+    await insertLead({ createdAt: at(now, -2 * DAY), email: "b@example.com" })
+    await insertLead({
+      createdAt: at(now, -3 * DAY),
+      status: "spam",
+      email: "s@example.com",
+    })
+    await insertLead({ createdAt: at(now, -40 * DAY), email: "c@example.com" })
 
-    expect((await dashboard(cookie)).activeUsers).toEqual({
+    expect((await dashboard(cookie)).enquiries).toEqual({
       value: 2,
       previous: 1,
     })
   })
 
-  it("gives a viewer aggregates only (docs/brief.md §7.2)", async () => {
-    await createUser("viewer")
-    const body = await dashboard(await signIn("viewer@example.com"))
-    expect(body.security).toBeNull()
-    expect(body.changes).toBeNull()
-    expect(body.recentActivity).toBeNull()
-    expect(body.nextUp.map((item: { id: string }) => item.id)).toEqual([
-      "two-factor",
-    ])
-    // Two-factor is optional for a viewer, so it is not called required.
-    expect(body.nextUp[0].description).not.toMatch(/required/i)
+  it("the 30-day windows share no instant", async () => {
+    const cookie = await cookieFor("owner")
+    // Exactly 30 days ago belongs to the current window only.
+    const edge = new Date(Date.now() - 30 * DAY + 5_000)
+    await insertLead({ createdAt: edge })
+    const body = await dashboard(cookie)
+    expect(body.enquiries.value + body.enquiries.previous).toBe(1)
   })
 
-  it("gives an owner security health, changes and recent activity", async () => {
-    await createUser("owner")
-    await createUser("admin")
-    await createUser("viewer")
-    const cookie = await signInWithTwoFactor("owner@example.com")
+  it("counts an enquiry at 00:30 Irish Monday on that Monday", async () => {
+    const cookie = await cookieFor("owner")
+    const week = weekWindow(new Date())
+    await insertLead({ createdAt: at(week.start, 30 * 60_000) })
+    await insertLead({
+      createdAt: at(week.previousStart, 2 * HOUR),
+      email: "p@example.com",
+    })
 
     const body = await dashboard(cookie)
+    expect(body.enquiriesWeek).toMatchObject({ current: 1, previous: 1 })
+    expect(body.enquiriesWeek.days[0]).toEqual({
+      key: week.days[0]!.key,
+      label: "Mon",
+      current: 1,
+      previous: 1,
+    })
+  })
+})
 
-    expect(body.security).toEqual({
-      protected: 1,
-      requiredMissing: 1,
-      optionalMissing: 1,
-      total: 3,
+describe("articles, subscribers and Next up", () => {
+  it("counts published and scheduled articles and names the next one due", async () => {
+    const cookie = await cookieFor("editor")
+    const refs = await insertTaxonomy()
+    const base = {
+      categoryId: refs.category.id,
+      authorId: refs.author.id,
+      coverId: refs.media.id,
+    }
+    await insertArticle({ ...base, slug: "live" })
+    const soon = await insertArticle({
+      ...base,
+      slug: "soon",
+      status: "scheduled",
     })
-    // The owner's sign-in is activity, not a change.
-    expect(body.changes).toEqual({ value: 0, previous: 0 })
-    expect(body.recentActivity[0]).toMatchObject({
-      action: "auth.sign_in",
-      actorName: "owner",
+    await insertArticle({ ...base, slug: "later", status: "scheduled" })
+    await getDb()
+      .update(articles)
+      .set({ scheduledFor: new Date(Date.now() + DAY) })
+      .where(eqId(soon.id))
+    await getDb()
+      .update(articles)
+      .set({ scheduledFor: new Date(Date.now() + 3 * DAY) })
+      .where(notEqId(soon.id))
+
+    const body = await dashboard(cookie)
+    expect(body.articles).toEqual({ published: 1, scheduled: 2 })
+    expect(body.nextUp[0]).toMatchObject({
+      id: "article",
+      href: `/admin/insights/${soon.id}`,
+      done: false,
     })
-    expect(typeof body.recentActivity[0].createdAt).toBe("string")
-    expect(body.nextUp).toEqual([
-      expect.objectContaining({ id: "two-factor", done: true }),
-      expect.objectContaining({ id: "invite", done: true }),
+  })
+
+  it("counts confirmed subscribers and those confirmed in 30 days", async () => {
+    const cookie = await cookieFor("owner")
+    const now = new Date()
+    await getDb()
+      .insert(newsletterSubscribers)
+      .values([
+        {
+          email: "a@example.com",
+          status: "confirmed",
+          confirmedAt: at(now, -2 * DAY),
+        },
+        {
+          email: "b@example.com",
+          status: "confirmed",
+          confirmedAt: at(now, -60 * DAY),
+        },
+        { email: "c@example.com", status: "pending" },
+        {
+          email: "d@example.com",
+          status: "unsubscribed",
+          confirmedAt: at(now, -1 * DAY),
+        },
+      ])
+    expect((await dashboard(cookie)).subscribers).toEqual({
+      confirmed: 2,
+      newThisMonth: 1,
+    })
+  })
+
+  it("puts the oldest uncontacted enquiry first for someone with lead.read", async () => {
+    const cookie = await cookieFor("intake")
+    const now = new Date()
+    const oldest = await insertLead({
+      name: "Nora Byrne",
+      createdAt: at(now, -3 * DAY),
+    })
+    await insertLead({ createdAt: at(now, -1 * DAY), email: "x@example.com" })
+    await insertLead({
+      createdAt: at(now, -9 * DAY),
+      status: "contacted",
+      email: "y@example.com",
+    })
+
+    const [first] = (await dashboard(cookie)).nextUp
+    expect(first).toMatchObject({
+      id: "enquiry",
+      title: "Reply to Nora",
+      cta: "Open enquiry",
+      href: `/admin/leads?lead=${oldest.id}`,
+      done: false,
+    })
+  })
+
+  it("a marketer gets enquiry counts but no enquiry in Next up (docs/brief.md §7.2)", async () => {
+    const cookie = await cookieFor("marketer")
+    await insertLead({ name: "Nora Byrne" })
+    const body = await dashboard(cookie)
+    expect(body.enquiries.value).toBe(1)
+    expect(JSON.stringify(body)).not.toContain("Nora")
+    expect(body.nextUp.map((item: { id: string }) => item.id)).not.toContain(
+      "enquiry"
+    )
+    expect(body.recentActivity).toBeNull()
+  })
+})
+
+describe("RBAC and empty states", () => {
+  it("a fresh install answers zeros everywhere", async () => {
+    const cookie = await cookieFor("owner")
+    await getDb().delete(auditLogs)
+    const body = await dashboard(cookie)
+    expect(body.enquiries).toEqual({ value: 0, previous: 0 })
+    expect(body.enquiriesWeek.current + body.enquiriesWeek.previous).toBe(0)
+    expect(body.articles).toEqual({ published: 0, scheduled: 0 })
+    expect(body.subscribers).toEqual({ confirmed: 0, newThisMonth: 0 })
+    expect(body.seoHealth).toEqual({ score: 100, issues: 0 })
+    expect(body.contentHealth).toMatchObject({
+      complete: 0,
+      needsWork: 0,
+      missing: 0,
+      total: 0,
+    })
+    expect(body.nextUp.map((item: { id: string }) => item.id)).toEqual([
+      "two-factor",
+      "invite",
     ])
   })
-})
 
-describe("changes this week", () => {
-  it("never counts self-service account.* rows", async () => {
-    const owner = await createUser("owner")
-    const cookie = await signInWithTwoFactor("owner@example.com")
-    await getDb().delete(auditLogs)
-    const week = weekWindow(new Date())
-    for (const action of [
-      "account.password_change",
-      "account.session_revoke",
-      "account.profile_update",
-    ]) {
-      await getDb()
-        .insert(auditLogs)
-        .values({
-          actorId: owner.id,
-          action,
-          entityType: "user",
-          summary: action,
-          createdAt: at(week.start, HOUR),
-        })
-    }
-
-    expect((await dashboard(cookie)).changes).toEqual({
-      value: 0,
-      previous: 0,
-    })
+  it("an intake person gets no SEO or content health (no seo.read)", async () => {
+    const body = await dashboard(await cookieFor("intake"))
+    expect(body.seoHealth).toBeNull()
+    expect(body.contentHealth).toBeNull()
+    expect(body.recentActivity).toBeNull()
   })
 
-  it("counts content and admin changes, never auth.* rows", async () => {
-    const owner = await createUser("owner")
-    const cookie = await signInWithTwoFactor("owner@example.com")
-    await getDb().delete(auditLogs)
-    const week = weekWindow(new Date())
-    await signedIn(owner.id, at(week.start, HOUR))
-    await getDb()
-      .insert(auditLogs)
-      .values({
-        actorId: owner.id,
-        action: "auth.impersonate",
-        entityType: "user",
-        summary: "Viewed as someone",
-        createdAt: at(week.start, HOUR),
-      })
-
-    expect((await dashboard(cookie)).changes).toEqual({
-      value: 0,
-      previous: 0,
-    })
-
-    await getDb()
-      .insert(auditLogs)
-      .values({
-        actorId: owner.id,
-        action: "user.invite",
-        entityType: "user",
-        summary: "Invited someone",
-        createdAt: at(week.start, HOUR),
-      })
-
-    expect((await dashboard(cookie)).changes).toEqual({
-      value: 1,
-      previous: 0,
-    })
+  it("a viewer gets the gauge but not the findings (no page.update)", async () => {
+    const body = await dashboard(await cookieFor("viewer"))
+    expect(body.contentHealth).not.toBeNull()
+    expect(body.contentHealth.findings).toBeNull()
+    // Two-factor is optional for a viewer, so it is not called required.
+    expect(body.nextUp.at(-1).description).not.toMatch(/required/i)
   })
-})
 
-describe("security health", () => {
-  it("counts a user whose ban has expired, not one still banned", async () => {
-    await createUser("owner")
-    const lapsed = await createUser("editor")
-    const banned = await createUser("viewer")
-    const forever = await createUser("author")
-    const cookie = await signInWithTwoFactor("owner@example.com")
-    const hour = (sign: number) => new Date(Date.now() + sign * HOUR)
-    await getDb()
-      .update(users)
-      .set({ banned: true, banExpires: hour(-1) })
-      .where(eq(users.id, lapsed.id))
-    await getDb()
-      .update(users)
-      .set({ banned: true, banExpires: hour(1) })
-      .where(eq(users.id, banned.id))
-    await getDb()
-      .update(users)
-      .set({ banned: true, banExpires: null })
-      .where(eq(users.id, forever.id))
-
-    expect((await dashboard(cookie)).security).toEqual({
-      protected: 1,
-      requiredMissing: 0,
-      optionalMissing: 1,
-      total: 2,
-    })
-  })
-})
-
-describe("getDashboard across the October clock change", () => {
-  it("buckets sign-ins by the Irish calendar day", async () => {
-    const owner = await createUser("owner")
-    await getDb().delete(auditLogs)
-    // Week of Mon 19 – Sun 25 October 2026; clocks go back 02:00 IST on
-    // the Sunday, so the week runs 23:00Z Sunday to 00:00Z Monday.
-    await signedIn(owner.id, new Date("2026-10-18T23:30:00Z")) // Mon 00:30 IST
-    await signedIn(owner.id, new Date("2026-10-18T22:30:00Z")) // Sun 23:30 IST, last week
-    await signedIn(owner.id, new Date("2026-10-25T00:30:00Z")) // Sun 01:30 IST
-    await signedIn(owner.id, new Date("2026-10-25T23:30:00Z")) // Sun 23:30 GMT
-    await signedIn(owner.id, new Date("2026-10-26T00:00:00Z")) // next Mon 00:00 GMT
-
-    const actor: Actor = {
-      userId: owner.id,
-      email: owner.email,
-      name: owner.name,
-      roles: ["owner"],
-      twoFactorEnabled: true,
-      sessionId: "test",
-      impersonatedBy: null,
-      ip: null,
-      userAgent: null,
-    }
-    const body = await getDashboard(actor, new Date("2026-10-25T12:00:00Z"))
-    const byKey = Object.fromEntries(
-      body.signIns.days.map((day) => [day.key, day])
-    )
-
-    expect(byKey["2026-10-19"]).toMatchObject({ current: 1, previous: 0 })
-    expect(byKey["2026-10-25"]).toMatchObject({ current: 2, previous: 1 })
-    expect(body.signIns).toMatchObject({ current: 3, previous: 1 })
+  it("an owner gets team activity", async () => {
+    const body = await dashboard(await cookieFor("owner"))
+    expect(body.recentActivity[0]).toMatchObject({ action: "auth.sign_in" })
+    expect(typeof body.recentActivity[0].createdAt).toBe("string")
   })
 })

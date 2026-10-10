@@ -6,7 +6,7 @@ import { sanitizeUrl } from "@/lib/tracking/sanitize"
 import { publicLimit } from "@/server/api/middleware/public-limit"
 import type { AppEnv } from "@/server/api/types"
 
-// Report-Only CSP violations (Ruling R1). Logged without query strings: the
+// CSP violations (Ruling R1). Logged without query strings: the
 // document may be a newsletter link with a token in it.
 export const cspReportRoutes = new Hono<AppEnv>().post(
   "/",
@@ -23,7 +23,8 @@ export const cspReportRoutes = new Hono<AppEnv>().post(
         "[csp]",
         text("violated-directive").slice(0, 60),
         sanitizeUrl(text("blocked-uri")) || text("blocked-uri").slice(0, 20),
-        sanitizeUrl(text("document-uri"))
+        sanitizeUrl(text("document-uri")),
+        sanitizeUrl(text("source-file")) || "-"
       )
     }
     return c.body(null, 204)

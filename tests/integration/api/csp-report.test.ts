@@ -22,6 +22,7 @@ describe("POST /public/csp-report", () => {
           "document-uri": "https://site.ie/newsletter/unsubscribe?token=secret",
           "violated-directive": "script-src-elem",
           "blocked-uri": "https://evil.example/x.js?a=1",
+          "source-file": "https://x.test/_next/static/chunks/a.js?v=1",
         },
       }),
     })
@@ -29,6 +30,8 @@ describe("POST /public/csp-report", () => {
     const logged = warn.mock.calls.flat().join(" ")
     expect(logged).toContain("script-src-elem")
     expect(logged).toContain("https://evil.example/x.js")
+    expect(logged).toContain("https://x.test/_next/static/chunks/a.js")
+    expect(logged).not.toContain("v=1")
     expect(logged).not.toContain("secret")
     warn.mockRestore()
   })

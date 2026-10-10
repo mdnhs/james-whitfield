@@ -1,14 +1,14 @@
 import { expect, test } from "@playwright/test"
 
-test("public pages carry the Report-Only CSP and security headers", async ({
+test("public pages carry the enforced CSP and security headers", async ({
   request,
 }) => {
   const res = await request.get("/")
   const h = res.headers()
-  expect(h["content-security-policy-report-only"]).toContain(
+  expect(h["content-security-policy"]).toContain(
     "https://www.googletagmanager.com"
   )
-  expect(h["content-security-policy"]).toBeUndefined()
+  expect(h["content-security-policy-report-only"]).toBeUndefined()
   expect(h["x-content-type-options"]).toBe("nosniff")
   expect(h["x-frame-options"]).toBe("SAMEORIGIN")
   expect(h["referrer-policy"]).toBe("strict-origin-when-cross-origin")

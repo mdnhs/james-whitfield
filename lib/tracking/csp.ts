@@ -72,8 +72,9 @@ export function securityHeaders(opts: Opts) {
     {
       source: "/:path*",
       headers: [
-        // Report-Only until Phase 10 enforces it (brief §12.6).
-        { key: "Content-Security-Policy-Report-Only", value: buildCsp(opts) },
+        // Enforced from Phase 10 (brief §12.6, Rulings R14/R15). Rollback:
+        // rename the key back to Content-Security-Policy-Report-Only.
+        { key: "Content-Security-Policy", value: buildCsp(opts) },
         {
           key: "Strict-Transport-Security",
           value: "max-age=31536000; includeSubDomains",

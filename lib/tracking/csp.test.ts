@@ -73,10 +73,15 @@ describe("securityHeaders (Ruling R20)", () => {
   const find = (key: string) =>
     rules.filter((r) => r.headers.some((h) => h.key === key))
 
-  it("ships the CSP as Report-Only on every path", () => {
-    const [rule] = find("Content-Security-Policy-Report-Only")
+  it("enforces the CSP on every path and still asks for reports", () => {
+    const [rule] = find("Content-Security-Policy")
     expect(rule!.source).toBe("/:path*")
-    expect(find("Content-Security-Policy")).toHaveLength(0)
+    expect(find("Content-Security-Policy-Report-Only")).toHaveLength(0)
+    const value = rule!.headers.find(
+      (h) => h.key === "Content-Security-Policy"
+    )!.value
+    expect(value).toContain("report-uri /api/v1/public/csp-report")
+    expect(value).not.toContain("'unsafe-eval'")
   })
 
   it("sends the brief's security headers", () => {

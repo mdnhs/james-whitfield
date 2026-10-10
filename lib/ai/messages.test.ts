@@ -2,6 +2,7 @@
 import { describe, expect, it } from "vitest"
 
 import {
+  labelOnlyChunk,
   persistableParts,
   textOf,
   trimHistory,
@@ -71,5 +72,28 @@ describe("trimHistory (Ruling R8)", () => {
       msg("user", "y".repeat(40_000)),
     ])
     expect(out.map((m) => m.role)).toEqual(["user"])
+  })
+})
+
+describe("labelOnlyChunk (tool results never reach the browser)", () => {
+  it("keeps the label and drops everything else", () => {
+    const chunk = {
+      type: "tool-output-available",
+      toolCallId: "c",
+      output: { label: "About page", text: "private", email: "a@b.ie" },
+    }
+    expect(labelOnlyChunk(chunk)).toEqual({
+      type: "tool-output-available",
+      toolCallId: "c",
+      output: { label: "About page" },
+    })
+    expect(
+      labelOnlyChunk({ type: "tool-output-available", output: { x: 1 } })
+    ).toMatchObject({ output: { label: "site data" } })
+  })
+
+  it("leaves other chunks alone", () => {
+    const chunk = { type: "text-delta", id: "t", delta: "hi" }
+    expect(labelOnlyChunk(chunk)).toBe(chunk)
   })
 })

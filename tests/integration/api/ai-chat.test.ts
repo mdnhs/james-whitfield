@@ -1,11 +1,33 @@
 // tests/integration/api/ai-chat.test.ts
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest"
 
-const mocks = vi.hoisted(() => ({ getModel: vi.fn(), seoFails: false }))
+const mocks = vi.hoisted(() => ({
+  getModel: vi.fn(),
+  seoFails: false,
+  saveFails: false,
+}))
 vi.mock("@/server/modules/ai/provider", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/server/modules/ai/provider")>()),
   getModel: mocks.getModel,
 }))
+// A message write that fails with the message text in the database error.
+vi.mock("@/server/modules/ai/conversations", async (importOriginal) => {
+  const real =
+    await importOriginal<typeof import("@/server/modules/ai/conversations")>()
+  return {
+    ...real,
+    appendMessage: async (...args: Parameters<typeof real.appendMessage>) => {
+      if (mocks.saveFails && args[1].role === "user")
+        throw Object.assign(
+          new Error(
+            'Failed query: insert into "ai_messages" params: ann@example.com asked about leads'
+          ),
+          { code: "57P01" }
+        )
+      return real.appendMessage(...args)
+    },
+  }
+})
 // A tool whose data layer fails with personal data in the error.
 vi.mock("@/server/modules/ai/tool-data", async (importOriginal) => {
   const real =
@@ -81,6 +103,7 @@ beforeEach(async () => {
   await seedAi()
   mocks.getModel.mockReset()
   mocks.seoFails = false
+  mocks.saveFails = false
 })
 afterAll(closeDb)
 
@@ -216,7 +239,9 @@ describe("POST /ai/chat", () => {
     const cs = await chunks(
       await chat(await cookieFor("editor"), { text: "seo please" })
     )
-    expect(cs.some((c) => c.type === "tool-output-available")).toBe(true)
+    // Only the label reaches the browser, never what the lookup returned.
+    const outputs = cs.filter((c) => c.type === "tool-output-available")
+    expect(outputs.map((c) => c.output)).toEqual([{ label: "SEO health" }])
     const [assistant] = await getDb()
       .select()
       .from(aiMessages)
@@ -359,6 +384,25 @@ describe("POST /ai/chat", () => {
     expect(assistant!.parts).toEqual([
       { type: "text", text: "Sorry, I couldn't read it." },
     ])
+    logged.mockRestore()
+  })
+
+  it("a failed save of the new message is logged without its text", async () => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {})
+    mocks.saveFails = true
+    model(streamOf(textParts("x")))
+    const res = await chat(await cookieFor("editor"), {
+      text: "ann@example.com asked about leads",
+    })
+    expect(res.status).toBe(500)
+    const body = await res.json()
+    expect(body.error.code).toBe("INTERNAL")
+    expect(JSON.stringify(body)).not.toMatch(/ann@example/)
+    expect(logged).toHaveBeenCalledWith("[ai] could not save your message", {
+      name: "Error",
+      code: "57P01",
+    })
+    expect(JSON.stringify(logged.mock.calls)).not.toMatch(/ann@example/)
     logged.mockRestore()
   })
 })

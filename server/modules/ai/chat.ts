@@ -14,6 +14,7 @@ import { format } from "date-fns"
 
 import {
   HISTORY_LIMIT,
+  labelOnlyChunk,
   persistableParts,
   trimHistory,
   type AiUIMessage,
@@ -68,6 +69,19 @@ function streamError(error: unknown, s: AiStored) {
   return friendlyChatError(error, s.provider)
 }
 
+// The new message is written before streaming, so a failure there reaches the
+// global error handler, which logs the whole error. A database error carries
+// the query parameters (the message text, the title), so it is logged as a
+// tag here and the person gets the generic message (Review Focus 2).
+async function saving<T>(write: () => Promise<T>): Promise<T> {
+  try {
+    return await write()
+  } catch (error) {
+    console.error("[ai] could not save your message", errorTag(error))
+    throw new ApiError("INTERNAL", "Couldn't save your message. Try again.")
+  }
+}
+
 export async function startChat(
   actor: Actor,
   input: ChatInput,
@@ -78,10 +92,8 @@ export async function startChat(
   const model = await getModel({ ...settings, apiKey: decryptApiKey(settings) })
   const conversation = input.conversationId
     ? await ownConversation(actor.userId, input.conversationId)
-    : await createConversation(
-        actor.userId,
-        titleFrom(input.text),
-        settings.model
+    : await saving(() =>
+        createConversation(actor.userId, titleFrom(input.text), settings.model)
       )
 
   // Ruling R8: earlier turns from our rows; the new one saved before streaming.
@@ -91,7 +103,7 @@ export async function startChat(
     role: "user",
     parts: [{ type: "text", text: input.text }],
   }
-  await appendMessage(conversation.id, userMessage)
+  await saving(() => appendMessage(conversation.id, userMessage))
 
   const tools = buildTools({ actor, settings })
   const site = parseGlobal("site", (await findSetting("site"))?.value)
@@ -128,43 +140,50 @@ export async function startChat(
   // Keeps the pipeline draining so onEnd (save + audit) always runs.
   void result.consumeStream({ onError: () => {} })
 
+  const ui = toUIMessageStream<typeof tools, AiUIMessage>({
+    stream: result.stream,
+    tools,
+    sendReasoning: false,
+    generateMessageId: randomUUID,
+    messageMetadata: ({ part }) =>
+      part.type === "start" ? { conversationId: conversation.id } : undefined,
+    onError: (error) => streamError(error, settings),
+    // A stopped answer keeps what was streamed: its text and the labels of
+    // finished lookups. Half-done tool calls are dropped, so the saved row
+    // is always a complete message (Review Focus 5).
+    onEnd: async ({ responseMessage, isAborted, isCancelled }) => {
+      try {
+        const parts = persistableParts(responseMessage.parts)
+        if (parts.length)
+          await appendMessage(
+            conversation.id,
+            { ...responseMessage, parts },
+            { tokensIn: turn.tokensIn, tokensOut: turn.tokensOut }
+          )
+        await audit(actor, {
+          action: "ai.chat",
+          entityType: "ai_conversation",
+          entityId: conversation.id,
+          summary: summary(
+            settings,
+            turn,
+            isAborted || isCancelled === true || signal?.aborted === true
+          ),
+        })
+      } catch (error) {
+        console.error("[ai] could not save the reply", errorTag(error))
+      }
+    },
+  })
+
   return createUIMessageStreamResponse({
     // no-transform: Next's gzip (`compress`) and proxies leave SSE unbuffered.
     headers: { "cache-control": "no-cache, no-transform" },
-    stream: toUIMessageStream<typeof tools, AiUIMessage>({
-      stream: result.stream,
-      tools,
-      sendReasoning: false,
-      generateMessageId: randomUUID,
-      messageMetadata: ({ part }) =>
-        part.type === "start" ? { conversationId: conversation.id } : undefined,
-      onError: (error) => streamError(error, settings),
-      // A stopped answer keeps what was streamed: its text and the labels of
-      // finished lookups. Half-done tool calls are dropped, so the saved row
-      // is always a complete message (Review Focus 5).
-      onEnd: async ({ responseMessage, isAborted, isCancelled }) => {
-        try {
-          const parts = persistableParts(responseMessage.parts)
-          if (parts.length)
-            await appendMessage(
-              conversation.id,
-              { ...responseMessage, parts },
-              { tokensIn: turn.tokensIn, tokensOut: turn.tokensOut }
-            )
-          await audit(actor, {
-            action: "ai.chat",
-            entityType: "ai_conversation",
-            entityId: conversation.id,
-            summary: summary(
-              settings,
-              turn,
-              isAborted || isCancelled === true || signal?.aborted === true
-            ),
-          })
-        } catch (error) {
-          console.error("[ai] could not save the reply", errorTag(error))
-        }
-      },
-    }),
+    stream: ui.pipeThrough(
+      new TransformStream({
+        transform: (chunk, controller) =>
+          controller.enqueue(labelOnlyChunk(chunk)),
+      })
+    ),
   })
 }

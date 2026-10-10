@@ -82,4 +82,10 @@ export const queryKeys = {
   account: {
     sessions: ["account", "sessions"] as const,
   },
+  ai: {
+    status: ["ai", "status"] as const,
+    settings: ["ai", "settings"] as const,
+    conversations: ["ai", "conversations"] as const,
+    conversation: (id: string) => ["ai", "conversation", id] as const,
+  },
 }

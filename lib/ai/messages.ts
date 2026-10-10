@@ -46,6 +46,18 @@ export function persistableParts(parts: AiPart[]): AiPart[] {
   })
 }
 
+// Ruling R9, wire side: what a finished lookup returned can hold page text or
+// opted-in enquiry details, so the browser is only ever sent its label.
+export function labelOnlyChunk<T extends { type: string }>(chunk: T): T {
+  if (chunk.type !== "tool-output-available") return chunk
+  const { output } = chunk as unknown as { output?: { label?: unknown } }
+  const label =
+    typeof output?.label === "string" && output.label
+      ? output.label.slice(0, 120)
+      : "site data"
+  return { ...chunk, output: { label } }
+}
+
 export const textOnly = (message: AiUIMessage): AiUIMessage => ({
   ...message,
   parts: message.parts.filter((p) => p.type === "text"),

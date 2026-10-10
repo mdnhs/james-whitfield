@@ -5,6 +5,7 @@ import Link from "next/link"
 
 import { SearchPill } from "@/admin/components/command/search-pill"
 import { usePermission } from "@/admin/lib/actor-context"
+import { AiAssistant } from "@/admin/modules/ai/assistant"
 import { buttonVariants } from "@/components/ui/button"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { cn } from "@/lib/utils"
@@ -25,6 +26,7 @@ export function Topbar() {
       <div className="flex min-w-0 flex-1" data-slot="topbar-search">
         <SearchPill />
       </div>
+      <AiAssistant />
       {canReadLeads ? (
         // A real link (role "link"), styled as an icon button.
         <Link

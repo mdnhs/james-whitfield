@@ -7,6 +7,7 @@ import {
 
 import type { ErrorCode } from "@/server/api/errors"
 import type { AccountRoutes } from "@/server/modules/account/routes"
+import type { AiRoutes } from "@/server/modules/ai/routes"
 import type { ArticlesRoutes } from "@/server/modules/articles/routes"
 import type { AuditRoutes } from "@/server/modules/audit/routes"
 import type { CollectionsRoutes } from "@/server/modules/collections/routes"
@@ -40,6 +41,7 @@ export const notificationsApi = hc<NotificationsRoutes>(
   "/api/v1/admin/notifications"
 )
 export const mediaApi = hc<MediaRoutes>("/api/v1/admin/media")
+export const aiApi = hc<AiRoutes>("/api/v1/admin/ai")
 export const pagesApi = hc<PagesRoutes>("/api/v1/admin/pages")
 export const categoriesApi = hc<TaxonomyRoutes>("/api/v1/admin/categories")
 export const authorsApi = hc<TaxonomyRoutes>("/api/v1/admin/authors")

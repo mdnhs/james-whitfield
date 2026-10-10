@@ -71,6 +71,11 @@ export const queryKeys = {
     colors: ["theme", "colors"] as const,
   },
   tracking: { detail: ["tracking"] as const },
+  users: {
+    all: ["users"] as const,
+    list: (params: Record<string, unknown>) =>
+      ["users", "list", params] as const,
+  },
   account: {
     sessions: ["account", "sessions"] as const,
   },

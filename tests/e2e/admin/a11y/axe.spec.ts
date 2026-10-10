@@ -25,6 +25,8 @@ const PANEL = [
   "/admin",
   "/admin/design",
   "/admin/activity",
+  "/admin/users",
+  "/admin/users?tab=roles",
   "/admin/account",
   "/admin/account?tab=security",
   "/admin/account?tab=sessions",

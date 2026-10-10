@@ -10,7 +10,7 @@ import { MarketingScripts } from "@/features/tracking/components/marketing-scrip
 import { RouteTracker } from "@/features/tracking/components/route-tracker"
 import { SiteFooter } from "@/features/footer"
 import { SiteHeader } from "@/features/navbar"
-import { themeCss } from "@/lib/content/theme"
+import { siteThemeCss } from "@/lib/theme/css"
 import { bootstrapScript } from "@/lib/tracking/bootstrap"
 import { trackingFrame } from "@/lib/tracking/frame"
 import { getEnv } from "@/server/env"
@@ -42,7 +42,8 @@ export async function SiteFrame({ children }: { children: React.ReactNode }) {
     preview,
     scriptsDisabled: getEnv().DISABLE_CUSTOM_SCRIPTS,
   })
-  const css = themeCss(theme.site)
+  // R4: "" for the default theme, so the page is byte-identical to today.
+  const css = siteThemeCss(theme.site)
   return (
     <>
       {frame.active ? (

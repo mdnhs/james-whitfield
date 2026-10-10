@@ -8,6 +8,7 @@ import type { GlobalValue } from "@/lib/content/globals"
 import { blank } from "@/lib/seo/metadata"
 import { ogColors } from "@/lib/seo/og-theme"
 import { documentTitle } from "@/lib/seo/title"
+import { DEFAULT_THEME } from "@/lib/theme/schema"
 
 import { SeoChecklist } from "./seo-checklist"
 import type { SeoMetaValues } from "./seo-fields"
@@ -69,9 +70,8 @@ export function SeoAside({
     title: blank(values.ogTitle) ?? title,
     eyebrow: eyebrow ?? siteValue?.professionalTitle ?? "",
     siteName: siteValue?.name ?? "",
-    // The theme global is not readable from the admin API yet (Phase 9), so
-    // the preview uses the site's default colours, as the route does.
-    colors: ogColors({}),
+    // Default colours until Task 7 reads GET /admin/theme/colors (R14).
+    colors: ogColors(DEFAULT_THEME.site),
   }
 
   return (

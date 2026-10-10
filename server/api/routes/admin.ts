@@ -20,6 +20,7 @@ import {
   authorsRoutes,
   categoriesRoutes,
 } from "@/server/modules/taxonomy/routes"
+import { themeRoutes } from "@/server/modules/theme/routes"
 import { trackingRoutes } from "@/server/modules/tracking/routes"
 import { usersRoutes } from "@/server/modules/users/routes"
 
@@ -50,3 +51,4 @@ export const adminRoutes = new Hono<AppEnv>()
   .route("/account", accountRoutes)
   .route("/seo", seoRoutes)
   .route("/tracking", trackingRoutes)
+  .route("/theme", themeRoutes)

@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react"
 import { describe, expect, it } from "vitest"
 
 import { ogColors } from "@/lib/seo/og-theme"
+import { DEFAULT_THEME } from "@/lib/theme/schema"
 
 import { SocialCard } from "./social-card"
 
@@ -11,7 +12,7 @@ describe("share card preview", () => {
     title: "Typed social title",
     eyebrow: "Anxiety",
     siteName: "Magda Kennedy",
-    colors: ogColors({}),
+    colors: ogColors(DEFAULT_THEME.site),
   }
 
   it("draws the card in the browser when there is no image", () => {

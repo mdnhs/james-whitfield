@@ -1,9 +1,10 @@
-import { readdir, readFile } from "node:fs/promises"
+import { readdir } from "node:fs/promises"
 
 import { eq, sql } from "drizzle-orm"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
 import { pageDocumentFor } from "@/blocks/page"
+import { DEFAULT_THEME } from "@/lib/theme/schema"
 import { ARTICLE_BODIES } from "@/server/db/seed/fixtures/article-bodies"
 import { ALL_ARTICLES } from "@/server/db/seed/fixtures/articles"
 import { closeDb, getDb } from "@/server/db/client"
@@ -135,17 +136,13 @@ describe("content seed", () => {
     )
   })
 
-  it("seeds the theme with exactly the values in site.css", async () => {
-    const css = await readFile("app/(site)/site.css", "utf8")
+  // The default theme resolves to site.css (tests/css/theme-presets.test.ts).
+  it("seeds the default theme", async () => {
     const [row] = await getDb()
       .select()
       .from(settings)
       .where(eq(settings.key, "theme"))
-    for (const [name, value] of Object.entries(
-      (row.value as { site: Record<string, string> }).site
-    )) {
-      expect(css, name).toMatch(new RegExp(`--color-${name}: ${value};`, "i"))
-    }
+    expect(row.value).toEqual(DEFAULT_THEME)
   })
 
   it("keeps the clinic photo on the block only", async () => {

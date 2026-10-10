@@ -2,7 +2,7 @@
 import * as z from "zod"
 
 import { Href, HttpsUrl, MediaRef } from "@/blocks/fields"
-import { SITE_TOKENS } from "@/lib/theme/tokens"
+import { ThemeConfig } from "@/lib/theme/schema"
 import { CUSTOM_SCRIPT_HOSTS } from "@/lib/tracking/hosts"
 import { GA4_ID, GTM_ID, PIXEL_ID } from "@/lib/tracking/ids"
 
@@ -14,10 +14,9 @@ const Link = z.object({
 const Time = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/)
 // ISO weekday: 1 = Monday … 7 = Sunday.
 const Day = z.number().int().min(1).max(7)
-const Hex = z.string().regex(/^#[0-9a-f]{6}$/i, "Use a #rrggbb colour")
 
 // Site colour tokens live with the theme engine (lib/theme/tokens.ts).
-export { SITE_TOKENS }
+export { SITE_TOKENS } from "@/lib/theme/tokens"
 
 export const SiteGlobal = z.object({
   name: s(80),
@@ -394,12 +393,10 @@ export const ScriptsGlobal = z.object({
   snippets: z.array(ScriptSnippet).max(20).default([]),
 })
 
-export const ThemeGlobal = z.object({
-  // Written into a <style> tag by SiteFrame, so only #rrggbb is accepted.
-  site: z.partialRecord(z.enum(SITE_TOKENS), Hex).default({}),
-  // Admin tokens arrive with the theme engine (Phase 9).
-  admin: z.record(z.string(), Hex).default({}),
-})
+// docs/brief.md §10: validated, canonical OKLCH (lib/theme/schema.ts).
+// SiteFrame and AdminFrame never write these strings into CSS; lib/theme/
+// css.ts rebuilds every declaration from numbers.
+export const ThemeGlobal = ThemeConfig
 
 export const NotificationsGlobal = z.object({
   recipients: z.array(z.email()).max(10).default([]),

@@ -1,16 +1,14 @@
-import type { GlobalValue } from "@/lib/content/globals"
+import type { OgColors } from "@/lib/seo/og-card"
+import { toHex } from "@/lib/theme/color"
+import type { SiteThemeConfig } from "@/lib/theme/schema"
+import { resolveSiteTokens } from "@/lib/theme/site"
 
-// app/(site)/site.css @theme values (og-theme.test.ts keeps them in step).
-export const OG_DEFAULTS = {
-  ink: "#030303",
-  cream: "#faf6f0",
-  "brand-mint": "#d6e8e4",
-} as const
-
-export function ogColors(theme: GlobalValue<"theme">["site"]) {
+// Satori takes plain colours, so the card gets hex.
+export function ogColors(site: SiteThemeConfig): OgColors {
+  const t = resolveSiteTokens(site)
   return {
-    background: theme.ink ?? OG_DEFAULTS.ink,
-    text: theme.cream ?? OG_DEFAULTS.cream,
-    accent: theme["brand-mint"] ?? OG_DEFAULTS["brand-mint"],
+    background: toHex(t.ink),
+    text: toHex(t.cream),
+    accent: toHex(t["brand-mint"]),
   }
 }

@@ -1,28 +1,21 @@
-import { readFileSync } from "node:fs"
-import path from "node:path"
-
 import { describe, expect, it } from "vitest"
 
-import { OG_DEFAULTS, ogColors } from "./og-theme"
+import { DEFAULT_THEME, ThemeConfig } from "@/lib/theme/schema"
+
+import { ogColors } from "./og-theme"
 
 describe("ogColors", () => {
-  it("defaults to the site.css tokens", () => {
-    const css = readFileSync(
-      path.join(import.meta.dirname, "../../app/(site)/site.css"),
-      "utf8"
-    )
-    expect(css).toContain(`--color-ink: ${OG_DEFAULTS.ink};`)
-    expect(css).toContain(`--color-cream: ${OG_DEFAULTS.cream};`)
-    expect(css).toContain(`--color-brand-mint: ${OG_DEFAULTS["brand-mint"]};`)
-    expect(ogColors({})).toEqual({
-      background: OG_DEFAULTS.ink,
-      text: OG_DEFAULTS.cream,
-      accent: OG_DEFAULTS["brand-mint"],
+  it("uses today's palette for the default theme", () => {
+    expect(ogColors(DEFAULT_THEME.site)).toEqual({
+      background: "#030303",
+      text: "#faf6f0",
+      accent: "#d6e8e4",
     })
   })
-  it("follows the published theme", () => {
-    expect(
-      ogColors({ ink: "#111111", cream: "#eeeeee", "brand-mint": "#00ff99" })
-    ).toEqual({ background: "#111111", text: "#eeeeee", accent: "#00ff99" })
+  it("follows a locked token", () => {
+    const site = ThemeConfig.parse({
+      site: { tokens: { ink: "#111111" } },
+    }).site
+    expect(ogColors(site).background).toBe("#111111")
   })
 })

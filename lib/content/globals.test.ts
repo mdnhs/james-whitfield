@@ -1,6 +1,8 @@
 // lib/content/globals.test.ts
 import { describe, expect, it, vi } from "vitest"
 
+import { resolveSiteTokens, SITE_DEFAULT } from "@/lib/theme/site"
+
 import { GLOBALS, parseGlobal, type GlobalKey } from "./globals"
 
 describe("globals", () => {
@@ -13,20 +15,19 @@ describe("globals", () => {
       cta: { label: "", href: "" },
     })
   })
-  it("theme accepts hex colours only (it is written into a <style> tag)", () => {
-    expect(() =>
-      GLOBALS.theme.parse({ site: { brand: "#336060" } })
-    ).not.toThrow()
-    expect(() => GLOBALS.theme.parse({ site: { brand: "red" } })).toThrow()
-    expect(() =>
-      GLOBALS.theme.parse({ site: { brand: "#000000;}</style>" } })
-    ).toThrow()
+  it("theme parses the Phase 3 hex shape to today's palette (R9)", () => {
+    const legacy = { site: { brand: "#336060", cream: "#faf6f0" }, admin: {} }
+    const parsed = parseGlobal("theme", legacy)
+    // Unknown keys are stripped; brand normalises to the base brand, which
+    // the resolver treats as identity.
+    expect(parsed.site.tokens).toEqual({})
+    expect(resolveSiteTokens(parsed.site)).toEqual(SITE_DEFAULT)
   })
   it("rejects a malformed E.164 number and a title template without %s", () => {
     expect(() => GLOBALS.contact.parse({ phone: { e164: "01 234" } })).toThrow()
     expect(() => GLOBALS.seo.parse({ titleTemplate: "Magda" })).toThrow()
   })
-  it("takes https-only urls for social and sameAs, hex-only admin theme", () => {
+  it("takes https-only urls for social and sameAs", () => {
     for (const url of [
       "javascript:alert(1)",
       "http://x.ie",
@@ -44,8 +45,6 @@ describe("globals", () => {
     expect(() =>
       GLOBALS.site.parse({ social: [{ label: "L", url: "https://x.ie/a" }] })
     ).not.toThrow()
-    expect(() => GLOBALS.theme.parse({ admin: { a: "red" } })).toThrow()
-    expect(() => GLOBALS.theme.parse({ admin: { a: "#aabbcc" } })).not.toThrow()
   })
 })
 

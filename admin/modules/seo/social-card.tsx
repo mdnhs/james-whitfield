@@ -1,23 +1,33 @@
+import { OgCardPreview } from "./og-card-preview"
+
+import type { OgColors, OgSubject } from "@/lib/seo/og-card"
+
 export function SocialCard({
   siteHost,
   title,
   description,
   imageSrc,
+  card,
 }: {
   siteHost: string
   title: string
   description: string
-  imageSrc: string
+  // An uploaded or generated image URL; without one, `card` is drawn here.
+  imageSrc?: string
+  card?: OgSubject & { colors: OgColors }
 }) {
   return (
     <div className="overflow-hidden rounded-xl border bg-background">
-      {/* A plain img: the generated /og/… URL is dynamic. */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={imageSrc}
-        alt="Share image preview"
-        className="aspect-[1.91/1] w-full bg-muted object-cover"
-      />
+      {imageSrc || !card ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={imageSrc}
+          alt="Share image preview"
+          className="aspect-[1.91/1] w-full bg-muted object-cover"
+        />
+      ) : (
+        <OgCardPreview {...card} />
+      )}
       <div className="flex flex-col gap-1 border-t p-3">
         <p className="text-xs tracking-wide text-muted-foreground uppercase">
           {siteHost}

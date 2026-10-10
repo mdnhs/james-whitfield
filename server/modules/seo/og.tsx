@@ -6,14 +6,14 @@ import { join } from "node:path"
 import { ImageResponse } from "next/og"
 
 import { blank, OG_SIZE } from "@/lib/seo/metadata"
+import { OgCard, type OgColors, type OgSubject } from "@/lib/seo/og-card"
 import {
   getArticle,
   getPublishedPage,
   getSetting,
 } from "@/server/modules/content/queries"
 
-export type OgSubject = { title: string; eyebrow: string; siteName: string }
-type Colors = { background: string; text: string; accent: string }
+export { OgCard, type OgColors, type OgSubject }
 
 // Read once per process; traced into the standalone build (Ruling R9).
 const fonts = Promise.all([
@@ -21,70 +21,7 @@ const fonts = Promise.all([
   readFile(join(process.cwd(), "assets/fonts/Inter-Regular.ttf")),
 ])
 
-// Flexbox only (ImageResponse/Satori). Ruling R8: the logo is a wordmark.
-export function OgCard({
-  title,
-  eyebrow,
-  siteName,
-  colors,
-}: OgSubject & { colors: Colors }) {
-  return (
-    <div
-      style={{
-        width: "100%",
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "space-between",
-        padding: "72px 80px",
-        background: colors.background,
-        color: colors.text,
-        fontFamily: "Inter",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          fontSize: 30,
-          color: colors.accent,
-          letterSpacing: 1,
-        }}
-      >
-        {eyebrow}
-      </div>
-      <div
-        style={{
-          display: "flex",
-          fontFamily: "Fraunces",
-          fontSize: title.length > 60 ? 64 : 80,
-          lineHeight: 1.08,
-        }}
-      >
-        {title}
-      </div>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 18,
-          fontSize: 30,
-        }}
-      >
-        <div
-          style={{
-            width: 14,
-            height: 14,
-            borderRadius: 7,
-            background: colors.accent,
-          }}
-        />
-        {siteName}
-      </div>
-    </div>
-  )
-}
-
-export async function renderOg(subject: OgSubject, colors: Colors) {
+export async function renderOg(subject: OgSubject, colors: OgColors) {
   const [fraunces, inter] = await fonts
   return new ImageResponse(<OgCard {...subject} colors={colors} />, {
     ...OG_SIZE,

@@ -32,7 +32,8 @@ import { seoDefaults } from "../../_cms/seo-defaults"
 // one param to build the route's shell; a sentinel slug gives it one without
 // reading the database. ArticleSlug cannot produce it, so it never names an
 // article and renders not-found. Unknown slugs render not-found inside the
-// streamed shell: 200 + noindex.
+// streamed shell: 200 + noindex. That is the fail-open fallback: proxy answers
+// a real 404 for unknown slugs from its cached route table.
 export function generateStaticParams() {
   return [{ slug: ARTICLE_SHELL_SLUG }]
 }

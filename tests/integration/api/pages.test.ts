@@ -9,7 +9,7 @@ vi.mock("next/cache", async (importOriginal) => ({
 
 import { ROLE_NAMES, type RoleName } from "@/lib/auth/permissions"
 import { closeDb, getDb } from "@/server/db/client"
-import { media, pages, revisions } from "@/server/db/schema"
+import { media, pages, redirects, revisions } from "@/server/db/schema"
 import { writeRevision } from "@/server/lib/revisions"
 
 import { adminRequest, cookieFor } from "../helpers/auth"
@@ -232,6 +232,39 @@ describe("pages API", () => {
       (await adminRequest(`/pages/${id}`, cookie, { method: "DELETE" })).status
     ).toBe(200)
     expect(expired()).toEqual(expect.arrayContaining([`page:${id}`, "routes"]))
+  })
+
+  it("reserves /og and removes redirects into a deleted page", async () => {
+    await aboutPage()
+    const cookie = await cookieFor("editor")
+    expect(
+      (
+        await adminRequest("/pages", cookie, {
+          method: "POST",
+          body: { path: "/og", title: "Og" },
+        })
+      ).status
+    ).toBe(400)
+    const created = await adminRequest("/pages", cookie, {
+      method: "POST",
+      body: { path: "/team", title: "Team" },
+    })
+    const { id } = await json(created)
+    await getDb()
+      .insert(redirects)
+      .values([
+        { sourcePath: "/old-team", destination: "/team" },
+        { sourcePath: "/old-other", destination: "/about" },
+      ])
+    next.revalidateTag.mockReset()
+    expect(
+      (await adminRequest(`/pages/${id}`, cookie, { method: "DELETE" })).status
+    ).toBe(200)
+    const left = await getDb().select().from(redirects)
+    expect(left.map((r) => r.sourcePath)).toEqual(["/old-other"])
+    expect(expired()).toEqual(
+      expect.arrayContaining([`page:${id}`, "routes", "redirects"])
+    )
   })
 
   it("lets a marketer change SEO but not the title", async () => {

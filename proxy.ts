@@ -148,9 +148,8 @@ export const config = {
     "/admin",
     "/admin/:path*",
     // Every public page path; assets, the API, share cards and metadata
-    // files never pay for a resolver hop. (A custom page whose address
-    // starts with one of these words skips the resolver and keeps the
-    // in-shell soft 404.)
-    "/((?!api|_next|uploads|images|og|admin|favicon.ico|robots.txt|sitemap.xml|manifest.webmanifest).*)",
+    // files never pay for a resolver hop. The lookahead is segment-bound, so
+    // custom pages like /apiary or /images-old still reach the resolver.
+    "/((?!(?:api|_next|uploads|images|og|admin)(?:/|$)|favicon\\.ico$|robots\\.txt$|sitemap\\.xml$|manifest\\.webmanifest$).*)",
   ],
 }

@@ -1,5 +1,6 @@
 "use client"
 
+import { useQuery } from "@tanstack/react-query"
 import { useState } from "react"
 import { toast } from "sonner"
 
@@ -16,7 +17,7 @@ import {
 } from "@/admin/modules/seo/seo-fields"
 import type { ArticleDraft } from "@/lib/content/article"
 
-import type { ArticleDetail } from "./queries"
+import { categoriesQuery, type ArticleDetail } from "./queries"
 
 // Live on save (docs/brief.md §6.5), like the page SEO form. The preview
 // follows the working draft's title, slug and excerpt as well as the fields.
@@ -31,6 +32,10 @@ export function ArticleSeoForm({
 }) {
   const canSeo = usePermission({ seo: ["update"] })
   const [defaults] = useState<SeoMetaValues>(() => seoMetaDefaults(article.seo))
+  const categories = useQuery(categoriesQuery())
+  const category = categories.data?.items.find(
+    (item) => item.id === draft.categoryId
+  )
   const [live, setLive] = useState<SeoMetaValues>(defaults)
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.85fr)]">
@@ -74,6 +79,7 @@ export function ArticleSeoForm({
         path={`/insights/${draft.slug}`}
         fallbackTitle={draft.title}
         summary={draft.excerpt}
+        eyebrow={category?.name}
         values={live}
       />
     </div>

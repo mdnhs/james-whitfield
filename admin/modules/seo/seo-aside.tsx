@@ -5,7 +5,8 @@ import { useQuery } from "@tanstack/react-query"
 import { globalQuery } from "@/admin/modules/globals/queries"
 import { mediaListQuery } from "@/admin/modules/media/queries"
 import type { GlobalValue } from "@/lib/content/globals"
-import { ogImageUrl } from "@/lib/seo/metadata"
+import { blank } from "@/lib/seo/metadata"
+import { ogColors } from "@/lib/seo/og-theme"
 import { documentTitle } from "@/lib/seo/title"
 
 import { SeoChecklist } from "./seo-checklist"
@@ -22,6 +23,7 @@ export function SeoAside({
   path,
   fallbackTitle,
   summary,
+  eyebrow,
   values,
 }: {
   path: string
@@ -29,6 +31,9 @@ export function SeoAside({
   fallbackTitle: string
   // Used when the meta description is empty (an article's excerpt).
   summary?: string
+  // The card's small line: an article's category. Pages use the site's
+  // professional title.
+  eyebrow?: string
   values: SeoMetaValues
 }) {
   const seo = useQuery({ ...globalQuery("seo"), retry: false })
@@ -53,18 +58,21 @@ export function SeoAside({
       defaultTitle: defaults?.defaultTitle ?? "",
     }
   )
-  const description =
-    values.description || summary || defaults?.defaultDescription || ""
-  const ogTitle = values.ogTitle || title
+  // The default description is left out of the checks: the SEO center does
+  // not count it as passing either.
+  const own = blank(values.description) ?? summary ?? ""
+  const description = own || defaults?.defaultDescription || ""
+  const ogTitle = blank(values.ogTitle) ?? title
   const ogDescription = values.ogDescription || description
-  const imageSrc = image
-    ? image.url
-    : ogImageUrl(
-        path,
-        ogTitle,
-        (site.data?.value as GlobalValue<"site"> | undefined)
-          ?.professionalTitle ?? ""
-      )
+  const siteValue = site.data?.value as GlobalValue<"site"> | undefined
+  const card = {
+    title: blank(values.ogTitle) ?? title,
+    eyebrow: eyebrow ?? siteValue?.professionalTitle ?? "",
+    siteName: siteValue?.name ?? "",
+    // The theme global is not readable from the admin API yet (Phase 9), so
+    // the preview uses the site's default colours, as the route does.
+    colors: ogColors({}),
+  }
 
   return (
     <aside className="flex flex-col gap-6 lg:sticky lg:top-4 lg:self-start">
@@ -86,7 +94,8 @@ export function SeoAside({
           siteHost={host}
           title={ogTitle}
           description={ogDescription}
-          imageSrc={imageSrc}
+          imageSrc={image?.url}
+          card={card}
         />
       </section>
       <section aria-labelledby="checks-heading" className={CARD}>
@@ -97,7 +106,7 @@ export function SeoAside({
           input={{
             title,
             titleUnique: true,
-            description,
+            description: own,
             ogImage:
               image?.width && image.height
                 ? { width: image.width, height: image.height }

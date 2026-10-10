@@ -26,7 +26,7 @@ export async function getSeoHealth() {
   "use cache"
   cacheTag(tags.routes, tags.articles, tags.media, tags.setting("seo"))
   cacheLife("max")
-  for (const e of await listLiveEntities())
-    if (e.kind === "page") cacheTag(tags.page(e.id))
-  return computeSeoHealth()
+  const live = await listLiveEntities()
+  for (const e of live) if (e.kind === "page") cacheTag(tags.page(e.id))
+  return computeSeoHealth(undefined, undefined, live)
 }

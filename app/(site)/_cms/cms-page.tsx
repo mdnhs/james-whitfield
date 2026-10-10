@@ -15,14 +15,15 @@ import { PageJsonLd } from "./page-json-ld"
 import { seoDefaults } from "./seo-defaults"
 
 // Inside the layout's Suspense (SiteFrame). io() keeps the read out of the
-// build; the redirect lookup arrives with Phase 7.
+// build.
 //
 // Each known path has its own route segment rather than one [...slug]
 // catch-all: unknown multi-segment URLs then 404 with a real status before
-// any shell streams (one unknown segment reaches app/(site)/[page]), and the client router never reuses one CMS page's segment for
-// another. A route whose page is missing or unpublished renders not-found
-// inside the streamed shell (200 + noindex): a real status there would need
-// proxy, which may not read the database.
+// any shell streams (one unknown segment reaches app/(site)/[page]), and the
+// client router never reuses one CMS page's segment for another. Missing
+// paths get a real 404 and redirects fire in proxy (cached route table).
+// notFound() below is the fail-open fallback (proxy timed out, draft
+// preview): it renders not-found inside the streamed shell (200 + noindex).
 export async function CmsPage({ path }: { path: string }) {
   await io()
   const draft = await isPreviewing()
@@ -41,7 +42,8 @@ export async function CmsPage({ path }: { path: string }) {
 }
 
 // Metadata blocks for every agent (htmlLimitedBots), so a missing page puts
-// noindex in the head; the status stays 200 (see the note above CmsPage).
+// noindex in the head, even when the fail-open fallback keeps the status 200
+// (see the note above CmsPage).
 export async function cmsMetadata(path: string): Promise<Metadata> {
   await io()
   const draft = await isPreviewing()

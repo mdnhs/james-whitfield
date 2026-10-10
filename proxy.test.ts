@@ -1,7 +1,9 @@
 import { NextRequest } from "next/server"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
-import { proxy } from "./proxy"
+import { unstable_doesMiddlewareMatch } from "next/experimental/testing/server"
+
+import { config, proxy } from "./proxy"
 
 const request = (path: string, cookie?: string) =>
   new NextRequest(new URL(path, "http://localhost:3000"), {
@@ -260,4 +262,34 @@ describe("public paths (Ruling R2)", () => {
     await proxy(request("/admin/pages", "mk.session_token=abc"))
     expect(fetch).not.toHaveBeenCalled()
   })
+})
+
+describe("matcher", () => {
+  const matches = (url: string) => unstable_doesMiddlewareMatch({ config, url })
+
+  it.each([
+    "/",
+    "/about",
+    "/insights/a",
+    "/apiary",
+    "/ogham",
+    "/images-old",
+    "/administration",
+    "/favicon.icon",
+    "/admin",
+    "/admin/pages",
+  ])("runs for %s", (url) => expect(matches(url)).toBe(true))
+
+  it.each([
+    "/api/v1/x",
+    "/_next/static/a.js",
+    "/uploads/a.png",
+    "/images/a.png",
+    "/og",
+    "/og/about",
+    "/favicon.ico",
+    "/robots.txt",
+    "/sitemap.xml",
+    "/manifest.webmanifest",
+  ])("skips %s", (url) => expect(matches(url)).toBe(false))
 })

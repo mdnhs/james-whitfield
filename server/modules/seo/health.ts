@@ -6,6 +6,7 @@ import { collectMediaIds } from "@/blocks/media-refs"
 import type { PageDocument } from "@/blocks/page"
 import { parseGlobal } from "@/lib/content/globals"
 import { runChecks, type CheckId } from "@/lib/seo/checks"
+import { blank } from "@/lib/seo/metadata"
 import { documentTitle } from "@/lib/seo/title"
 import { getDb, type DbLike } from "@/server/db/client"
 import { media, settings } from "@/server/db/schema"
@@ -87,10 +88,12 @@ export type SeoHealth = {
 
 export async function computeSeoHealth(
   db: DbLike = getDb(),
-  origin = getEnv().SITE_URL.replace(/\/$/, "")
+  origin = getEnv().SITE_URL.replace(/\/$/, ""),
+  // Callers that already loaded the live content pass it in.
+  liveEntities?: LiveEntity[]
 ): Promise<SeoHealth> {
   const [live, [seoRow]] = await Promise.all([
-    listLiveEntities(db),
+    liveEntities ?? listLiveEntities(db),
     db.select().from(settings).where(eq(settings.key, "seo")).limit(1),
   ])
   const seo = parseGlobal("seo", seoRow?.value)
@@ -137,7 +140,7 @@ export async function computeSeoHealth(
       title: titles[i]!,
       titleUnique:
         titles.indexOf(titles[i]!) === titles.lastIndexOf(titles[i]!),
-      description: e.seo.description ?? e.summary,
+      description: blank(e.seo.description) ?? e.summary,
       ogImage:
         og && og.width && og.height
           ? { width: og.width, height: og.height }

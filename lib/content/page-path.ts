@@ -7,6 +7,7 @@ export const RESERVED_SEGMENTS = [
   "api",
   "uploads",
   "images",
+  "og",
   "insights",
 ] as const
 

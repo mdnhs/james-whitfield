@@ -16,7 +16,7 @@ import type { NewPageInput } from "@/lib/content/page-path"
 import { ApiError, invalid } from "@/server/api/errors"
 import type { Actor } from "@/server/auth/actor"
 import { getDb, type DbLike } from "@/server/db/client"
-import { pages, settings } from "@/server/db/schema"
+import { pages, redirects, settings } from "@/server/db/schema"
 import { audit } from "@/server/lib/audit"
 import { invalidate, REDIRECT_TAGS, tags } from "@/server/lib/cache"
 import { conflictError, userName } from "@/server/lib/conflict"
@@ -428,8 +428,14 @@ export async function deletePage(actor: Actor, id: string) {
   if (row.systemKey) {
     throw new ApiError("FORBIDDEN", "System pages can't be deleted")
   }
-  await db.transaction(async (tx) => {
+  const redirectsChanged = await db.transaction(async (tx) => {
     await deleteRevisions(tx, "page", id)
+    // Redirects into a deleted page would 301 to a 404.
+    await lockRedirects(tx)
+    const gone = await tx
+      .delete(redirects)
+      .where(eq(redirects.destination, row.path))
+      .returning({ id: redirects.id })
     await tx.delete(pages).where(eq(pages.id, id))
     await audit(
       actor,
@@ -441,8 +447,13 @@ export async function deletePage(actor: Actor, id: string) {
       },
       tx
     )
+    return gone.length > 0
   })
-  invalidate([tags.page(id), tags.routes])
+  invalidate([
+    tags.page(id),
+    tags.routes,
+    ...(redirectsChanged ? REDIRECT_TAGS : []),
+  ])
   return { ok: true as const }
 }
 

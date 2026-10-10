@@ -26,7 +26,13 @@ export function ContrastPanel({
   scope: "site" | "admin"
   onChange(config: ThemeConfigValue): void
 }) {
-  const [stuck, setStuck] = useState<string[]>([])
+  // "Stuck" marks belong to the config they were found against.
+  const [stuckState, setStuck] = useState<{ at: string; keys: string[] }>({
+    at: "",
+    keys: [],
+  })
+  const snapshot = JSON.stringify(config)
+  const stuck = stuckState.at === snapshot ? stuckState.keys : []
   const rows = pairRatings(config).filter((r) =>
     scope === "site" ? r.scope === "site" : r.scope !== "site"
   )
@@ -44,7 +50,15 @@ export function ContrastPanel({
           type="button"
           variant="outline"
           disabled={failing === 0}
-          onClick={() => onChange(fixAll(config).config)}
+          onClick={() => {
+            // Repair only this tab's scope; the other keeps its colours.
+            const fixed = fixAll(config).config
+            onChange(
+              scope === "site"
+                ? { ...config, site: fixed.site }
+                : { ...config, admin: fixed.admin }
+            )
+          }}
         >
           Fix all
         </Button>
@@ -85,7 +99,8 @@ export function ContrastPanel({
                       onClick={() => {
                         const next = fixIssue(config, row)
                         if (next) onChange(next)
-                        else setStuck((s) => [...s, key(row)])
+                        else
+                          setStuck({ at: snapshot, keys: [...stuck, key(row)] })
                       }}
                     >
                       Fix automatically

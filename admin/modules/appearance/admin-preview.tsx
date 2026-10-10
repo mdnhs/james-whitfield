@@ -27,10 +27,11 @@ const CHARTS = [
 export function useLiveAdmin(admin: AdminThemeConfig) {
   const { resolvedTheme } = useTheme()
   const mode = resolvedTheme === "dark" ? "dark" : "light"
-  useEffect(
-    () => applyLive(document.documentElement, liveDeclarations(admin, mode)),
-    [admin, mode]
-  )
+  useEffect(() => {
+    // Wait for next-themes to resolve, so a dark user never sees light tokens.
+    if (resolvedTheme === undefined) return
+    return applyLive(document.documentElement, liveDeclarations(admin, mode))
+  }, [admin, mode, resolvedTheme])
 }
 
 export function AdminPreview() {

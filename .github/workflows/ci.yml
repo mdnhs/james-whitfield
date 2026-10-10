@@ -103,6 +103,8 @@ jobs:
       # in their own invocation after the main E2E run.
       - name: E2E (tracking and consent)
         run: pnpm test:e2e:tracking
+        env:
+          E2E_SKIP_BUILD: "1"
       # Ruling R17: appearance specs publish themes, so they run in their own
       # invocation too.
       - name: E2E (appearance)

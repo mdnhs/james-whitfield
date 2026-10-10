@@ -290,7 +290,10 @@ function Editor({
               <Button
                 className={FORM_ACTION}
                 disabled={
-                  busy || state.status === "saving" || issues.length > 0
+                  busy ||
+                  state.status === "saving" ||
+                  issues.length > 0 ||
+                  (!doc.hasDraft && state.status === "idle")
                 }
                 onClick={() => publish.mutate()}
               >

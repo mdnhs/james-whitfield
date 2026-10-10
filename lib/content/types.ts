@@ -24,6 +24,7 @@ export type PlanView = {
   slug: string
   name: string
   priceLabel: string
+  priceCents: number | null
   unit: string
   summary: string
   features: string[]

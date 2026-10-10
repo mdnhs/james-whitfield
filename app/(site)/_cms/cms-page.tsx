@@ -11,6 +11,7 @@ import {
 import { isPreviewing } from "@/server/modules/content/preview"
 
 import { BlockRenderer } from "./block-renderer"
+import { PageJsonLd } from "./page-json-ld"
 import { seoDefaults } from "./seo-defaults"
 
 // Inside the layout's Suspense (SiteFrame). io() keeps the read out of the
@@ -30,7 +31,12 @@ export async function CmsPage({ path }: { path: string }) {
     getSetting("microcopy"),
   ])
   if (!page) notFound()
-  return <BlockRenderer page={page} contactLabel={copy.contactChapter} />
+  return (
+    <>
+      <PageJsonLd page={page} />
+      <BlockRenderer page={page} contactLabel={copy.contactChapter} />
+    </>
+  )
 }
 
 // Metadata blocks for every agent (htmlLimitedBots), so a missing page puts

@@ -15,7 +15,10 @@ import {
 } from "@/features/insights"
 import { contactHref } from "@/lib/contact-href"
 import { ARTICLE_SHELL_SLUG } from "@/lib/content/article-slug"
+import { JsonLd } from "@/components/json-ld"
+import { blogPostingNode, breadcrumbNode, graph } from "@/lib/seo/json-ld"
 import { buildMetadata } from "@/lib/seo/metadata"
+import { getEnv } from "@/server/env"
 import {
   getArticle,
   getMedia,
@@ -74,11 +77,12 @@ export default async function ArticlePage({
 }: PageProps<"/insights/[slug]">) {
   await io()
   const { slug } = await params
-  const [article, related, copy, newsletter] = await Promise.all([
+  const [article, related, copy, newsletter, site] = await Promise.all([
     getArticle(slug),
     getRelatedArticles(slug, 3),
     getSetting("microcopy"),
     getSetting("newsletter"),
+    getSetting("site"),
   ])
   if (!article) notFound()
   const band = resolveMedia(
@@ -92,29 +96,42 @@ export default async function ArticlePage({
     { label: copy.articleChapters.newsletter, target: "newsletter" },
     { label: copy.contactChapter, target: "contact" },
   ]
+  const origin = getEnv().SITE_URL.replace(/\/$/, "")
   return (
-    <main key={slug} data-page-root className="bg-ink">
-      <StackCard id="home" rounded={false}>
-        <ArticleHero article={article} copy={copy} />
-      </StackCard>
-      <StackCard id="article">
-        <ArticleBody
-          article={article}
-          copy={copy}
-          ctaHref={contactHref({
-            plan: "discovery-call",
-            topic: article.topicSlug,
-          })}
-        />
-      </StackCard>
-      <StackCard>
-        <RelatedArticles id="keep-reading" articles={related} copy={copy} />
-      </StackCard>
-      <StackCard last>
-        <NewsletterBand id="newsletter" content={toNewsletterView(band)} />
-      </StackCard>
-      <JourneyRail chapters={chapters} />
-      <PageMotion />
-    </main>
+    <>
+      <JsonLd
+        graph={graph([
+          blogPostingNode({ origin, article, siteName: site.name }),
+          breadcrumbNode(origin, [
+            { name: copy.breadcrumbHome, path: "/" },
+            { name: copy.breadcrumbInsights, path: "/insights" },
+            { name: article.title, path: `/insights/${article.slug}` },
+          ]),
+        ])}
+      />
+      <main key={slug} data-page-root className="bg-ink">
+        <StackCard id="home" rounded={false}>
+          <ArticleHero article={article} copy={copy} />
+        </StackCard>
+        <StackCard id="article">
+          <ArticleBody
+            article={article}
+            copy={copy}
+            ctaHref={contactHref({
+              plan: "discovery-call",
+              topic: article.topicSlug,
+            })}
+          />
+        </StackCard>
+        <StackCard>
+          <RelatedArticles id="keep-reading" articles={related} copy={copy} />
+        </StackCard>
+        <StackCard last>
+          <NewsletterBand id="newsletter" content={toNewsletterView(band)} />
+        </StackCard>
+        <JourneyRail chapters={chapters} />
+        <PageMotion />
+      </main>
+    </>
   )
 }

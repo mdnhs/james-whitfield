@@ -5,7 +5,7 @@ import { join } from "node:path"
 
 import { ImageResponse } from "next/og"
 
-import { OG_SIZE } from "@/lib/seo/metadata"
+import { blank, OG_SIZE } from "@/lib/seo/metadata"
 import {
   getArticle,
   getPublishedPage,
@@ -104,7 +104,7 @@ export async function ogSubjectFor(path: string): Promise<OgSubject | null> {
     const found = await getArticle(article[1]!)
     if (!found) return null
     return {
-      title: found.seo.ogTitle ?? found.title,
+      title: blank(found.seo.ogTitle) ?? found.title,
       eyebrow: found.category.name,
       siteName: site.name,
     }
@@ -113,7 +113,7 @@ export async function ogSubjectFor(path: string): Promise<OgSubject | null> {
   if (!page) return null
   const seo = await getSetting("seo")
   const title =
-    page.seo.ogTitle ??
+    blank(page.seo.ogTitle) ??
     (page.systemKey === "home"
       ? page.seo.title || seo.defaultTitle || site.name
       : page.seo.title || page.title)

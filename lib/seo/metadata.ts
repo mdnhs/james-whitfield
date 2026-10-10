@@ -39,7 +39,7 @@ export type SeoSubject = {
 }
 
 // A stored "" or whitespace counts as missing, so the fallbacks still apply.
-function blank(v: string | null | undefined) {
+export function blank(v: string | null | undefined) {
   return v?.trim() ? v : null
 }
 

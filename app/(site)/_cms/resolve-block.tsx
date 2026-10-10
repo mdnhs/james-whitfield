@@ -28,21 +28,13 @@ import {
 import { RichTextSection } from "@/features/richtext"
 import { FormatsSection, ServicesGrid } from "@/features/services"
 import { TestimonialsSection } from "@/features/testimonials"
+import { select } from "@/lib/content/select"
 import { slugify } from "@/lib/utils"
 import { turnstileSiteKey } from "@/server/lib/turnstile"
 import * as q from "@/server/modules/content/queries"
 
 const withMedia = async <T,>(value: T) =>
   resolveMedia(value, await q.getMedia(collectMediaIds(value)))
-
-// "all" keeps the collection's order; "chosen" keeps the editor's order.
-const select = <T extends { id: string }>(
-  items: T[],
-  selection: { mode: "all" } | { mode: "chosen"; ids: string[] }
-) =>
-  selection.mode === "all"
-    ? items
-    : selection.ids.flatMap((id) => items.filter((item) => item.id === id))
 
 // One block → its section, with the collection rows and globals it uses.
 // Heroes render no id: the first StackCard is #home.

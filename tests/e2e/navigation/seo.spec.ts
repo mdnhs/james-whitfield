@@ -78,3 +78,52 @@ test("the generated share card is a PNG, and unknown paths 404", async ({
   expect(res.headers()["content-type"]).toBe("image/png")
   expect((await request.get("/og/no-such-page")).status()).toBe(404)
 })
+
+const graphOf = async (page: import("@playwright/test").Page) => {
+  const raw = await page
+    .locator('script[type="application/ld+json"]')
+    .first()
+    .textContent()
+  return (JSON.parse(raw!) as { "@graph": Record<string, unknown>[] })["@graph"]
+}
+
+test("home JSON-LD: WebSite, the practice and the person (Rich Results approximation)", async ({
+  page,
+}) => {
+  await page.goto("/")
+  const nodes = await graphOf(page)
+  expect(nodes.map((n) => n["@type"]).sort()).toEqual([
+    "Person",
+    "ProfessionalService",
+    "WebSite",
+  ])
+  const business = nodes.find((n) => n["@type"] === "ProfessionalService")!
+  expect(business).toHaveProperty("address")
+  expect(business).toHaveProperty("name")
+})
+
+test("article JSON-LD: BlogPosting with required fields and a breadcrumb", async ({
+  page,
+}) => {
+  await page.goto("/insights/calm-is-a-skill")
+  const nodes = await graphOf(page)
+  const post = nodes.find((n) => n["@type"] === "BlogPosting")!
+  for (const key of [
+    "headline",
+    "image",
+    "datePublished",
+    "dateModified",
+    "author",
+  ])
+    expect(post).toHaveProperty(key)
+  expect(String((post.image as string[])[0])).toMatch(/^http/)
+  const crumbs = nodes.find((n) => n["@type"] === "BreadcrumbList")!
+  expect((crumbs.itemListElement as unknown[]).length).toBe(3)
+})
+
+test("services JSON-LD lists plans as Service + Offer", async ({ page }) => {
+  await page.goto("/services")
+  const types = (await graphOf(page)).map((n) => n["@type"])
+  expect(types).toContain("BreadcrumbList")
+  expect(types).toContain("Service")
+})

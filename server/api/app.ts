@@ -6,6 +6,7 @@ import { requestId } from "hono/request-id"
 import { secureHeaders } from "hono/secure-headers"
 
 import { getAuth } from "@/server/auth/auth"
+import { cronRoutes } from "@/server/modules/scheduler/routes"
 
 import { errorBody, handleError } from "./errors"
 import { adminRoutes } from "./routes/admin"
@@ -47,6 +48,7 @@ export const app = new Hono<AppEnv>()
   )
   .on(["GET", "POST"], "/auth/*", (c) => getAuth().handler(c.req.raw))
   .route("/v1/health", health)
+  .route("/v1/cron", cronRoutes)
   .route("/v1/admin", adminRoutes)
 
 app.onError(handleError)

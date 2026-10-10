@@ -1,13 +1,11 @@
 "use client"
 
-import { EyeIcon, ShieldCheckIcon } from "lucide-react"
-import Link from "next/link"
+import { EyeIcon } from "lucide-react"
 import { parseAsStringLiteral, useQueryState } from "nuqs"
 
 import { DashboardCard } from "@/admin/components/dashboard/dashboard-card"
 import { EmptyState } from "@/admin/components/dashboard/empty-state"
-import { LINK_FORM, PageHeader } from "@/admin/components/dashboard/page-header"
-import { StatusPill } from "@/admin/components/dashboard/status-pill"
+import { PageHeader } from "@/admin/components/dashboard/page-header"
 import { useActor } from "@/admin/lib/actor-context"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
@@ -15,11 +13,12 @@ import { PasswordForm } from "./password-form"
 import { ProfileForm } from "./profile-form"
 import { SessionsList } from "./sessions-list"
 import { ThemePreference } from "./theme-preference"
+import { TwoFactorCard } from "./two-factor-card"
 
 const TABS = ["profile", "security", "sessions"] as const
 
 export function AccountView() {
-  const { user, twoFactorEnabled, impersonatedBy } = useActor()
+  const { user, impersonatedBy } = useActor()
   const [tab, setTab] = useQueryState(
     "tab",
     parseAsStringLiteral(TABS).withDefault("profile")
@@ -69,27 +68,7 @@ export function AccountView() {
             <PasswordForm />
           </DashboardCard>
           <DashboardCard title="Two-factor authentication">
-            <div className="flex flex-col items-start gap-4">
-              {twoFactorEnabled ? (
-                <StatusPill tone="success">On</StatusPill>
-              ) : (
-                <StatusPill tone="warning">Off</StatusPill>
-              )}
-              <p className="text-sm text-muted-foreground">
-                A code from an authenticator app is asked for when you sign in
-                on a new device.
-              </p>
-              {twoFactorEnabled ? null : (
-                <Link
-                  href="/admin/two-factor-setup"
-                  data-slot="button"
-                  className={LINK_FORM}
-                >
-                  <ShieldCheckIcon data-icon="inline-start" />
-                  Set up two-factor
-                </Link>
-              )}
-            </div>
+            <TwoFactorCard />
           </DashboardCard>
         </TabsContent>
         <TabsContent value="sessions" className="mt-4">

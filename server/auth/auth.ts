@@ -14,6 +14,7 @@ import { deliverResetEmail } from "./email"
 import { afterHook, beforeHook } from "./hooks"
 import { responseScrub } from "./response-scrub"
 import { signInAudit } from "./sign-in-audit"
+import { twoFactorPolicy } from "./two-factor-policy"
 
 export function buildAuth() {
   const env = getEnv()
@@ -105,6 +106,7 @@ export function buildAuth() {
       // After twoFactor: its hook must see the challenge replace the session.
       signInAudit(),
       accountHooks(),
+      twoFactorPolicy(),
       // Last: strips session tokens and IPs from JSON sent to the browser.
       responseScrub(),
     ],

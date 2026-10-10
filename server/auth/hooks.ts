@@ -102,6 +102,20 @@ export const afterHook = createAuthMiddleware(async (ctx) => {
     .map((session) => session.token)
     .filter((token) => token !== fresh.session.token)
   if (others.length) await internalAdapter.deleteSessions(others)
+  await audit(
+    {
+      userId: fresh.user.id,
+      email: fresh.user.email,
+      ip: fresh.session.ipAddress ?? null,
+      userAgent: fresh.session.userAgent ?? null,
+    },
+    {
+      action: "account.two_factor_enable",
+      entityType: "user",
+      entityId: fresh.user.id,
+      summary: "Turned on two-factor authentication",
+    }
+  )
 })
 
 // stopImpersonating reads the View-as session through getSessionFromCtx,

@@ -1,13 +1,22 @@
-import { expect, test } from "@playwright/test"
+import { expect, test, type Page } from "@playwright/test"
 
 import { STORAGE } from "../../support/storage"
 
 test.use({ storageState: STORAGE.editor })
 
+// `goto` resolves on the load event, which can fire before the streamed shell
+// replaces the Suspense fallback of the panel layout. A Tab pressed in that
+// gap has nothing to land on, and the shell swap then drops focus. So wait
+// for the shell's first control before reaching for the keyboard.
+async function openAdmin(page: Page) {
+  await page.goto("/admin")
+  await page.getByRole("link", { name: "Skip to content" }).waitFor()
+}
+
 test("the first Tab reaches a visible skip link that jumps to the content", async ({
   page,
 }) => {
-  await page.goto("/admin")
+  await openAdmin(page)
   await page.keyboard.press("Tab")
   const skip = page.getByRole("link", { name: "Skip to content" })
   await expect(skip).toBeFocused()
@@ -30,7 +39,7 @@ test("every control in the shell is reachable and shows focus", async ({
     test.info().project.name !== "admin-desktop",
     "the sheet has its own test"
   )
-  await page.goto("/admin")
+  await openAdmin(page)
   const reached: { name: string; focused: Look }[] = []
   for (let step = 0; step < 40; step++) {
     await page.keyboard.press("Tab")

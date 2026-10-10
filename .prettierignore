@@ -6,3 +6,4 @@ coverage/
 pnpm-lock.yaml
 .pnpm-store/
 server/db/migrations/meta
+tests/content/__snapshots__

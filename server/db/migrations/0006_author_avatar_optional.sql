@@ -1,0 +1,1 @@
+ALTER TABLE "authors" ALTER COLUMN "avatar_id" DROP NOT NULL;

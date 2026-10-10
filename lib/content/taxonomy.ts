@@ -14,12 +14,11 @@ export const CategoryInput = z.object({
   relatedServiceId: z.uuid().nullable(),
   isVisible: z.boolean(),
 })
-// The avatar becomes optional with its migration in Task 2 (Ruling R2).
 export const AuthorInput = z.object({
   slug: Slug,
   name: text(80),
   roleTitle: optionalText(80),
   bio: optionalText(600),
-  avatar: MediaRef,
+  avatar: MediaRef.nullable(),
   isVisible: z.boolean(),
 })

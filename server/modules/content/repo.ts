@@ -13,6 +13,7 @@ import type { AnyPgColumn } from "drizzle-orm/pg-core"
 import * as z from "zod"
 
 import { IconField } from "@/blocks/fields"
+import { collectMediaIds } from "@/blocks/media-refs"
 import { PageSeo, PageSettings } from "@/blocks/page"
 import { BlockInstance } from "@/blocks/registry"
 import type {
@@ -284,8 +285,11 @@ function toSummary(
   assets: Map<string, MediaAsset>
 ): ArticleSummary | null {
   const image = r.a.coverId ? need(assets, r.a.coverId) : null
-  const avatar = need(assets, r.author.avatarId)
-  if (!image || !avatar) return null
+  if (!image) return null
+  // A missing photo no longer hides the article (Ruling R2).
+  const avatar = r.author.avatarId
+    ? (assets.get(r.author.avatarId) ?? null)
+    : null
   return {
     id: r.a.id,
     slug: r.a.slug,
@@ -330,5 +334,11 @@ export async function findArticleBySlug(
     .select({ body: t.articles.body })
     .from(t.articles)
     .where(eq(t.articles.id, r.a.id))
-  return { ...summary, body, topicSlug: r.topic }
+  const bodyMedia = await findMedia(collectMediaIds(body), db)
+  return {
+    ...summary,
+    body,
+    media: [...bodyMedia.values()],
+    topicSlug: r.topic,
+  }
 }

@@ -1,7 +1,6 @@
 "use client"
 
 import { EditorContent, useEditor, type Editor } from "@tiptap/react"
-import StarterKit from "@tiptap/starter-kit"
 import {
   BoldIcon,
   Heading2Icon,
@@ -18,27 +17,13 @@ import { RichTextDoc } from "@/blocks/rich-text"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Toggle } from "@/components/ui/toggle"
+import { richTextStarterKit } from "@/lib/rich-text/extensions"
 
 import { describedBy, WidgetShell, type WidgetProps } from "./shell"
 
 const EMPTY = { type: "doc", content: [{ type: "paragraph" }] }
 
-// Only what blocks/rich-text.ts renders: paragraphs, h2/h3, bullet lists,
-// quotes, bold, italic and links. The site renders the JSON statically
-// (docs/brief.md §15), never as HTML.
-const extensions = [
-  StarterKit.configure({
-    heading: { levels: [2, 3] },
-    code: false,
-    codeBlock: false,
-    strike: false,
-    underline: false,
-    horizontalRule: false,
-    orderedList: false,
-    hardBreak: false,
-    link: { openOnClick: false, autolink: false },
-  }),
-]
+const extensions = [richTextStarterKit]
 
 function Toolbar({ editor }: { editor: Editor }) {
   const [href, setHref] = useState<string | null>(null)

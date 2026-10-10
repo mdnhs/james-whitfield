@@ -97,13 +97,15 @@ export function ArticleHero({
           data-delay="0.2"
           className="flex items-center gap-3 border-t border-white/15 pt-6 text-[15px] leading-[1.5] text-white/80"
         >
-          <MediaImage
-            media={author.avatar}
-            alt=""
-            width={40}
-            height={40}
-            className="size-10 shrink-0 rounded-full object-cover"
-          />
+          {author.avatar && (
+            <MediaImage
+              media={author.avatar}
+              alt=""
+              width={40}
+              height={40}
+              className="size-10 shrink-0 rounded-full object-cover"
+            />
+          )}
           <span className="font-medium text-white">{author.name}</span>
           <span aria-hidden className="size-1 rounded-full bg-white/50" />
           <time dateTime={date.iso}>{date.label}</time>

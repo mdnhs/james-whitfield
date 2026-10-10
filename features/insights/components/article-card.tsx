@@ -30,13 +30,15 @@ export function Byline({
 }: Pick<ArticleSummary, "author" | "date"> & { size?: number }) {
   return (
     <p className="flex items-center gap-2 text-sm leading-[1.5] whitespace-pre text-ink-muted">
-      <MediaImage
-        media={author.avatar}
-        alt=""
-        width={size}
-        height={size}
-        className="shrink-0 rounded-full"
-      />
+      {author.avatar && (
+        <MediaImage
+          media={author.avatar}
+          alt=""
+          width={size}
+          height={size}
+          className="shrink-0 rounded-full"
+        />
+      )}
       <span>
         {author.name}
         {"  •  "}

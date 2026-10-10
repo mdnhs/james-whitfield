@@ -3,7 +3,7 @@
 // it holds no values, only shapes.
 import type { Resolve } from "@/blocks/media-refs"
 import type { PageDocument, PageSeo, PageSettings } from "@/blocks/page"
-import type { RichTextDoc } from "@/blocks/rich-text"
+import type { ArticleBodyDoc } from "@/blocks/rich-text"
 import type { IconName } from "@/lib/icons"
 import type { MediaAsset } from "@/lib/media"
 
@@ -71,14 +71,16 @@ export type ArticleSummary = {
   excerpt: string
   image: MediaAsset
   category: { slug: string; name: string }
-  author: { name: string; avatar: MediaAsset }
+  author: { name: string; avatar: MediaAsset | null }
   date: { iso: string; label: string }
   readingMinutes: number
   featured: boolean
 }
 
 export type ArticleDetail = ArticleSummary & {
-  body: RichTextDoc
+  body: ArticleBodyDoc
+  // Assets of the body's images, for RichText.
+  media: MediaAsset[]
   // Service slug for the closing CTA's ?topic= (category → related service).
   topicSlug: string | null
 }

@@ -13,7 +13,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core"
 
-import type { RichTextDoc } from "@/blocks/rich-text"
+import type { ArticleBodyDoc } from "@/blocks/rich-text"
 import type { StepFrame } from "@/lib/content/types"
 
 import { users } from "./auth"
@@ -122,7 +122,8 @@ export const authors = pgTable("authors", {
   name: text().notNull(),
   roleTitle: text().notNull().default(""),
   bio: text().notNull().default(""),
-  avatarId: image(),
+  // Optional (Phase 5 Ruling R2): no photo renders the byline without one.
+  avatarId: uuid().references(() => media.id, { onDelete: "restrict" }),
   userId: uuid().references(() => users.id, { onDelete: "set null" }),
 })
 
@@ -143,7 +144,7 @@ export const articles = pgTable(
       .references(() => authors.id, { onDelete: "restrict" }),
     // Published copy in typed columns (what the site reads and searches);
     // the editor's working copy lives in `draft` (docs/brief.md §6.5).
-    body: jsonb().$type<RichTextDoc>().notNull(),
+    body: jsonb().$type<ArticleBodyDoc>().notNull(),
     bodyText: text().notNull().default(""),
     readingMinutes: integer().notNull().default(1),
     featured: boolean().notNull().default(false),

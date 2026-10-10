@@ -2,7 +2,8 @@
 import { render } from "@testing-library/react"
 import { describe, expect, it } from "vitest"
 
-import type { RichTextDoc } from "@/blocks/rich-text"
+import type { ArticleBodyDoc, RichTextDoc } from "@/blocks/rich-text"
+import type { MediaAsset } from "@/lib/media"
 
 import { RichText } from "./rich-text"
 
@@ -103,5 +104,82 @@ describe("RichText", () => {
       "words"
     )
     expect(container.querySelector("strong")?.textContent).toBe("Bold.")
+  })
+})
+
+const ASSET_ID = "00000000-0000-4000-8000-0000000000aa"
+const asset: MediaAsset = {
+  id: ASSET_ID,
+  src: "/images/hero/hero-bg.png",
+  width: 800,
+  height: 600,
+  blurDataURL: null,
+  alt: "A calm room",
+  focal: { x: 0.5, y: 0.5 },
+}
+const withImage = (mediaId: string): ArticleBodyDoc => ({
+  type: "doc",
+  content: [
+    { type: "paragraph", content: [{ type: "text", text: "Lead" }] },
+    { type: "image", attrs: { mediaId, src: "/stale.png", alt: "stale" } },
+  ],
+})
+
+describe("RichText article extras", () => {
+  it("renders body images from the library asset, not the stored src", () => {
+    const { container } = render(
+      <RichText doc={withImage(ASSET_ID)} media={[asset]} />
+    )
+    const img = container.querySelector("figure img")
+    expect(img?.getAttribute("alt")).toBe("A calm room")
+    expect(img?.getAttribute("src")).toContain(
+      encodeURIComponent("/images/hero/hero-bg.png")
+    )
+  })
+  it("drops an image whose asset is gone instead of failing the article", () => {
+    const { container } = render(
+      <RichText doc={withImage(ASSET_ID)} media={[]} />
+    )
+    expect(container.querySelector("figure")).toBeNull()
+    expect(container.textContent).toContain("Lead")
+  })
+  it("renders level-3 headings as h3", () => {
+    const { container } = render(
+      <RichText
+        doc={
+          {
+            type: "doc",
+            content: [
+              {
+                type: "heading",
+                attrs: { level: 3 },
+                content: [{ type: "text", text: "Small" }],
+              },
+            ],
+          } as RichTextDoc
+        }
+      />
+    )
+    expect(container.querySelector("h3")?.textContent).toBe("Small")
+  })
+  it("skips node types the schema does not know instead of failing the article", () => {
+    const { container } = render(
+      <RichText
+        doc={
+          {
+            type: "doc",
+            content: [
+              { type: "video" },
+              {
+                type: "paragraph",
+                content: [{ type: "text", text: "Still here" }],
+              },
+            ],
+          } as unknown as RichTextDoc
+        }
+      />
+    )
+    expect(container.querySelector("video")).toBeNull()
+    expect(container.textContent).toBe("Still here")
   })
 })

@@ -52,13 +52,15 @@ export function PostCard({ article }: { article: ArticleSummary }) {
         <p className="pt-3 text-base leading-6">{excerpt}</p>
 
         <div className="flex items-center gap-2 pt-4.5 text-base leading-6 whitespace-nowrap">
-          <MediaImage
-            media={author.avatar}
-            alt=""
-            width={32}
-            height={32}
-            className="size-8 rounded-full object-cover"
-          />
+          {author.avatar && (
+            <MediaImage
+              media={author.avatar}
+              alt=""
+              width={32}
+              height={32}
+              className="size-8 rounded-full object-cover"
+            />
+          )}
           <span>{author.name}</span>
           <span aria-hidden className="size-1.25 rounded-full bg-forest" />
           <time dateTime={date.iso}>{date.label}</time>

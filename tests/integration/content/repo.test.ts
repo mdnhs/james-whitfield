@@ -3,6 +3,8 @@ import { afterAll, beforeEach, describe, expect, it, vi } from "vitest"
 
 import { closeDb, getDb } from "@/server/db/client"
 import {
+  articles,
+  authors,
   ctaBands,
   faqs,
   media,
@@ -12,14 +14,17 @@ import {
   testimonials,
 } from "@/server/db/schema"
 import {
+  findArticleBySlug,
   findCtaBand,
   findPageByPath,
   findSetting,
+  listArticleSummaries,
   listFaqs,
   listServices,
   listTestimonials,
 } from "@/server/modules/content/repo"
 
+import { bodyDoc, insertArticle, insertTaxonomy } from "../helpers/articles"
 import { resetDb } from "../helpers/db"
 
 beforeEach(resetDb)
@@ -215,5 +220,44 @@ describe("content repo", () => {
     expect(await findCtaBand(band.id)).toBeNull()
     expect(warn).toHaveBeenCalledWith(expect.stringContaining(gone.id))
     warn.mockRestore()
+  })
+})
+
+describe("articles without an author photo (Ruling R2)", () => {
+  it("still lists an article whose author has no or a deleted avatar", async () => {
+    const { category, author, media: cover } = await insertTaxonomy()
+    await insertArticle({
+      slug: "no-photo",
+      categoryId: category.id,
+      authorId: author.id,
+      coverId: cover.id,
+    })
+    await getDb().update(authors).set({ avatarId: null })
+    const [summary] = await listArticleSummaries()
+    expect(summary?.slug).toBe("no-photo")
+    expect(summary?.author.avatar).toBeNull()
+  })
+  it("resolves body images into detail.media", async () => {
+    const { category, author, media: cover } = await insertTaxonomy()
+    const art = await insertArticle({
+      slug: "with-image",
+      categoryId: category.id,
+      authorId: author.id,
+      coverId: cover.id,
+    })
+    await getDb()
+      .update(articles)
+      .set({
+        body: {
+          type: "doc",
+          content: [
+            ...bodyDoc().content,
+            { type: "image", attrs: { mediaId: cover.id } },
+          ],
+        },
+      })
+      .where(eq(articles.id, art.id))
+    const detail = await findArticleBySlug("with-image")
+    expect(detail?.media.map((m) => m.id)).toEqual([cover.id])
   })
 })

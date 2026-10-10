@@ -30,13 +30,15 @@ export function ArticleBody({
       <Container className="flex flex-col gap-16 lg:flex-row lg:items-start lg:gap-16 xl:gap-28">
         <aside className="order-last flex shrink-0 flex-col gap-8 border-t border-line-soft pt-10 lg:sticky lg:top-28 lg:order-first lg:w-60 lg:border-0 lg:pt-2">
           <div data-motion="rise" className="flex items-center gap-3">
-            <MediaImage
-              media={author.avatar}
-              alt=""
-              width={48}
-              height={48}
-              className="size-12 shrink-0 rounded-full object-cover"
-            />
+            {author.avatar && (
+              <MediaImage
+                media={author.avatar}
+                alt=""
+                width={48}
+                height={48}
+                className="size-12 shrink-0 rounded-full object-cover"
+              />
+            )}
             <div className="flex flex-col">
               <span className="text-xs leading-[1.5] tracking-[0.08em] text-text-subtle uppercase">
                 {copy.writtenBy}
@@ -62,7 +64,7 @@ export function ArticleBody({
         </aside>
 
         <div className="flex max-w-180 min-w-0 flex-1 flex-col gap-6 text-[17px] leading-[1.75] text-ink-muted">
-          <RichText doc={article.body} />
+          <RichText doc={article.body} media={article.media} />
 
           <div
             data-motion="rise"

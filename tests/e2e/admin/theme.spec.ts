@@ -49,3 +49,13 @@ test("the public site stays light under a dark preference", async ({
   await page.goto("/")
   await expect(page.locator("html")).not.toHaveClass(/\bdark\b/)
 })
+
+test("the theme script is not inside the suspended subtree", async ({
+  request,
+}) => {
+  const html = await (await request.get("/admin/sign-in")).text()
+  const script = html.indexOf("mk-admin-theme")
+  const pending = html.indexOf("<!--$?-->")
+  expect(script).toBeGreaterThan(-1)
+  if (pending !== -1) expect(script).toBeLessThan(pending)
+})

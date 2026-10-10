@@ -33,10 +33,25 @@ export async function readMediaBytes(
     }
     const response = await fetch(file.url, {
       signal: AbortSignal.timeout(5000),
+      redirect: "error",
     })
-    if (!response.ok) return null
-    const bytes = Buffer.from(await response.arrayBuffer())
-    return bytes.length <= MAX_BYTES ? bytes : null
+    if (!response.ok || !response.body) return null
+    const declared = Number(response.headers.get("content-length"))
+    if (declared > MAX_BYTES) return null
+    const chunks: Uint8Array[] = []
+    let total = 0
+    const reader = response.body.getReader()
+    for (;;) {
+      const { done, value } = await reader.read()
+      if (done) break
+      total += value.length
+      if (total > MAX_BYTES) {
+        await reader.cancel()
+        return null
+      }
+      chunks.push(value)
+    }
+    return Buffer.concat(chunks)
   } catch {
     return null
   }

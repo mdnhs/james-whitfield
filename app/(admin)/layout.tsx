@@ -5,6 +5,7 @@ import { Suspense } from "react"
 
 import "./admin.css"
 import { cn } from "@/lib/utils"
+import { ThemeProvider } from "@/components/theme-provider"
 import { AdminFrame } from "./_frame/admin-frame"
 
 const sans = Plus_Jakarta_Sans({
@@ -27,7 +28,8 @@ export const metadata: Metadata = {
 // Separate root layout: no Lenis, GSAP or site chrome, and its own tokens.
 // next-themes sets `.light`/`.dark` on <html> from an inline script before
 // hydration, hence suppressHydrationWarning on that element only. The script
-// now streams with AdminFrame and still runs before the boundary is revealed.
+// stays outside Suspense so the class is set before first paint; the fallback
+// has no background of its own, so the body token (light or dark) shows.
 export default function AdminRootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
@@ -39,9 +41,11 @@ export default function AdminRootLayout({
       suppressHydrationWarning
     >
       <body>
-        <Suspense fallback={<div className="min-h-svh bg-background" />}>
-          <AdminFrame>{children}</AdminFrame>
-        </Suspense>
+        <ThemeProvider>
+          <Suspense fallback={<div className="min-h-svh" />}>
+            <AdminFrame>{children}</AdminFrame>
+          </Suspense>
+        </ThemeProvider>
       </body>
     </html>
   )

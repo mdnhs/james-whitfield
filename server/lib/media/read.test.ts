@@ -2,7 +2,7 @@ import { mkdtemp, mkdir, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import path from "node:path"
 
-import { describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 
 import { readMediaBytes } from "./read"
 
@@ -34,5 +34,55 @@ describe("readMediaBytes", () => {
         url: "/images/nope.png",
       })
     ).toBeNull()
+  })
+
+  describe("s3 driver", () => {
+    const file = {
+      driver: "s3" as const,
+      key: "k",
+      url: "https://cdn.test/a.png",
+    }
+    afterEach(() => vi.unstubAllGlobals())
+
+    it("refuses redirects", async () => {
+      const fetchMock = vi.fn(async () => new Response("ok"))
+      vi.stubGlobal("fetch", fetchMock)
+      await readMediaBytes(file)
+      expect(fetchMock.mock.calls[0]).toEqual([
+        file.url,
+        expect.objectContaining({ redirect: "error" }),
+      ])
+    })
+
+    it("rejects a declared oversize body without reading it", async () => {
+      vi.stubGlobal(
+        "fetch",
+        async () =>
+          new Response("x", {
+            headers: { "content-length": String(21 * 1024 * 1024) },
+          })
+      )
+      expect(await readMediaBytes(file)).toBeNull()
+    })
+
+    it("stops a stream that exceeds the cap", async () => {
+      const chunk = new Uint8Array(1024 * 1024)
+      let sent = 0
+      const body = new ReadableStream<Uint8Array>({
+        pull(c) {
+          sent++
+          c.enqueue(chunk)
+          if (sent > 100) c.close()
+        },
+      })
+      vi.stubGlobal("fetch", async () => new Response(body))
+      expect(await readMediaBytes(file)).toBeNull()
+      expect(sent).toBeLessThan(40)
+    })
+
+    it("returns the bytes of a small body", async () => {
+      vi.stubGlobal("fetch", async () => new Response("abc"))
+      expect((await readMediaBytes(file))?.toString()).toBe("abc")
+    })
   })
 })

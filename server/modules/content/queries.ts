@@ -37,7 +37,7 @@ export async function getPublishedPage(path: string, draft = false) {
   return page
 }
 
-// Globals go live on save; the theme's draft (Phase 9) will pass it in.
+// Globals go live on save; the theme's draft is read by getThemeConfig.
 export async function getSetting<K extends PublicGlobalKey>(
   key: K
 ): Promise<GlobalValue<K>> {
@@ -46,6 +46,19 @@ export async function getSetting<K extends PublicGlobalKey>(
   const row = await repo.findSetting(key)
   lifetime(row !== null)
   return parseGlobal(key, row?.value)
+}
+
+// Ruling R10: `draft` comes from isPreviewing() only. In draft mode Next
+// re-runs this scope per request and stores nothing (use-cache.md).
+export async function getThemeConfig(draft = false) {
+  "use cache"
+  cacheTag(tags.setting("theme"))
+  const row = await repo.findSetting("theme")
+  lifetime(row !== null)
+  return parseGlobal(
+    "theme",
+    draft && row?.draft != null ? row.draft : row?.value
+  )
 }
 
 // Runs inside the caller's cache scope, so its tag and lifetime apply there.

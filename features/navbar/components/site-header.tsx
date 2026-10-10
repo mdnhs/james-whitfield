@@ -3,6 +3,7 @@ import Link from "next/link"
 import { Brand } from "@/components/brand"
 import { Container } from "@/components/layout/container"
 import type { GlobalValue } from "@/lib/content/globals"
+import type { MediaAsset } from "@/lib/media"
 import { cn } from "@/lib/utils"
 import { BookCallButton } from "./book-call-button"
 import { HeaderScroll } from "./header-scroll"
@@ -11,9 +12,11 @@ import { MobileNav } from "./mobile-nav"
 export function SiteHeader({
   site,
   navigation,
+  logo,
   className,
 }: {
   site: { name: string }
+  logo?: MediaAsset | null
   navigation: GlobalValue<"navigation">
   className?: string
 }) {
@@ -27,7 +30,7 @@ export function SiteHeader({
         )}
       >
         <Container className="flex h-25 items-center justify-between transition-[height] duration-500 ease-out group-data-scrolled/header:h-18">
-          <Brand name={site.name} />
+          <Brand name={site.name} logo={logo} />
 
           <nav
             aria-label="Main"

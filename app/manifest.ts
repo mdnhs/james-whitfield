@@ -3,7 +3,11 @@ import { connection } from "next/server"
 
 import { toHex } from "@/lib/theme/color"
 import { resolveSiteTokens } from "@/lib/theme/site"
-import { getMedia, getSetting } from "@/server/modules/content/queries"
+import {
+  getMedia,
+  getSetting,
+  getThemeConfig,
+} from "@/server/modules/content/queries"
 
 const iconType = (src: string) => {
   const ext = /\.([a-z0-9]+)(?:\?|$)/i.exec(src)?.[1]?.toLowerCase()
@@ -17,7 +21,7 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
   await connection()
   const [site, theme] = await Promise.all([
     getSetting("site"),
-    getSetting("theme"),
+    getThemeConfig(),
   ])
   const icon = site.icon
     ? (await getMedia([site.icon.mediaId])).get(site.icon.mediaId)

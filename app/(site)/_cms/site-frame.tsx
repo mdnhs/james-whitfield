@@ -15,7 +15,11 @@ import { bootstrapScript } from "@/lib/tracking/bootstrap"
 import { trackingFrame } from "@/lib/tracking/frame"
 import { getEnv } from "@/server/env"
 import { isPreviewing } from "@/server/modules/content/preview"
-import { getSetting } from "@/server/modules/content/queries"
+import {
+  getMedia,
+  getSetting,
+  getThemeConfig,
+} from "@/server/modules/content/queries"
 import { getPublicTracking } from "@/server/modules/tracking/public"
 
 // Site chrome from the globals (docs/brief.md §5.5a). io() suspends during
@@ -24,17 +28,20 @@ import { getPublicTracking } from "@/server/modules/tracking/public"
 // read in the browser by the bootstrap.
 export async function SiteFrame({ children }: { children: React.ReactNode }) {
   await io()
-  const [site, navigation, footer, theme, preview, consent, scripts, tracking] =
+  const preview = await isPreviewing()
+  const [site, navigation, footer, theme, consent, scripts, tracking] =
     await Promise.all([
       getSetting("site"),
       getSetting("navigation"),
       getSetting("footer"),
-      getSetting("theme"),
-      isPreviewing(),
+      getThemeConfig(preview),
       getSetting("consent"),
       getSetting("scripts"),
       getPublicTracking(),
     ])
+  const logo = site.logo
+    ? ((await getMedia([site.logo.mediaId])).get(site.logo.mediaId) ?? null)
+    : null
   const frame = trackingFrame({
     consent,
     scripts,
@@ -49,7 +56,7 @@ export async function SiteFrame({ children }: { children: React.ReactNode }) {
       {frame.active ? (
         <TrackingBootstrap script={bootstrapScript(frame)} />
       ) : null}
-      {css && <style>{css}</style>}
+      {css ? <style id="theme-tokens">{css}</style> : null}
       {frame.scripts.length ? <CustomScripts snippets={frame.scripts} /> : null}
       {frame.active ? (
         <>
@@ -59,10 +66,11 @@ export async function SiteFrame({ children }: { children: React.ReactNode }) {
         </>
       ) : null}
       <SmoothScroll>
-        <SiteHeader site={site} navigation={navigation} />
+        <SiteHeader site={site} navigation={navigation} logo={logo} />
         {children}
         <SiteFooter
           site={site}
+          logo={logo}
           footer={footer}
           navigation={navigation}
           cookieSettings={frame.active ? consent.settingsLink : null}

@@ -4,6 +4,7 @@ import { Brand } from "@/components/brand"
 import { Container } from "@/components/layout/container"
 import { CopyrightYear } from "@/components/copyright-year"
 import type { GlobalValue } from "@/lib/content/globals"
+import type { MediaAsset } from "@/lib/media"
 
 import { CookieSettingsButton } from "./cookie-settings-button"
 
@@ -16,9 +17,11 @@ export function SiteFooter({
   site,
   footer,
   navigation,
+  logo,
   cookieSettings,
 }: {
   site: { name: string }
+  logo?: MediaAsset | null
   footer: GlobalValue<"footer">
   navigation: GlobalValue<"navigation">
   cookieSettings: string | null
@@ -35,7 +38,7 @@ export function SiteFooter({
           className="flex flex-col gap-12 lg:flex-row lg:items-start lg:justify-between"
         >
           <div className="flex max-w-100 flex-col items-start gap-5">
-            <Brand name={site.name} />
+            <Brand name={site.name} logo={logo} />
             <p className="text-[15px] leading-[1.6] text-mist">
               {footer.blurb}
             </p>

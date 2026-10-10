@@ -18,8 +18,15 @@ export const session = createMiddleware<AppEnv>(async (c, next) => {
   )
   c.set("actor", result ? toActor(result) : null)
   await next()
-  // A refreshed session cookie must reach the browser.
-  for (const cookie of setCookies) c.res.headers.append("set-cookie", cookie)
+  // A refreshed session cookie must reach the browser, unless the handler
+  // set that cookie itself (View-as replaces the session token).
+  const set = new Set(
+    c.res.headers.getSetCookie().map((cookie) => cookie.split("=")[0])
+  )
+  for (const cookie of setCookies) {
+    if (!set.has(cookie.split("=")[0]))
+      c.res.headers.append("set-cookie", cookie)
+  }
 })
 
 export const signedIn = createMiddleware<AppEnv>(async (c, next) => {

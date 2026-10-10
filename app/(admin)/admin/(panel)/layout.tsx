@@ -5,6 +5,7 @@ import { AdminShell } from "@/admin/components/shell/admin-shell"
 import { SIDEBAR_COOKIE } from "@/admin/components/shell/constants"
 import { AdminActorProvider } from "@/admin/lib/actor-context"
 import { AdminQueryProvider } from "@/admin/lib/query-provider"
+import { ViewAsBanner } from "@/admin/modules/users/view-as-banner"
 import { toMePayload } from "@/lib/auth/me"
 import { requireActor } from "@/server/auth/session"
 import { getEnv } from "@/server/env"
@@ -35,6 +36,7 @@ async function Guarded({ children }: { children: React.ReactNode }) {
         <AdminShell defaultOpen={sidebarOpen} siteUrl={getEnv().SITE_URL}>
           {children}
         </AdminShell>
+        <ViewAsBanner />
       </AdminQueryProvider>
     </AdminActorProvider>
   )

@@ -18,6 +18,7 @@ import type { AppEnv } from "@/server/api/types"
 
 import * as manage from "./manage"
 import { inviteUser } from "./service"
+import { startViewAs } from "./view-as"
 
 const IdParam = z.object({ id: z.uuid() })
 const id = zValidator("param", IdParam, validationHook)
@@ -119,6 +120,22 @@ export const usersRoutes = new Hono<AppEnv>()
   )
   .delete("/:id", can({ user: ["delete"] }), viewing, id, async (c) =>
     c.json(await manage.deleteUser(c.get("actor")!, c.req.valid("param").id))
+  )
+  .post(
+    "/:id/impersonate",
+    can({ user: ["impersonate"] }),
+    notViewingAs("Stop viewing as this person before viewing as someone else"),
+    id,
+    async (c) => {
+      const cookies = await startViewAs(
+        c.get("actor")!,
+        c.req.valid("param").id,
+        c.req.raw.headers
+      )
+      for (const cookie of cookies)
+        c.header("set-cookie", cookie, { append: true })
+      return c.json({ ok: true as const })
+    }
   )
 
 export type UsersRoutes = typeof usersRoutes

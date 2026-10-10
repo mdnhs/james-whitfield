@@ -4,10 +4,12 @@ import {
   APIError,
   createAuthMiddleware,
   getSessionFromCtx,
+  isAPIError,
 } from "better-auth/api"
 
 import { parseRoles } from "@/lib/auth/permissions"
 import { mustSetUpTwoFactor } from "@/lib/auth/two-factor-policy"
+import { audit } from "@/server/lib/audit"
 
 import { SELF_SERVICE_PATHS } from "./account-hooks"
 
@@ -86,6 +88,7 @@ export const beforeHook = createAuthMiddleware(async (ctx) => {
 // when enrolment completes, every other session (all of them password-only)
 // is revoked, and only the one rotated by enrolment survives.
 export const afterHook = createAuthMiddleware(async (ctx) => {
+  if (ctx.path === "/admin/stop-impersonating") return auditStop(ctx)
   if (ctx.path !== "/two-factor/verify-totp") return
   // Enrolment runs with a signed-in session and replaces it with a new one.
   // The sign-in challenge has no prior session; a repeat verify on a session
@@ -100,3 +103,36 @@ export const afterHook = createAuthMiddleware(async (ctx) => {
     .filter((token) => token !== fresh.session.token)
   if (others.length) await internalAdapter.deleteSessions(others)
 })
+
+// stopImpersonating reads the View-as session through getSessionFromCtx,
+// which leaves it on ctx.context.session; the endpoint then restores the
+// real user's session (ctx.context.newSession).
+async function auditStop(
+  ctx: Parameters<Parameters<typeof createAuthMiddleware>[0]>[0]
+) {
+  const returned = ctx.context.returned
+  if (!returned || isAPIError(returned)) return
+  const viewed = ctx.context.session as {
+    user: { id: string; name: string }
+    session: {
+      impersonatedBy?: string | null
+      ipAddress?: string | null
+      userAgent?: string | null
+    }
+  } | null
+  const by = viewed?.session.impersonatedBy
+  if (!viewed || !by) return
+  await audit(
+    {
+      userId: by,
+      ip: viewed.session.ipAddress ?? null,
+      userAgent: viewed.session.userAgent ?? null,
+    },
+    {
+      action: "auth.stop_impersonate",
+      entityType: "user",
+      entityId: viewed.user.id,
+      summary: `Stopped viewing as ${viewed.user.name}`,
+    }
+  )
+}

@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils"
 import { StepCard } from "./step-card"
 import { StepsCarousel } from "./steps-carousel"
 import { StepsStory } from "./steps-story"
+import { ctaTrackAttrs } from "@/lib/tracking/cta"
 
 // "page" (the How It Works page) adds a tag above the heading and sets the
 // heading in the serif display face.
@@ -73,9 +74,7 @@ export function HowItWorksSection({
 
             <Link
               href={cta.href}
-              {...(cta.href.startsWith("/contact")
-                ? { "data-track": "book_appointment", "data-cta-location": id }
-                : {})}
+              {...ctaTrackAttrs(cta.href, id)}
               data-motion="rise"
               data-magnetic
               className={cn(

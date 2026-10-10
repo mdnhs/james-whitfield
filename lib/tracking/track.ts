@@ -26,8 +26,10 @@ export function track(e: TrackEvent, env: TrackEnv = browser()) {
   const { eventId } = pushEvent((w.dataLayer ??= []), e, env.newId)
   const meta = META_EVENT[e.event]
   const ready = typeof w.fbq === "function"
-  if (e.event === "virtual_page_view") pendingMetaPageView = !ready
-  if (meta && ready && w.__mkConsent?.marketing && metaAllowed(w.location)) {
+  const sendable = Boolean(w.__mkConsent?.marketing) && metaAllowed(w.location)
+  if (e.event === "virtual_page_view")
+    pendingMetaPageView = !(ready && sendable)
+  if (meta && ready && sendable) {
     w.fbq!("track", meta, {}, eventId ? { eventID: eventId } : undefined)
   }
   return eventId

@@ -5,6 +5,7 @@ import { Eyebrow } from "@/components/eyebrow"
 import { Container } from "@/components/layout/container"
 import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { ctaTrackAttrs } from "@/lib/tracking/cta"
 
 export function CredentialsSection({
   id,
@@ -45,9 +46,7 @@ export function CredentialsSection({
 
           <Link
             href={cta.href}
-            {...(cta.href.startsWith("/contact")
-              ? { "data-track": "book_appointment", "data-cta-location": id }
-              : {})}
+            {...ctaTrackAttrs(cta.href, id)}
             data-motion="rise"
             data-magnetic
             className={cn(

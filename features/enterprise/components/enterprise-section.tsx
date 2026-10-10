@@ -7,6 +7,7 @@ import type { CtaBandView } from "@/lib/content/types"
 import { tintStyle } from "@/lib/tint"
 import { cn } from "@/lib/utils"
 import { EnterpriseBackdrop } from "./enterprise-backdrop"
+import { ctaTrackAttrs } from "@/lib/tracking/cta"
 
 // Full-bleed photo band with a centred call to action. The home page uses it
 // for enterprise programmes; other pages pass their own copy and tint.
@@ -76,9 +77,7 @@ export function EnterpriseSection({
 
         <Link
           href={cta.href}
-          {...(cta.href.startsWith("/contact")
-            ? { "data-track": "book_appointment", "data-cta-location": id }
-            : {})}
+          {...ctaTrackAttrs(cta.href, id)}
           data-motion="rise"
           data-magnetic
           className={cn(

@@ -129,6 +129,27 @@ describe("flushMetaPageView", () => {
   })
 })
 
+describe("flushMetaPageView after re-consent", () => {
+  it("sends the missed page view once marketing consent arrives with the Pixel loaded", () => {
+    const t = env("https://site.ie/about", { marketing: false })
+    track(
+      {
+        event: "virtual_page_view",
+        params: {
+          page_location: "x",
+          page_path: "/about",
+          page_title: "About",
+        },
+      },
+      t.e
+    )
+    expect(t.fbq).not.toHaveBeenCalled()
+    t.window.__mkConsent = { analytics: true, marketing: true }
+    expect(flushMetaPageView(t.e)).toBe(true)
+    expect(t.fbq).toHaveBeenCalledOnce()
+  })
+})
+
 describe("currentPage", () => {
   it("is sanitised", () => {
     const t = env("https://site.ie/insights/hypnosis-for-panic?x=1#y", null)

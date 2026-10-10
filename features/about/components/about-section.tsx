@@ -6,6 +6,7 @@ import { Container } from "@/components/layout/container"
 import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { StatCard } from "./stat-card"
+import { ctaTrackAttrs } from "@/lib/tracking/cta"
 
 export function AboutSection({
   id,
@@ -72,9 +73,7 @@ export function AboutSection({
 
           <Link
             href={cta.href}
-            {...(cta.href.startsWith("/contact")
-              ? { "data-track": "book_appointment", "data-cta-location": id }
-              : {})}
+            {...ctaTrackAttrs(cta.href, id)}
             data-motion="rise"
             data-magnetic
             className={cn(

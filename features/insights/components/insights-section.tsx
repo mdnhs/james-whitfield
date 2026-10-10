@@ -6,6 +6,7 @@ import { buttonVariants } from "@/components/ui/button"
 import type { ArticleSummary } from "@/lib/content/types"
 import { cn } from "@/lib/utils"
 import { PostCard } from "./post-card"
+import { ctaTrackAttrs } from "@/lib/tracking/cta"
 
 export function InsightsSection({
   id,
@@ -44,9 +45,7 @@ export function InsightsSection({
 
           <Link
             href={cta.href}
-            {...(cta.href.startsWith("/contact")
-              ? { "data-track": "book_appointment", "data-cta-location": id }
-              : {})}
+            {...ctaTrackAttrs(cta.href, id)}
             data-motion="rise"
             data-magnetic
             className={cn(

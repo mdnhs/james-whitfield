@@ -1,6 +1,6 @@
 import "server-only"
 
-import { eq } from "drizzle-orm"
+import { eq, sql } from "drizzle-orm"
 
 import type { DbLike } from "@/server/db/client"
 import { redirects } from "@/server/db/schema"
@@ -73,4 +73,12 @@ export async function recordSlugChange(
     note: "Automatic: the article's slug changed",
     createdBy: change.createdBy,
   })
+}
+
+// Ruling R7: after the response; hit counts are not cached, so no tag.
+export async function recordHit(db: DbLike, sourcePath: string) {
+  await db
+    .update(redirects)
+    .set({ hitCount: sql`${redirects.hitCount} + 1`, lastHitAt: new Date() })
+    .where(eq(redirects.sourcePath, sourcePath))
 }

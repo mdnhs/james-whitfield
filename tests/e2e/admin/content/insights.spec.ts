@@ -92,7 +92,7 @@ test.describe("as an editor", () => {
     await expect(
       page.getByText("Scheduled", { exact: true }).first()
     ).toBeVisible()
-    expect((await request.get(`/insights/sched-${stamp}`)).status()).toBe(200) // soft 404 until live
+    expect((await request.get(`/insights/sched-${stamp}`)).status()).toBe(404) // real 404 until live (Ruling R1)
     await expect(async () => {
       await runSql(
         "update articles set scheduled_for = now() - interval '1 minute' where id = $1",

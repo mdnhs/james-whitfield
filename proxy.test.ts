@@ -112,63 +112,77 @@ describe("proxy", () => {
   })
 })
 
-describe("article redirects (Ruling R1)", () => {
-  afterEach(() => vi.unstubAllGlobals())
-  const at = (path: string, method = "GET") =>
-    new NextRequest(new URL(path, "http://localhost:3000"), { method })
-  const stub = (body: unknown, status = 200) =>
+describe("public paths (Ruling R2)", () => {
+  const answer = (body: unknown, status = 200) =>
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () => Response.json(body, { status }))
+      vi.fn().mockResolvedValue(new Response(JSON.stringify(body), { status }))
     )
+  afterEach(() => vi.unstubAllGlobals())
 
-  it("answers a 301 from the resolver for /insights/:slug", async () => {
-    stub({ destination: "/insights/new", statusCode: 301 })
-    const res = await proxy(at("/insights/old"))
+  it("rewrites a missing CMS path to the global 404 with a 404 status", async () => {
+    answer({ kind: "missing" })
+    const res = await proxy(request("/no-such-page"))
+    expect(res.status).toBe(404)
+    expect(res.headers.get("x-middleware-rewrite")).toBe(
+      "http://localhost:3000/_missing/page"
+    )
+  })
+
+  it("redirects with the stored status and keeps the query string", async () => {
+    answer({ kind: "redirect", destination: "/insights/new", statusCode: 301 })
+    const res = await proxy(request("/insights/old?utm_source=x&_rsc=abc"))
     expect(res.status).toBe(301)
     expect(res.headers.get("location")).toBe(
-      "http://localhost:3000/insights/new"
+      "http://localhost:3000/insights/new?utm_source=x"
     )
+  })
+
+  it("keeps a destination's own query string", async () => {
+    answer({
+      kind: "redirect",
+      destination: "/contact?plan=a",
+      statusCode: 302,
+    })
+    const res = await proxy(request("/book?x=1"))
+    expect(res.headers.get("location")).toBe(
+      "http://localhost:3000/contact?plan=a"
+    )
+  })
+
+  it("never redirects off-site", async () => {
+    for (const destination of [
+      "//evil.example",
+      "/\\evil.example",
+      "https://evil.example",
+      "/\t/evil",
+    ]) {
+      answer({ kind: "redirect", destination, statusCode: 301 })
+      const res = await proxy(request("/old"))
+      expect(res.headers.get("location")).toBeNull()
+      expect(res.headers.get("x-middleware-next")).toBe("1")
+    }
+  })
+
+  it("asks the loopback resolver without following redirects", async () => {
+    answer({ kind: "live" })
+    await proxy(request("/insights/old"))
     const [url, init] = (
       fetch as unknown as { mock: { calls: [URL, RequestInit][] } }
     ).mock.calls[0]!
     expect(String(url)).toBe(
-      "http://127.0.0.1:3000/api/v1/redirects?path=%2Finsights%2Fold"
+      "http://127.0.0.1:3000/api/v1/resolve?path=%2Finsights%2Fold"
     )
     expect(init.redirect).toBe("manual")
   })
 
-  it.each([
-    ["no match", async () => new Response(null, { status: 204 })],
-    [
-      "resolver down",
-      async () => {
-        throw new Error("ECONNREFUSED")
-      },
-    ],
-  ])("passes through on %s", async (_, impl) => {
-    vi.stubGlobal("fetch", vi.fn(impl))
-    const res = await proxy(at("/insights/live"))
-    expect(res.headers.get("x-middleware-next")).toBe("1")
-  })
-
-  it.each([
-    "https://evil.example/x",
-    "//evil.example",
-    "/\\evil.example",
-    "/\t/evil.example/x",
-    "/\n/evil.example/x",
-    "/\r/evil.example/x",
-  ])("ignores an off-site destination %s", async (destination) => {
-    stub({ destination, statusCode: 301 })
-    const res = await proxy(at("/insights/old"))
-    expect(res.headers.get("x-middleware-next")).toBe("1")
-    expect(res.headers.get("location")).toBeNull()
-  })
-
   it("keeps an encoded-tab destination on this origin", async () => {
-    stub({ destination: "/%09/evil.example", statusCode: 301 })
-    const res = await proxy(at("/insights/old"))
+    answer({
+      kind: "redirect",
+      destination: "/%09/evil.example",
+      statusCode: 301,
+    })
+    const res = await proxy(request("/old"))
     expect(new URL(res.headers.get("location")!).origin).toBe(
       "http://localhost:3000"
     )
@@ -177,24 +191,70 @@ describe("article redirects (Ruling R1)", () => {
   it.each([200, 303, 404, "301", null])(
     "ignores a status code of %s",
     async (statusCode) => {
-      stub({ destination: "/insights/new", statusCode })
-      const res = await proxy(at("/insights/old"))
-      expect(res.headers.get("x-middleware-next")).toBe("1")
+      answer({ kind: "redirect", destination: "/about", statusCode })
+      const res = await proxy(request("/old"))
       expect(res.headers.get("location")).toBeNull()
+      expect(res.headers.get("x-middleware-next")).toBe("1")
     }
   )
 
-  it("only consults the resolver for GET and HEAD", async () => {
-    stub({ destination: "/insights/new", statusCode: 301 })
-    const post = await proxy(at("/insights/old", "POST"))
-    expect(post.headers.get("x-middleware-next")).toBe("1")
-    expect(fetch).not.toHaveBeenCalled()
-    expect((await proxy(at("/insights/old", "HEAD"))).status).toBe(301)
+  it("answers HEAD like GET", async () => {
+    answer({ kind: "redirect", destination: "/about", statusCode: 308 })
+    const head = new NextRequest(new URL("/old", "http://localhost:3000"), {
+      method: "HEAD",
+    })
+    expect((await proxy(head)).status).toBe(308)
   })
 
-  it("never asks for admin or deeper paths", async () => {
-    vi.stubGlobal("fetch", vi.fn())
-    await proxy(at("/insights/a/b"))
+  it("lets live and pass-through paths continue", async () => {
+    for (const kind of ["live", "pass"]) {
+      answer({ kind })
+      expect(
+        (await proxy(request("/about"))).headers.get("x-middleware-next")
+      ).toBe("1")
+    }
+  })
+
+  it("skips the resolver in draft mode (Review Focus 1)", async () => {
+    const fetch = vi.fn()
+    vi.stubGlobal("fetch", fetch)
+    const res = await proxy(request("/team", "__prerender_bypass=x"))
+    expect(fetch).not.toHaveBeenCalled()
+    expect(res.headers.get("x-middleware-next")).toBe("1")
+  })
+
+  it("only asks for GET and HEAD", async () => {
+    const fetch = vi.fn()
+    vi.stubGlobal("fetch", fetch)
+    const post = new NextRequest(new URL("/contact", "http://localhost:3000"), {
+      method: "POST",
+    })
+    expect((await proxy(post)).headers.get("x-middleware-next")).toBe("1")
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ["a timeout", () => Promise.reject(new DOMException("t", "TimeoutError"))],
+    ["a 500", () => Promise.resolve(new Response("x", { status: 500 }))],
+    [
+      "malformed JSON",
+      () => Promise.resolve(new Response("{", { status: 200 })),
+    ],
+    [
+      "an unknown kind",
+      () => Promise.resolve(new Response('{"kind":"x"}', { status: 200 })),
+    ],
+  ])("fails open on %s (Review Focus 2)", async (_name, impl) => {
+    vi.stubGlobal("fetch", vi.fn().mockImplementation(impl))
+    const res = await proxy(request("/no-such-page"))
+    expect(res.status).toBe(200)
+    expect(res.headers.get("x-middleware-next")).toBe("1")
+  })
+
+  it("never resolves admin paths", async () => {
+    const fetch = vi.fn()
+    vi.stubGlobal("fetch", fetch)
+    await proxy(request("/admin/pages", "mk.session_token=abc"))
     expect(fetch).not.toHaveBeenCalled()
   })
 })

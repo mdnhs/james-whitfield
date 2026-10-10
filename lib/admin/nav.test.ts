@@ -74,6 +74,7 @@ describe("visibleNav (docs/brief.md §7.2, §9.1)", () => {
     expect(marketing?.children?.map((child) => child.id)).toEqual([
       "marketing-tracking",
       "marketing-consent",
+      "marketing-events",
     ])
   })
 

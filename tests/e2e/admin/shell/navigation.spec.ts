@@ -174,6 +174,22 @@ test.describe("as an owner", () => {
     await expect(nav.getByRole("link", { name: "Redirects" })).toBeVisible()
   })
 
+  test("the Marketing pages are real pages, not placeholders", async ({
+    page,
+  }) => {
+    for (const [href, heading] of [
+      ["/admin/marketing", "Tracking"],
+      ["/admin/marketing/consent", "Consent banner"],
+      ["/admin/marketing/events", "Event catalogue"],
+    ] as const) {
+      await page.goto(href)
+      await expect(
+        page.getByRole("heading", { level: 1, name: heading })
+      ).toBeVisible()
+      await expect(page.getByText("arrives in a later release")).toHaveCount(0)
+    }
+  })
+
   test("the SEO pages are real pages, not placeholders", async ({ page }) => {
     for (const [href, heading] of [
       ["/admin/seo", "SEO"],

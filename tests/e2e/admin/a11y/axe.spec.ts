@@ -32,6 +32,9 @@ const PANEL = [
   "/admin/seo",
   "/admin/seo/defaults",
   "/admin/seo/redirects",
+  "/admin/marketing",
+  "/admin/marketing/consent",
+  "/admin/marketing/events",
   "/admin/no-access?from=%2Fadmin%2Fpages",
 ]
 

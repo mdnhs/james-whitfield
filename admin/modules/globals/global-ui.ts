@@ -46,4 +46,13 @@ export const GLOBAL_FIELD_UI: Partial<
         "Off by default: enquiries can contain health information, and email copies leave the admin.",
     },
   },
+  consent: {
+    version: {
+      description:
+        "Raise this to ask every visitor again (for example after adding a new tool)",
+    },
+    reconsentMonths: {
+      description: "Ask again after this many months (6 at most)",
+    },
+  },
 }

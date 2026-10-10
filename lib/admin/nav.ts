@@ -189,6 +189,12 @@ export const NAV: readonly NavItem[] = [
         permission: { tracking: ["read"] },
       },
       {
+        id: "marketing-events",
+        label: "Event catalogue",
+        href: "/admin/marketing/events",
+        permission: { tracking: ["read"] },
+      },
+      {
         id: "marketing-code",
         label: "Custom code",
         href: "/admin/marketing/code",

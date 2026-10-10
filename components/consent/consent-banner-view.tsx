@@ -34,6 +34,7 @@ export function ConsentBannerView({
   onSave,
   onToggle,
   headingRef,
+  inline,
 }: {
   copy: ConsentCopy
   mode: "first" | "custom"
@@ -44,6 +45,8 @@ export function ConsentBannerView({
   onSave: () => void
   onToggle: (category: "analytics" | "marketing", on: boolean) => void
   headingRef?: React.Ref<HTMLHeadingElement>
+  // Admin preview: positioned inside its box instead of the viewport.
+  inline?: boolean
 }) {
   return (
     <div
@@ -51,7 +54,7 @@ export function ConsentBannerView({
       aria-modal="false"
       aria-labelledby="mk-consent-title"
       aria-describedby="mk-consent-body"
-      className="fixed inset-x-0 bottom-0 z-50"
+      className={`${inline ? "absolute" : "fixed"} inset-x-0 bottom-0 z-50`}
     >
       <div className="mx-auto w-full max-w-360 px-4 pb-4 sm:px-6 lg:px-16.5">
         <div className="flex max-h-[85vh] flex-col gap-4 overflow-y-auto rounded-2xl border border-(--color-line) bg-(--color-cream) p-5 text-(--color-pine) shadow-lg sm:p-6">

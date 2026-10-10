@@ -20,6 +20,7 @@ import {
   authorsRoutes,
   categoriesRoutes,
 } from "@/server/modules/taxonomy/routes"
+import { trackingRoutes } from "@/server/modules/tracking/routes"
 import { usersRoutes } from "@/server/modules/users/routes"
 
 import { session, signedIn, twoFactorComplete } from "../middleware/auth"
@@ -48,3 +49,4 @@ export const adminRoutes = new Hono<AppEnv>()
   .route("/newsletter", newsletterRoutes)
   .route("/account", accountRoutes)
   .route("/seo", seoRoutes)
+  .route("/tracking", trackingRoutes)

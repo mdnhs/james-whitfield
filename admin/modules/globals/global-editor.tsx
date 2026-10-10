@@ -38,9 +38,12 @@ import { globalQuery, globalRevisionsQuery } from "./queries"
 export function GlobalEditor({
   title,
   keys,
+  onValuesChange,
 }: {
   title: string
   keys: readonly EditableGlobalKey[]
+  // Single-key editors only: live values for previews.
+  onValuesChange?: (values: unknown) => void
 }) {
   return (
     <div className="flex flex-col gap-6">
@@ -49,7 +52,7 @@ export function GlobalEditor({
         description="Changes go live as soon as you save."
       />
       {keys.length === 1 ? (
-        <GlobalForm settingKey={keys[0]!} />
+        <GlobalForm settingKey={keys[0]!} onValuesChange={onValuesChange} />
       ) : (
         <Tabs defaultValue={keys[0]}>
           <TabsList className="h-auto flex-wrap">
@@ -72,7 +75,13 @@ export function GlobalEditor({
 
 // Globals go live on save (docs/brief.md §6.5), guarded by version; keyed by
 // version so a save, a restore or a reload shows the stored values.
-function GlobalForm({ settingKey }: { settingKey: EditableGlobalKey }) {
+function GlobalForm({
+  settingKey,
+  onValuesChange,
+}: {
+  settingKey: EditableGlobalKey
+  onValuesChange?: (values: unknown) => void
+}) {
   const queryClient = useQueryClient()
   const doc = useQuery(globalQuery(settingKey))
   const canUpdate = usePermission(GLOBAL_ACCESS[settingKey].update)
@@ -110,6 +119,7 @@ function GlobalForm({ settingKey }: { settingKey: EditableGlobalKey }) {
           overrides={GLOBAL_FIELD_UI[settingKey]}
           defaultValues={value as never}
           submitLabel={`Save ${label.toLowerCase()}`}
+          onValuesChange={onValuesChange}
           onSubmit={async (next) => {
             try {
               await parseResponse(

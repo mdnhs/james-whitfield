@@ -2,8 +2,8 @@ import type { Permissions } from "@/lib/auth/permissions"
 
 import type { GlobalKey } from "./globals"
 
-// The keys the generic globals API edits (docs/brief.md §6.4). tracking,
-// consent, scripts and theme have dedicated endpoints (Phases 8–9).
+// The keys the generic globals API edits (docs/brief.md §6.4). tracking
+// has dedicated endpoints; consent and scripts use this API (Ruling R4).
 export const EDITABLE_GLOBAL_KEYS = [
   "site",
   "contact",
@@ -15,6 +15,7 @@ export const EDITABLE_GLOBAL_KEYS = [
   "seo",
   "notifications",
   "privacy",
+  "consent",
 ] as const satisfies readonly GlobalKey[]
 export type EditableGlobalKey = (typeof EDITABLE_GLOBAL_KEYS)[number]
 
@@ -39,6 +40,10 @@ export const GLOBAL_ACCESS: Record<EditableGlobalKey, Access> = {
   contactForm: globalsAccess,
   microcopy: globalsAccess,
   seo: { read: { seo: ["read"] }, update: { seo: ["update"] } },
+  consent: {
+    read: { tracking: ["read"] },
+    update: { tracking: ["update"] },
+  },
 }
 
 // /admin/settings/<slug> (lib/admin/nav.ts) → the documents it edits.
@@ -74,4 +79,5 @@ export const GLOBAL_LABELS: Record<EditableGlobalKey, string> = {
   seo: "SEO defaults",
   notifications: "Notifications",
   privacy: "Privacy",
+  consent: "Consent banner",
 }

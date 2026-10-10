@@ -16,7 +16,7 @@ import {
 import { isDeepStrictEqual } from "node:util"
 
 import { collectMediaIds } from "@/blocks/media-refs"
-import { PageSeo } from "@/blocks/page"
+import { PageSeo, type SeoPatch } from "@/blocks/page"
 import { EMPTY_BODY, type ArticleDraft } from "@/lib/content/article"
 import { slugify } from "@/lib/utils"
 import { ApiError } from "@/server/api/errors"
@@ -36,7 +36,10 @@ import {
   findRevision,
   listRevisions,
 } from "@/server/lib/revisions"
-import { assertMediaExists } from "@/server/modules/media/assert-media"
+import {
+  assertMediaExists,
+  assertShareImage,
+} from "@/server/modules/media/assert-media"
 import { createRedirect } from "@/server/modules/redirects/service"
 
 import {
@@ -342,6 +345,7 @@ export async function updateArticleSeo(
   const saved = await getDb().transaction(async (tx) => {
     const before = await findArticle(tx, id, true)
     await assertMediaExists(tx, collectMediaIds(patch))
+    await assertShareImage(tx, (patch as SeoPatch).ogImage)
     const [row] = await tx
       .update(articles)
       .set({

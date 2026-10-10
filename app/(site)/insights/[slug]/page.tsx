@@ -15,12 +15,15 @@ import {
 } from "@/features/insights"
 import { contactHref } from "@/lib/contact-href"
 import { ARTICLE_SHELL_SLUG } from "@/lib/content/article-slug"
+import { buildMetadata } from "@/lib/seo/metadata"
 import {
   getArticle,
   getMedia,
   getRelatedArticles,
   getSetting,
 } from "@/server/modules/content/queries"
+
+import { seoDefaults } from "../../_cms/seo-defaults"
 
 // Articles render on request from cached data. Cache Components needs at least
 // one param to build the route's shell; a sentinel slug gives it one without
@@ -38,18 +41,30 @@ export async function generateMetadata({
   const { slug } = await params
   const article = await getArticle(slug)
   if (!article) notFound()
-  return {
-    title: article.title,
-    description: article.excerpt,
-    openGraph: {
-      type: "article",
+  const ogId = article.seo.ogImage?.mediaId
+  const [defaults, assets] = await Promise.all([
+    seoDefaults(),
+    ogId ? getMedia([ogId]) : Promise.resolve(new Map()),
+  ])
+  return buildMetadata(
+    {
+      path: `/insights/${article.slug}`,
+      home: false,
+      kind: "article",
       title: article.title,
-      description: article.excerpt,
-      publishedTime: article.date.iso,
-      authors: [article.author.name],
-      images: [article.image.src],
+      summary: article.excerpt,
+      eyebrow: article.category.name,
+      seo: article.seo,
+      ogImage: ogId ? (assets.get(ogId) ?? null) : null,
+      article: {
+        publishedTime: article.date.iso,
+        modifiedTime: article.updatedAt,
+        authors: [article.author.name],
+        section: article.category.name,
+      },
     },
-  }
+    defaults
+  )
 }
 
 // Fixed template (docs/brief.md §6.2): each chapter is a card that sticks

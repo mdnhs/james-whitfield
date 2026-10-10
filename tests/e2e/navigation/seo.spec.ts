@@ -1,0 +1,43 @@
+import { expect, test } from "@playwright/test"
+
+import { E2E_ORIGIN } from "../fixtures/env"
+
+const head = (
+  page: import("@playwright/test").Page,
+  selector: string,
+  attr = "content"
+) => page.locator(`head ${selector}`).first().getAttribute(attr)
+
+test("an inner page carries full metadata in <head>", async ({ page }) => {
+  await page.goto("/about")
+  await expect(page).toHaveTitle(/\| /)
+  expect(await head(page, 'link[rel="canonical"]', "href")).toBe(
+    `${E2E_ORIGIN}/about`
+  )
+  expect(await head(page, 'meta[name="description"]')).toBeTruthy()
+  expect(await head(page, 'meta[property="og:locale"]')).toBe("en_IE")
+  expect(await head(page, 'meta[property="og:image"]')).toMatch(
+    new RegExp(`^${E2E_ORIGIN}/og/about\\?v=[0-9a-f]{8}$`)
+  )
+  expect(await head(page, 'meta[name="twitter:card"]')).toBe(
+    "summary_large_image"
+  )
+  expect(await page.locator('head meta[name="robots"]').count()).toBe(0)
+})
+
+test("the article is an og:article with its dates", async ({ page }) => {
+  await page.goto("/insights/calm-is-a-skill")
+  expect(await head(page, 'meta[property="og:type"]')).toBe("article")
+  expect(
+    await head(page, 'meta[property="article:published_time"]')
+  ).toBeTruthy()
+  expect(await head(page, 'link[rel="canonical"]', "href")).toBe(
+    `${E2E_ORIGIN}/insights/calm-is-a-skill`
+  )
+})
+
+test("a trailing slash 308s to the canonical path", async ({ request }) => {
+  const res = await request.get("/about/", { maxRedirects: 0 })
+  expect(res.status()).toBe(308)
+  expect(res.headers()["location"]).toBe("/about")
+})

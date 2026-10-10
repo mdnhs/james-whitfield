@@ -16,6 +16,7 @@ describe("public-site database reads", () => {
       const source = await readFile(path.join(dir, file), "utf8")
       if (!source.includes("@/server/modules/content/queries")) continue
       if (file.endsWith("resolve-block.tsx")) continue // only rendered under CmsPage, which awaits io()
+      if (file.endsWith("seo-defaults.ts")) continue // callers await io() (documented there)
       const reads =
         source.match(/export (default )?async function \w*[\s\S]*?\n}/g) ?? []
       for (const fn of reads) {

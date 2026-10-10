@@ -13,6 +13,7 @@ import { articles, authors, users } from "@/server/db/schema"
 
 import { content, insertArticle, insertTaxonomy } from "../helpers/articles"
 import { adminRequest, cookieFor } from "../helpers/auth"
+import { insertMedia } from "../helpers/content"
 import { resetDb } from "../helpers/db"
 
 beforeEach(async () => {
@@ -286,5 +287,33 @@ describe("articles API", () => {
     expect(
       await getDb().select().from(articles).where(eq(articles.id, id))
     ).toHaveLength(1)
+  })
+})
+
+describe("share image validation (Ruling R13)", () => {
+  it("rejects a small or off-ratio share image and accepts 1200×630", async () => {
+    const refs = await insertTaxonomy()
+    const art = await insertArticle({
+      slug: "share-image",
+      categoryId: refs.category.id,
+      authorId: refs.author.id,
+      coverId: refs.media.id,
+    })
+    const cookie = await cookieFor("editor")
+    const small = await insertMedia({ width: 800, height: 800 })
+    const bad = await adminRequest(`/articles/${art.id}/seo`, cookie, {
+      method: "PATCH",
+      body: { ogImage: { mediaId: small.id } },
+    })
+    expect(bad.status).toBe(400)
+    expect((await bad.json()).error.fieldErrors.ogImage).toEqual([
+      "Use an image at least 1200×630 (1.91:1)",
+    ])
+    const good = await insertMedia({ width: 1200, height: 630 })
+    const ok = await adminRequest(`/articles/${art.id}/seo`, cookie, {
+      method: "PATCH",
+      body: { ogImage: { mediaId: good.id } },
+    })
+    expect(ok.status).toBe(200)
   })
 })

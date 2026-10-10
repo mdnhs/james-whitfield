@@ -25,7 +25,10 @@ import {
   listRevisions,
   writeRevision,
 } from "@/server/lib/revisions"
-import { assertMediaExists } from "@/server/modules/media/assert-media"
+import {
+  assertMediaExists,
+  assertShareImage,
+} from "@/server/modules/media/assert-media"
 
 const changedSincePublish = sql<boolean>`${pages.draft} is distinct from ${pages.published}`
 // Section ids in the working copy, for the link widget's anchor picker.
@@ -241,6 +244,7 @@ export async function updateMeta(
     // Locked so a concurrent delete 404s instead of crashing below.
     const before = await findPage(tx, id, true)
     await assertMediaExists(tx, collectMediaIds(patch.seo ?? {}))
+    await assertShareImage(tx, patch.seo?.ogImage)
     // Field-level merge, no version bump: SEO edits never conflict with an
     // editor's builder session.
     const [row] = await tx

@@ -83,6 +83,8 @@ export type ArticleDetail = ArticleSummary & {
   media: MediaAsset[]
   // Service slug for the closing CTA's ?topic= (category → related service).
   topicSlug: string | null
+  seo: PageSeo
+  updatedAt: string
 }
 
 export type ContactOption = { slug: string; label: string }

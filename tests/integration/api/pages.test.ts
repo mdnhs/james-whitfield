@@ -251,3 +251,35 @@ describe("pages API", () => {
     expect(title.status).toBe(403)
   })
 })
+
+describe("share image validation (Ruling R13)", () => {
+  it("rejects a small or off-ratio share image and accepts 1200×630", async () => {
+    const { page } = await aboutPage()
+    const cookie = await cookieFor("marketer")
+    const small = await insertMedia({ width: 800, height: 800 })
+    const bad = await adminRequest(`/pages/${page.id}/seo`, cookie, {
+      method: "PATCH",
+      body: { seo: { ogImage: { mediaId: small.id } } },
+    })
+    expect(bad.status).toBe(400)
+    expect((await bad.json()).error.fieldErrors.ogImage).toEqual([
+      "Use an image at least 1200×630 (1.91:1)",
+    ])
+    const good = await insertMedia({ width: 1200, height: 630 })
+    const ok = await adminRequest(`/pages/${page.id}/seo`, cookie, {
+      method: "PATCH",
+      body: {
+        seo: {
+          ogImage: { mediaId: good.id },
+          canonical: "/about",
+          twitterCard: "summary",
+        },
+      },
+    })
+    expect(ok.status).toBe(200)
+    expect((await ok.json()).seo).toMatchObject({
+      canonical: "/about",
+      twitterCard: "summary",
+    })
+  })
+})

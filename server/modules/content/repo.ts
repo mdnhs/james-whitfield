@@ -340,5 +340,7 @@ export async function findArticleBySlug(
     body,
     media: [...bodyMedia.values()],
     topicSlug: r.topic,
+    seo: PageSeo.parse(r.a.seo),
+    updatedAt: r.a.updatedAt.toISOString(),
   }
 }

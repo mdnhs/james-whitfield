@@ -1,10 +1,11 @@
 import "server-only"
 
-import { and, inArray, isNull } from "drizzle-orm"
+import { and, eq, inArray, isNull } from "drizzle-orm"
 
 import { ApiError } from "@/server/api/errors"
 import type { DbLike } from "@/server/db/client"
 import { media } from "@/server/db/schema"
+import { isShareImageSize, SHARE_IMAGE_MESSAGE } from "@/lib/seo/share-image"
 
 // Live-on-save writes (globals, collections, SEO) and publish must not name
 // deleted or unknown images: reject with a field error instead of a FK 500 or
@@ -27,5 +28,32 @@ export async function assertMediaExists(db: DbLike, ids: string[]) {
       "Some images were deleted. Choose new ones before saving.",
       { _media: missing.map((id) => `Image ${id} no longer exists`) }
     )
+  }
+}
+
+// Ruling R13: a custom share image must be at least 1200×630 at 1.91:1.
+export async function assertShareImage(
+  db: DbLike,
+  ref: { mediaId: string } | null | undefined
+) {
+  if (!ref) return
+  const [row] = await db
+    .select({
+      width: media.width,
+      height: media.height,
+      mimeType: media.mimeType,
+    })
+    .from(media)
+    .where(eq(media.id, ref.mediaId))
+    .limit(1)
+  const ok =
+    row?.mimeType.startsWith("image/") &&
+    row.width !== null &&
+    row.height !== null &&
+    isShareImageSize({ width: row.width, height: row.height })
+  if (!ok) {
+    throw new ApiError("VALIDATION_FAILED", SHARE_IMAGE_MESSAGE, {
+      ogImage: [SHARE_IMAGE_MESSAGE],
+    })
   }
 }

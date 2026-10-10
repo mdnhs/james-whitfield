@@ -7,6 +7,7 @@ import { Container } from "@/components/layout/container"
 
 export const metadata: Metadata = {
   title: "Page not found",
+  robots: { index: false, follow: false },
 }
 
 // With several root layouts there is no top-level layout to wrap Next's 404,
@@ -22,9 +23,14 @@ export default function GlobalNotFound() {
             <Container className="py-32 text-center">
               <h1 className="text-3xl font-semibold">Page not found</h1>
               <p className="mt-4">This page does not exist.</p>
-              <Link href="/" className="mt-8 inline-block underline">
-                Back to home
-              </Link>
+              <nav
+                aria-label="Helpful links"
+                className="mt-8 flex flex-wrap justify-center gap-6 underline"
+              >
+                <Link href="/">Back to home</Link>
+                <Link href="/insights">Read the insights</Link>
+                <Link href="/contact">Get in touch</Link>
+              </nav>
             </Container>
           </main>
         </NuqsAdapter>

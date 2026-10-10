@@ -5,25 +5,29 @@ import { Suspense } from "react"
 
 import { AttributionCapture } from "@/components/attribution-capture"
 import { getEnv } from "@/server/env"
-import { getSetting } from "@/server/modules/content/queries"
+import { rootMetadata } from "@/lib/seo/metadata"
+import { getMedia, getSetting } from "@/server/modules/content/queries"
 
 import { SiteFrame } from "./_cms/site-frame"
 import { siteFontClassName } from "./fonts"
 
 import "./site.css"
 
-// Root metadata: metadataBase fixes og:image URLs, and the title template
-// comes from the SEO global (Phase 7 adds the rest).
 export async function generateMetadata(): Promise<Metadata> {
   await io()
-  const seo = await getSetting("seo")
-  return {
-    metadataBase: new URL(getEnv().SITE_URL),
-    title: seo.titleTemplate
-      ? { default: seo.defaultTitle, template: seo.titleTemplate }
-      : seo.defaultTitle,
-    description: seo.defaultDescription || undefined,
-  }
+  const [seo, site] = await Promise.all([getSetting("seo"), getSetting("site")])
+  const ids = [site.icon?.mediaId, seo.defaultOgImage?.mediaId].filter(
+    (id): id is string => Boolean(id)
+  )
+  const assets = ids.length ? await getMedia(ids) : new Map()
+  return rootMetadata({
+    siteUrl: getEnv().SITE_URL,
+    seo,
+    siteName: site.name,
+    icon: (site.icon && assets.get(site.icon.mediaId)) ?? null,
+    defaultOgImage:
+      (seo.defaultOgImage && assets.get(seo.defaultOgImage.mediaId)) ?? null,
+  })
 }
 
 // The public site has a single light design. The admin has its own root

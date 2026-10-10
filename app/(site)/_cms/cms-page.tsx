@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { io } from "next/cache"
 import { notFound } from "next/navigation"
 
+import { buildMetadata } from "@/lib/seo/metadata"
 import {
   getMedia,
   getPublishedPage,
@@ -10,6 +11,7 @@ import {
 import { isPreviewing } from "@/server/modules/content/preview"
 
 import { BlockRenderer } from "./block-renderer"
+import { seoDefaults } from "./seo-defaults"
 
 // Inside the layout's Suspense (SiteFrame). io() keeps the read out of the
 // build; the redirect lookup arrives with Phase 7.
@@ -35,25 +37,27 @@ export async function CmsPage({ path }: { path: string }) {
 // noindex in the head; the status stays 200 (see the note above CmsPage).
 export async function cmsMetadata(path: string): Promise<Metadata> {
   await io()
-  const page = await getPublishedPage(path, await isPreviewing())
+  const draft = await isPreviewing()
+  const page = await getPublishedPage(path, draft)
   if (!page) notFound()
-  const { seo } = page
-  const ogId = seo.ogImage?.mediaId
-  // A deleted share image drops the tag rather than failing the page.
-  const og = ogId ? (await getMedia([ogId])).get(ogId) : undefined
-  return {
-    // The home page keeps the site's default title (root layout).
-    ...(page.systemKey === "home" ? {} : { title: seo.title ?? page.title }),
-    description: seo.description ?? undefined,
-    ...(seo.noindex ? { robots: { index: false } } : {}),
-    ...(og
-      ? {
-          openGraph: {
-            images: [
-              { url: og.src, width: og.width, height: og.height, alt: og.alt },
-            ],
-          },
-        }
-      : {}),
-  }
+  const ogId = page.seo.ogImage?.mediaId
+  const [defaults, assets] = await Promise.all([
+    seoDefaults(),
+    ogId ? getMedia([ogId]) : Promise.resolve(new Map()),
+  ])
+  // A deleted share image falls back to the generated card.
+  return buildMetadata(
+    {
+      path: page.path,
+      home: page.systemKey === "home",
+      kind: "page",
+      title: page.title,
+      summary: null,
+      eyebrow: null,
+      seo: page.seo,
+      ogImage: ogId ? (assets.get(ogId) ?? null) : null,
+      draft,
+    },
+    defaults
+  )
 }

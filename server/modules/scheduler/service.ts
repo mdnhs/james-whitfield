@@ -5,7 +5,7 @@ import { and, asc, eq, lte, sql } from "drizzle-orm"
 import { getDb } from "@/server/db/client"
 import { articles } from "@/server/db/schema"
 import { audit } from "@/server/lib/audit"
-import { invalidate, tags } from "@/server/lib/cache"
+import { invalidate, REDIRECT_TAGS } from "@/server/lib/cache"
 import { publishLocked } from "@/server/modules/articles/publish"
 import { articleTags } from "@/server/modules/articles/service"
 import { purgeExpired } from "@/server/modules/leads/retention"
@@ -54,7 +54,7 @@ export async function runTick(now = new Date()) {
         )
         published.push(row.id)
         toExpire.push(
-          ...articleTags(row.id, redirectsChanged ? [tags.redirects] : [])
+          ...articleTags(row.id, redirectsChanged ? [...REDIRECT_TAGS] : [])
         )
       } catch (error) {
         // Ruling R5: back to draft so it is fixed by a person, not retried.

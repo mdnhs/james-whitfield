@@ -11,6 +11,7 @@ import {
 
 import { users } from "./auth"
 import { articles } from "./content"
+import { pages } from "./pages"
 
 // docs/brief.md §6.6. Phase 5 writes the automatic rows (article slug changes,
 // unpublish with a redirect); Phase 7 adds the manager, hit counts and
@@ -28,6 +29,8 @@ export const redirects = pgTable(
     note: text().notNull().default(""),
     // Set on rows the articles service made; Phase 7 shows them as automatic.
     articleId: uuid().references(() => articles.id, { onDelete: "set null" }),
+    // Set on rows the pages service made (Ruling R6); shown as automatic.
+    pageId: uuid().references(() => pages.id, { onDelete: "set null" }),
     createdBy: uuid().references(() => users.id, { onDelete: "set null" }),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp({ withTimezone: true })

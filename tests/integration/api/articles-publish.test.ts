@@ -214,7 +214,7 @@ describe("publishing", () => {
     // First publish under a never-live slug makes no redirect.
     expect(await redirectMap()).toEqual({})
     v = (await rename(editor, id, v, draft, "beta")).version
-    expect(expired()).toContain("redirects")
+    expect(expired()).toEqual(expect.arrayContaining(["redirects", "routes"]))
     v = (await rename(editor, id, v, draft, "gamma")).version
     expect(await redirectMap()).toEqual({
       "/insights/alpha": "/insights/gamma",
@@ -249,7 +249,7 @@ describe("publishing", () => {
     })
     expect(res.status).toBe(200)
     expect(await redirectMap()).toEqual({})
-    expect(expired()).toContain("redirects")
+    expect(expired()).toEqual(expect.arrayContaining(["redirects", "routes"]))
   })
 
   it("republishing keeps the original date (Ruling R6)", async () => {
@@ -314,7 +314,12 @@ describe("scheduling and unpublishing", () => {
     )
     expect(res.status).toBe("draft")
     expect(await redirectMap()).toEqual({ "/insights/calm-test": "/insights" })
-    expect(expired()).toEqual(["articles", `article:${id}`, "redirects"])
+    expect(expired()).toEqual([
+      "articles",
+      `article:${id}`,
+      "redirects",
+      "routes",
+    ])
     expect(await findArticleBySlug("calm-test")).toBeNull()
     next.revalidateTag.mockReset()
     const { version: v2 } = await json(
@@ -322,7 +327,12 @@ describe("scheduling and unpublishing", () => {
     )
     expect(await redirectMap()).toEqual({}) // live again: the path is reclaimed
     // A reclaimed path must not stay cached as a redirect.
-    expect(expired()).toEqual(["articles", `article:${id}`, "redirects"])
+    expect(expired()).toEqual([
+      "articles",
+      `article:${id}`,
+      "redirects",
+      "routes",
+    ])
     const archived = await json(
       await post(editor, `/articles/${id}/unpublish`, {
         version: v2,

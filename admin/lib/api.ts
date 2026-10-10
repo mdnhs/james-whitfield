@@ -17,6 +17,7 @@ import type { MediaRoutes } from "@/server/modules/media/routes"
 import type { NewsletterRoutes } from "@/server/modules/newsletter/routes"
 import type { PagesRoutes } from "@/server/modules/pages/routes"
 import type { SearchRoutes } from "@/server/modules/search/routes"
+import type { SeoRoutes } from "@/server/modules/seo/routes"
 import type { TaxonomyRoutes } from "@/server/modules/taxonomy/routes"
 
 import { ApiError } from "./api-error"
@@ -36,6 +37,7 @@ export const pagesApi = hc<PagesRoutes>("/api/v1/admin/pages")
 export const categoriesApi = hc<TaxonomyRoutes>("/api/v1/admin/categories")
 export const authorsApi = hc<TaxonomyRoutes>("/api/v1/admin/authors")
 export const searchApi = hc<SearchRoutes>("/api/v1/admin/search")
+export const seoApi = hc<SeoRoutes>("/api/v1/admin/seo")
 
 type Envelope = {
   error?: {

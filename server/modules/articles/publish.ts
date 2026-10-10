@@ -14,7 +14,7 @@ import { isUniqueViolation } from "@/server/lib/conflict"
 import { writeRevision } from "@/server/lib/revisions"
 import { assertMediaExists } from "@/server/modules/media/assert-media"
 import {
-  recordSlugChange,
+  recordPathChange,
   releasePath,
 } from "@/server/modules/redirects/service"
 
@@ -111,11 +111,12 @@ export async function publishLocked(
   }
   const released = await releasePath(tx, articlePath(content.slug))
   if (slugChanged) {
-    await recordSlugChange(tx, {
+    await recordPathChange(tx, {
       articleId: row.id,
       from: articlePath(row.slug),
       to: articlePath(content.slug),
-      createdBy: by,
+      note: "Automatic: the article's slug changed",
+      createdBy: by ?? null,
     })
   }
   await writeRevision(tx, {

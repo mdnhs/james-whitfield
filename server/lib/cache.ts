@@ -20,6 +20,10 @@ export const tags = {
   redirects: "redirects",
 } as const
 
+// What every redirect write expires: the redirect rows and the route table
+// the resolver builds from them.
+export const REDIRECT_TAGS = [tags.redirects, tags.routes] as const
+
 // "Nothing here" is cached briefly: content seeded or published after the
 // first visit must appear without a restart (and publishing invalidates the
 // tags these entries carry anyway).

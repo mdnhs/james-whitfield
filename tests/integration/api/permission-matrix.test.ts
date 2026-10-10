@@ -148,6 +148,7 @@ describe.each(ROLE_NAMES)("pages routes for %s", (role) => {
     ["POST", `/pages/${missing}/discard`, { version: 1 }],
     ["POST", `/pages/${missing}/revisions/${missing}/restore`, { version: 1 }],
     ["DELETE", `/pages/${missing}`, undefined],
+    ["PATCH", `/pages/${missing}/path`, { path: "/moved" }],
   ])(`%s %s → ${expected.write}`, async (method, path, body) => {
     const response = await adminRequest(path, await cookieFor(role), {
       method,
@@ -163,6 +164,33 @@ describe.each(ROLE_NAMES)("pages routes for %s", (role) => {
       { method: "PATCH", body: { seo: { noindex: true } } }
     )
     expect(response.status).toBe(expected.seo)
+  })
+})
+
+// docs/brief.md §7.2 redirect rows: read and manage → owner, admin, editor,
+// marketer. 404 on PATCH/DELETE means "past can(), no such redirect".
+const MANAGES_REDIRECTS = new Set<RoleName>([
+  "owner",
+  "admin",
+  "editor",
+  "marketer",
+])
+
+describe.each(ROLE_NAMES)("seo redirect routes for %s", (role) => {
+  const missing = crypto.randomUUID()
+  const allowed = MANAGES_REDIRECTS.has(role)
+
+  it.each([
+    ["GET", "/seo/redirects", undefined, 200],
+    ["POST", "/seo/redirects", { sourcePath: "/old", destination: "/" }, 201],
+    ["PATCH", `/seo/redirects/${missing}`, { isActive: false }, 404],
+    ["DELETE", `/seo/redirects/${missing}`, undefined, 404],
+  ] as const)("%s %s", async (method, path, body, ok) => {
+    const response = await adminRequest(path, await cookieFor(role), {
+      method,
+      body,
+    })
+    expect(response.status).toBe(allowed ? ok : 403)
   })
 })
 

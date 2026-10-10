@@ -17,7 +17,7 @@ import type { Actor } from "@/server/auth/actor"
 import { getDb, type DbLike } from "@/server/db/client"
 import { pages } from "@/server/db/schema"
 import { audit } from "@/server/lib/audit"
-import { invalidate, tags } from "@/server/lib/cache"
+import { invalidate, REDIRECT_TAGS, tags } from "@/server/lib/cache"
 import { conflictError, userName } from "@/server/lib/conflict"
 import {
   deleteRevisions,
@@ -29,6 +29,7 @@ import {
   assertMediaExists,
   assertShareImage,
 } from "@/server/modules/media/assert-media"
+import { recordPathChange } from "@/server/modules/redirects/service"
 
 const changedSincePublish = sql<boolean>`${pages.draft} is distinct from ${pages.published}`
 // Section ids in the working copy, for the link widget's anchor picker.
@@ -340,6 +341,55 @@ export async function createPage(actor: Actor, input: NewPageInput) {
   // A visit before creation cached "no page here" under routes.
   invalidate([tags.routes])
   return { id: row.id, path: row.path }
+}
+
+export async function changePagePath(actor: Actor, id: string, path: string) {
+  const result = await getDb().transaction(async (tx) => {
+    const row = await findPage(tx, id, true)
+    if (row.systemKey)
+      throw new ApiError("FORBIDDEN", "System pages keep their address")
+    if (row.path === path) return { path, redirected: false }
+    const [taken] = await tx
+      .select({ id: pages.id })
+      .from(pages)
+      .where(eq(pages.path, path))
+    if (taken)
+      throw new ApiError("CONFLICT", "A page already lives at that address", {
+        path: ["A page already lives at that address"],
+      })
+    await tx
+      .update(pages)
+      .set({ path, updatedBy: actor.userId })
+      .where(eq(pages.id, id))
+    const redirected = row.status === "published"
+    if (redirected) {
+      await recordPathChange(tx, {
+        from: row.path,
+        to: path,
+        pageId: id,
+        note: "Automatic: the page's address changed",
+        createdBy: actor.userId,
+      })
+    }
+    await audit(
+      actor,
+      {
+        action: "page.path",
+        entityType: "page",
+        entityId: id,
+        summary: `Moved ${row.path} to ${path}`,
+        diff: { path: { from: row.path, to: path } },
+      },
+      tx
+    )
+    return { path, redirected }
+  })
+  invalidate([
+    tags.page(id),
+    tags.routes,
+    ...(result.redirected ? REDIRECT_TAGS : []),
+  ])
+  return result
 }
 
 export async function deletePage(actor: Actor, id: string) {

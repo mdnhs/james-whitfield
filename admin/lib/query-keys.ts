@@ -60,6 +60,11 @@ export const queryKeys = {
     list: (params: Record<string, unknown>) =>
       ["newsletter", "list", params] as const,
   },
+  seo: {
+    all: ["seo"] as const,
+    overview: ["seo", "overview"] as const,
+    redirects: (params: object) => ["seo", "redirects", params] as const,
+  },
   account: {
     sessions: ["account", "sessions"] as const,
   },

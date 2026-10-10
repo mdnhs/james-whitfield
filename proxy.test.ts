@@ -155,7 +155,10 @@ describe("public paths (Ruling R2)", () => {
       "//evil.example",
       "/\\evil.example",
       "https://evil.example",
+      "https://evil.example/x",
       "/\t/evil",
+      "/\n/evil.example",
+      "/\r/evil.example",
     ]) {
       answer({ kind: "redirect", destination, statusCode: 301 })
       const res = await proxy(request("/old"))

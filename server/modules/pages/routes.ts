@@ -12,6 +12,7 @@ import {
   DraftInput,
   PageIdParam,
   PageMetaPatch,
+  PathInput,
   RevisionParam,
   VersionInput,
 } from "./schema"
@@ -47,6 +48,21 @@ export const pagesRoutes = new Hono<AppEnv>()
           c.get("actor")!,
           c.req.valid("param").id,
           c.req.valid("json")
+        )
+      )
+  )
+  // Ruling R6: custom pages only; a published one leaves a 301 behind.
+  .patch(
+    "/:id/path",
+    can({ page: ["update"] }),
+    id,
+    zValidator("json", PathInput, validationHook),
+    async (c) =>
+      c.json(
+        await pagesService.changePagePath(
+          c.get("actor")!,
+          c.req.valid("param").id,
+          c.req.valid("json").path
         )
       )
   )

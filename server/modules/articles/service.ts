@@ -29,7 +29,7 @@ import {
   redirects,
 } from "@/server/db/schema"
 import { audit } from "@/server/lib/audit"
-import { invalidate, tags } from "@/server/lib/cache"
+import { invalidate, REDIRECT_TAGS, tags } from "@/server/lib/cache"
 import { conflictError, userName } from "@/server/lib/conflict"
 import {
   deleteRevisions,
@@ -430,7 +430,7 @@ export async function deleteArticle(actor: Actor, id: string) {
     return { row, redirectsChanged: gone.length > 0 }
   })
   if (row.status === "published" || redirectsChanged)
-    invalidate(articleTags(id, redirectsChanged ? [tags.redirects] : []))
+    invalidate(articleTags(id, redirectsChanged ? [...REDIRECT_TAGS] : []))
   return { ok: true as const }
 }
 
@@ -463,7 +463,7 @@ export async function publishArticle(
     if (row.version !== version) throw await conflictError(tx, row)
     return publishLocked(tx, row, actor)
   })
-  invalidate(articleTags(id, redirectsChanged ? [tags.redirects] : []))
+  invalidate(articleTags(id, redirectsChanged ? [...REDIRECT_TAGS] : []))
   return { version: row.version, publishedAt: row.publishedAt, slug: row.slug }
 }
 
@@ -576,7 +576,7 @@ export async function unpublishArticle(
     return { version: saved.version, status, wasLive, redirected }
   })
   if (result.wasLive)
-    invalidate(articleTags(id, result.redirected ? [tags.redirects] : []))
+    invalidate(articleTags(id, result.redirected ? [...REDIRECT_TAGS] : []))
   return { version: result.version, status: result.status }
 }
 

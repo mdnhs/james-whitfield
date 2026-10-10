@@ -14,6 +14,7 @@ import { globalsRoutes } from "@/server/modules/globals/routes"
 import { pagesRoutes } from "@/server/modules/pages/routes"
 import { previewRoutes } from "@/server/modules/preview/routes"
 import { searchRoutes } from "@/server/modules/search/routes"
+import { seoRoutes } from "@/server/modules/seo/routes"
 import { meRoutes } from "@/server/modules/session/routes"
 import {
   authorsRoutes,
@@ -46,3 +47,4 @@ export const adminRoutes = new Hono<AppEnv>()
   .route("/leads", leadsRoutes)
   .route("/newsletter", newsletterRoutes)
   .route("/account", accountRoutes)
+  .route("/seo", seoRoutes)

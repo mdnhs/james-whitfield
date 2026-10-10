@@ -3,6 +3,7 @@ import { io } from "next/cache"
 import { SmoothScroll } from "@/components/smooth-scroll"
 import { PreviewBar } from "@/components/preview-bar"
 import { TrackingBootstrap } from "@/components/tracking/tracking-bootstrap"
+import { ConsentBanner } from "@/features/consent/components/consent-banner"
 import { SiteFooter } from "@/features/footer"
 import { SiteHeader } from "@/features/navbar"
 import { themeCss } from "@/lib/content/theme"
@@ -47,8 +48,29 @@ export async function SiteFrame({ children }: { children: React.ReactNode }) {
       <SmoothScroll>
         <SiteHeader site={site} navigation={navigation} />
         {children}
-        <SiteFooter site={site} footer={footer} navigation={navigation} />
+        <SiteFooter
+          site={site}
+          footer={footer}
+          navigation={navigation}
+          cookieSettings={frame.active ? consent.settingsLink : null}
+        />
       </SmoothScroll>
+      {frame.active ? (
+        <ConsentBanner
+          policy={frame.policy}
+          copy={{
+            title: consent.title,
+            body: consent.body,
+            accept: consent.accept,
+            reject: consent.reject,
+            customise: consent.customise,
+            save: consent.save,
+            policyLabel: consent.policyLabel,
+            policyHref: consent.policyHref,
+            categories: consent.categories,
+          }}
+        />
+      ) : null}
       {preview ? <PreviewBar /> : null}
     </>
   )

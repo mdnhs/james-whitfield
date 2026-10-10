@@ -5,6 +5,8 @@ import { Container } from "@/components/layout/container"
 import { CopyrightYear } from "@/components/copyright-year"
 import type { GlobalValue } from "@/lib/content/globals"
 
+import { CookieSettingsButton } from "./cookie-settings-button"
+
 const columnTitle =
   "font-plex-mono text-xs leading-[normal] font-semibold text-clay uppercase"
 const linkClass =
@@ -14,10 +16,12 @@ export function SiteFooter({
   site,
   footer,
   navigation,
+  cookieSettings,
 }: {
   site: { name: string }
   footer: GlobalValue<"footer">
   navigation: GlobalValue<"navigation">
+  cookieSettings: string | null
 }) {
   return (
     <footer
@@ -89,6 +93,11 @@ export function SiteFooter({
                 </Link>
               </li>
             ))}
+            {cookieSettings ? (
+              <li>
+                <CookieSettingsButton label={cookieSettings} />
+              </li>
+            ) : null}
           </ul>
           <p className="font-plex-mono">
             © <CopyrightYear /> {footer.copyrightName}

@@ -75,6 +75,14 @@ Nothing here has been executed.
    }
   ```
 
+- [ ] 9a. AI assistant (optional): set `APP_ENCRYPTION_KEY`, then Admin ▸ Site settings ▸ AI assistant: choose a provider, enter an API key (use a paid Gemini key before anyone pastes client details), Test connection, turn it on, choose the roles (`docs/deploy-dokploy.md` "AI assistant"). Optional sidebar and ⌘K entry: add this as the last item of the "Site settings" `children` in `lib/admin/nav.ts` (it is in your shell edits, so it was not touched):
+
+  ```ts
+  { id: "settings-ai-assistant", label: "AI assistant", href: "/admin/settings/ai-assistant", permission: { ai: ["manage"] }, keywords: ["gemini", "claude", "chatbot"] },
+  ```
+
+  Then add `pnpm test:e2e:ai` to your local pre-push checks if you edit the assistant. Owner shell visual baselines were re-recorded for the always-visible assistant button; re-record again after your shell edits.
+
 - [ ] 9. Cut-over (see §4): merge `feat/platform` into `main`, create the owner with `admin-create`, owner signs in (two-factor optional, recommended), Search Console and Bing, GTM import, DNS, smoke test.
 - [ ] 10. Answer the open questions in §2.
 

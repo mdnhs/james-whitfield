@@ -94,3 +94,15 @@ Sign-in 5/min, password reset 3 per 5 min, `/two-factor/*` 5/min, password chang
   ```
   Or in `topbar.tsx` swap `<NotificationsButton />` for `<NotificationsBell className={ICON_BUTTON} />`. Then change `test.fixme(` to `test(` in `tests/e2e/admin/content/notifications.spec.ts` and run it with `axe.spec.ts` (`--project=admin-desktop`).
 - **Admin visual baselines.** After shell edits, re-record them with `pnpm test:visual:linux` and commit the PNGs ([runbook §2](./runbook.md#2-deploy)).
+
+## AI assistant
+
+- The assistant calls Gemini, Anthropic or an OpenAI-compatible endpoint **from the server only**; the CSP is unchanged.
+- Optional environment: none is required. `APP_ENCRYPTION_KEY` (the key that protects the Meta CAPI token) must be set before an owner can save an API key. Rotating it makes saved keys unreadable: the settings page then asks for the key again.
+- `AI_PROVIDER_MOCK=1` is for development and E2E only. The app refuses to start with it when `SITE_ENV` is `staging` or `production`.
+- Settings live at **Admin ▸ Site settings ▸ AI assistant** (`/admin/settings/ai-assistant`, owner and admin). There is no sidebar entry yet (see `docs/launch.md` for the one-line change); the topbar assistant button shows a "Set up AI assistant" link to that page while the assistant is off.
+- Switching provider or model: open the settings page, choose the provider (Gemini, Anthropic, or an OpenAI-compatible base URL), enter that provider's key (the field is write-only; a saved key shows only its last four characters), pick a model with "List models", press "Test connection", then Save. Roles that may use the assistant are chosen on the same page.
+- Conversations older than 90 days are deleted by the cron tick (`purged.aiConversations` in the tick's answer). A user's conversations are deleted with the user and appear in a privacy (DSAR) export of their email.
+- On Gemini's free tier Google may use prompts to improve its products; the admin shows that warning. Use a paid key before anyone pastes client details.
+- Quota errors: when the provider answers 429 or "quota exhausted", people see "The free Gemini quota is used up for today ..." (or the generic usage-limit message for other providers). Wait for the quota to reset, switch model, or use a paid key.
+- Limits: 30 messages per 10 minutes per user, 5 connection tests and 10 model lists per minute.

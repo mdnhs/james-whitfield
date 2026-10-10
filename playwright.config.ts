@@ -79,6 +79,7 @@ export default defineConfig({
         ADMIN,
         "**/tracking/**",
         "**/appearance/**",
+        "**/ai/**",
         ...desktopOnly(name),
       ],
     })),

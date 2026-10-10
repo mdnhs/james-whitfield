@@ -136,6 +136,12 @@ jobs:
         run: pnpm test:e2e:appearance
         env:
           E2E_SKIP_BUILD: "1"
+      # Ruling R19: the assistant specs switch a shared site setting on, and
+      # run against the scripted model (AI_PROVIDER_MOCK).
+      - name: E2E (AI assistant)
+        run: pnpm test:e2e:ai
+        env:
+          E2E_SKIP_BUILD: "1"
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

@@ -64,3 +64,17 @@ test("manifest.webmanifest names the site", async ({ request }) => {
   const manifest = await (await request.get("/manifest.webmanifest")).json()
   expect(manifest).toMatchObject({ start_url: "/", lang: "en-IE" })
 })
+
+test("the generated share card is a PNG, and unknown paths 404", async ({
+  page,
+  request,
+}) => {
+  await page.goto("/insights/calm-is-a-skill")
+  const og = await page
+    .locator('head meta[property="og:image"]')
+    .getAttribute("content")
+  const res = await request.get(og!)
+  expect(res.status()).toBe(200)
+  expect(res.headers()["content-type"]).toBe("image/png")
+  expect((await request.get("/og/no-such-page")).status()).toBe(404)
+})

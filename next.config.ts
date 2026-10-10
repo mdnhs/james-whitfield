@@ -42,6 +42,10 @@ const nextConfig: NextConfig = {
     ],
     remotePatterns: mediaRemotePatterns(),
   },
+  // Ruling R9: the share-card route reads these at run time.
+  outputFileTracingIncludes: {
+    "/og/\\[\\[\\.\\.\\.path\\]\\]": ["./assets/fonts/*.ttf"],
+  },
   experimental: {
     globalNotFound: true,
     optimizePackageImports: ["lucide-react", "three", "@gsap/react", "lenis"],

@@ -90,8 +90,8 @@ export function ArticleSidebar({
         />
         {article.publishedAt ? (
           <FieldDescription>
-            Changing the slug of a published article redirects the old address
-            here.
+            Changing the slug of a published article adds a redirect from the
+            old address.
           </FieldDescription>
         ) : null}
         {slugError ? <FieldError>{slugError}</FieldError> : null}

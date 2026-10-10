@@ -31,11 +31,13 @@ import { ApiError } from "@/admin/lib/api-error"
 import { queryKeys } from "@/admin/lib/query-keys"
 import { DraftDocument, type DraftBlock } from "@/blocks/page"
 import { BLOCK_BY_TYPE } from "@/blocks/registry"
+import { useEditorTab } from "@/admin/modules/seo/use-editor-tab"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
 
+import { AddressForm } from "./address-form"
 import { BlockForm } from "./block-form"
 import { BLOCK_ICONS } from "./block-icons"
 import { BlockLibrary } from "./block-library"
@@ -108,6 +110,7 @@ function Builder({
   reload(): Promise<void>
 }) {
   const queryClient = useQueryClient()
+  const [tab, setTab] = useEditorTab()
   const canEdit = usePermission({ page: ["update"] })
   const canPublish = usePermission({ page: ["publish"] })
   const readOnly = !canEdit
@@ -408,7 +411,11 @@ function Builder({
           </span>
         </p>
       ) : null}
-      <Tabs defaultValue="content" className="gap-5">
+      <Tabs
+        value={tab}
+        onValueChange={(value) => void setTab(value as "content" | "seo")}
+        className="gap-5"
+      >
         <TabsList className="h-11 w-full rounded-xl bg-card p-1 sm:w-fit">
           <TabsTrigger value="content" className="rounded-lg px-5">
             Content
@@ -548,7 +555,8 @@ function Builder({
             />
           </div>
         </TabsContent>
-        <TabsContent value="seo">
+        <TabsContent value="seo" className="flex flex-col gap-6">
+          <AddressForm page={page} onChanged={(path) => syncCache({ path })} />
           <SeoForm
             page={page}
             onSaved={() =>

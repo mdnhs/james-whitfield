@@ -205,3 +205,22 @@ describe("content widgets", () => {
     vi.unstubAllGlobals()
   })
 })
+
+describe("onValuesChange", () => {
+  it("reports values as the user types", async () => {
+    const seen: unknown[] = []
+    render(
+      <SchemaForm
+        schema={z.object({
+          title: z.string().max(70).register(ui, { label: "Title" }),
+        })}
+        defaultValues={{ title: "" }}
+        submitLabel="Save"
+        onSubmit={() => undefined}
+        onValuesChange={(v) => seen.push(v)}
+      />
+    )
+    await userEvent.type(screen.getByLabelText("Title"), "Hi")
+    expect(seen.at(-1)).toEqual({ title: "Hi" })
+  })
+})

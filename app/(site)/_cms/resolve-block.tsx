@@ -28,7 +28,7 @@ import {
 import { RichTextSection } from "@/features/richtext"
 import { FormatsSection, ServicesGrid } from "@/features/services"
 import { TestimonialsSection } from "@/features/testimonials"
-import { select } from "@/lib/content/select"
+import { select, visiblePlans } from "@/lib/content/select"
 import { slugify } from "@/lib/utils"
 import { turnstileSiteKey } from "@/server/lib/turnstile"
 import * as q from "@/server/modules/content/queries"
@@ -108,7 +108,7 @@ export async function ResolvedBlock({ block }: { block: BlockInstance }) {
         <FormatsSection
           id={id}
           content={block.data}
-          plans={(await q.getPlans()).slice(0, 4)}
+          plans={visiblePlans(await q.getPlans())}
         />
       )
     case "session.timeline":

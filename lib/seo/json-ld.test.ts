@@ -222,4 +222,21 @@ describe("blogPostingNode", () => {
       articleSection: "Anxiety",
     })
   })
+
+  it("emits no FAQPage when no questions resolve", () => {
+    expect(faqNode([])).toBeNull()
+  })
+
+  it("omits empty PostalAddress fields", () => {
+    const partial = GLOBALS.contact.parse({
+      address: { lines: [], city: "Dublin", eircode: "", country: "" },
+    })
+    const node = businessNode({ origin, site, contact: partial, seo }) as {
+      address?: Record<string, unknown>
+    }
+    expect(node.address).toEqual({
+      "@type": "PostalAddress",
+      addressLocality: "Dublin",
+    })
+  })
 })

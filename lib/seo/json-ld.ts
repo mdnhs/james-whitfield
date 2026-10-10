@@ -94,10 +94,12 @@ export function businessNode(i: {
       ? {
           address: {
             "@type": "PostalAddress",
-            streetAddress: address.lines.join(", "),
-            addressLocality: address.city,
-            postalCode: address.eircode,
-            addressCountry: address.country,
+            ...(address.lines.length
+              ? { streetAddress: address.lines.join(", ") }
+              : {}),
+            ...(address.city ? { addressLocality: address.city } : {}),
+            ...(address.eircode ? { postalCode: address.eircode } : {}),
+            ...(address.country ? { addressCountry: address.country } : {}),
           },
         }
       : {}),
@@ -154,7 +156,9 @@ export function breadcrumbNode(
   }
 }
 
-export function faqNode(items: FaqView[]): FAQPage {
+// null for no items: a FAQPage with an empty mainEntity is invalid.
+export function faqNode(items: FaqView[]): FAQPage | null {
+  if (!items.length) return null
   return {
     "@type": "FAQPage",
     mainEntity: items.map((f) => ({

@@ -28,3 +28,10 @@
 - Traefik must overwrite `X-Real-IP` with the real client address. The enquiry and newsletter limiters key on it; if it is missing, every visitor shares one bucket of 5 per 10 minutes.
 - Set the notification recipients in Admin → Site settings → Notifications (they fall back to the contact email).
 - The retention purge (closed and spam enquiries, unconfirmed subscriptions, spent rate-limit windows) runs inside the existing cron tick: no new schedule.
+
+## Phase 7
+
+- No new environment variables. `SITE_ENV=staging` on staging makes `robots.txt` disallow everything; production must run `SITE_ENV=production` and a correct `SITE_URL` (canonicals, sitemap and share-card URLs use it).
+- Proxy now calls `GET /api/v1/resolve` over loopback for every public page; if the container does not listen on `127.0.0.1:$PORT`, set `INTERNAL_ORIGIN` (Phase 5 note). A slow or failing resolver only costs real 404s/redirects (fail-open), never availability.
+- After the first production deploy: submit `<SITE_URL>/sitemap.xml` in Google Search Console and Bing Webmaster Tools, add their verification codes in Admin → SEO → Defaults, and run the Rich Results Test on `/` and one article.
+- The share-card fonts ship under `assets/fonts` (SIL OFL 1.1, licence files alongside).

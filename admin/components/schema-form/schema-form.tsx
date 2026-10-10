@@ -1,7 +1,7 @@
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useMemo } from "react"
+import { useEffect, useMemo } from "react"
 import {
   useForm,
   type DefaultValues,
@@ -33,6 +33,7 @@ export function SchemaForm<S extends z.ZodObject>({
   submitLabel,
   resetOnSuccess = false,
   overrides,
+  onValuesChange,
 }: {
   schema: S
   defaultValues: z.input<S>
@@ -40,6 +41,8 @@ export function SchemaForm<S extends z.ZodObject>({
   submitLabel: string
   resetOnSuccess?: boolean
   overrides?: FieldOverrides
+  // Called on every change, for live previews next to the form.
+  onValuesChange?: (values: z.input<S>) => void
 }) {
   const fields = useMemo(() => toFields(schema, overrides), [schema, overrides])
   const form = useForm<FieldValues, unknown, FieldValues>({
@@ -49,6 +52,13 @@ export function SchemaForm<S extends z.ZodObject>({
     defaultValues: defaultValues as DefaultValues<FieldValues>,
     mode: "onTouched",
   })
+
+  useEffect(() => {
+    if (!onValuesChange) return
+    // eslint-disable-next-line react-hooks/incompatible-library
+    const sub = form.watch((values) => onValuesChange(values as z.input<S>))
+    return () => sub.unsubscribe()
+  }, [form, onValuesChange])
 
   const submit = form.handleSubmit(async (values) => {
     let result: SubmitResult

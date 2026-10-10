@@ -33,7 +33,8 @@ export async function CmsPage({ path }: { path: string }) {
   if (!page) notFound()
   return (
     <>
-      <PageJsonLd page={page} />
+      {/* Draft preview is noindex; it carries no structured data either. */}
+      {draft ? null : <PageJsonLd page={page} />}
       <BlockRenderer page={page} contactLabel={copy.contactChapter} />
     </>
   )

@@ -2,7 +2,7 @@ import { io } from "next/cache"
 import type { Thing } from "schema-dts"
 
 import { JsonLd } from "@/components/json-ld"
-import { select } from "@/lib/content/select"
+import { select, visiblePlans } from "@/lib/content/select"
 import type { PublishedPage } from "@/lib/content/types"
 import {
   breadcrumbNode,
@@ -48,13 +48,15 @@ export async function PageJsonLd({ page }: { page: PublishedPage }) {
     ]),
   ]
   const faq = visible.find((b) => b.type === "faq")
-  if (faq?.type === "faq")
-    nodes.push(faqNode(select(await getFaqs(), faq.data.selection)))
+  if (faq?.type === "faq") {
+    const node = faqNode(select(await getFaqs(), faq.data.selection))
+    if (node) nodes.push(node)
+  }
   if (visible.some((b) => b.type === "services.plans")) {
     nodes.push(
       ...planNodes({
         origin,
-        plans: (await getPlans()).slice(0, 4),
+        plans: visiblePlans(await getPlans()),
         siteName: site.name,
       })
     )

@@ -30,6 +30,7 @@ import { queryKeys } from "@/admin/lib/query-keys"
 import { ConflictDialog } from "@/admin/modules/pages/conflict-dialog"
 import { HistorySheet } from "@/admin/modules/pages/history-sheet"
 import { SaveIndicator } from "@/admin/modules/pages/save-indicator"
+import { useEditorTab } from "@/admin/modules/seo/use-editor-tab"
 import {
   conflictOf,
   useAutosave,
@@ -116,6 +117,7 @@ function Editor({
   const canEdit = article.canEdit && mayUpdate
   const canPublish = usePermission({ article: ["publish"] })
   const readOnly = !canEdit
+  const [tab, setTab] = useEditorTab()
   const [draft, setDraft] = useState<ArticleDraft>(article.draft)
   const draftRef = useRef(draft)
   const [errors, setErrors] = useState<FieldErrors>({})
@@ -398,7 +400,11 @@ function Editor({
           <span>View only: you can read this article but not change it.</span>
         </p>
       ) : null}
-      <Tabs defaultValue="content" className="gap-5">
+      <Tabs
+        value={tab}
+        onValueChange={(value) => void setTab(value as "content" | "seo")}
+        className="gap-5"
+      >
         <TabsList className="h-11 w-full rounded-xl bg-card p-1 sm:w-fit">
           <TabsTrigger value="content" className="rounded-lg px-5">
             Content
@@ -453,7 +459,11 @@ function Editor({
           </fieldset>
         </TabsContent>
         <TabsContent value="seo">
-          <ArticleSeoForm article={article} onSaved={refreshLists} />
+          <ArticleSeoForm
+            article={article}
+            draft={draft}
+            onSaved={refreshLists}
+          />
         </TabsContent>
       </Tabs>
       <HistorySheet

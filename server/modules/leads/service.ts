@@ -303,9 +303,26 @@ export async function addNote(actor: Actor, id: string, body: string) {
       .from(leads)
       .where(eq(leads.id, id))
     if (!exists) throw new ApiError("NOT_FOUND", "Enquiry not found")
+    // updateLead staggers its events by a millisecond each, so a note landing
+    // in the same millisecond must still sort after the latest activity.
+    const [latest] = await tx
+      .select({ at: leadActivities.createdAt })
+      .from(leadActivities)
+      .where(eq(leadActivities.leadId, id))
+      .orderBy(desc(leadActivities.createdAt))
+      .limit(1)
+    const createdAt = new Date(
+      Math.max(Date.now(), (latest?.at.getTime() ?? 0) + 1)
+    )
     const [row] = await tx
       .insert(leadActivities)
-      .values({ leadId: id, actorId: actor.userId, type: "note", body })
+      .values({
+        leadId: id,
+        actorId: actor.userId,
+        type: "note",
+        body,
+        createdAt,
+      })
       .returning()
     await audit(
       actor,

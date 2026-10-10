@@ -11,7 +11,7 @@ import { users } from "@/server/db/schema"
 import { getEnv } from "@/server/env"
 import { audit } from "@/server/lib/audit"
 
-import type { InviteInput } from "./schema"
+import type { InviteInput } from "@/lib/users/schema"
 
 export function inviteRedirect() {
   return new URL("/admin/reset-password?invite=1", getEnv().SITE_URL).toString()

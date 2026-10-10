@@ -16,6 +16,7 @@ import {
   signInWithTwoFactor,
 } from "../helpers/auth"
 import { resetDb } from "../helpers/db"
+import { insertLead } from "../helpers/leads"
 
 beforeEach(resetDb)
 afterEach(clearOutbox)
@@ -191,16 +192,23 @@ describe("auditing during View-as", () => {
       .filter((pair) => !pair.endsWith("="))
       .join("; ")
 
-    const response = await adminRequest("/users/invite", viewAsCookie, {
-      method: "POST",
-      body: { email: "new@example.com", name: "New", role: "editor" },
-    })
+    // Access changes are refused during View-as (Phase 10), so an enquiry
+    // note stands in as the audited mutation.
+    const lead = await insertLead()
+    const response = await adminRequest(
+      `/leads/${lead.id}/notes`,
+      viewAsCookie,
+      {
+        method: "POST",
+        body: { body: "Called back" },
+      }
+    )
     expect(response.status).toBe(201)
 
     const [row] = await getDb()
       .select()
       .from(auditLogs)
-      .where(eq(auditLogs.action, "user.invite"))
+      .where(eq(auditLogs.action, "lead.note"))
     expect(row.actorId).toBe(admin.id)
     expect(row.impersonatedBy).toBe(owner.id)
 

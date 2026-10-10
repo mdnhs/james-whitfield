@@ -14,7 +14,7 @@ export type FreshSession = {
 
 const ANONYMOUS: FreshSession = { session: null, setCookies: [] }
 
-function isBanned(user: {
+export function isBanned(user: {
   banned?: boolean | null
   banExpires?: Date | string | null
 }) {

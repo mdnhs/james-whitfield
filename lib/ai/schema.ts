@@ -52,6 +52,9 @@ export const ModelId = z
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"])
 const PRIVATE_V4 = [
   /^0\./,
+  /^192\.0\.0\./,
+  /^198\.1[89]\./,
+  /^(22[4-9]|2[3-5]\d)\./,
   /^10\./,
   /^127\./,
   /^169\.254\./,
@@ -74,7 +77,7 @@ export function baseUrlProblem(
   if (url.username || url.password)
     return "Remove the user name and password from the address"
   if (url.search || url.hash) return "Remove the ? or # part from the address"
-  const host = url.hostname.toLowerCase()
+  const host = url.hostname.toLowerCase().replace(/\.$/, "")
   const local = LOCAL_HOSTS.has(host)
   if (url.protocol === "http:") {
     return allowLocalHttp && local

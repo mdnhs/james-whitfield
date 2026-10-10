@@ -34,15 +34,22 @@ const notSetUp = () =>
     "The AI assistant isn't set up yet. An owner or admin can add an API key in AI assistant settings."
   )
 
+// Ruling R6: a provider address may not bounce a request somewhere else (an
+// https host answering 302 to http://169.254.169.254 would skip the guard).
+const noRedirectFetch: typeof fetch = (url, init) =>
+  globalThis.fetch(url, { ...init, redirect: "error" })
+
 // Building a model makes no network call; the first request does.
 export function buildModel(s: ModelSettings): LanguageModel {
   switch (s.provider) {
     case "google":
       if (!s.apiKey) throw notSetUp()
-      return createGoogle({ apiKey: s.apiKey })(s.model)
+      return createGoogle({ apiKey: s.apiKey, fetch: noRedirectFetch })(s.model)
     case "anthropic":
       if (!s.apiKey) throw notSetUp()
-      return createAnthropic({ apiKey: s.apiKey })(s.model)
+      return createAnthropic({ apiKey: s.apiKey, fetch: noRedirectFetch })(
+        s.model
+      )
     case "openai-compatible": {
       const problem = baseUrlProblem(s.baseUrl, localHttpAllowed())
       if (problem)
@@ -56,6 +63,7 @@ export function buildModel(s: ModelSettings): LanguageModel {
         baseURL: normaliseBaseUrl(s.baseUrl),
         apiKey: s.apiKey ?? undefined,
         includeUsage: true,
+        fetch: noRedirectFetch,
       })(s.model)
     }
   }

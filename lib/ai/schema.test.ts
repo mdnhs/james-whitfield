@@ -10,6 +10,9 @@ import {
 describe("baseUrlProblem", () => {
   it("accepts public https addresses", () => {
     expect(baseUrlProblem("https://api.groq.com/openai/v1", false)).toBeNull()
+    expect(baseUrlProblem("https://api.groq.com./openai/v1", false)).toBeNull()
+    expect(baseUrlProblem("https://198.20.0.1/v1", false)).toBeNull()
+    expect(baseUrlProblem("https://223.1.1.1/v1", false)).toBeNull()
     expect(baseUrlProblem("https://openrouter.ai/api/v1", false)).toBeNull()
   })
 
@@ -41,6 +44,16 @@ describe("baseUrlProblem", () => {
       "https://localhost/v1",
       "https://ollama.local/v1",
       "https://[::1]/v1",
+      "https://localhost./v1",
+      "https://ollama.local./v1",
+      "https://metadata.google.internal./v1",
+      "https://10.0.0.1./v1",
+      "https://192.0.0.8/v1",
+      "https://198.18.0.1/v1",
+      "https://198.19.255.1/v1",
+      "https://224.0.0.1/v1",
+      "https://240.0.0.1/v1",
+      "https://255.255.255.255/v1",
     ]) {
       expect(baseUrlProblem(host, false), host).toMatch(/public address/)
     }

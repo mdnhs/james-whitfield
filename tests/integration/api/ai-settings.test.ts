@@ -204,7 +204,13 @@ describe("GET /ai/status", () => {
     const viewer = await (
       await adminRequest("/ai/status", await cookieFor("viewer"))
     ).json()
-    expect(viewer).toMatchObject({ available: false, canManage: false })
+    expect(viewer).toMatchObject({
+      available: false,
+      canManage: false,
+      provider: null,
+      model: null,
+      freeTierWarning: false,
+    })
     const editor = await (
       await adminRequest("/ai/status", await cookieFor("editor"))
     ).json()

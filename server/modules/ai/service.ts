@@ -47,13 +47,17 @@ const fields = (fieldErrors: Record<string, string[]>) =>
 
 export async function getAiStatus(actor: Actor) {
   const { value } = await readAiSettings()
+  const canManage = hasPermission(actor.roles, { ai: ["manage"] })
+  const available =
+    value.enabled && isConfigured(value) && roleAllowed(value, actor.roles)
+  // Provider and model are shown only to those who can use or manage it.
+  const visible = available || canManage
   return {
-    available:
-      value.enabled && isConfigured(value) && roleAllowed(value, actor.roles),
-    canManage: hasPermission(actor.roles, { ai: ["manage"] }),
-    provider: value.provider,
-    model: value.model,
-    freeTierWarning: value.provider === "google",
+    available,
+    canManage,
+    provider: visible ? value.provider : null,
+    model: visible ? value.model : null,
+    freeTierWarning: visible && value.provider === "google",
   }
 }
 export type AiStatus = Awaited<ReturnType<typeof getAiStatus>>

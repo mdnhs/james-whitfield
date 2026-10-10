@@ -66,6 +66,34 @@ describe("buildModel", () => {
   })
 })
 
+describe("redirects (Ruling R6)", () => {
+  it.each([
+    { provider: "google", baseUrl: "" },
+    { provider: "anthropic", baseUrl: "" },
+    {
+      provider: "openai-compatible",
+      baseUrl: "https://api.groq.com/openai/v1",
+    },
+  ] as const)("$provider requests refuse redirects", async (s) => {
+    const spy = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(new Response("{}", { status: 500 }))
+    const model = buildModel({
+      ...s,
+      model: "m",
+      apiKey: key,
+    }) as unknown as { doGenerate: (o: unknown) => Promise<unknown> }
+    await model
+      .doGenerate({
+        prompt: [{ role: "user", content: [{ type: "text", text: "hi" }] }],
+      })
+      .catch(() => undefined)
+    expect(spy).toHaveBeenCalled()
+    expect(spy.mock.calls[0]![1]!.redirect).toBe("error")
+    spy.mockRestore()
+  })
+})
+
 describe("the mock provider (Ruling R7)", () => {
   it("is used only when the flag is on in development", async () => {
     vi.stubEnv("AI_PROVIDER_MOCK", "1")

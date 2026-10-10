@@ -103,4 +103,16 @@ describe("listModels", () => {
       )
     ).rejects.toBeInstanceOf(ProviderHttpError)
   })
+
+  it("refuses to read a huge answer", async () => {
+    const f = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(new Response("x".repeat(1_100_000), { status: 200 }))
+    await expect(
+      listModels(
+        { provider: "anthropic", baseUrl: "", apiKey: "k-0123456789" },
+        f
+      )
+    ).rejects.toThrow(/too large/)
+  })
 })

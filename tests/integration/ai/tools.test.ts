@@ -16,7 +16,9 @@ import {
   ROLE_NAMES,
   type RoleName,
 } from "@/lib/auth/permissions"
-import { closeDb } from "@/server/db/client"
+import { closeDb, getDb } from "@/server/db/client"
+import { articles, pages } from "@/server/db/schema"
+import { eq } from "drizzle-orm"
 import { parseAiSettings } from "@/server/modules/ai/settings"
 import {
   dashboardSummary,
@@ -265,5 +267,38 @@ describe("output size caps", () => {
     const page = await readPage(await actorFor("editor"), "/long")
     expect(page).toMatchObject({ truncated: true })
     expect((page.text as string).length).toBe(8000)
+  })
+
+  it("reads a page whose stored SEO no longer fits the schema (degrades to empty SEO)", async () => {
+    const media = await insertMedia()
+    const row = await insertPage({
+      path: "/drifted",
+      document: heroDocument(media.id, "Drifted"),
+    })
+    await getDb()
+      .update(pages)
+      .set({ seo: { title: "x".repeat(500), noindex: "yes" } as never })
+      .where(eq(pages.id, row.id))
+    const page = await readPage(await actorFor("editor"), "/drifted")
+    expect(page).toMatchObject({
+      seo: { title: null, description: null, noindex: false },
+    })
+  })
+
+  it("clips an article excerpt to 500 characters", async () => {
+    const media = await insertMedia()
+    const { category, author } = await insertTaxonomy()
+    const row = await insertArticle({
+      slug: "long-excerpt",
+      categoryId: category.id,
+      authorId: author.id,
+      coverId: media.id,
+    })
+    await getDb()
+      .update(articles)
+      .set({ excerpt: "e".repeat(900) })
+      .where(eq(articles.id, row.id))
+    const article = await readArticle(await actorFor("editor"), "long-excerpt")
+    expect((article.excerpt as string).length).toBe(500)
   })
 })

@@ -33,7 +33,9 @@ const allowed = (actor: Actor, ...options: Permissions[]) =>
   options.some((p) => hasPermission(actor.roles, p))
 const refuse = (label: string): ToolResult => ({ label, error: NO_ACCESS })
 const seoOf = (raw: unknown) => {
-  const s = PageSeo.parse(raw ?? {})
+  // Stored SEO can drift from the schema; read what parses, never throw.
+  const parsed = PageSeo.safeParse(raw ?? {})
+  const s = parsed.success ? parsed.data : PageSeo.parse({})
   return { title: s.title, description: s.description, noindex: s.noindex }
 }
 const notFound = (e: unknown) => e instanceof ApiError && e.code === "NOT_FOUND"
@@ -141,7 +143,7 @@ export async function readArticle(
       label: `the article “${a.draft.title}”`,
       id: a.id,
       title: a.draft.title,
-      excerpt: a.draft.excerpt,
+      excerpt: a.draft.excerpt?.slice(0, 500),
       status: a.status,
       path: `/insights/${a.draft.slug || a.slug}`,
       seo: seoOf(a.seo),

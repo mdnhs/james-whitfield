@@ -7,6 +7,26 @@ import { ProviderHttpError } from "./errors"
 
 const TIMEOUT_MS = 10_000
 const MAX_MODELS = 500
+const MAX_BODY_BYTES = 1_000_000
+
+// Reads at most MAX_BODY_BYTES, then cancels: the host is admin-chosen.
+async function boundedText(res: Response) {
+  const reader = res.body?.getReader()
+  if (!reader) return ""
+  const chunks: Uint8Array[] = []
+  let size = 0
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    size += value.byteLength
+    if (size > MAX_BODY_BYTES) {
+      await reader.cancel()
+      throw new Error("The provider's answer was too large")
+    }
+    chunks.push(value)
+  }
+  return new TextDecoder().decode(Buffer.concat(chunks))
+}
 
 // Ruling R6: no redirects (a base URL may not bounce us elsewhere) and a
 // hard timeout. Response bodies are read only for these small JSON lists.
@@ -20,7 +40,7 @@ async function getJson(
     redirect: "error",
     signal: AbortSignal.timeout(TIMEOUT_MS),
   })
-  const text = await res.text()
+  const text = await boundedText(res)
   if (!res.ok) throw new ProviderHttpError(res.status, text.slice(0, 2000))
   return JSON.parse(text) as unknown
 }

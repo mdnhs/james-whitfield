@@ -70,3 +70,55 @@ export async function createPublishedPage(
   )
   return { id, path, version: published.version }
 }
+
+type Option = { id: string }
+
+// A published article built from seeded taxonomy and media (parity untouched:
+// a fresh slug per test).
+export async function createPublishedArticle(
+  request: APIRequestContext,
+  { slug, title }: { slug: string; title: string }
+) {
+  const [{ items: cats }, { items: authors }, { items: media }] =
+    await Promise.all([
+      api<{ items: Option[] }>(request, "GET", "/categories"),
+      api<{ items: Option[] }>(request, "GET", "/authors"),
+      api<{ items: Option[] }>(request, "GET", "/media?type=image"),
+    ])
+  const { id } = await api<{ id: string }>(request, "POST", "/articles", {
+    title,
+    categoryId: cats[0]!.id,
+    authorId: authors[0]!.id,
+  })
+  const draft = {
+    title,
+    slug,
+    excerpt: "An E2E article.",
+    cover: { mediaId: media[0]!.id },
+    categoryId: cats[0]!.id,
+    authorId: authors[0]!.id,
+    featured: false,
+    body: {
+      type: "doc",
+      content: [
+        {
+          type: "paragraph",
+          content: [{ type: "text", text: `${title} body.` }],
+        },
+      ],
+    },
+  }
+  const saved = await api<{ version: number }>(
+    request,
+    "PATCH",
+    `/articles/${id}/draft`,
+    { version: 1, draft }
+  )
+  const published = await api<{ version: number }>(
+    request,
+    "POST",
+    `/articles/${id}/publish`,
+    { version: saved.version }
+  )
+  return { id, version: published.version, draft }
+}

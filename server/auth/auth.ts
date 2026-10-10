@@ -49,6 +49,18 @@ export function buildAuth() {
       // Cheap reads for the UI. Admin checks bypass it (disableCookieCache).
       cookieCache: { enabled: true, maxAge: 5 * 60 },
     },
+    user: {
+      additionalFields: {
+        // The bell's "seen" instant (Ruling R7). Never accepted from a
+        // client and never sent back in session payloads.
+        notificationsSeenAt: {
+          type: "date",
+          required: false,
+          input: false,
+          returned: false,
+        },
+      },
+    },
     hooks: { before: beforeHook, after: afterHook },
     databaseHooks: {
       session: {

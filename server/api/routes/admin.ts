@@ -10,6 +10,7 @@ import { dashboardRoutes } from "@/server/modules/dashboard/routes"
 import { leadsRoutes } from "@/server/modules/leads/routes"
 import { mediaRoutes } from "@/server/modules/media/routes"
 import { newsletterRoutes } from "@/server/modules/newsletter/routes"
+import { notificationsRoutes } from "@/server/modules/notifications/routes"
 import { globalsRoutes } from "@/server/modules/globals/routes"
 import { pagesRoutes } from "@/server/modules/pages/routes"
 import { previewRoutes } from "@/server/modules/preview/routes"
@@ -44,6 +45,7 @@ export const adminRoutes = new Hono<AppEnv>()
   .route("/authors", authorsRoutes)
   .route("/search", searchRoutes)
   .route("/dashboard", dashboardRoutes)
+  .route("/notifications", notificationsRoutes)
   .route("/audit", auditRoutes)
   .route("/users", usersRoutes)
   .route("/leads", leadsRoutes)

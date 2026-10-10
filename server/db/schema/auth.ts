@@ -30,6 +30,11 @@ export const users = pgTable("users", {
   banReason: text("ban_reason"),
   banExpires: timestamp("ban_expires", { withTimezone: true }),
   twoFactorEnabled: boolean("two_factor_enabled").default(false),
+  // Phase 11 (Ruling R7): declared in server/auth/auth.ts user.additionalFields
+  // too, so `pnpm auth:generate` keeps it.
+  notificationsSeenAt: timestamp("notifications_seen_at", {
+    withTimezone: true,
+  }),
 })
 
 export const sessions = pgTable(

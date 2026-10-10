@@ -15,6 +15,7 @@ export type AuditListParams = {
 export const queryKeys = {
   search: (q: string) => ["search", normaliseSearch(q)] as const,
   dashboard: ["dashboard"] as const,
+  notifications: ["notifications"] as const,
   audit: {
     all: ["audit"] as const,
     list: (params: AuditListParams) => ["audit", "list", params] as const,

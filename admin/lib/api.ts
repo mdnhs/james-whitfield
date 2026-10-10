@@ -15,6 +15,7 @@ import type { GlobalsRoutes } from "@/server/modules/globals/routes"
 import type { LeadsRoutes } from "@/server/modules/leads/routes"
 import type { MediaRoutes } from "@/server/modules/media/routes"
 import type { NewsletterRoutes } from "@/server/modules/newsletter/routes"
+import type { NotificationsRoutes } from "@/server/modules/notifications/routes"
 import type { PagesRoutes } from "@/server/modules/pages/routes"
 import type { SearchRoutes } from "@/server/modules/search/routes"
 import type { SeoRoutes } from "@/server/modules/seo/routes"
@@ -35,6 +36,9 @@ export const dashboardApi = hc<DashboardRoutes>("/api/v1/admin/dashboard")
 export const globalsApi = hc<GlobalsRoutes>("/api/v1/admin/globals")
 export const leadsApi = hc<LeadsRoutes>("/api/v1/admin/leads")
 export const newsletterApi = hc<NewsletterRoutes>("/api/v1/admin/newsletter")
+export const notificationsApi = hc<NotificationsRoutes>(
+  "/api/v1/admin/notifications"
+)
 export const mediaApi = hc<MediaRoutes>("/api/v1/admin/media")
 export const pagesApi = hc<PagesRoutes>("/api/v1/admin/pages")
 export const categoriesApi = hc<TaxonomyRoutes>("/api/v1/admin/categories")

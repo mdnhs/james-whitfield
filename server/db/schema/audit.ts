@@ -30,5 +30,10 @@ export const auditLogs = pgTable(
   (table) => [
     index("audit_logs_created_at_idx").on(table.createdAt.desc()),
     index("audit_logs_entity_idx").on(table.entityType, table.entityId),
+    // The bell and the dashboard read rows by action and recency.
+    index("audit_logs_action_created_idx").on(
+      table.action,
+      table.createdAt.desc()
+    ),
   ]
 )

@@ -101,6 +101,7 @@ export async function subscribe(raw: unknown, ctx: Ctx) {
     status: "pending",
     tokenHash,
     tokenExpiresAt: new Date(now.getTime() + CONFIRM_TTL_MS),
+    updatedAt: now,
     ...meta,
   }
   // An unsubscribed row returns to pending; unsubscribedAt stays as history.

@@ -334,7 +334,10 @@ describe("retention purge", () => {
       status: "closed",
       statusChangedAt: new Date(now - 740 * DAY),
     })
-    await insertLead({ status: "spam", createdAt: new Date(now - 31 * DAY) })
+    await insertLead({
+      status: "spam",
+      statusChangedAt: new Date(now - 31 * DAY),
+    })
     const keepSpam = await insertLead({
       status: "spam",
       createdAt: new Date(now - 29 * DAY),
@@ -350,6 +353,7 @@ describe("retention purge", () => {
           email: "stale@example.com",
           status: "pending",
           createdAt: new Date(now - 31 * DAY),
+          updatedAt: new Date(now - 31 * DAY),
         },
         {
           email: "kept@example.com",
@@ -388,6 +392,59 @@ describe("retention purge", () => {
     expect(entry!.summary).toBe(
       "Retention purge: 1 closed and 1 spam enquiries, 1 unconfirmed subscriptions"
     )
+  })
+
+  it("ages spam and closed leads from when they were marked, not from signup", async () => {
+    const now = Date.now()
+    const old = new Date(now - 900 * DAY)
+    const markedToday = await insertLead({ status: "spam", createdAt: old })
+    const closedToday = await insertLead({ status: "closed", createdAt: old })
+    await insertLead({
+      status: "spam",
+      createdAt: old,
+      statusChangedAt: new Date(now - 31 * DAY),
+    })
+    await insertLead({
+      status: "closed",
+      createdAt: old,
+      statusChangedAt: new Date(now - 800 * DAY),
+    })
+    const res = await tick()
+    expect((await res.json()).purged).toMatchObject({ closed: 1, spam: 1 })
+    expect(
+      (await getDb().select({ id: leads.id }).from(leads))
+        .map((r) => r.id)
+        .sort()
+    ).toEqual([markedToday.id, closedToday.id].sort())
+  })
+
+  it("keeps a pending subscriber who re-subscribed today, however old the signup", async () => {
+    const now = Date.now()
+    await getDb()
+      .insert(newsletterSubscribers)
+      .values([
+        {
+          email: "again@example.com",
+          status: "pending",
+          createdAt: new Date(now - 90 * DAY),
+          tokenExpiresAt: new Date(now + 2 * DAY),
+        },
+        {
+          email: "abandoned@example.com",
+          status: "pending",
+          createdAt: new Date(now - 90 * DAY),
+          tokenExpiresAt: new Date(now - 60 * DAY),
+        },
+      ])
+    const res = await tick()
+    expect((await res.json()).purged).toMatchObject({ pendingSubscribers: 1 })
+    expect(
+      (
+        await getDb()
+          .select({ email: newsletterSubscribers.email })
+          .from(newsletterSubscribers)
+      ).map((r) => r.email)
+    ).toEqual(["again@example.com"])
   })
 
   it("audits nothing when nothing expired", async () => {

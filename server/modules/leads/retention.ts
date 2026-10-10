@@ -1,6 +1,6 @@
 import "server-only"
 
-import { and, eq, lt } from "drizzle-orm"
+import { and, eq, isNull, lt, or } from "drizzle-orm"
 
 import { parseGlobal } from "@/lib/content/globals"
 import type { Tx } from "@/server/db/client"
@@ -16,7 +16,8 @@ const DAY = 86_400_000
 const PENDING_DAYS = 30
 const RATE_LIMIT_GRACE_DAYS = 1
 
-// Ruling R12: every tick, under the scheduler lock; the windows come from the
+// Ruling R12 (overridden by the final review: spam and closed both age from
+// status_changed_at, so marking an old lead as spam never deletes it at once): every tick, under the scheduler lock; the windows come from the
 // privacy global (docs/brief.md §13 retention defaults).
 export async function purgeExpired(tx: Tx, now: Date) {
   const [row] = await tx
@@ -30,6 +31,7 @@ export async function purgeExpired(tx: Tx, now: Date) {
     closedBefore.getUTCMonth() - privacy.enquiryRetentionMonths
   )
   const spamBefore = new Date(now.getTime() - privacy.spamRetentionDays * DAY)
+  const pendingBefore = new Date(now.getTime() - PENDING_DAYS * DAY)
   const count = (rows: unknown[]) => rows.length
   const closed = count(
     await tx
@@ -42,7 +44,9 @@ export async function purgeExpired(tx: Tx, now: Date) {
   const spam = count(
     await tx
       .delete(leads)
-      .where(and(eq(leads.status, "spam"), lt(leads.createdAt, spamBefore)))
+      .where(
+        and(eq(leads.status, "spam"), lt(leads.statusChangedAt, spamBefore))
+      )
       .returning({ id: leads.id })
   )
   const pendingSubscribers = count(
@@ -51,9 +55,14 @@ export async function purgeExpired(tx: Tx, now: Date) {
       .where(
         and(
           eq(newsletterSubscribers.status, "pending"),
-          lt(
-            newsletterSubscribers.createdAt,
-            new Date(now.getTime() - PENDING_DAYS * DAY)
+          // A re-subscribe keeps created_at but issues a fresh token, so the
+          // token expiry (not the signup date) marks a pending row as stale.
+          or(
+            lt(newsletterSubscribers.tokenExpiresAt, pendingBefore),
+            and(
+              isNull(newsletterSubscribers.tokenExpiresAt),
+              lt(newsletterSubscribers.updatedAt, pendingBefore)
+            )
           )
         )
       )

@@ -132,6 +132,9 @@ export const FooterGlobal = z.object({
   copyrightName: s(80),
 })
 
+const PageShape = z.object({ title: s(80), body: s(400) })
+const Page = PageShape.prefault({})
+
 export const NewsletterGlobal = z.object({
   eyebrow: s(40),
   title: s(120),
@@ -143,6 +146,17 @@ export const NewsletterGlobal = z.object({
   image: MediaRef.nullable().default(null),
   tint: z.number().min(0).max(0.9).default(0.9),
   confirmationEmail: z.object({ subject: s(120), body: s(2000) }).prefault({}),
+  errors: z
+    .object({ email: s(80), rateLimited: s(160), generic: s(160) })
+    .prefault({}),
+  pages: z
+    .object({
+      confirmed: Page,
+      invalid: Page,
+      unsubscribe: PageShape.extend({ button: s(40) }).prefault({}),
+      unsubscribed: Page,
+    })
+    .prefault({}),
 })
 
 export const ContactFormGlobal = z.object({
@@ -174,7 +188,16 @@ export const ContactFormGlobal = z.object({
   sendAnother: s(40),
   success: z.object({ title: s(120), body: s(300) }).prefault({}),
   errors: z
-    .object({ name: s(80), email: s(80), topic: s(80), consent: s(80) })
+    .object({
+      name: s(80),
+      email: s(80),
+      phone: s(80),
+      topic: s(80),
+      message: s(80),
+      consent: s(80),
+      rateLimited: s(160),
+      generic: s(160),
+    })
     .prefault({}),
   // "{name}", "{price}" and "{unit}" come from the plan in ?plan=.
   planMessage: s(200),
@@ -302,6 +325,8 @@ export const ThemeGlobal = z.object({
 
 export const NotificationsGlobal = z.object({
   recipients: z.array(z.email()).max(10).default([]),
+  // §13 privacy-by-default: off unless the owner switches it on.
+  includeMessage: z.boolean().default(false),
   autoReply: z
     .object({
       enabled: z.boolean().default(false),
@@ -313,6 +338,7 @@ export const NotificationsGlobal = z.object({
 
 export const PrivacyGlobal = z.object({
   enquiryRetentionMonths: z.number().int().min(1).max(120).default(24),
+  spamRetentionDays: z.number().int().min(1).max(365).default(30),
   newsletterDoubleOptIn: z.boolean().default(true),
   ipSaltRotatedAt: z.iso.datetime().nullable().default(null),
 })

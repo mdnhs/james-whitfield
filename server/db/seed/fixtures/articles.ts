@@ -121,6 +121,30 @@ export const NEWSLETTER = {
   success: "Thank you — the next letter is on its way to your inbox.",
   image: "/images/enterprise/enterprise-bg.png",
   tint: 0.9,
+  errors: {
+    email: "Please add a valid email address.",
+    rateLimited: "Too many attempts. Please try again in a few minutes.",
+    generic: "Something went wrong. Please try again.",
+  },
+  pages: {
+    confirmed: {
+      title: "You're subscribed",
+      body: "Thanks for confirming. The monthly letter will arrive in your inbox.",
+    },
+    invalid: {
+      title: "This link has expired",
+      body: "Subscribe again from any article and we'll send a fresh link.",
+    },
+    unsubscribe: {
+      title: "Unsubscribe",
+      body: "Stop receiving the monthly letter?",
+      button: "Unsubscribe",
+    },
+    unsubscribed: {
+      title: "You're unsubscribed",
+      body: "You won't receive any more emails from us.",
+    },
+  },
   confirmationEmail: {
     subject: "Confirm your subscription",
     body: "Please confirm your subscription to the monthly letter.",

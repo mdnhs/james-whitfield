@@ -78,6 +78,11 @@ export const CONTACT_FORM: GlobalValue<"contactForm"> = {
   errors: {
     name: "Please add your name.",
     email: "Please add a valid email address.",
+    phone: "Please check the phone number.",
+    message: "Your message is too long.",
+    rateLimited:
+      "You've sent a few messages already. Please try again in a few minutes, or email us directly.",
+    generic: "Something went wrong sending your message. Please try again.",
     topic: "Please choose a topic.",
     consent: "Please confirm so I can reply to you.",
   },

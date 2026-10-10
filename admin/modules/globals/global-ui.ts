@@ -38,5 +38,12 @@ export const GLOBAL_FIELD_UI: Partial<
     readTime: { description: '"{minutes}" is replaced.' },
     showing: { description: '"{shown}" and "{total}" are replaced.' },
   },
-  notifications: { recipients: { label: "Recipients" } },
+  notifications: {
+    recipients: { label: "Recipients" },
+    includeMessage: {
+      label: "Include the message in notification emails",
+      description:
+        "Off by default: enquiries can contain health information, and email copies leave the admin.",
+    },
+  },
 }

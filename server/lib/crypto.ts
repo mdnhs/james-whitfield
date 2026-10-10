@@ -12,3 +12,14 @@ export function hashIp(ip: string) {
     .digest("hex")
     .slice(0, 32)
 }
+
+// Domain-separated keys from the one server secret (Ruling R2).
+export function derivedHmac(label: string, value: string) {
+  const key = createHmac("sha256", getEnv().BETTER_AUTH_SECRET)
+    .update(label)
+    .digest()
+  return createHmac("sha256", key).update(value).digest("hex")
+}
+
+export const hashEmail = (email: string) =>
+  derivedHmac("email", email.trim().toLowerCase()).slice(0, 32)

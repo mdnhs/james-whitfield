@@ -6,11 +6,11 @@ import { matchesSearch, normaliseSearch } from "@/lib/search/normalize"
 
 export { normaliseSearch }
 
-// Navigation hits only in Phase 2; later phases add pages, articles,
-// enquiries and media as further sources (docs/brief.md §9.4).
+// Navigation and articles; enquiries and media join in later phases
+// (docs/brief.md §9.4).
 export type SearchHit = {
   id: string
-  kind: "page"
+  kind: "page" | "article"
   label: string
   href: string
 }

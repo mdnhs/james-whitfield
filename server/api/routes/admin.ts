@@ -3,6 +3,7 @@ import "server-only"
 import { Hono } from "hono"
 
 import { accountRoutes } from "@/server/modules/account/routes"
+import { articlesRoutes } from "@/server/modules/articles/routes"
 import { auditRoutes } from "@/server/modules/audit/routes"
 import { collectionsRoutes } from "@/server/modules/collections/routes"
 import { dashboardRoutes } from "@/server/modules/dashboard/routes"
@@ -33,6 +34,7 @@ export const adminRoutes = new Hono<AppEnv>()
   .route("/collections", collectionsRoutes)
   .route("/globals", globalsRoutes)
   .route("/media", mediaRoutes)
+  .route("/articles", articlesRoutes)
   .route("/categories", categoriesRoutes)
   .route("/authors", authorsRoutes)
   .route("/search", searchRoutes)

@@ -1,7 +1,7 @@
 "use client"
 
 import { keepPreviousData, queryOptions, useQuery } from "@tanstack/react-query"
-import { ArrowUpRightIcon, SparklesIcon } from "lucide-react"
+import { ArrowUpRightIcon, NewspaperIcon, SparklesIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useTheme } from "next-themes"
 import { useDeferredValue, useMemo, useState } from "react"
@@ -42,6 +42,9 @@ export function CommandPalette({ siteUrl }: { siteUrl: string }) {
     enabled: open,
     placeholderData: keepPreviousData,
   })
+  const pageHits = data?.items.filter((hit) => hit.kind === "page") ?? []
+  const articleHits = data?.items.filter((hit) => hit.kind === "article") ?? []
+
   // A hidden route (<Activity>) must not come back with the palette open.
   useResetOnHide(() => {
     setOpen(false)
@@ -89,9 +92,9 @@ export function CommandPalette({ siteUrl }: { siteUrl: string }) {
                 ? `Nothing matches “${q}”.`
                 : "Searching…"}
           </CommandEmpty>
-          {data?.items.length ? (
+          {pageHits.length ? (
             <CommandGroup heading="Go to">
-              {data.items.map((hit) => (
+              {pageHits.map((hit) => (
                 <CommandItem
                   key={hit.id}
                   value={hit.id}
@@ -101,6 +104,23 @@ export function CommandPalette({ siteUrl }: { siteUrl: string }) {
                   }}
                 >
                   <ArrowUpRightIcon aria-hidden />
+                  {hit.label}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          ) : null}
+          {articleHits.length ? (
+            <CommandGroup heading="Articles">
+              {articleHits.map((hit) => (
+                <CommandItem
+                  key={hit.id}
+                  value={hit.id}
+                  onSelect={() => {
+                    close()
+                    router.push(hit.href)
+                  }}
+                >
+                  <NewspaperIcon aria-hidden />
                   {hit.label}
                 </CommandItem>
               ))}

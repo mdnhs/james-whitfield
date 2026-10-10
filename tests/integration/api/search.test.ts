@@ -10,10 +10,12 @@ import { closeDb } from "@/server/db/client"
 
 import {
   adminRequest,
+  cookieFor,
   createUser,
   signIn,
   signInWithTwoFactor,
 } from "../helpers/auth"
+import { insertArticle, insertTaxonomy } from "../helpers/articles"
 import { resetDb } from "../helpers/db"
 
 beforeEach(resetDb)
@@ -84,5 +86,41 @@ describe.each(ROLE_NAMES)("search for %s", (role) => {
     expect(status).toBe(200)
     const hrefs = body.items.map((hit: { href: string }) => hit.href)
     expect([...hrefs].sort()).toEqual(expectedHrefs(role))
+  })
+})
+
+describe("⌘K article hits", () => {
+  it("finds articles for article.read holders and none for intake", async () => {
+    const refs = await insertTaxonomy()
+    await insertArticle({
+      slug: "box-breathing",
+      categoryId: refs.category.id,
+      authorId: refs.author.id,
+      coverId: refs.media.id,
+    })
+    const editor = await adminRequest(
+      "/search?q=box",
+      await cookieFor("editor")
+    )
+    expect((await editor.json()).items).toContainEqual(
+      expect.objectContaining({ kind: "article", label: "Title box-breathing" })
+    )
+    const intake = await adminRequest(
+      "/search?q=box",
+      await cookieFor("intake")
+    )
+    expect(
+      (await intake.json()).items.some(
+        (i: { kind: string }) => i.kind === "article"
+      )
+    ).toBe(false)
+  })
+  it("rate-limits a user to 30 searches per 10 seconds", async () => {
+    const cookie = await cookieFor("viewer")
+    const statuses = []
+    for (let i = 0; i < 31; i++)
+      statuses.push((await adminRequest("/search?q=a", cookie)).status)
+    expect(statuses.slice(0, 30).every((s) => s === 200)).toBe(true)
+    expect(statuses[30]).toBe(429)
   })
 })

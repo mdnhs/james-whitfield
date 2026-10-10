@@ -7,6 +7,7 @@ import {
 
 import type { ErrorCode } from "@/server/api/errors"
 import type { AccountRoutes } from "@/server/modules/account/routes"
+import type { ArticlesRoutes } from "@/server/modules/articles/routes"
 import type { AuditRoutes } from "@/server/modules/audit/routes"
 import type { CollectionsRoutes } from "@/server/modules/collections/routes"
 import type { DashboardRoutes } from "@/server/modules/dashboard/routes"
@@ -21,6 +22,7 @@ import { ApiError } from "./api-error"
 // One client per sub-app keeps TypeScript fast (docs/brief.md §8.1). Same
 // origin, so the session cookie flows without configuration.
 export const accountApi = hc<AccountRoutes>("/api/v1/admin/account")
+export const articlesApi = hc<ArticlesRoutes>("/api/v1/admin/articles")
 export const auditApi = hc<AuditRoutes>("/api/v1/admin/audit")
 export const collectionsApi = hc<CollectionsRoutes>("/api/v1/admin/collections")
 export const dashboardApi = hc<DashboardRoutes>("/api/v1/admin/dashboard")

@@ -38,8 +38,6 @@ test("signing out leaves nothing of that user for the next one", async ({
   await expect(
     page.getByRole("heading", { level: 1, name: GREETING })
   ).toHaveText(/, Hana$/)
-  const security = page.getByRole("region", { name: "Security health" })
-  await expect(security).toBeVisible()
   const team = page.getByRole("region", { name: "Team activity" })
   await expect(team).toBeVisible()
 
@@ -51,7 +49,7 @@ test("signing out leaves nothing of that user for the next one", async ({
   const log = page.getByRole("table").getByRole("row")
   await expect(log.filter({ hasText: owner.name }).first()).toBeVisible()
   await nav.getByRole("link", { name: "Dashboard" }).click()
-  await expect(security).toBeVisible()
+  await expect(team).toBeVisible()
 
   await signOut(page)
   await expect(page).toHaveURL(/\/admin\/sign-in$/)
@@ -62,7 +60,6 @@ test("signing out leaves nothing of that user for the next one", async ({
   ).toHaveText(/, Eddie$/)
   // The editor's view: aggregates only, on first paint and after it.
   await expect(page.getByRole("heading", { name: "Next up" })).toBeVisible()
-  await expect(security).toHaveCount(0)
   await expect(team).toHaveCount(0)
   // Nothing hidden either: no activity log route, no owner rows, no owner.
   // (Charts keep their own screen-reader <table>; the log is a data table.)

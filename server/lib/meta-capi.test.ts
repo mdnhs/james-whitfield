@@ -59,6 +59,17 @@ describe("buildLeadEvent (brief §12.5)", () => {
     ).toBe("https://magdakennedy.ie/insights")
   })
 
+  it("sends an owner-created CMS slug as the site root, keeps allowed routes", () => {
+    expect(
+      buildLeadEvent({ ...input, sourcePath: "/hypnotherapy-for-anxiety" })
+        .event_source_url
+    ).toBe("https://magdakennedy.ie/")
+    expect(
+      buildLeadEvent({ ...input, sourcePath: "/about?utm_source=x" })
+        .event_source_url
+    ).toBe("https://magdakennedy.ie/about")
+  })
+
   it("drops malformed fbp/fbc and a missing IP", () => {
     const event = buildLeadEvent({
       ...input,

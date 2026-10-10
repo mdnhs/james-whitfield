@@ -111,6 +111,7 @@ describe("CAPI on an accepted enquiry (brief §12.5, Ruling R9)", () => {
       },
     })
     expect(sent.data[0].user_data).not.toHaveProperty("em")
+    expect(sent).not.toHaveProperty("test_event_code")
     expect(row).toMatchObject({
       marketingConsent: true,
       metaEventId: body.eventId,
@@ -131,6 +132,10 @@ describe("CAPI on an accepted enquiry (brief §12.5, Ruling R9)", () => {
     expect((await post(submission(over), header)).status).toBe(201)
     await drain()
     expect(capiCalls()).toHaveLength(0)
+    // Any "no" wins in the stored record too.
+    const [row] = await getDb().select().from(leads)
+    expect(row!.marketingConsent).toBe(false)
+    expect(row!.consent).toMatchObject({ marketing: false })
   })
 
   it("sends nothing when the banner is off or CAPI is disabled", async () => {
@@ -163,6 +168,28 @@ describe("CAPI on an accepted enquiry (brief §12.5, Ruling R9)", () => {
     const sent = JSON.parse(String((capiCalls()[0]![1] as RequestInit).body))
     expect(sent.data[0].user_data.em).toEqual([sha256(body.email)])
     expect(sent.data[0].user_data.ph).toEqual([sha256("353871234567")])
+  })
+
+  it("passes the stored test event code to Meta when set", async () => {
+    await put("tracking", tracking({ testEventCode: "TEST123" }))
+    await post(submission({ marketingConsent: true }), cookie(1, 1))
+    await drain()
+    const sent = JSON.parse(String((capiCalls()[0]![1] as RequestInit).body))
+    expect(sent.test_event_code).toBe("TEST123")
+  })
+
+  it("sends a CMS landing-page slug as the site root", async () => {
+    await post(
+      submission({
+        marketingConsent: true,
+        sourcePath: "/hypnotherapy-for-anxiety?utm_source=x",
+      }),
+      cookie(1, 1)
+    )
+    await drain()
+    const sent = JSON.parse(String((capiCalls()[0]![1] as RequestInit).body))
+    expect(sent.data[0].event_source_url).toBe("http://localhost:3000/")
+    expect(JSON.stringify(sent)).not.toContain("anxiety")
   })
 
   it("skips CAPI when the token cannot be decrypted", async () => {

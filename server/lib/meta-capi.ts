@@ -2,7 +2,7 @@ import "server-only"
 
 import { createHash } from "node:crypto"
 
-import { sanitizePath, sanitizeUrl } from "@/lib/tracking/sanitize"
+import { metaSourceUrl, sanitizePath } from "@/lib/tracking/sanitize"
 
 // docs/brief.md §12.5. Standard event, no custom_data, no email or phone
 // unless enhanced matching is on (Ruling R12).
@@ -60,7 +60,7 @@ export function buildLeadEvent(i: LeadEventInput) {
     event_time: Math.floor(i.eventTime.getTime() / 1000),
     event_id: i.eventId,
     action_source: "website" as const,
-    event_source_url: sanitizeUrl(i.sourcePath, i.siteUrl),
+    event_source_url: metaSourceUrl(i.sourcePath, i.siteUrl),
     user_data,
   }
 }

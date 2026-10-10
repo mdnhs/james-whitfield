@@ -56,14 +56,22 @@ export const META_ROUTES = [
   "/insights",
 ] as const
 
+export const metaRoute = (pathname: string): boolean =>
+  (META_ROUTES as readonly string[]).includes(pathname)
+
 export function metaAllowed(loc: {
   pathname: string
   search: string
   hash: string
 }): boolean {
-  return (
-    !loc.search &&
-    !loc.hash &&
-    (META_ROUTES as readonly string[]).includes(loc.pathname)
-  )
+  return !loc.search && !loc.hash && metaRoute(loc.pathname)
+}
+
+// The server-side (CAPI) twin of metaAllowed: any page outside the allowlist,
+// such as an owner-created landing page slug, is sent as the site root.
+export function metaSourceUrl(href: string, base?: string): string {
+  const clean = sanitizeUrl(href, base)
+  if (!clean) return ""
+  const url = new URL(clean)
+  return url.origin + (metaRoute(url.pathname) ? url.pathname : "/")
 }

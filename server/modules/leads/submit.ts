@@ -153,7 +153,8 @@ export async function submitLead(body: unknown, ctx: Ctx) {
         now.getTime()
       )
     : null
-  const marketing = choice?.marketing === true
+  // Any "no" wins: recorded and acted on only when both say yes.
+  const marketing = choice?.marketing === true && input.marketingConsent
   const form = (await getGlobal("contactForm")).value
   const leadId = await getDb().transaction(async (tx) => {
     const [row] = await tx
@@ -183,7 +184,7 @@ export async function submitLead(body: unknown, ctx: Ctx) {
     return row!.id
   })
   defer(() => notifyNewLead(leadId), "lead notification")
-  if (marketing && input.marketingConsent && input.eventId) {
+  if (marketing && input.eventId) {
     const eventId = input.eventId
     // The raw IP goes to Meta (brief §12.5) but is never stored.
     defer(

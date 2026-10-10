@@ -34,7 +34,12 @@ export async function sendLeadToCapi(
       t.enhancedMatching.enabled && t.enhancedMatching.acknowledgedAt
     ),
   })
-  const result = await sendCapi({ pixelId, token, events: [event] })
+  const result = await sendCapi({
+    pixelId,
+    token,
+    events: [event],
+    testEventCode: t.testEventCode || undefined,
+  })
   if (result.ok) return "sent"
   // Ruling R10: status only; never the token, the payload or the lead.
   await audit(null, {

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest"
 import {
   META_ROUTES,
   metaAllowed,
+  metaSourceUrl,
   pageTitle,
   sanitizePath,
   sanitizeUrl,
@@ -110,5 +111,19 @@ describe("metaAllowed (Ruling R7)", () => {
     expect(metaAllowed(at("/contact", "?topic=anxiety-stress"))).toBe(false)
     expect(metaAllowed(at("/contact", "", "#form"))).toBe(false)
     expect(metaAllowed(at("/privacy"))).toBe(false)
+  })
+})
+
+describe("metaSourceUrl (CAPI, Ruling R7)", () => {
+  it.each([
+    ["/contact?topic=anxiety-stress#form", `${SITE}/contact`],
+    ["/about", `${SITE}/about`],
+    ["/insights/hypnosis-for-panic", `${SITE}/insights`],
+    ["/hypnotherapy-for-anxiety", `${SITE}/`],
+    ["/services/anxiety", `${SITE}/`],
+    ["/Contact", `${SITE}/`],
+    ["//evil.example/contact", ""],
+  ])("%s → %s", (href, expected) => {
+    expect(metaSourceUrl(href, SITE)).toBe(expected)
   })
 })

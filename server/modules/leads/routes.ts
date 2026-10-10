@@ -6,6 +6,10 @@ import * as z from "zod"
 
 import { LeadListQuery, LeadNote, LeadPatch } from "@/lib/leads/schema"
 import { validationHook } from "@/server/api/errors"
+import {
+  actorLimit,
+  EXPORT_LIMIT_RATE,
+} from "@/server/api/middleware/actor-limit"
 import { can } from "@/server/api/middleware/auth"
 import type { AppEnv } from "@/server/api/types"
 
@@ -39,6 +43,7 @@ export const leadsRoutes = new Hono<AppEnv>()
   .get(
     "/export.csv",
     can({ lead: ["export"] }),
+    actorLimit("export", EXPORT_LIMIT_RATE),
     zValidator("query", ExportQuery, validationHook),
     async (c) => {
       const csv = await service.exportLeads(
@@ -55,6 +60,7 @@ export const leadsRoutes = new Hono<AppEnv>()
   .get(
     "/dsar",
     can({ lead: ["export"], newsletter: ["export"] }),
+    actorLimit("export", EXPORT_LIMIT_RATE),
     zValidator("query", EmailQuery, validationHook),
     async (c) => {
       const data = await dsar.exportPerson(

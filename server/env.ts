@@ -2,6 +2,8 @@ import "server-only"
 
 import * as z from "zod"
 
+import { parseAuthSecrets } from "./auth/secrets"
+
 // Validated lazily on first use, never at module scope: `next build` runs
 // without production secrets or a database (docs/brief.md §5.6).
 const EnvSchema = z
@@ -16,6 +18,9 @@ const EnvSchema = z
     DATABASE_URL: z.url(),
     BETTER_AUTH_SECRET: z.string().min(32),
     BETTER_AUTH_URL: z.url(),
+    // Rotation (docs/brief.md §7.1): "2:<new>,1:<old>". BETTER_AUTH_SECRET
+    // stays set as the legacy key so data encrypted before rotation decrypts.
+    BETTER_AUTH_SECRETS: z.string().optional(),
     EMAIL_DRIVER: z.enum(["log", "smtp", "resend"]).default("log"),
     SMTP_URL: z.string().optional(),
     RESEND_API_KEY: z.string().startsWith("re_").optional(),
@@ -49,6 +54,15 @@ const EnvSchema = z
     DISABLE_CUSTOM_SCRIPTS: z.stringbool().default(false),
   })
   .superRefine((env, ctx) => {
+    try {
+      parseAuthSecrets(env.BETTER_AUTH_SECRETS)
+    } catch (error) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["BETTER_AUTH_SECRETS"],
+        message: (error as Error).message,
+      })
+    }
     if (env.MEDIA_DRIVER === "s3") {
       for (const name of [
         "S3_BUCKET",

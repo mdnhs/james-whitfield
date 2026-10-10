@@ -6,6 +6,10 @@ import * as z from "zod"
 
 import { SubscriberExportQuery, SubscriberListQuery } from "@/lib/leads/schema"
 import { validationHook } from "@/server/api/errors"
+import {
+  actorLimit,
+  EXPORT_LIMIT_RATE,
+} from "@/server/api/middleware/actor-limit"
 import { can } from "@/server/api/middleware/auth"
 import type { AppEnv } from "@/server/api/types"
 
@@ -27,6 +31,7 @@ export const newsletterRoutes = new Hono<AppEnv>()
   .get(
     "/export.csv",
     can({ newsletter: ["export"] }),
+    actorLimit("export", EXPORT_LIMIT_RATE),
     zValidator("query", SubscriberExportQuery, validationHook),
     async (c) => {
       const csv = await service.exportSubscribers(

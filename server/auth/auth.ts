@@ -12,6 +12,7 @@ import { audit } from "@/server/lib/audit"
 import { accountHooks } from "./account-hooks"
 import { deliverResetEmail } from "./email"
 import { afterHook, beforeHook } from "./hooks"
+import { parseAuthSecrets } from "./secrets"
 import { responseScrub } from "./response-scrub"
 import { signInAudit } from "./sign-in-audit"
 import { twoFactorPolicy } from "./two-factor-policy"
@@ -23,6 +24,7 @@ export function buildAuth() {
     appName: "Magda Kennedy Admin",
     baseURL: env.BETTER_AUTH_URL,
     secret: env.BETTER_AUTH_SECRET,
+    secrets: parseAuthSecrets(env.BETTER_AUTH_SECRETS),
     trustedOrigins: [env.SITE_URL],
     database: drizzleAdapter(getDb(), {
       provider: "pg",
@@ -83,6 +85,8 @@ export function buildAuth() {
         "/sign-in/email": { window: 60, max: 5 },
         "/request-password-reset": { window: 300, max: 3 },
         "/two-factor/*": { window: 60, max: 5 },
+        "/change-password": { window: 300, max: 5 },
+        "/reset-password": { window: 300, max: 5 },
       },
     },
     advanced: {
@@ -117,6 +121,11 @@ export function buildAuth() {
 export type Auth = ReturnType<typeof buildAuth>
 
 let instance: Auth | undefined
+
+// Tests rebuild Better Auth after changing its secrets; the app never calls this.
+export function resetAuthForTests() {
+  instance = undefined
+}
 
 // Built on first use: importing this module at build time needs no secrets.
 export function getAuth(): Auth {

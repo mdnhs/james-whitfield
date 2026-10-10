@@ -1,0 +1,26 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+    ignore:
+      # docs/plan.md Global Constraints: Next 16.3.x and Hono 4 only.
+      - dependency-name: next
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
+      - dependency-name: eslint-config-next
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
+      - dependency-name: hono
+        update-types: ["version-update:semver-major"]
+      - dependency-name: better-auth
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
+      - dependency-name: drizzle-orm
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly

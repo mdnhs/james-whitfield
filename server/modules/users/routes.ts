@@ -12,6 +12,11 @@ import {
   UserListQuery,
 } from "@/lib/users/schema"
 import { validationHook } from "@/server/api/errors"
+import {
+  actorLimit,
+  INVITE_LIMIT,
+  VIEW_AS_LIMIT,
+} from "@/server/api/middleware/actor-limit"
 import { can } from "@/server/api/middleware/auth"
 import { notViewingAs } from "@/server/api/middleware/view-as"
 import type { AppEnv } from "@/server/api/types"
@@ -36,6 +41,7 @@ export const usersRoutes = new Hono<AppEnv>()
     "/invite",
     can({ user: ["create"] }),
     viewing,
+    actorLimit("invite", INVITE_LIMIT),
     zValidator("json", InviteInput, validationHook),
     async (c) =>
       c.json(
@@ -97,6 +103,7 @@ export const usersRoutes = new Hono<AppEnv>()
     "/:id/resend-invite",
     can({ user: ["create"] }),
     viewing,
+    actorLimit("invite", INVITE_LIMIT),
     id,
     async (c) =>
       c.json(
@@ -125,6 +132,7 @@ export const usersRoutes = new Hono<AppEnv>()
     "/:id/impersonate",
     can({ user: ["impersonate"] }),
     notViewingAs("Stop viewing as this person before viewing as someone else"),
+    actorLimit("view-as", VIEW_AS_LIMIT),
     id,
     async (c) => {
       const cookies = await startViewAs(

@@ -5,6 +5,10 @@ import { Hono } from "hono"
 import * as z from "zod"
 
 import { validationHook } from "@/server/api/errors"
+import {
+  actorLimit,
+  EXPORT_LIMIT_RATE,
+} from "@/server/api/middleware/actor-limit"
 import { can } from "@/server/api/middleware/auth"
 import type { AppEnv } from "@/server/api/types"
 
@@ -30,6 +34,7 @@ export const auditRoutes = new Hono<AppEnv>()
   .get(
     "/export.csv",
     can({ audit: ["read"] }),
+    actorLimit("export", EXPORT_LIMIT_RATE),
     zValidator("query", AuditExportQuery, validationHook),
     async (c) => {
       const csv = await exportAuditCsv(c.get("actor")!, c.req.valid("query"))

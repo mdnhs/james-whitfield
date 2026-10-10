@@ -34,6 +34,19 @@ const EnvSchema = z
     // docs/brief.md §13: Cloudflare Turnstile on public forms, off when unset.
     TURNSTILE_SITE_KEY: z.string().min(1).optional(),
     TURNSTILE_SECRET_KEY: z.string().min(1).optional(),
+    // docs/brief.md §12.5: encrypts the CAPI token. Optional: only needed
+    // before a token is saved (the Tracking page explains when it is missing).
+    APP_ENCRYPTION_KEY: z
+      .string()
+      .refine(
+        (v) =>
+          /^[A-Za-z0-9+/]{43}=$/.test(v) &&
+          Buffer.from(v, "base64").length === 32,
+        "APP_ENCRYPTION_KEY must be 32 random bytes, base64 (openssl rand -base64 32)"
+      )
+      .optional(),
+    // docs/brief.md §12.6 kill switch for every custom snippet.
+    DISABLE_CUSTOM_SCRIPTS: z.stringbool().default(false),
   })
   .superRefine((env, ctx) => {
     if (env.MEDIA_DRIVER === "s3") {

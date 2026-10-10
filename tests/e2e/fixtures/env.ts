@@ -17,4 +17,6 @@ export const E2E_ENV = {
   EMAIL_FROM: "Magda Kennedy <hello@example.com>",
   CRON_SECRET: "e2e-cron-secret-0123456789-abcdefghij",
   SCHEDULER: "off",
+  // 32 bytes of 0x07, base64: tests only.
+  APP_ENCRYPTION_KEY: "BwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwc=",
 }

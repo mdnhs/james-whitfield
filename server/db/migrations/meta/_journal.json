@@ -64,6 +64,13 @@
       "when": 1791622202532,
       "tag": "0008_seo",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791628080562,
+      "tag": "0009_tracking",
+      "breakpoints": true
     }
   ]
 }

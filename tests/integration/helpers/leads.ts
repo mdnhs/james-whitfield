@@ -8,7 +8,7 @@ export const freshIp = () => `198.51.100.${ipCounter++ % 250}`
 
 export function publicRequest(
   path: string,
-  init: { method?: string; body?: unknown; ip?: string } = {}
+  init: { method?: string; body?: unknown; ip?: string; cookie?: string } = {}
 ) {
   return app.request(`/api/v1/public${path}`, {
     method: init.method ?? "GET",
@@ -16,6 +16,7 @@ export function publicRequest(
       "content-type": "application/json",
       "x-real-ip": init.ip ?? freshIp(),
       "user-agent": "vitest",
+      ...(init.cookie ? { cookie: init.cookie } : {}),
     },
     body: init.body === undefined ? undefined : JSON.stringify(init.body),
   })

@@ -12,4 +12,6 @@ export const TEST_ENV = {
   EMAIL_DRIVER: "log",
   EMAIL_FROM: "Magda Kennedy <hello@example.com>",
   CRON_SECRET: "test-cron-secret-0123456789-abcdefghij",
+  // 32 bytes of 0x07, base64: tests only.
+  APP_ENCRYPTION_KEY: "BwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwc=",
 }

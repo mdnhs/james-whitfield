@@ -2,6 +2,8 @@
 import * as z from "zod"
 
 import { Href, HttpsUrl, MediaRef } from "@/blocks/fields"
+import { CUSTOM_SCRIPT_HOSTS } from "@/lib/tracking/hosts"
+import { GA4_ID, GTM_ID, PIXEL_ID } from "@/lib/tracking/ids"
 
 const s = (max: number) => z.string().trim().max(max).default("")
 const Link = z.object({
@@ -272,13 +274,31 @@ export const SeoGlobal = z.object({
     .prefault({}),
 })
 
+// A refine, not .or(z.literal("")): a union would report "Invalid input"
+// instead of the format hint.
+const optionalId = (pattern: RegExp, message: string) =>
+  z
+    .string()
+    .trim()
+    .max(30)
+    .refine((v) => v === "" || pattern.test(v), message)
+    .default("")
+
 export const TrackingGlobal = z.object({
-  gtmId: s(20),
-  ga4Id: s(20),
-  metaPixelId: s(20),
-  // Encrypted at rest (Phase 8); never sent to the browser.
-  capiTokenEncrypted: z.string().nullable().default(null),
-  testEventCode: s(40),
+  gtmId: optionalId(GTM_ID, "Use the GTM-XXXXXXX format"),
+  ga4Id: optionalId(GA4_ID, "Use the G-XXXXXXXXXX format"),
+  metaPixelId: optionalId(PIXEL_ID, "Use the 10–20 digit Pixel ID"),
+  // Ruling R11: v1.<iv>.<tag>.<ciphertext>; never sent to the browser.
+  capiTokenEncrypted: z.string().max(2000).nullable().default(null),
+  testEventCode: z
+    .string()
+    .trim()
+    .max(40)
+    .regex(
+      /^[A-Z0-9]*$/,
+      "Use the code from Events Manager (letters and digits)"
+    )
+    .default(""),
   enabled: z
     .object({
       gtm: z.boolean().default(false),
@@ -287,33 +307,111 @@ export const TrackingGlobal = z.object({
       capi: z.boolean().default(false),
     })
     .prefault({}),
+  // Ruling R12: owner-only, with a recorded legal acknowledgement.
+  enhancedMatching: z
+    .object({
+      enabled: z.boolean().default(false),
+      acknowledgedAt: z.iso.datetime().nullable().default(null),
+      acknowledgedBy: z.string().max(254).nullable().default(null),
+    })
+    .prefault({}),
 })
 
-export const ConsentGlobal = z.object({
-  enabled: z.boolean().default(false),
-  title: s(80),
-  body: s(600),
-  accept: s(30),
-  reject: s(30),
-  customise: s(30),
-  policyHref: Href.or(z.literal("")).default(""),
-  categories: z.object({ analytics: s(300), marketing: s(300) }).prefault({}),
-  reconsentMonths: z.number().int().min(1).max(24).default(12),
-  version: z.number().int().min(1).default(1),
-})
+export const ConsentGlobal = z
+  .object({
+    enabled: z.boolean().default(false),
+    title: s(80),
+    body: s(600),
+    accept: s(30),
+    reject: s(30),
+    customise: s(30),
+    save: s(30),
+    settingsLink: s(30),
+    policyLabel: s(40),
+    policyHref: Href.or(z.literal("")).default(""),
+    categories: z
+      .object({ necessary: s(300), analytics: s(300), marketing: s(300) })
+      .prefault({}),
+    // Ruling R13: brief §12.1 "at least every 6 months".
+    reconsentMonths: z.number().int().min(1).max(6).default(6),
+    // Raising it asks every visitor again.
+    version: z.number().int().min(1).default(1),
+  })
+  .superRefine((v, ctx) => {
+    // A live banner needs every label: the site never invents copy (the
+    // content-literals test), and withdrawal needs the footer link.
+    if (!v.enabled) return
+    for (const key of [
+      "title",
+      "body",
+      "accept",
+      "reject",
+      "customise",
+      "save",
+      "settingsLink",
+    ] as const) {
+      if (!v[key])
+        ctx.addIssue({
+          code: "custom",
+          path: [key],
+          message: "Fill this in before turning the banner on",
+        })
+    }
+  })
+
+export const SCRIPT_CATEGORIES = [
+  "necessary",
+  "analytics",
+  "marketing",
+] as const
+const RoutePattern = z
+  .string()
+  .trim()
+  .max(120)
+  .regex(/^\/[\w\-/]*\*?$/, 'Use a path like "/" or "/insights/*"')
+
+const allowedSrc = (src: string) => {
+  try {
+    const url = new URL(src)
+    return (
+      url.protocol === "https:" && CUSTOM_SCRIPT_HOSTS.includes(url.hostname)
+    )
+  } catch {
+    return false
+  }
+}
+
+export const ScriptSnippet = z
+  .object({
+    name: s(60),
+    placement: z.enum(["head", "body"]).default("body"),
+    src: z.string().trim().max(500).default(""),
+    inline: z.string().max(20_000).default(""),
+    category: z.enum(SCRIPT_CATEGORIES).default("marketing"),
+    routes: z.array(RoutePattern).max(20).default([]),
+    enabled: z.boolean().default(false),
+  })
+  .superRefine((v, ctx) => {
+    if (Boolean(v.src) === Boolean(v.inline.trim()))
+      ctx.addIssue({
+        code: "custom",
+        path: ["src"],
+        message: "Give either a script address or inline code, not both",
+      })
+    else if (v.src && !allowedSrc(v.src))
+      ctx.addIssue({
+        code: "custom",
+        path: ["src"],
+        message:
+          CUSTOM_SCRIPT_HOSTS.length === 0
+            ? "External scripts are not allowed yet; use inline code"
+            : `Use https on an allowed host: ${CUSTOM_SCRIPT_HOSTS.join(", ")}`,
+      })
+  })
+export type ScriptSnippet = z.infer<typeof ScriptSnippet>
 
 export const ScriptsGlobal = z.object({
-  snippets: z
-    .array(
-      z.object({
-        name: s(60),
-        placement: z.enum(["head", "body-start", "body-end"]),
-        category: z.enum(["necessary", "analytics", "marketing"]),
-        code: z.string().max(20_000),
-      })
-    )
-    .max(20)
-    .default([]),
+  snippets: z.array(ScriptSnippet).max(20).default([]),
 })
 
 export const ThemeGlobal = z.object({

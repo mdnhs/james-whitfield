@@ -142,3 +142,34 @@ describe("getEnv Turnstile", () => {
     expect(() => getEnv()).toThrow(/TURNSTILE_SECRET_KEY/)
   })
 })
+
+describe("getEnv tracking secrets", () => {
+  const base = () => {
+    vi.stubEnv("SITE_URL", "https://www.example.ie")
+    vi.stubEnv("DATABASE_URL", "postgres://user:pass@db:5432/app")
+  }
+
+  it("accepts a 32-byte base64 APP_ENCRYPTION_KEY and rejects anything else", () => {
+    base()
+    vi.stubEnv("APP_ENCRYPTION_KEY", Buffer.alloc(32, 3).toString("base64"))
+    expect(getEnv().APP_ENCRYPTION_KEY).toHaveLength(44)
+    resetEnvForTests()
+    vi.stubEnv("APP_ENCRYPTION_KEY", Buffer.alloc(16, 3).toString("base64"))
+    expect(() => getEnv()).toThrow(/APP_ENCRYPTION_KEY/)
+  })
+
+  it("APP_ENCRYPTION_KEY is optional, even in production", () => {
+    base()
+    vi.stubEnv("APP_ENCRYPTION_KEY", undefined)
+    expect(getEnv().APP_ENCRYPTION_KEY).toBeUndefined()
+  })
+
+  it("reads DISABLE_CUSTOM_SCRIPTS as a boolean, default false", () => {
+    base()
+    vi.stubEnv("DISABLE_CUSTOM_SCRIPTS", undefined)
+    expect(getEnv().DISABLE_CUSTOM_SCRIPTS).toBe(false)
+    resetEnvForTests()
+    vi.stubEnv("DISABLE_CUSTOM_SCRIPTS", "true")
+    expect(getEnv().DISABLE_CUSTOM_SCRIPTS).toBe(true)
+  })
+})

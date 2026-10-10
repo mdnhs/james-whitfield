@@ -3,6 +3,7 @@ import "server-only"
 import { Hono } from "hono"
 import { bodyLimit } from "hono/body-limit"
 
+import { consentPublicRoutes } from "@/server/modules/consent/public-routes"
 import { leadsPublicRoutes } from "@/server/modules/leads/public-routes"
 import { newsletterPublicRoutes } from "@/server/modules/newsletter/public-routes"
 
@@ -30,5 +31,6 @@ export const publicRoutes = new Hono<AppEnv>()
         ),
     })
   )
+  .route("/consent", consentPublicRoutes)
   .route("/leads", leadsPublicRoutes)
   .route("/newsletter", newsletterPublicRoutes)

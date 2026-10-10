@@ -4,6 +4,7 @@ import {
   CONTACT,
   CONTACT_FORM,
 } from "@/server/db/seed/fixtures/contact-content"
+import { consentCopy } from "@/server/db/seed/fixtures/consent"
 import { FOOTER } from "@/server/db/seed/fixtures/footer-links"
 import { HERO_CONTENT } from "@/server/db/seed/fixtures/hero-content"
 import { NEWSLETTER } from "@/server/db/seed/fixtures/articles"
@@ -61,7 +62,7 @@ const VALUES: Record<GlobalKey, unknown> = {
     business: { type: "ProfessionalService", priceRange: "€€" },
   },
   tracking: {},
-  consent: {},
+  consent: consentCopy,
   scripts: {},
   theme: { site: SITE_THEME, admin: {} },
   notifications: {},

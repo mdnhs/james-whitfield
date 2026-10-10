@@ -9,6 +9,7 @@ import {
 import { NewspaperIcon, PlusIcon } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { parseAsString, useQueryState } from "nuqs"
 import { useEffect, useState } from "react"
 
 import { EmptyState } from "@/admin/components/dashboard/empty-state"
@@ -154,7 +155,15 @@ function useDebounced<T>(value: T, delay: number) {
 
 export function ArticlesView() {
   const canCreate = usePermission({ article: ["create"] })
-  const [creating, setCreating] = useState(false)
+  // `?new=1` from the dashboard's "New article". parseAsBoolean reads only
+  // "true"/"false", so the flag is read as a string.
+  const [newRaw, setNewParam] = useQueryState("new", parseAsString)
+  const newParam = newRaw === "1"
+  const [creating, setCreatingState] = useState(newParam && canCreate)
+  const setCreating = (open: boolean) => {
+    setCreatingState(open)
+    if (!open && newParam) void setNewParam(null)
+  }
   useResetOnHide(() => setCreating(false))
   const [search, setSearch] = useState("")
   const q = useDebounced(search.trim(), 300)

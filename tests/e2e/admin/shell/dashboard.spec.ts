@@ -13,16 +13,19 @@ test.describe("as an owner", () => {
       page.getByRole("heading", { level: 1, name: GREETING })
     ).toHaveText(/, Sam$/)
     await expect(page.getByRole("article")).toHaveCount(4)
-    await expect(
-      page.getByRole("heading", { name: "Security health" }).first()
-    ).toBeVisible()
+    for (const name of [
+      "Enquiries this week",
+      "Next up",
+      "Team activity",
+      "Content health",
+    ]) {
+      await expect(page.getByRole("region", { name })).toBeVisible()
+    }
     const activity = page.getByRole("region", { name: "Team activity" })
     // Newest eight entries: parallel content specs can push the sign-ins out.
     await expect(activity.getByText("No activity yet")).toHaveCount(0)
     await expect(activity.getByText(/ago|just now/i).first()).toBeVisible()
-    await expect(
-      page.getByRole("link", { name: "Invite teammate" })
-    ).toBeVisible()
+    await expect(page.getByRole("link", { name: "New article" })).toBeVisible()
     await expect(
       page.getByRole("list", { name: "Setup checklist" }).getByRole("listitem")
     ).toHaveCount(2)
@@ -37,15 +40,16 @@ test.describe("as a viewer", () => {
     await expect(
       page.getByRole("heading", { level: 1, name: GREETING })
     ).toBeVisible()
-    await expect(page.getByRole("article")).toHaveCount(2)
-    await expect(
-      page.getByRole("link", { name: "Invite teammate" })
-    ).toHaveCount(0)
+    await expect(page.getByRole("article")).toHaveCount(4)
+    await expect(page.getByRole("link", { name: "New article" })).toHaveCount(0)
     await expect(
       page.getByRole("region", { name: "Team activity" })
     ).toHaveCount(0)
     await expect(
-      page.getByRole("region", { name: "Security health" })
+      page.getByRole("region", { name: "Content health" })
+    ).toBeVisible()
+    await expect(
+      page.getByRole("list", { name: "Content findings" }).getByRole("listitem")
     ).toHaveCount(0)
     // Its one step is the headline, so there is no checklist to repeat it.
     await expect(page.getByRole("heading", { name: "Next up" })).toBeVisible()
@@ -65,5 +69,36 @@ test.describe("as a viewer", () => {
     await expect(page.getByText(/is required/)).toHaveCount(0)
     await page.getByRole("link", { name: "Back to the dashboard" }).click()
     await expect(page).toHaveURL(/\/admin$/)
+  })
+})
+
+test.describe("as intake", () => {
+  test.use({ storageState: STORAGE.intake })
+
+  test("sees only the figures it may open", async ({ page }) => {
+    await page.goto("/admin")
+    await expect(
+      page.getByRole("heading", { level: 1, name: GREETING })
+    ).toBeVisible()
+    await expect(page.getByRole("article")).toHaveCount(3)
+    await expect(
+      page.getByRole("region", { name: "Content health" })
+    ).toHaveCount(0)
+    await expect(
+      page.getByRole("region", { name: "Team activity" })
+    ).toHaveCount(0)
+  })
+})
+
+test.describe("as an editor", () => {
+  test.use({ storageState: STORAGE.editor })
+
+  test("opens the new-article dialog from the dashboard", async ({ page }) => {
+    await page.goto("/admin")
+    await page.getByRole("link", { name: "New article" }).click()
+    await expect(page).toHaveURL(/\/admin\/insights\?new=1$/)
+    await expect(
+      page.getByRole("dialog", { name: "New article" })
+    ).toBeVisible()
   })
 })

@@ -71,6 +71,36 @@ export function providerMessage(error: unknown, secrets: readonly string[]) {
   return text || (status ? `Status ${status}` : "No details")
 }
 
+// What the server log may keep of an error: its class and code. Messages,
+// queries and parameters can carry page text or enquiry details.
+export function errorTag(error: unknown) {
+  const e = unwrap(error) as {
+    name?: unknown
+    code?: unknown
+    cause?: { code?: unknown }
+  } | null
+  const code = e?.code ?? e?.cause?.code
+  return {
+    name: typeof e?.name === "string" ? e.name : typeof error,
+    ...(typeof code === "string" || typeof code === "number" ? { code } : {}),
+    ...(statusOf(error) ? { status: statusOf(error) } : {}),
+  }
+}
+
+// A tool that failed: the model and the person see only this message.
+export const TOOL_FAILED =
+  "Couldn't read that site data just now. Try again in a moment."
+export class ToolFailure extends Error {
+  constructor(readonly tool: string) {
+    super(TOOL_FAILED)
+    this.name = "ToolFailure"
+  }
+  // The AI SDK sends a thrown tool error to the model as JSON.
+  toJSON() {
+    return { error: TOOL_FAILED }
+  }
+}
+
 const QUOTA = /quota|RESOURCE_EXHAUSTED|rate.?limit|too many requests/i
 
 export function friendlyChatError(error: unknown, provider: AiProvider) {

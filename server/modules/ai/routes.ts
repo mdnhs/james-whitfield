@@ -4,12 +4,14 @@ import "server-only"
 import { zValidator } from "@hono/zod-validator"
 import { Hono } from "hono"
 
-import { AiSettingsUpdate, ListModelsInput } from "@/lib/ai/schema"
+import { AiSettingsUpdate, ChatInput, ListModelsInput } from "@/lib/ai/schema"
 import { validationHook } from "@/server/api/errors"
 import { actorLimit } from "@/server/api/middleware/actor-limit"
 import { can } from "@/server/api/middleware/auth"
+import { notViewingAs } from "@/server/api/middleware/view-as"
 import type { AppEnv } from "@/server/api/types"
 
+import { startChat } from "./chat"
 import {
   getAiAdmin,
   getAiStatus,
@@ -50,6 +52,19 @@ export const aiRoutes = new Hono<AppEnv>()
     can({ ai: ["manage"] }),
     actorLimit("ai-test", AI_TEST_LIMIT),
     async (c) => c.json(await testConnection(c.get("actor")!))
+  )
+  // Returns the AI SDK's streaming Response as is: Hono passes a returned
+  // Response through, and the session middleware can still append cookies.
+  .post(
+    "/chat",
+    can({ ai: ["use"] }),
+    notViewingAs(
+      "You can read conversations while viewing as someone, but not send messages"
+    ),
+    actorLimit("ai-chat", AI_CHAT_LIMIT),
+    zValidator("json", ChatInput, validationHook),
+    async (c) =>
+      startChat(c.get("actor")!, c.req.valid("json"), c.req.raw.signal)
   )
 
 export type AiRoutes = typeof aiRoutes

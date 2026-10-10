@@ -31,7 +31,7 @@ import {
 import { buildTools } from "@/server/modules/ai/tools"
 
 import { cookieFor } from "../helpers/auth"
-import { insertArticle, insertTaxonomy } from "../helpers/articles"
+import { content, insertArticle, insertTaxonomy } from "../helpers/articles"
 import { heroDocument, insertMedia, insertPage } from "../helpers/content"
 import { resetDb } from "../helpers/db"
 import { insertLead } from "../helpers/leads"
@@ -300,5 +300,57 @@ describe("output size caps", () => {
       .where(eq(articles.id, row.id))
     const article = await readArticle(await actorFor("editor"), "long-excerpt")
     expect((article.excerpt as string).length).toBe(500)
+  })
+})
+
+describe("Task 3 review carries", () => {
+  it("dates recent enquiries in Dublin time", async () => {
+    // 23:30 UTC on 10 July is 00:30 on 11 July in Dublin (IST).
+    await insertLead({
+      name: "Late Enquirer",
+      createdAt: new Date("2026-07-10T23:30:00Z"),
+    })
+    const stats = await enquiryStats(
+      await actorFor("owner"),
+      shared,
+      "30d",
+      new Date("2026-07-20T12:00:00Z")
+    )
+    expect(stats.recent).toEqual([
+      expect.objectContaining({ firstName: "Late", date: "2026-07-11" }),
+    ])
+  })
+
+  it("an article slug prefers the live slug, then the newest draft slug", async () => {
+    const media = await insertMedia()
+    const { category, author } = await insertTaxonomy()
+    const refs = {
+      categoryId: category.id,
+      authorId: author.id,
+      coverId: media.id,
+    }
+    const article = (slug: string) => insertArticle({ slug, ...refs })
+    const setDraft = (id: string, slug: string, updatedAt: Date) =>
+      getDb()
+        .update(articles)
+        .set({ draft: content(refs, { slug }), updatedAt })
+        .where(eq(articles.id, id))
+    // Renamed in draft to "calm", inserted first and edited most recently.
+    const renamed = await article("calm-old")
+    await setDraft(renamed.id, "calm", new Date("2026-09-01T00:00:00Z"))
+    const live = await article("calm")
+    await getDb()
+      .update(articles)
+      .set({ updatedAt: new Date("2026-01-01T00:00:00Z") })
+      .where(eq(articles.id, live.id))
+    const older = await article("older")
+    const newer = await article("newer")
+    await setDraft(newer.id, "fresh", new Date("2026-08-01T00:00:00Z"))
+    await setDraft(older.id, "fresh", new Date("2026-02-01T00:00:00Z"))
+    const editor = await actorFor("editor")
+    expect(await readArticle(editor, "calm")).toMatchObject({ id: live.id })
+    expect(await readArticle(editor, "/insights/fresh")).toMatchObject({
+      id: newer.id,
+    })
   })
 })

@@ -1,6 +1,7 @@
 // server/modules/ai/tool-data.ts
 import "server-only"
 
+import { format } from "date-fns"
 import { and, count, desc, eq, gte, ne, or, sql } from "drizzle-orm"
 
 import { PageSeo } from "@/blocks/page"
@@ -14,6 +15,7 @@ import { articles, leads } from "@/server/db/schema"
 import { getArticle, listArticles } from "@/server/modules/articles/service"
 import { ArticleListQuery } from "@/server/modules/articles/schema"
 import { getDashboard } from "@/server/modules/dashboard/service"
+import { DUBLIN } from "@/server/modules/dashboard/week"
 import { getPage, listPages } from "@/server/modules/pages/service"
 import { computeSeoHealth } from "@/server/modules/seo/health"
 
@@ -125,11 +127,18 @@ export async function readArticle(
       .trim()
       .replace(/^\/?insights\//, "")
       .replace(/\/+$/, "")
+    // A live slug is unique and wins; draft slugs can repeat across
+    // renames, so the most recently edited draft is the one meant.
     const [row] = await getDb()
       .select({ id: articles.id })
       .from(articles)
       .where(
         or(eq(articles.slug, slug), sql`${articles.draft}->>'slug' = ${slug}`)
+      )
+      .orderBy(
+        sql`case when ${articles.slug} = ${slug} then 0 else 1 end`,
+        desc(articles.updatedAt),
+        articles.id
       )
       .limit(1)
     id = row?.id ?? null
@@ -268,7 +277,7 @@ export async function enquiryStats(
     result.recent = rows.map((r) => ({
       firstName: r.name.trim().split(/\s+/)[0] ?? "",
       topic: r.topic || "unspecified",
-      date: r.createdAt.toISOString().slice(0, 10),
+      date: format(r.createdAt, "yyyy-MM-dd", { in: DUBLIN }),
       message: r.message.slice(0, 500),
     }))
   }

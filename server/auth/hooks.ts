@@ -6,6 +6,7 @@ import {
   getSessionFromCtx,
   isAPIError,
 } from "better-auth/api"
+import { expireCookie } from "better-auth/cookies"
 
 import { parseRoles } from "@/lib/auth/permissions"
 import { mustSetUpTwoFactor } from "@/lib/auth/two-factor-policy"
@@ -126,6 +127,14 @@ async function auditStop(
 ) {
   const returned = ctx.context.returned
   if (!returned || isAPIError(returned)) return
+  // View-as set dont_remember to hold its session to the hour. The endpoint
+  // sets it again only if the real user chose not to be remembered;
+  // otherwise it would stop their restored session from ever refreshing.
+  const dontRemember = ctx.context.authCookies.dontRememberToken
+  const reset = ctx.context.responseHeaders
+    ?.getSetCookie()
+    .some((cookie) => cookie.startsWith(`${dontRemember.name}=`))
+  if (!reset) expireCookie(ctx, dontRemember)
   const viewed = ctx.context.session as {
     user: { id: string; name: string }
     session: {
@@ -136,17 +145,23 @@ async function auditStop(
   } | null
   const by = viewed?.session.impersonatedBy
   if (!viewed || !by) return
-  await audit(
-    {
-      userId: by,
-      ip: viewed.session.ipAddress ?? null,
-      userAgent: viewed.session.userAgent ?? null,
-    },
-    {
-      action: "auth.stop_impersonate",
-      entityType: "user",
-      entityId: viewed.user.id,
-      summary: `Stopped viewing as ${viewed.user.name}`,
-    }
-  )
+  // The stop has already happened; a failed audit write must not report it
+  // as failed.
+  try {
+    await audit(
+      {
+        userId: by,
+        ip: viewed.session.ipAddress ?? null,
+        userAgent: viewed.session.userAgent ?? null,
+      },
+      {
+        action: "auth.stop_impersonate",
+        entityType: "user",
+        entityId: viewed.user.id,
+        summary: `Stopped viewing as ${viewed.user.name}`,
+      }
+    )
+  } catch (error) {
+    console.error("stop-impersonating audit failed", error)
+  }
 }

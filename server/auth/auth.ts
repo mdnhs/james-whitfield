@@ -15,6 +15,7 @@ import { afterHook, beforeHook } from "./hooks"
 import { responseScrub } from "./response-scrub"
 import { signInAudit } from "./sign-in-audit"
 import { twoFactorPolicy } from "./two-factor-policy"
+import { VIEW_AS_SECONDS } from "./view-as-limit"
 
 export function buildAuth() {
   const env = getEnv()
@@ -100,7 +101,7 @@ export function buildAuth() {
         roles,
         defaultRole: "viewer",
         adminRoles: ["owner", "admin"],
-        impersonationSessionDuration: 60 * 60,
+        impersonationSessionDuration: VIEW_AS_SECONDS,
       }),
       twoFactor({ issuer: "Magda Kennedy Admin" }),
       // After twoFactor: its hook must see the challenge replace the session.

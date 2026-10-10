@@ -193,4 +193,62 @@ describe("POST /users/:id/impersonate", () => {
     })
     expect((await adminRequest("/me", viewing)).status).toBe(401)
   })
+
+  it("stopping clears dont_remember so the restored session refreshes", async () => {
+    const owner = await cookieFor("owner")
+    const editor = await createUser("editor", "ed@example.com")
+    const viewing = apply(
+      owner,
+      (await start(owner, editor.id)).headers.getSetCookie()
+    )
+    expect(viewing).toMatch(/dont_remember=/)
+    const stop = await app.request("/api/auth/admin/stop-impersonating", {
+      method: "POST",
+      headers: {
+        cookie: viewing,
+        origin: ORIGIN,
+        "content-type": "application/json",
+      },
+      body: "{}",
+    })
+    expect(stop.status).toBe(200)
+    expect(apply(viewing, stop.headers.getSetCookie())).not.toMatch(
+      /dont_remember=/
+    )
+  })
+
+  it("ends a View-as session after an hour even without dont_remember", async () => {
+    const owner = await cookieFor("owner")
+    const editor = await createUser("editor", "ed@example.com")
+    const viewing = apply(
+      owner,
+      (await start(owner, editor.id)).headers.getSetCookie()
+    )
+      .split("; ")
+      .filter((pair) => !pair.includes("dont_remember="))
+      .join("; ")
+    // Without the cookie Better Auth's rolling refresh stretches the session.
+    expect((await me(viewing)).user.email).toBe("ed@example.com")
+    const [row] = await getDb()
+      .select()
+      .from(sessions)
+      .where(eq(sessions.userId, editor.id))
+    expect(row!.expiresAt.getTime() - Date.now()).toBeGreaterThan(3600_000)
+
+    await getDb()
+      .update(sessions)
+      .set({ createdAt: new Date(Date.now() - 3601_000) })
+      .where(eq(sessions.id, row!.id))
+
+    expect((await adminRequest("/me", viewing)).status).toBe(401)
+    expect(
+      await getDb().select().from(sessions).where(eq(sessions.id, row!.id))
+    ).toHaveLength(0)
+    const audits = await getDb()
+      .select()
+      .from(auditLogs)
+      .where(eq(auditLogs.action, "user.view_as_expired"))
+    expect(audits).toHaveLength(1)
+    expect(audits[0]!.entityId).toBe(editor.id)
+  })
 })

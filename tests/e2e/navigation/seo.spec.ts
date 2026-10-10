@@ -41,3 +41,26 @@ test("a trailing slash 308s to the canonical path", async ({ request }) => {
   expect(res.status()).toBe(308)
   expect(res.headers()["location"]).toBe("/about")
 })
+
+test("robots.txt disallows everything outside production (acceptance)", async ({
+  request,
+}) => {
+  // E2E runs SITE_ENV=development, the same branch staging takes.
+  const body = await (await request.get("/robots.txt")).text()
+  expect(body).toMatch(/User-Agent: \*\s+Disallow: \/\s*$/m)
+  expect(body).not.toContain("Sitemap:")
+})
+
+test("sitemap.xml lists live pages and articles only", async ({ request }) => {
+  const xml = await (await request.get("/sitemap.xml")).text()
+  for (const path of ["/about", "/services", "/insights/calm-is-a-skill"]) {
+    expect(xml).toContain(`<loc>${E2E_ORIGIN}${path}</loc>`)
+  }
+  expect(xml).not.toContain("/privacy")
+  expect(xml).toContain("<lastmod>")
+})
+
+test("manifest.webmanifest names the site", async ({ request }) => {
+  const manifest = await (await request.get("/manifest.webmanifest")).json()
+  expect(manifest).toMatchObject({ start_url: "/", lang: "en-IE" })
+})

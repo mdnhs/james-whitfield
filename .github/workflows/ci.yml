@@ -15,6 +15,7 @@ on:
 
 permissions:
   contents: read
+  packages: write
 
 # Only superseded pull-request runs are cancelled. A push run may be in its
 # deploy job, which must never be cancelled mid-flight; the deploy job also
@@ -209,6 +210,29 @@ jobs:
       group: deploy-${{ github.ref }}
       cancel-in-progress: false
     steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}:latest
+            ghcr.io/${{ github.repository }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
       - name: Trigger the Dokploy deploy
         env:
           DOKPLOY_URL: ${{ secrets.DOKPLOY_URL }}

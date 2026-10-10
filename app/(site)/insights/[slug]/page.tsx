@@ -10,6 +10,7 @@ import {
   ArticleBody,
   ArticleHero,
   NewsletterBand,
+  toNewsletterView,
   RelatedArticles,
 } from "@/features/insights"
 import { contactHref } from "@/lib/contact-href"
@@ -95,7 +96,7 @@ export default async function ArticlePage({
         <RelatedArticles id="keep-reading" articles={related} copy={copy} />
       </StackCard>
       <StackCard last>
-        <NewsletterBand id="newsletter" content={band} />
+        <NewsletterBand id="newsletter" content={toNewsletterView(band)} />
       </StackCard>
       <JourneyRail chapters={chapters} />
       <PageMotion />

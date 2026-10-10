@@ -98,3 +98,20 @@ export const LeadListQuery = z.object({
   sort: z.enum(["createdAt:desc", "createdAt:asc"]).default("createdAt:desc"),
 })
 export type LeadListQuery = z.infer<typeof LeadListQuery>
+
+export const SUBSCRIBER_STATUSES = [
+  "pending",
+  "confirmed",
+  "unsubscribed",
+] as const
+export type SubscriberStatus = (typeof SUBSCRIBER_STATUSES)[number]
+export const SubscriberListQuery = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(25),
+  status: z.enum(SUBSCRIBER_STATUSES).optional(),
+  q: z.string().trim().max(100).optional(),
+})
+export type SubscriberListQuery = z.infer<typeof SubscriberListQuery>
+export const SubscriberExportQuery = z.object({
+  status: z.enum(["all", "confirmed"]).default("confirmed"),
+})

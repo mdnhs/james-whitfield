@@ -55,6 +55,11 @@ export const queryKeys = {
     stats: ["leads", "stats"] as const,
     assignees: ["leads", "assignees"] as const,
   },
+  newsletter: {
+    all: ["newsletter"] as const,
+    list: (params: Record<string, unknown>) =>
+      ["newsletter", "list", params] as const,
+  },
   account: {
     sessions: ["account", "sessions"] as const,
   },

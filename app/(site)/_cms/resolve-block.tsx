@@ -23,6 +23,7 @@ import {
   InsightsBrowser,
   InsightsSection,
   NewsletterBand,
+  toNewsletterView,
 } from "@/features/insights"
 import { RichTextSection } from "@/features/richtext"
 import { FormatsSection, ServicesGrid } from "@/features/services"
@@ -145,12 +146,12 @@ export async function ResolvedBlock({ block }: { block: BlockInstance }) {
     case "newsletter": {
       const global = await withMedia(await q.getSetting("newsletter"))
       const override = block.data.override
-      const content = {
+      const content = toNewsletterView({
         ...global,
         eyebrow: override?.eyebrow || global.eyebrow,
         title: override?.title || global.title,
         subtitle: override?.subtitle || global.subtitle,
-      }
+      })
       return <NewsletterBand id={id} content={content} />
     }
     case "contact.details": {

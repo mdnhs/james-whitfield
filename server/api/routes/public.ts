@@ -4,6 +4,7 @@ import { Hono } from "hono"
 import { bodyLimit } from "hono/body-limit"
 
 import { leadsPublicRoutes } from "@/server/modules/leads/public-routes"
+import { newsletterPublicRoutes } from "@/server/modules/newsletter/public-routes"
 
 import { errorBody } from "../errors"
 import type { AppEnv } from "../types"
@@ -30,3 +31,4 @@ export const publicRoutes = new Hono<AppEnv>()
     })
   )
   .route("/leads", leadsPublicRoutes)
+  .route("/newsletter", newsletterPublicRoutes)

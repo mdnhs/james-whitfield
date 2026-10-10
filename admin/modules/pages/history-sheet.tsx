@@ -1,11 +1,15 @@
 "use client"
 
-import { useMutation, useQuery } from "@tanstack/react-query"
+import {
+  useMutation,
+  useQuery,
+  type QueryKey,
+  type UseQueryOptions,
+} from "@tanstack/react-query"
 import { formatDistanceToNow } from "date-fns"
 import { HistoryIcon } from "lucide-react"
 import { toast } from "sonner"
 
-import { pagesApi, parseResponse } from "@/admin/lib/api"
 import { Button } from "@/components/ui/button"
 import {
   Sheet,
@@ -17,15 +21,23 @@ import {
 import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
 
-import { pageRevisionsQuery } from "./queries"
 import { conflictOf, type Conflict } from "./use-autosave"
 
 // Every publish is a revision (docs/brief.md §6.5). Loading one replaces
 // the draft; publishing it is a separate, deliberate step.
-export function HistorySheet({
+export type Revision = {
+  id: string
+  version: number
+  note: string | null
+  createdAt: string
+  createdBy: string | null
+}
+
+export function HistorySheet<K extends QueryKey>({
   open,
   onOpenChange,
-  pageId,
+  revisions,
+  restore: restoreRevision,
   exclusive,
   canRestore,
   onRestored,
@@ -33,7 +45,14 @@ export function HistorySheet({
 }: {
   open: boolean
   onOpenChange(open: boolean): void
-  pageId: string
+  // The revisions query and restore call of whatever is being edited.
+  revisions: UseQueryOptions<
+    { items: Revision[] },
+    Error,
+    { items: Revision[] },
+    K
+  >
+  restore(revisionId: string, version: number): Promise<{ version: number }>
   // The autosave queue's exclusive(): pending edits save first, and the
   // restore runs on the version that results.
   exclusive<R>(request: (version: number) => Promise<R>): Promise<R>
@@ -41,17 +60,10 @@ export function HistorySheet({
   onRestored(): void
   onConflict(conflict: Conflict): void
 }) {
-  const list = useQuery({ ...pageRevisionsQuery(pageId), enabled: open })
+  const list = useQuery({ ...revisions, enabled: open })
   const restore = useMutation({
     mutationFn: (rev: string) =>
-      exclusive((version) =>
-        parseResponse(
-          pagesApi[":id"].revisions[":rev"].restore.$post({
-            param: { id: pageId, rev },
-            json: { version },
-          })
-        )
-      ),
+      exclusive((version) => restoreRevision(rev, version)),
     onSuccess: () => {
       onOpenChange(false)
       toast.success("Loaded into the draft")

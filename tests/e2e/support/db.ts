@@ -20,3 +20,14 @@ export async function resetTwoFactor(email: string) {
     await client.end()
   }
 }
+
+// For specs that must move time: run one statement on the E2E database.
+export async function runSql(text: string, params: unknown[] = []) {
+  const client = new pg.Client({ connectionString: E2E_ENV.DATABASE_URL })
+  await client.connect()
+  try {
+    return (await client.query(text, params)).rows
+  } finally {
+    await client.end()
+  }
+}

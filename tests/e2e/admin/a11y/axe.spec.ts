@@ -25,6 +25,9 @@ const PANEL = [
   "/admin/account?tab=security",
   "/admin/account?tab=sessions",
   "/admin/pages",
+  "/admin/insights",
+  "/admin/insights/categories",
+  "/admin/insights/authors",
   "/admin/no-access?from=%2Fadmin%2Fpages",
 ]
 

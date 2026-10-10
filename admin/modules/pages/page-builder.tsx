@@ -44,7 +44,7 @@ import { docReducer, errorsByBlock, type DocAction } from "./builder-state"
 import { ConflictDialog } from "./conflict-dialog"
 import { HistorySheet } from "./history-sheet"
 import { PreviewPane, previewSrc } from "./preview-pane"
-import { pageDetailQuery, type PageDetail } from "./queries"
+import { pageDetailQuery, pageRevisionsQuery, type PageDetail } from "./queries"
 import { SaveIndicator } from "./save-indicator"
 import { SeoForm } from "./seo-form"
 import { conflictOf, useAutosave, type Conflict } from "./use-autosave"
@@ -565,7 +565,15 @@ function Builder({
       <HistorySheet
         open={historyOpen}
         onOpenChange={setHistoryOpen}
-        pageId={page.id}
+        revisions={pageRevisionsQuery(page.id)}
+        restore={(rev, version) =>
+          parseResponse(
+            pagesApi[":id"].revisions[":rev"].restore.$post({
+              param: { id: page.id, rev },
+              json: { version },
+            })
+          )
+        }
         exclusive={exclusive}
         canRestore={canEdit}
         onRestored={replaceWithServer}

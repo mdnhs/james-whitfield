@@ -25,6 +25,14 @@ export const queryKeys = {
     detail: (id: string) => ["pages", "detail", id] as const,
     revisions: (id: string) => ["pages", "revisions", id] as const,
   },
+  articles: {
+    all: ["articles"] as const,
+    list: (params: object) => ["articles", "list", params] as const,
+    detail: (id: string) => ["articles", "detail", id] as const,
+    revisions: (id: string) => ["articles", "revisions", id] as const,
+  },
+  categories: ["categories"] as const,
+  authors: ["authors"] as const,
   media: {
     all: ["media"] as const,
     list: (params: object) => ["media", "list", params] as const,

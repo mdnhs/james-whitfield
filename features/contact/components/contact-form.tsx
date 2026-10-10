@@ -8,11 +8,12 @@ import type { GlobalValue } from "@/lib/content/globals"
 import type { ContactOption, PlanOption } from "@/lib/content/types"
 import { fill } from "@/lib/fill"
 import { LeadInput, type LeadSubmission } from "@/lib/leads/schema"
+import { getConsentSnapshot } from "@/lib/tracking/consent-client"
+import { track } from "@/lib/tracking/track"
 import { cn } from "@/lib/utils"
 import { readAttribution } from "../lib/attribution"
 import { contactParams } from "../lib/contact-params"
 import { fetchStamp, submitLead } from "../lib/submit-lead"
-import { trackLead } from "../lib/track"
 import { Turnstile } from "./turnstile"
 
 type Field = "name" | "email" | "phone" | "topic" | "message" | "consent"
@@ -220,12 +221,17 @@ function EnquiryForm({
       // No token (widget blocked or not loaded) still goes through: the server
       // accepts it as a flagged lead.
       turnstileToken: token ?? undefined,
+      marketingConsent: getConsentSnapshot()?.marketing === true,
     }
     setPending(true)
     const result = await submitLead(payload)
     setPending(false)
     if (result.ok) {
-      trackLead(eventId)
+      track({
+        event: "generate_lead",
+        params: { lead_source: "contact_form", form_id: "contact" },
+        eventId,
+      })
       setSent(true)
       return
     }

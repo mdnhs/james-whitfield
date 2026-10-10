@@ -5,6 +5,7 @@ import { useState } from "react"
 import { MediaImage } from "@/components/media-image"
 import { EnterpriseBackdrop } from "@/features/enterprise/components/enterprise-backdrop"
 import { tintStyle } from "@/lib/tint"
+import { track } from "@/lib/tracking/track"
 
 import type { NewsletterView } from "../newsletter-view"
 
@@ -39,8 +40,10 @@ export function NewsletterBand({
           sourcePath: window.location.pathname,
         }),
       })
-      if (res.status === 201) setDone(true)
-      else if (res.status === 429) setError(content.errors.rateLimited)
+      if (res.status === 201) {
+        track({ event: "sign_up", params: { method: "newsletter" } })
+        setDone(true)
+      } else if (res.status === 429) setError(content.errors.rateLimited)
       else if (res.status === 400) setError(content.errors.email)
       else setError(content.errors.generic)
     } catch {

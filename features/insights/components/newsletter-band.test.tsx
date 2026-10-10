@@ -5,9 +5,12 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 
 import { GLOBALS } from "@/lib/content/globals"
 
+import { track } from "@/lib/tracking/track"
+
 import { toNewsletterView } from "../newsletter-view"
 import { NewsletterBand } from "./newsletter-band"
 
+vi.mock("@/lib/tracking/track", () => ({ track: vi.fn() }))
 vi.mock("@/components/media-image", () => ({ MediaImage: () => null }))
 vi.mock("@/features/enterprise/components/enterprise-backdrop", () => ({
   EnterpriseBackdrop: ({ children }: { children: React.ReactNode }) => (
@@ -44,6 +47,7 @@ async function submit() {
 
 afterEach(() => {
   vi.restoreAllMocks()
+  vi.clearAllMocks()
   bodies.length = 0
 })
 
@@ -53,6 +57,24 @@ describe("NewsletterBand", () => {
     await submit()
     expect(await screen.findByText("SUCCESS-COPY")).toBeTruthy()
     expect(bodies[0]).toEqual({ email: "a@b.co", website: "", sourcePath: "/" })
+  })
+
+  it("tracks sign_up once on 201", async () => {
+    mockFetch(201)
+    await submit()
+    await screen.findByText("SUCCESS-COPY")
+    expect(track).toHaveBeenCalledOnce()
+    expect(track).toHaveBeenCalledWith({
+      event: "sign_up",
+      params: { method: "newsletter" },
+    })
+  })
+
+  it.each([400, 429])("does not track a %i", async (status) => {
+    mockFetch(status)
+    await submit()
+    await waitFor(() => expect(screen.getByRole("alert")).toBeTruthy())
+    expect(track).not.toHaveBeenCalled()
   })
 
   it("shows the rate-limited copy on 429", async () => {

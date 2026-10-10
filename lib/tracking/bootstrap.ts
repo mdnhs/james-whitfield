@@ -19,8 +19,9 @@ function gtag(){dl.push(arguments)}
 w.gtag=w.gtag||gtag;
 gtag("consent","default",C.defaults);
 gtag("set","ads_data_redaction",true);
-function hit(p,k,f){for(var i=0;i<C.collapse.length;i++){if(p.indexOf(C.collapse[i][0])===0)return C.collapse[i][k]}return f}
-function clean(h){if(!h)return"";try{var u=new URL(h,w.location.href);return u.origin+hit(u.pathname,1,u.pathname)}catch(e){return""}}
+function norm(p){for(var i=0;i<2;i++){try{p=decodeURIComponent(p)}catch(e){break}}return p.toLowerCase().replace(/\\\\/g,"/").replace(/\\/+/g,"/")}
+function hit(p,k,f){var n=norm(p);for(var i=0;i<C.collapse.length;i++){if(n.indexOf(C.collapse[i][0])===0)return C.collapse[i][k]}return f}
+function clean(h){if(!h||/^[\\/\\\\]{2}/.test(h))return"";try{var u=new URL(h,w.location.href);if(u.protocol!=="http:"&&u.protocol!=="https:")return"";return u.origin+hit(u.pathname,1,u.pathname)}catch(e){return""}}
 var l=w.location;
 dl.push({page:{location:clean(l.href),path:hit(l.pathname,1,l.pathname),title:hit(l.pathname,2,d.title),referrer:clean(d.referrer)}});
 if(C.ga4)dl.push({ga4_measurement_id:C.ga4});

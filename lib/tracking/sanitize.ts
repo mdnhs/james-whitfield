@@ -6,17 +6,35 @@ export const COLLAPSE = [
   ["/newsletter/", "/newsletter", "Newsletter"],
 ] as const
 
-export function sanitizePath(pathname: string): string {
-  for (const [prefix, path] of COLLAPSE) {
-    if (pathname.startsWith(prefix)) return path
+// Canonical form for matching only: decoded (twice, for %252F), lower-cased,
+// backslashes and slash runs folded. Mirrored by the bootstrap's `norm`.
+function normalise(pathname: string): string {
+  let p = pathname
+  for (let i = 0; i < 2; i++) {
+    try {
+      p = decodeURIComponent(p)
+    } catch {
+      break
+    }
   }
-  return pathname
+  return p.toLowerCase().replace(/\\/g, "/").replace(/\/+/g, "/")
+}
+
+function collapsed(pathname: string) {
+  const p = normalise(pathname)
+  return COLLAPSE.find(([prefix]) => p.startsWith(prefix))
+}
+
+export function sanitizePath(pathname: string): string {
+  return collapsed(pathname)?.[1] ?? pathname
 }
 
 export function sanitizeUrl(href: string, base?: string): string {
-  if (!href) return ""
+  // Protocol-relative inputs would resolve to a foreign host.
+  if (!href || /^[/\\]{2}/.test(href)) return ""
   try {
     const url = new URL(href, base)
+    if (url.protocol !== "http:" && url.protocol !== "https:") return ""
     return url.origin + sanitizePath(url.pathname)
   } catch {
     return ""
@@ -24,10 +42,7 @@ export function sanitizeUrl(href: string, base?: string): string {
 }
 
 export function pageTitle(pathname: string, title: string): string {
-  for (const [prefix, , label] of COLLAPSE) {
-    if (pathname.startsWith(prefix)) return label
-  }
-  return title
+  return collapsed(pathname)?.[2] ?? title
 }
 
 // Ruling R7: the Pixel sends location.href itself, so it only runs where the

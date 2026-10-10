@@ -34,6 +34,48 @@ describe("sanitizeUrl (brief §12.1)", () => {
     expect(sanitizeUrl("", SITE)).toBe("")
   })
 
+  it.each([
+    "/insights%2Fslug",
+    "/insights%2fslug?x=1",
+    "/Insights/Slug",
+    "/INSIGHTS/slug",
+    "/insights%252Fslug",
+    "/insights\\slug",
+    "/%69nsights/slug",
+  ])(
+    "collapses the encoded or cased variant %s like the canonical form",
+    (input) => {
+      expect(sanitizeUrl(input, SITE)).toBe(`${SITE}/insights`)
+      expect(sanitizePath(input.split("?")[0]!)).toBe("/insights")
+    }
+  )
+  it("collapses repeated slashes in a path", () => {
+    expect(sanitizePath("//insights//slug")).toBe("/insights")
+    expect(sanitizeUrl("https://site.ie//insights//slug")).toBe(
+      "https://site.ie/insights"
+    )
+  })
+  it("collapses newsletter variants and titles", () => {
+    expect(sanitizeUrl("/Newsletter%2Funsubscribe", SITE)).toBe(
+      `${SITE}/newsletter`
+    )
+    expect(pageTitle("/Insights%2Fslug", "Secret")).toBe("Insights")
+    expect(pageTitle("/NEWSLETTER/x", "Secret")).toBe("Newsletter")
+  })
+  it("returns a safe value for protocol-relative and script URLs", () => {
+    for (const bad of [
+      "//evil.example/insights/x",
+      "//host",
+      "\\\\host",
+      "javascript:alert(1)",
+      "data:text/html,x",
+      "JavaScript:alert(1)",
+    ]) {
+      expect(sanitizeUrl(bad, SITE)).toBe("")
+      expect(sanitizeUrl(bad)).toBe("")
+    }
+  })
+
   it("collapses paths without a base too", () => {
     expect(sanitizePath("/insights/some-slug")).toBe("/insights")
     expect(sanitizePath("/insights")).toBe("/insights")

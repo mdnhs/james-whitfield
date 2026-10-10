@@ -68,6 +68,9 @@ const Hidden = {
     .default("/"),
   attribution: Attribution,
   turnstileToken: z.string().max(2048).optional(),
+  // The browser's marketing consent at submit time (docs/brief.md §12.5); the
+  // server re-checks the cookie before anything reaches Meta (Ruling R9).
+  marketingConsent: z.boolean().default(false),
 }
 export const LeadSubmission = LeadInput.extend(Hidden)
 export type LeadSubmission = z.infer<typeof LeadSubmission>

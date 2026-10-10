@@ -46,7 +46,11 @@ export function MobileNav({
               {link.label}
             </Link>
           ))}
-          <BookCallButton cta={cta} className="mt-2 self-start sm:hidden" />
+          <BookCallButton
+            cta={cta}
+            location="mobile-nav"
+            className="mt-2 self-start sm:hidden"
+          />
         </nav>
       )}
     </div>

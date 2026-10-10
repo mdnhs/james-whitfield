@@ -99,7 +99,7 @@ export function actionFor(
   return removed ? "withdraw" : kind
 }
 
-const TRACKING_COOKIES = [/^_ga(_|$)/, /^_gcl_/, /^_fbp$/, /^_fbc$/]
+const TRACKING_COOKIES = [/^_ga(_|$)/, /^_gid$/, /^_gcl_/, /^_fbp$/, /^_fbc$/]
 export const isTrackingCookie = (name: string) =>
   TRACKING_COOKIES.some((re) => re.test(name))
 

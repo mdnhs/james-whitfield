@@ -5,8 +5,11 @@ import { NuqsTestingAdapter } from "nuqs/adapters/testing"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 import { GLOBALS } from "@/lib/content/globals"
+import { track } from "@/lib/tracking/track"
 
 import { ContactForm } from "./contact-form"
+
+vi.mock("@/lib/tracking/track", () => ({ track: vi.fn() }))
 
 const copy = GLOBALS.contactForm.parse({
   labels: {
@@ -51,6 +54,8 @@ const mockApi = (leadStatus: number, leadBody: unknown) =>
   })
 afterEach(() => {
   vi.restoreAllMocks()
+  vi.clearAllMocks()
+  delete (window as { __mkConsent?: unknown }).__mkConsent
   calls.length = 0
 })
 
@@ -83,6 +88,43 @@ describe("ContactForm", () => {
       consent: true,
     })
     expect(lead.eventId).toMatch(/^[0-9a-f-]{36}$/)
+  })
+  it("pushes generate_lead with the submitted event id only after a 201", async () => {
+    mockApi(201, { ok: true })
+    await fillAndSend()
+    await screen.findByText("SENT-TITLE")
+    const lead = calls.find((c) => c.url === "/api/v1/public/leads")!.body as {
+      eventId: string
+      marketingConsent: boolean
+    }
+    expect(lead.marketingConsent).toBe(false)
+    expect(track).toHaveBeenCalledOnce()
+    expect(track).toHaveBeenCalledWith({
+      event: "generate_lead",
+      params: { lead_source: "contact_form", form_id: "contact" },
+      eventId: lead.eventId,
+    })
+  })
+  it("sends the browser's marketing consent with the lead", async () => {
+    ;(window as never as { __mkConsent: object }).__mkConsent = {
+      analytics: false,
+      marketing: true,
+    }
+    mockApi(201, { ok: true })
+    await fillAndSend()
+    await screen.findByText("SENT-TITLE")
+    const lead = calls.find((c) => c.url === "/api/v1/public/leads")!.body as {
+      marketingConsent: boolean
+    }
+    expect(lead.marketingConsent).toBe(true)
+  })
+  it("does not track a rejected submission", async () => {
+    mockApi(400, {
+      error: { code: "VALIDATION_FAILED", fieldErrors: { phone: ["x"] } },
+    })
+    await fillAndSend()
+    await screen.findByText("PHONE-ERR")
+    expect(track).not.toHaveBeenCalled()
   })
   it("shows the API's field errors with the form's own copy", async () => {
     mockApi(400, {

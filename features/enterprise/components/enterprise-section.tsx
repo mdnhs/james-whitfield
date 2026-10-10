@@ -76,6 +76,9 @@ export function EnterpriseSection({
 
         <Link
           href={cta.href}
+          {...(cta.href.startsWith("/contact")
+            ? { "data-track": "book_appointment", "data-cta-location": id }
+            : {})}
           data-motion="rise"
           data-magnetic
           className={cn(

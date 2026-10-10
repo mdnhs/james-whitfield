@@ -123,7 +123,7 @@ describe("actionFor", () => {
 })
 
 describe("withdrawal targets", () => {
-  it.each(["_ga", "_ga_ABC123", "_gcl_au", "_gcl_aw", "_fbp", "_fbc"])(
+  it.each(["_ga", "_ga_ABC123", "_gid", "_gcl_au", "_gcl_aw", "_fbp", "_fbc"])(
     "%s is a tracking cookie",
     (name) => expect(isTrackingCookie(name)).toBe(true)
   )

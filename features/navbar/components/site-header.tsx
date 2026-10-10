@@ -50,6 +50,7 @@ export function SiteHeader({
           <div className="flex items-center gap-3">
             <BookCallButton
               cta={navigation.cta}
+              location="header"
               className="hidden sm:inline-flex"
             />
             <MobileNav links={navigation.links} cta={navigation.cta} />

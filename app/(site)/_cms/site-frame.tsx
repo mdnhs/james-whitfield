@@ -4,6 +4,9 @@ import { SmoothScroll } from "@/components/smooth-scroll"
 import { PreviewBar } from "@/components/preview-bar"
 import { TrackingBootstrap } from "@/components/tracking/tracking-bootstrap"
 import { ConsentBanner } from "@/features/consent/components/consent-banner"
+import { ClickTracker } from "@/features/tracking/components/click-tracker"
+import { MarketingScripts } from "@/features/tracking/components/marketing-scripts"
+import { RouteTracker } from "@/features/tracking/components/route-tracker"
 import { SiteFooter } from "@/features/footer"
 import { SiteHeader } from "@/features/navbar"
 import { themeCss } from "@/lib/content/theme"
@@ -45,6 +48,13 @@ export async function SiteFrame({ children }: { children: React.ReactNode }) {
         <TrackingBootstrap script={bootstrapScript(frame)} />
       ) : null}
       {css && <style>{css}</style>}
+      {frame.active ? (
+        <>
+          <RouteTracker />
+          <ClickTracker />
+          <MarketingScripts pixelId={frame.pixelId} />
+        </>
+      ) : null}
       <SmoothScroll>
         <SiteHeader site={site} navigation={navigation} />
         {children}

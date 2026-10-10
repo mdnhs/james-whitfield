@@ -181,6 +181,30 @@ describe("bootstrap sanitising (Rulings R6, R8)", () => {
   })
 })
 
+describe("bootstrap sanitising agrees with sanitize.ts on variants", () => {
+  it.each([
+    "/insights%2Fslug",
+    "/Insights/Slug",
+    "/insights%252Fslug",
+    "//insights//slug",
+  ])("collapses %s", (path) => {
+    const r = run(SCRIPT, { href: `https://site.ie${path}`, title: "Secret" })
+    expect(r.window.dataLayer[2]).toMatchObject({
+      page: {
+        location: "https://site.ie/insights",
+        path: "/insights",
+        title: "Insights",
+      },
+    })
+  })
+  it("blanks protocol-relative and script referrers", () => {
+    for (const referrer of ["//evil.example/x", "javascript:alert(1)"]) {
+      const r = run(SCRIPT, { href: "https://site.ie/about", referrer })
+      expect(r.window.dataLayer[2]).toMatchObject({ page: { referrer: "" } })
+    }
+  })
+})
+
 describe("bootstrap safety (Review Focus 4)", () => {
   it("drops invalid IDs and escapes </script>", () => {
     const script = bootstrapScript({

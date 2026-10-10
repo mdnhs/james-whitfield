@@ -11,7 +11,7 @@ import {
   Trash2Icon,
 } from "lucide-react"
 import Link from "next/link"
-import { useRef, useState } from "react"
+import { useRef, useState, type RefObject } from "react"
 import { toast } from "sonner"
 
 import { useActor } from "@/admin/lib/actor-context"
@@ -47,6 +47,8 @@ const STARTERS = [
 
 export type AssistantPanelProps = {
   status: AiStatus
+  // Lets the sheet focus the message box when it opens.
+  composerRef?: RefObject<HTMLTextAreaElement | null>
   messages: AiUIMessage[]
   chatStatus: "submitted" | "streaming" | "ready" | "error"
   error: Error | undefined
@@ -62,7 +64,8 @@ export function AssistantPanel(props: AssistantPanelProps) {
   const actor = useActor()
   const viewing = Boolean(actor.impersonatedBy)
   const [draft, setDraft] = useState("")
-  const box = useRef<HTMLTextAreaElement>(null)
+  const ownBox = useRef<HTMLTextAreaElement>(null)
+  const box = props.composerRef ?? ownBox
   const busy = chatStatus === "submitted" || chatStatus === "streaming"
   const send = () => {
     const text = draft.trim()

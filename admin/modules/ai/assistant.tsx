@@ -27,6 +27,7 @@ export function AiAssistant() {
   const queryClient = useQueryClient()
   const [open, setOpen] = useState(false)
   const trigger = useRef<HTMLButtonElement>(null)
+  const composer = useRef<HTMLTextAreaElement>(null)
   // Which saved conversation the next message continues. Closures, not a
   // ref, because the transport (built once) reads it when sending, not when
   // rendering. A turn that finishes after "New chat" or after opening another
@@ -111,11 +112,13 @@ export function AiAssistant() {
       </Button>
       <SheetContent
         side="right"
+        initialFocus={composer}
         finalFocus={trigger}
         className="w-full max-w-none gap-0 p-0 data-[side=right]:w-full sm:data-[side=right]:w-md sm:data-[side=right]:max-w-md"
       >
         <AssistantPanel
           status={s}
+          composerRef={composer}
           messages={chat.messages}
           chatStatus={chat.status}
           error={chat.error}

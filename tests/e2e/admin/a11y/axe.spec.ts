@@ -42,6 +42,7 @@ const PANEL = [
   "/admin/marketing/consent",
   "/admin/marketing/events",
   "/admin/appearance",
+  "/admin/settings/ai-assistant",
   "/admin/no-access?from=%2Fadmin%2Fpages",
 ]
 

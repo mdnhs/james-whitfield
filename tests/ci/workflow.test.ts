@@ -41,7 +41,9 @@ describe("CI visual job (Ruling R11)", () => {
     expect(e2e).toContain(
       `--grep-invert "parity:|visual:|lighthouse:|budget:|perf:"`
     )
-    expect(e2e).toContain(`--grep "lighthouse:|budget:"`)
+    expect(e2e).toContain(`--grep "budget:"`)
+    // Lighthouse runs in its own step, single worker.
+    expect(e2e).toMatch(/--workers=1 --grep "lighthouse:"/)
   })
 
   it("can record baselines on demand and upload them", () => {

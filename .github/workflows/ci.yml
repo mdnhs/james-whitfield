@@ -13,9 +13,15 @@ on:
         type: boolean
         default: false
 
+permissions:
+  contents: read
+
+# Only superseded pull-request runs are cancelled. A push run may be in its
+# deploy job, which must never be cancelled mid-flight; the deploy job also
+# has its own concurrency group below.
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   check:
@@ -104,10 +110,17 @@ jobs:
         run: pnpm test:e2e --project=desktop --project=admin-desktop --grep-invert "parity:|visual:|lighthouse:|budget:|perf:"
         env:
           E2E_SKIP_BUILD: "1"
-      # docs/brief.md §16 Quality row; Ruling R10. Lighthouse 13.5 needs
-      # Node ≥ 22.19 (setup-node 22 installs the latest 22.x).
-      - name: Quality budgets (Lighthouse, images, JavaScript)
-        run: pnpm test:e2e --project=desktop --project=mobile --project=admin-desktop --grep "lighthouse:|budget:"
+      # docs/brief.md §16 Quality row; Ruling R10.
+      - name: Quality budgets (images, JavaScript)
+        run: pnpm test:e2e --project=desktop --project=mobile --project=admin-desktop --grep "budget:"
+        env:
+          E2E_SKIP_BUILD: "1"
+      # Lighthouse 13.5 needs Node >= 22.19 (setup-node 22 installs the latest
+      # 22.x). Single worker: parallel runs skew the scores. A CI-only miss
+      # should be recorded as a documented exception (docs/launch.md Q2) and
+      # re-measured on staging, not by loosening the budget.
+      - name: Quality budgets (Lighthouse)
+        run: pnpm test:e2e --project=desktop --project=mobile --project=admin-desktop --workers=1 --grep "lighthouse:"
         env:
           E2E_SKIP_BUILD: "1"
       # Ruling R19: tracking specs switch shared site settings on, so they run

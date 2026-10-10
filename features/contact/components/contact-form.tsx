@@ -316,6 +316,7 @@ function EnquiryForm({
       ) : (
         <form
           ref={form}
+          method="post"
           noValidate
           onSubmit={onSubmit}
           className="relative flex flex-col gap-6"

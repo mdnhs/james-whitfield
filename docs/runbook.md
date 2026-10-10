@@ -22,7 +22,7 @@ Operating the Magda Kennedy site. Deployment details live in [deploy-dokploy.md]
 
 1. Dokploy ▸ Deployments ▸ the previous deployment ▸ Redeploy. Or `git revert <sha>` and push.
 2. Migrations are forward-only and additive by convention. A rollback across a destructive migration needs a restore (section 4).
-3. Clients on the old build reload automatically (deployment id).
+3. Clients on the old build are not reloaded automatically; the deployment id makes their next client-side navigation fall back to a full page load, so open tabs recover then.
 
 ## 4. Restore a backup
 

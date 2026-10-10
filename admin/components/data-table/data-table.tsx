@@ -29,12 +29,15 @@ export function DataTable<
   empty,
   renderCard,
   isFetching = false,
+  onRowClick,
 }: {
   table: ReactTable<TFeatures, TData>
   caption: string
   empty: React.ReactNode
   renderCard: (row: Row<TFeatures, TData>) => React.ReactNode
   isFetching?: boolean
+  // A pointer shortcut; the row must hold its own keyboard-reachable control.
+  onRowClick?: (row: Row<TFeatures, TData>) => void
 }) {
   const rows = table.getRowModel().rows
   if (rows.length === 0) return <>{empty}</>
@@ -75,7 +78,11 @@ export function DataTable<
           </TableHeader>
           <TableBody>
             {rows.map((row) => (
-              <TableRow key={row.id}>
+              <TableRow
+                key={row.id}
+                onClick={onRowClick ? () => onRowClick(row) : undefined}
+                className={onRowClick ? "cursor-pointer" : undefined}
+              >
                 {row.getAllCells().map((cell) => (
                   <TableCell key={cell.id} className="px-4 py-3">
                     <table.FlexRender cell={cell} />

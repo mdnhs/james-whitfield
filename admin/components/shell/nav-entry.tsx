@@ -61,7 +61,11 @@ export function NavEntry({
         <span>{item.label}</span>
       </SidebarMenuButton>
       {badge ? (
-        <SidebarMenuBadge className="top-3! right-2 h-6 rounded-full bg-primary px-2 text-[11px] font-semibold text-primary-foreground">
+        <SidebarMenuBadge
+          role="img"
+          aria-label={`${badge} new enquiries`}
+          className="top-3! right-2 h-6 rounded-full bg-primary px-2 text-[11px] font-semibold text-primary-foreground"
+        >
           {formatBadge(badge)}
         </SidebarMenuBadge>
       ) : null}

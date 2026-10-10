@@ -176,7 +176,8 @@ test.describe("as an owner", () => {
 
   // Regression: the placeholder route once served the first placeholder the
   // client router had fetched for every later link (Enquiries opened Media).
-  test("each placeholder link opens its own page", async ({ page }) => {
+  // Built pages (Enquiries) and placeholders (Newsletter, Appearance) alike.
+  test("each sidebar link opens its own page", async ({ page }) => {
     await page.goto("/admin")
     for (const label of ["Newsletter", "Enquiries", "Appearance"]) {
       const nav = await mainNav(page)

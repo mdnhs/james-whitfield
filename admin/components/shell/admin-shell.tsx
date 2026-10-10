@@ -2,6 +2,8 @@
 
 import { CommandPalette } from "@/admin/components/command/command-palette"
 import { CommandPaletteProvider } from "@/admin/components/command/palette-context"
+import { usePermission } from "@/admin/lib/actor-context"
+import { useNewLeadsCount } from "@/admin/modules/leads/use-new-leads-count"
 import { SidebarProvider } from "@/components/ui/sidebar"
 import { TooltipProvider } from "@/components/ui/tooltip"
 
@@ -20,6 +22,7 @@ export function AdminShell({
   siteUrl: string
   children: React.ReactNode
 }) {
+  const newLeads = useNewLeadsCount(usePermission({ lead: ["read"] }))
   return (
     <TooltipProvider>
       <CommandPaletteProvider>
@@ -33,7 +36,7 @@ export function AdminShell({
           >
             Skip to content
           </a>
-          <AppSidebar siteUrl={siteUrl} />
+          <AppSidebar siteUrl={siteUrl} badges={{ "new-leads": newLeads }} />
           <div className="flex min-h-svh min-w-0 flex-1 flex-col gap-4 p-3 sm:p-4 lg:pl-0">
             <Topbar />
             <main

@@ -58,14 +58,14 @@ Environment (both optional):
 
 ### Rotating secrets
 
-| Secret | How to rotate | Effect |
-| --- | --- | --- |
+| Secret                                                    | How to rotate                                                                                                                                                                                                                                                                                                         | Effect                                                                                                                                                                                                    |
+| --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Better Auth (`BETTER_AUTH_SECRET`, `BETTER_AUTH_SECRETS`) | Generate a new value (`openssl rand -base64 48`). Set `BETTER_AUTH_SECRETS="<n+1>:<new>,<n>:<previous>…"` (newest first; on the first rotation just `"1:<new>"`). **Keep `BETTER_AUTH_SECRET` unchanged** — it is the legacy key that decrypts two-factor secrets and backup codes created before rotation. Redeploy. | Everyone is signed out (session cookies are signed with the newest secret only) and signs in again; two-factor keeps working. Never remove an old version while two-factor data encrypted with it exists. |
-| `APP_ENCRYPTION_KEY` | Set the new key, redeploy, then re-enter the Meta CAPI token on **Marketing ▸ Tracking** (it is encrypted with this key). | Server-side conversions pause until the token is saved again. |
-| `CRON_SECRET` | Update the Dokploy env and the scheduler's `Authorization: Bearer` header together. | Scheduled publishing and purges fail until both match. |
-| IP-hash key | Derived from `BETTER_AUTH_SECRET` (no separate admin control). Changing `BETTER_AUTH_SECRET` also changes it, and breaks pre-rotation two-factor data, so do not rotate it for this purpose. | — |
-| `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY` | Create a new R2 token, update env, redeploy, then revoke the old token. | None if done in that order. |
-| `SMTP_URL` / `RESEND_API_KEY`, `TURNSTILE_*` | Create the new credential, update env, redeploy, revoke the old one. | None if done in that order. |
+| `APP_ENCRYPTION_KEY`                                      | Set the new key, redeploy, then re-enter the Meta CAPI token on **Marketing ▸ Tracking** (it is encrypted with this key).                                                                                                                                                                                             | Server-side conversions pause until the token is saved again.                                                                                                                                             |
+| `CRON_SECRET`                                             | Update the Dokploy env and the scheduler's `Authorization: Bearer` header together.                                                                                                                                                                                                                                   | Scheduled publishing and purges fail until both match.                                                                                                                                                    |
+| IP-hash key                                               | Derived from `BETTER_AUTH_SECRET` (no separate admin control). Changing `BETTER_AUTH_SECRET` also changes it, and breaks pre-rotation two-factor data, so do not rotate it for this purpose.                                                                                                                          | —                                                                                                                                                                                                         |
+| `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY`               | Create a new R2 token, update env, redeploy, then revoke the old token.                                                                                                                                                                                                                                               | None if done in that order.                                                                                                                                                                               |
+| `SMTP_URL` / `RESEND_API_KEY`, `TURNSTILE_*`              | Create the new credential, update env, redeploy, revoke the old one.                                                                                                                                                                                                                                                  | None if done in that order.                                                                                                                                                                               |
 
 ### Content-Security-Policy
 
@@ -74,3 +74,23 @@ The CSP is **enforced** from Phase 10. Violations still arrive in the app log as
 ### Rate limits
 
 Sign-in 5/min, password reset 3 per 5 min, `/two-factor/*` 5/min, password change and reset 5 per 5 min (Better Auth, database-backed, on in staging and production); invites 20/hour, View as 10 per 10 min and CSV exports 10 per 10 min per admin user; public forms per IP hash. ⌘K search is limited in memory (one replica).
+
+## Phase 11 (launch)
+
+- **Deploys wait for CI.** Turn **off** Auto Deploy on both Dokploy apps. Create a Dokploy API key (Settings ▸ Profile ▸ API/CLI). In GitHub ▸ Settings ▸ Environments create `staging` and `production`, each with secrets `DOKPLOY_URL` (e.g. `https://dokploy.example.com`), `DOKPLOY_API_KEY`, `DOKPLOY_APPLICATION_ID` (the app's id from its Dokploy URL or `/api/application.all`). Optionally require a reviewer on `production`. Without the secrets the `deploy` job only warns.
+- **Deployment id.** No build arg is needed: the Dockerfile reads the commit from the clone (`scripts/deployment-id.sh`). Leave `NEXT_DEPLOYMENT_ID` unset in Dokploy unless you want to override it.
+- **Backups.** Dokploy ▸ the PostgreSQL service ▸ Backups: add an S3 destination for an R2 bucket (endpoint `https://<account>.r2.cloudflarestorage.com`, region `auto`, a token scoped to that bucket), schedule daily (e.g. `0 3 * * *`), keep 30. Run "Backup now" once and confirm the object appears. Then run the restore drill ([runbook §4](./runbook.md#4-restore-a-backup)) with a separate **read-only** token. This is a manual setup step; nothing in the repo configures it.
+- **Owner recovery** ships in the image as `owner-recover.cjs` ([runbook §6](./runbook.md#6-recover-the-owner-account)); it needs `--email` and `--confirm`.
+- **Environment checklist.** `CRON_SECRET` (32+ characters, required outside development) with a Dokploy schedule calling `/api/v1/cron/tick` every minute. Traefik must overwrite `X-Real-IP` and `X-Forwarded-For` (rate limits key on them). Optional: `BETTER_AUTH_SECRETS` (rotation, see "Rotating secrets"), `APP_ENCRYPTION_KEY`, `TURNSTILE_SITE_KEY`/`TURNSTILE_SECRET_KEY`, `RESEND_API_KEY` with `EMAIL_DRIVER=resend`, `DISABLE_CUSTOM_SCRIPTS`, S3/R2 media settings.
+- **Media bucket headers (R2).** Add Cloudflare Transform Rules on the media domain: for paths not ending in `.pdf`, `X-Content-Type-Options: nosniff` and `Content-Security-Policy: default-src 'none'; img-src 'self'; media-src 'self'; style-src 'unsafe-inline'; sandbox`; for `.pdf`, `nosniff` only ([runbook §9](./runbook.md#9-media-bucket-headers)).
+- **Notification bell mount.** The bell is built but not mounted, because the admin shell files are being edited. In `admin/components/shell/notifications-button.tsx` replace the component body with:
+  ```tsx
+  "use client"
+  import { NotificationsBell } from "@/admin/modules/notifications/notifications-bell"
+  import { ICON_BUTTON } from "./constants"
+  export function NotificationsButton() {
+    return <NotificationsBell className={ICON_BUTTON} />
+  }
+  ```
+  Or in `topbar.tsx` swap `<NotificationsButton />` for `<NotificationsBell className={ICON_BUTTON} />`. Then change `test.fixme(` to `test(` in `tests/e2e/admin/content/notifications.spec.ts` and run it with `axe.spec.ts` (`--project=admin-desktop`).
+- **Admin visual baselines.** After shell edits, re-record them with `pnpm test:visual:linux` and commit the PNGs ([runbook §2](./runbook.md#2-deploy)).

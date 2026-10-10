@@ -25,7 +25,7 @@ COPY . .
 # git commit of the build context (scripts/deployment-id.sh).
 RUN NEXT_DEPLOYMENT_ID="$(sh scripts/deployment-id.sh .)" && export NEXT_DEPLOYMENT_ID \
   && echo "deployment id: $NEXT_DEPLOYMENT_ID" \
-  && pnpm build && pnpm build:migrate && pnpm build:admin-create
+  && pnpm build && pnpm build:migrate && pnpm build:admin-create && pnpm build:owner-recover
 
 FROM node:22-alpine AS runner
 WORKDIR /app
@@ -42,6 +42,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # Migrations run at boot, before the server accepts traffic.
 COPY --from=builder --chown=nextjs:nodejs /app/dist/migrate.cjs ./migrate.cjs
 COPY --from=builder --chown=nextjs:nodejs /app/dist/admin-create.cjs ./admin-create.cjs
+COPY --from=builder --chown=nextjs:nodejs /app/dist/owner-recover.cjs ./owner-recover.cjs
 COPY --from=builder --chown=nextjs:nodejs /app/server/db/migrations ./server/db/migrations
 COPY --chown=nextjs:nodejs --chmod=755 docker-entrypoint.sh ./docker-entrypoint.sh
 USER nextjs

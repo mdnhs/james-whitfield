@@ -8,8 +8,10 @@ import type { MediaAsset } from "@/lib/media"
 
 import { CookieSettingsButton } from "./cookie-settings-button"
 
+// Clay itself is 1.9:1 on pine; lifted toward white it reads as clay and
+// clears 4.5:1 (axe, Phase 11).
 const columnTitle =
-  "font-plex-mono text-xs leading-[normal] font-semibold text-clay uppercase"
+  "font-plex-mono text-xs leading-[normal] font-semibold text-[color-mix(in_srgb,var(--color-clay),white_55%)] uppercase"
 const linkClass =
   "text-sm leading-[normal] text-cream transition-opacity hover:opacity-70"
 

@@ -13,7 +13,8 @@
   --color-brand-mint: #d6e8e4;
   --color-cream: #faf6f0;
   --color-brand-deep: #245f60;
-  --color-clay: #b55441;
+  /* Darkened from #b55441 so clay text reaches 4.5:1 on stone (axe, Phase 11). */
+  --color-clay: #b0513f;
   --color-stone: #f3f4ee;
   --color-mist: #d9e5e5;
   --color-forest: #245333;
@@ -24,7 +25,9 @@
      replaced, so tokenising changes no pixel; Phase 9 overrides them. */
   --color-text-strong: #0c0c0c;
   --color-text-muted: #525252;
-  --color-text-subtle: #8a8f88;
+  /* Darkened from #8a8f88 so subtle text reaches 4.5:1 on white and
+     surface-soft (axe, Phase 11). */
+  --color-text-subtle: #6e726d;
   --color-line: #dfe2d8;
   --color-line-soft: #e7e9e0;
   --color-line-neutral: #ececec;

@@ -6,7 +6,8 @@ import { formatAddress } from "@/lib/content/address"
 import type { GlobalValue } from "@/lib/content/globals"
 import type { GlobalView } from "@/lib/content/types"
 import type { IconName } from "@/lib/icons"
-import { ContactForm } from "./contact-form"
+import type { ContactForm } from "./contact-form"
+import { ContactFormLazy } from "./contact-form-lazy"
 
 type Item = { icon: IconName; label: string; value: string; href?: string }
 
@@ -113,7 +114,7 @@ export function ContactSection({
           </ul>
         </div>
 
-        <ContactForm {...form} />
+        <ContactFormLazy {...form} />
       </Container>
     </section>
   )

@@ -57,6 +57,11 @@ const nextConfig: NextConfig = {
     })
   },
   experimental: {
+    // The site layout streams in one Suspense boundary, and React holds a
+    // boundary's reveal until 300 ms after the shell's first frame. Inlined
+    // CSS lets the parser reach the reveal before that frame, so content
+    // paints with the shell instead of 300 ms later (Lighthouse, Phase 11).
+    inlineCss: true,
     globalNotFound: true,
     optimizePackageImports: ["lucide-react", "three", "@gsap/react", "lenis"],
   },

@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { io } from "next/cache"
 import { NuqsAdapter } from "nuqs/adapters/next/app"
 import { Suspense } from "react"
+import { preload } from "react-dom"
 
 import { AttributionCapture } from "@/components/attribution-capture"
 import { getEnv } from "@/server/env"
@@ -37,6 +38,9 @@ export async function generateMetadata(): Promise<Metadata> {
 export default function SiteLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  // The header's CSS background is the LCP element on every page; preloaded
+  // from the static shell it is decoded in time for the first paint.
+  preload("/images/hero/navbar-bg.png", { as: "image", fetchPriority: "high" })
   return (
     <html lang="en-IE" className={siteFontClassName}>
       <body>

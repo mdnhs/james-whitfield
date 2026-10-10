@@ -106,7 +106,7 @@ exports[`presets > evergreen snapshot 1`] = `
     "brand": "#1f6b3a",
     "brand-deep": "#006a35",
     "brand-mint": "#dbeed4",
-    "clay": "#b55441",
+    "clay": "#b0513f",
     "cream": "#faf6f0",
     "forest": "#514e00",
     "hero-base": "#0d120f",
@@ -126,7 +126,7 @@ exports[`presets > evergreen snapshot 1`] = `
     "surface-warm": "#fcfaf7",
     "text-muted": "#525252",
     "text-strong": "#0c0c0c",
-    "text-subtle": "#8a8f88",
+    "text-subtle": "#6e726d",
   },
 }
 `;
@@ -237,7 +237,7 @@ exports[`presets > graphite snapshot 1`] = `
     "brand": "#4a4f55",
     "brand-deep": "#474d54",
     "brand-mint": "#d6d9dc",
-    "clay": "#b55441",
+    "clay": "#b0513f",
     "cream": "#faf6f0",
     "forest": "#354244",
     "hero-base": "#0d120f",
@@ -257,7 +257,7 @@ exports[`presets > graphite snapshot 1`] = `
     "surface-warm": "#fcfaf7",
     "text-muted": "#525252",
     "text-strong": "#0c0c0c",
-    "text-subtle": "#8a8f88",
+    "text-subtle": "#6e726d",
   },
 }
 `;
@@ -388,7 +388,7 @@ exports[`presets > ocean snapshot 1`] = `
     "surface-warm": "#fcfaf7",
     "text-muted": "#525252",
     "text-strong": "#0c0c0c",
-    "text-subtle": "#8a8f88",
+    "text-subtle": "#6e726d",
   },
 }
 `;
@@ -519,7 +519,7 @@ exports[`presets > plum snapshot 1`] = `
     "surface-warm": "#fcfaf7",
     "text-muted": "#525252",
     "text-strong": "#0c0c0c",
-    "text-subtle": "#8a8f88",
+    "text-subtle": "#6e726d",
   },
 }
 `;
@@ -630,7 +630,7 @@ exports[`presets > teal-sage snapshot 1`] = `
     "brand": "#336060",
     "brand-deep": "#245f60",
     "brand-mint": "#d6e8e4",
-    "clay": "#b55441",
+    "clay": "#b0513f",
     "cream": "#faf6f0",
     "forest": "#245333",
     "hero-base": "#0d120f",
@@ -650,7 +650,7 @@ exports[`presets > teal-sage snapshot 1`] = `
     "surface-warm": "#fcfaf7",
     "text-muted": "#525252",
     "text-strong": "#0c0c0c",
-    "text-subtle": "#8a8f88",
+    "text-subtle": "#6e726d",
   },
 }
 `;
@@ -781,7 +781,7 @@ exports[`presets > terracotta snapshot 1`] = `
     "surface-warm": "#fcfaf7",
     "text-muted": "#525252",
     "text-strong": "#0c0c0c",
-    "text-subtle": "#8a8f88",
+    "text-subtle": "#6e726d",
   },
 }
 `;

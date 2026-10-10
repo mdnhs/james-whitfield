@@ -236,6 +236,10 @@ export function PageMotion() {
             SplitText.create(el, {
               type: "words",
               autoSplit: true,
+              // Word spans still read as the sentence. The default ("auto")
+              // puts aria-label on the element, which a <p> may not carry and
+              // which leaves a link inside a split heading with no name.
+              aria: "none",
               onSplit: (split) =>
                 gsap.fromTo(
                   split.words,

@@ -2,7 +2,7 @@
 
 import { useEffect } from "react"
 
-import { captureAttribution } from "@/features/contact/lib/attribution"
+import { captureAttribution } from "@/features/contact/lib/capture-attribution"
 
 // Remembers the first landing (referrer, UTM) for the enquiry form. Renders nothing.
 export function AttributionCapture() {

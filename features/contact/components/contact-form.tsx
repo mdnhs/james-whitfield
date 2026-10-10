@@ -427,7 +427,7 @@ function EnquiryForm({
                     }
                     className="peer sr-only"
                   />
-                  <span className="inline-flex rounded-full border border-line bg-white px-4.5 py-2.5 text-[14.5px] leading-[1.5] font-medium text-ink-muted/60 transition-colors duration-300 peer-checked:border-pine peer-checked:bg-pine peer-checked:text-cream peer-focus-visible:ring-3 peer-focus-visible:ring-clay/50 hover:border-pine/40">
+                  <span className="inline-flex rounded-full border border-line bg-white px-4.5 py-2.5 text-[14.5px] leading-[1.5] font-medium text-ink-muted/75 transition-colors duration-300 peer-checked:border-pine peer-checked:bg-pine peer-checked:text-cream peer-focus-visible:ring-3 peer-focus-visible:ring-clay/50 hover:border-pine/40">
                     {format.label}
                   </span>
                 </label>

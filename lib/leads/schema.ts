@@ -2,6 +2,8 @@ import * as z from "zod"
 
 import { Slug } from "@/lib/content/slug"
 
+import { UTM_KEYS } from "./utm"
+
 export const LEAD_STATUSES = [
   "new",
   "contacted",
@@ -12,13 +14,7 @@ export const LEAD_STATUSES = [
 export type LeadStatus = (typeof LEAD_STATUSES)[number]
 export const BOARD_STATUSES = ["new", "contacted", "booked", "closed"] as const
 export const ACTIVITY_TYPES = ["note", "status", "email", "assignment"] as const
-export const UTM_KEYS = [
-  "utm_source",
-  "utm_medium",
-  "utm_campaign",
-  "utm_term",
-  "utm_content",
-] as const
+export { UTM_KEYS }
 
 // The consent record kept with each lead (docs/brief.md §13 "consent snapshot").
 export type ConsentRecord = {

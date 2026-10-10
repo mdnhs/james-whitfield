@@ -55,7 +55,7 @@ function PlanCard({
           <span
             className={cn(
               "text-[15px] leading-[1.5]",
-              featured ? "text-cream/55" : "text-text-muted/70"
+              featured ? "text-cream/70" : "text-text-muted/85"
             )}
           >
             {unit}

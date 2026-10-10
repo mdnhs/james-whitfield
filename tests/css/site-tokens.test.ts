@@ -14,7 +14,7 @@ const root = path.join(import.meta.dirname, "../..")
 const TOKENS: Record<string, string> = {
   "text-strong": "#0c0c0c",
   "text-muted": "#525252",
-  "text-subtle": "#8a8f88",
+  "text-subtle": "#6e726d",
   line: "#dfe2d8",
   "line-soft": "#e7e9e0",
   "line-neutral": "#ececec",

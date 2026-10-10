@@ -75,7 +75,7 @@ Nothing here has been executed.
    }
   ```
 
-- [ ] 9. Cut-over (see §4): merge `feat/platform` into `main`, create the owner with `admin-create`, owner sets up two-factor, Search Console and Bing, GTM import, DNS, smoke test.
+- [ ] 9. Cut-over (see §4): merge `feat/platform` into `main`, create the owner with `admin-create`, owner signs in (two-factor optional, recommended), Search Console and Bing, GTM import, DNS, smoke test.
 - [ ] 10. Answer the open questions in §2.
 
 ## 4. Cut-over runbook
@@ -87,7 +87,7 @@ Nothing here has been executed.
 5. Merge (with the production reviewer approving, if set).
 6. The `deploy` job deploys production (Dokploy deployment id is the git SHA).
 7. In the production container run `node admin-create.cjs --email … --name …` for the owner.
-8. The owner signs in, sets up two-factor, and invites the team.
+8. The owner signs in, turns on two-factor from Account ▸ Security (optional since 2026-10-11, strongly recommended), and invites the team.
 9. Submit the sitemap to Search Console and Bing; add their verification codes in Admin, SEO, Defaults.
 10. Import the GTM container (`docs/runbook.md` §8).
 11. Point DNS to Traefik.

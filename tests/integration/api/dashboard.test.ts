@@ -14,7 +14,7 @@ import { articles, auditLogs, newsletterSubscribers } from "@/server/db/schema"
 import { weekWindow } from "@/server/modules/dashboard/week"
 
 import { insertArticle, insertTaxonomy } from "../helpers/articles"
-import { adminRequest, cookieFor } from "../helpers/auth"
+import { adminRequest, cookieFor, markTwoFactorEnabled } from "../helpers/auth"
 import { resetDb } from "../helpers/db"
 import { insertLead } from "../helpers/leads"
 
@@ -223,5 +223,36 @@ describe("RBAC and empty states", () => {
     const body = await dashboard(await cookieFor("owner"))
     expect(body.recentActivity[0]).toMatchObject({ action: "auth.sign_in" })
     expect(typeof body.recentActivity[0].createdAt).toBe("string")
+  })
+})
+
+// Change 2026-10-11: two-factor is a recommendation in "Next up", never a gate.
+describe("GET /api/v1/admin/dashboard — two-factor recommendation", () => {
+  const step = (body: { nextUp: { id: string }[] }) =>
+    body.nextUp.find((item) => item.id === "two-factor")
+
+  it("urges an owner without two-factor, with a reason, linking to Security", async () => {
+    const body = await dashboard(await cookieFor("owner"))
+    expect(step(body)).toMatchObject({
+      title: "Turn on two-factor authentication",
+      description: expect.stringMatching(/^Strongly recommended for your role/),
+      href: "/admin/account?tab=security",
+      done: false,
+    })
+  })
+
+  it("recommends it to other roles without the role reason", async () => {
+    const body = await dashboard(await cookieFor("editor"))
+    expect(step(body)).toMatchObject({
+      description: expect.stringMatching(/^Recommended\./),
+      done: false,
+    })
+  })
+
+  it("stops recommending it once it is on", async () => {
+    const cookie = await cookieFor("owner")
+    await markTwoFactorEnabled("owner@example.com")
+    const body = await dashboard(cookie)
+    expect(step(body)).toMatchObject({ title: "Two-factor is on", done: true })
   })
 })

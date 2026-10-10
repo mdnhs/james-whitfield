@@ -678,6 +678,9 @@ The service layer also enforces these invariants:
 - **Bootstrap.** `pnpm admin:create --email … --name …` creates the first owner.
 - **Invite.** Owner or admin → `POST /api/v1/admin/users/invite` → `createUser` (no password, chosen role, with the actor's headers so RBAC applies) → `requestPasswordReset` → branded "You're invited" email → the user sets a password on `/admin/reset-password`, which creates the credential account.
 - **2FA.** TOTP with backup codes and 30-day trusted devices. **Mandatory for owner and admin.** On sign-in without 2FA they are sent straight to setup.
+
+  > **Change (2026-10-11): 2FA optional for all roles per product owner.** Nobody is forced into setup and anyone, owners and admins included, may turn 2FA on or off from Account ▸ Security (turning it off asks for the password; it cannot be changed during View as; enabling, disabling and new backup codes are audited). A user with 2FA on still completes the challenge at sign-in, and trusted devices still apply. The dashboard's "Next up" recommends turning it on to anyone without it, with a stronger reason for owners and admins. This supersedes "Mandatory for owner and admin" here and in §12.6 and §15.
+
 - **Sessions.** Users list and revoke their own. Admins revoke anyone's. Bans revoke sessions immediately.
 - **Impersonation ("View as").** Lasts one hour, shows a sticky banner and is audited. It is the easiest way to show the client that the permissions really work.
 
@@ -1081,6 +1084,7 @@ GA4 enhanced measurement covers scrolls, outbound clicks and file downloads. Its
 **Custom code entries.**
 
 - Only the owner can add them (2FA is mandatory for owners).
+  > Change (2026-10-11): 2FA optional for all roles per product owner; strongly recommended for owners (see §7.4).
 - Snippets are stored as **structured entries**, not raw HTML: `{ placement: "head" | "body", src (https, allowlisted host) | inline, consent category, routes[], enabled }`.
 - They are injected with `next/script` (raw `dangerouslySetInnerHTML` scripts do not run on client renders) and never run in the admin.
 - Every change is audited with a diff and can be rolled back.
@@ -1185,6 +1189,7 @@ It ships first as **Report-Only**, then is enforced. A nonce-based CSP was rejec
   - CSP (§12.6);
   - `X-Robots-Tag` on `/admin` and `/api`.
 - **AuthN.** 2FA is mandatory for owner and admin, rate limits are on, there is no public sign-up, passwords need at least 12 characters, error messages are generic, and sessions can be revoked.
+  > Change (2026-10-11): 2FA optional for all roles per product owner (recommended, never enforced; see §7.4).
 - **AuthZ.** Matrix tests (§16), IDOR checks in services, and same-origin checks on admin mutations.
 - **Input and output:**
   - Zod at every boundary;

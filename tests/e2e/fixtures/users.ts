@@ -3,7 +3,7 @@ export const PASSWORD = "e2e-password-0123"
 
 export const E2E_USERS = {
   editor: { email: "editor@e2e.test", name: "Eddie Editor", role: "editor" },
-  // Never sets up two-factor: proves the panel and API refuse it.
+  // Never sets up two-factor: proves an owner without it gets straight in.
   owner: { email: "owner@e2e.test", name: "Olive Owner", role: "owner" },
   // Only the two-factor spec uses (and changes) this account.
   twoFactorOwner: {
@@ -18,13 +18,14 @@ export const E2E_USERS = {
   viewer: { email: "viewer@e2e.test", name: "Vera Viewer", role: "viewer" },
   // Read-only on pages: the builder's RBAC spec.
   author: { email: "author@e2e.test", name: "Abe Author", role: "author" },
-  // An owner the setup project enrols in 2FA; never signs out.
+  // An owner the setup project enrols in 2FA (optional, but this fixture
+  // keeps it on); never signs out.
   shellOwner: {
     email: "owner-shell@e2e.test",
     name: "Sam Shell",
     role: "owner",
   },
-  // Only the handover spec signs this one in, sets up 2FA and signs out.
+  // Only the handover spec signs this one in and out.
   handoverOwner: {
     email: "owner-handover@e2e.test",
     name: "Hana Handover",

@@ -47,7 +47,7 @@ Environment (both optional):
 
 ### Tracking setup
 
-1. **GTM:** Admin → Import Container → `docs/gtm-container.json` → Merge → "Rename conflicting". Leave the Meta tags paused unless the site's own Pixel is switched off (Ruling R7). Anyone who can publish the container must use 2FA (brief §12.6).
+1. **GTM:** Admin → Import Container → `docs/gtm-container.json` → Merge → "Rename conflicting". Leave the Meta tags paused unless the site's own Pixel is switched off (Ruling R7). Anyone who can publish the container should use 2FA (brief §12.6; panel 2FA is optional for all roles since 2026-10-11, but strongly recommended here).
 2. **GA4 property:** Google signals off; ads personalisation off; enhanced measurement on for scrolls, outbound clicks and file downloads, with "Page changes based on browser history events" off, form interactions off and **"Site search" off** (otherwise the insights `q` parameter would be sent as `search_term`); mark `generate_lead` as a key event. Mental-health counselling is a Google Ads sensitive category: no remarketing audiences, no Customer Match.
 3. **Meta Events Manager:** Automatic Advanced Matching off; no custom conversions on URLs.
 4. **HSTS:** the app sends `Strict-Transport-Security` with `includeSubDomains`, so every subdomain of the site domain must serve valid HTTPS before the first deploy; browsers refuse plain HTTP on any of them.

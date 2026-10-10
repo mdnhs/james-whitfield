@@ -1,18 +1,9 @@
 import "server-only"
 
-import {
-  APIError,
-  createAuthMiddleware,
-  getSessionFromCtx,
-  isAPIError,
-} from "better-auth/api"
+import { APIError, createAuthMiddleware, isAPIError } from "better-auth/api"
 import { expireCookie } from "better-auth/cookies"
 
-import { parseRoles } from "@/lib/auth/permissions"
-import { mustSetUpTwoFactor } from "@/lib/auth/two-factor-policy"
 import { audit } from "@/server/lib/audit"
-
-import { SELF_SERVICE_PATHS } from "./account-hooks"
 
 // Better Auth hooks key on `ctx.path`, the matched endpoint's declared path,
 // so URL variants (trailing slash, case, encoded segments) that Better Auth's
@@ -52,42 +43,17 @@ export const beforeHook = createAuthMiddleware(async (ctx) => {
       message: "Manage devices through the admin API",
     })
   }
-  if (isAdminPath(ctx.path)) {
-    if (ctx.request && !HTTP_ADMIN_PATHS.has(ctx.path)) {
-      throw new APIError("FORBIDDEN", {
-        code: "ADMIN_ENDPOINT_DISABLED",
-        message: "Manage users through the admin API",
-      })
-    }
-    if (HTTP_ADMIN_PATHS.has(ctx.path)) return
-  } else if (!SELF_SERVICE_PATHS.has(ctx.path)) {
-    return
-  }
-
-  // A server-side admin call made as a user still obeys the 2FA rule
-  // (docs/brief.md §7.4), and so do the Account page's password and name
-  // changes over HTTP, as the Hono /account routes do: an owner or admin
-  // without 2FA gets as far as setting it up and no further. Fresh read (role or 2FA could have changed within
-  // the cookie cache's five minutes). Cached on ctx, so the endpoint reuses
-  // this same session.
-  const session = await getSessionFromCtx(ctx, { disableCookieCache: true })
-  // No session: the endpoint refuses (or allows a server-side call) itself.
-  if (!session) return
-  const actor = {
-    roles: parseRoles(session.user.role as string | null | undefined),
-    twoFactorEnabled: Boolean(session.user.twoFactorEnabled),
-  }
-  if (mustSetUpTwoFactor(actor)) {
+  if (ctx.request && isAdminPath(ctx.path) && !HTTP_ADMIN_PATHS.has(ctx.path)) {
     throw new APIError("FORBIDDEN", {
-      code: "TWO_FACTOR_REQUIRED",
-      message: "Set up two-factor authentication to continue",
+      code: "ADMIN_ENDPOINT_DISABLED",
+      message: "Manage users through the admin API",
     })
   }
 })
 
-// The 2FA rule reads the user's flag, not how a given session signed in. So
-// when enrolment completes, every other session (all of them password-only)
-// is revoked, and only the one rotated by enrolment survives.
+// When enrolment completes, every other session (all of them password-only)
+// is revoked, and only the one rotated by enrolment survives: turning 2FA on
+// signs out anyone who got in with the password alone.
 export const afterHook = createAuthMiddleware(async (ctx) => {
   if (ctx.path === "/admin/stop-impersonating") return auditStop(ctx)
   if (ctx.path !== "/two-factor/verify-totp") return

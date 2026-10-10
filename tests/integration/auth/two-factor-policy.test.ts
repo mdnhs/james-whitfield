@@ -41,19 +41,30 @@ describe("two-factor policy", () => {
     expect(await audited("account.two_factor_disable")).toHaveLength(1)
   })
 
+  // Change 2026-10-11: optional for every role, owners and admins included.
   it.each(["owner", "admin"] as const)(
-    "never lets an %s turn it off",
+    "lets an %s turn it off with their password, audited",
     async (role) => {
       await createUser(role, `${role}@example.com`)
       const { cookie } = await enrolTotp(await signIn(`${role}@example.com`))
       const response = await authPost("/two-factor/disable", cookie, {
         password: PASSWORD,
       })
-      expect(response.status).toBe(403)
-      expect((await response.json()).code).toBe("TWO_FACTOR_MANDATORY")
-      expect(await flag(`${role}@example.com`)).toBe(true)
+      expect(response.status).toBe(200)
+      expect(await flag(`${role}@example.com`)).toBe(false)
+      expect(await audited("account.two_factor_disable")).toHaveLength(1)
     }
   )
+
+  it("still asks an owner for the right password to turn it off", async () => {
+    await createUser("owner", "owner@example.com")
+    const { cookie } = await enrolTotp(await signIn("owner@example.com"))
+    const response = await authPost("/two-factor/disable", cookie, {
+      password: "wrong password!!",
+    })
+    expect(response.ok).toBe(false)
+    expect(await flag("owner@example.com")).toBe(true)
+  })
 
   it("regenerates backup codes for anyone with 2FA, audited", async () => {
     await createUser("owner", "owner@example.com")

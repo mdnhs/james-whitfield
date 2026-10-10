@@ -26,9 +26,13 @@ test.describe("as an owner", () => {
     await expect(activity.getByText("No activity yet")).toHaveCount(0)
     await expect(activity.getByText(/ago|just now/i).first()).toBeVisible()
     await expect(page.getByRole("link", { name: "New article" })).toBeVisible()
+    const checklist = page.getByRole("list", { name: "Setup checklist" })
+    await expect(checklist.getByRole("listitem")).toHaveCount(2)
+    // This owner has two-factor on: ticked, and no longer recommended.
+    await expect(checklist.getByText("Two-factor is on")).toBeVisible()
     await expect(
-      page.getByRole("list", { name: "Setup checklist" }).getByRole("listitem")
-    ).toHaveCount(2)
+      page.getByText("Turn on two-factor authentication")
+    ).toHaveCount(0)
   })
 })
 
@@ -63,12 +67,14 @@ test.describe("as a viewer", () => {
 
   test("is offered two-factor, not told it is required", async ({ page }) => {
     await page.goto("/admin")
+    await page.getByRole("link", { name: "Open security settings" }).click()
+    await expect(page).toHaveURL(/\/admin\/account\?tab=security$/)
     await page.getByRole("link", { name: "Set up two-factor" }).click()
     await expect(page).toHaveURL(/\/admin\/two-factor-setup$/)
     await expect(page.getByText(/is recommended/)).toBeVisible()
     await expect(page.getByText(/is required/)).toHaveCount(0)
-    await page.getByRole("link", { name: "Back to the dashboard" }).click()
-    await expect(page).toHaveURL(/\/admin$/)
+    await page.getByRole("link", { name: "Back to your account" }).click()
+    await expect(page).toHaveURL(/\/admin\/account\?tab=security$/)
   })
 })
 

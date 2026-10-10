@@ -46,10 +46,17 @@ const renderAs = (me: MePayload) =>
 afterEach(cleanup)
 
 describe("TwoFactorCard", () => {
-  it("explains why an owner cannot turn it off", () => {
+  it("lets an owner turn it off with their password", async () => {
     renderAs(actor(["owner"]))
-    expect(screen.queryByRole("button", { name: "Turn off" })).toBeNull()
-    expect(screen.getByText(/Your role requires two-factor/)).toBeTruthy()
+    await userEvent.click(screen.getByRole("button", { name: "Turn off" }))
+    expect(
+      screen.getByText(/keeping it on is strongly recommended/)
+    ).toBeTruthy()
+    await userEvent.type(screen.getByLabelText("Password"), "a long password!")
+    await userEvent.click(
+      screen.getByRole("button", { name: "Turn off two-factor" })
+    )
+    expect(disable).toHaveBeenCalledWith({ password: "a long password!" })
   })
 
   it("shows new backup codes once, after the password", async () => {
@@ -82,5 +89,12 @@ describe("TwoFactorCard", () => {
         .getByRole("link", { name: "Set up two-factor" })
         .getAttribute("href")
     ).toBe("/admin/two-factor-setup")
+    expect(screen.queryByText(/Strongly recommended for your role/)).toBeNull()
+  })
+
+  it("gives an owner without it the reason, without blocking", () => {
+    renderAs(actor(["owner"], false))
+    expect(screen.getByText(/Strongly recommended for your role/)).toBeTruthy()
+    expect(screen.getByRole("link", { name: "Set up two-factor" })).toBeTruthy()
   })
 })

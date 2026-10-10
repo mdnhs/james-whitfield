@@ -49,15 +49,17 @@ describe("session errors from any query or mutation", () => {
     )
   })
 
-  it("sends a session that still needs two-factor to setup", async () => {
+  it("sends an ended session from a mutation to sign-in too", async () => {
     await getQueryClient()
       .getMutationCache()
       .build(getQueryClient(), {
-        mutationFn: fail("TWO_FACTOR_REQUIRED", 403),
+        mutationFn: fail("UNAUTHENTICATED", 401),
       })
       .execute(undefined)
       .catch(() => {})
-    expect(assign).toHaveBeenCalledWith("/admin/two-factor-setup")
+    expect(assign).toHaveBeenCalledWith(
+      `/admin/sign-in?next=${encodeURIComponent("/admin/activity?page=2")}`
+    )
   })
 
   it("never puts a non-admin path into ?next=", async () => {
@@ -84,11 +86,11 @@ describe("session errors from any query or mutation", () => {
   })
 
   it("does not reload the page it is already on", async () => {
-    at("/admin/two-factor-setup")
+    at("/admin/sign-in")
     await getQueryClient()
       .fetchQuery({
-        queryKey: ["t", "2fa-here"],
-        queryFn: fail("TWO_FACTOR_REQUIRED", 403),
+        queryKey: ["t", "sign-in-here"],
+        queryFn: fail("UNAUTHENTICATED", 401),
         retry: false,
       })
       .catch(() => {})

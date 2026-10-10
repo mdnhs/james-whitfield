@@ -3,7 +3,10 @@ import "server-only"
 import { format } from "date-fns"
 
 import { hasPermission } from "@/lib/auth/permissions"
-import { roleRequiresTwoFactor } from "@/lib/auth/two-factor-policy"
+import {
+  roleRecommendsTwoFactor,
+  SECURITY_SETTINGS_PATH,
+} from "@/lib/auth/two-factor-policy"
 import type { QaFinding } from "@/lib/content/qa"
 import type { Actor } from "@/server/auth/actor"
 
@@ -51,16 +54,20 @@ const DAY = 86_400_000
 const FINDINGS_SHOWN = 10
 const first = (name: string) => name.trim().split(/\s+/)[0] || "them"
 
+// Two-factor is optional for every role (change 2026-10-11): a
+// recommendation, never a gate. Once it is on, the step is only a ticked
+// checklist entry.
 function twoFactorStep(actor: Actor): NextUpItem {
-  const required = roleRequiresTwoFactor(actor.roles)
   return {
     id: "two-factor",
-    title: actor.twoFactorEnabled ? "Two-factor is on" : "Turn on two-factor",
-    description: required
-      ? "Required for your role. A code from your phone keeps your account safe even if your password leaks."
+    title: actor.twoFactorEnabled
+      ? "Two-factor is on"
+      : "Turn on two-factor authentication",
+    description: roleRecommendsTwoFactor(actor.roles)
+      ? "Strongly recommended for your role, which can change who has access. A code from your phone keeps your account safe even if your password leaks."
       : "Recommended. A code from your phone keeps your account safe even if your password leaks.",
-    cta: "Set up two-factor",
-    href: "/admin/two-factor-setup",
+    cta: "Open security settings",
+    href: SECURITY_SETTINGS_PATH,
     done: actor.twoFactorEnabled,
   }
 }

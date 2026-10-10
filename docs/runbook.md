@@ -65,7 +65,7 @@ Try in order:
    ```bash
    docker exec <container> node owner-recover.cjs --email owner@example.com --confirm
    ```
-   Sign in with the emailed link, then set up two-factor again. Only works for an existing owner.
+   Sign in with the emailed link, then (recommended, optional) turn two-factor on again from Account ▸ Security. Only works for an existing owner.
 4. No owner exists at all:
    ```bash
    docker exec <container> node admin-create.cjs --email you@example.com --name "Your Name"

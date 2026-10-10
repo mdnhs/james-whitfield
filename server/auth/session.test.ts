@@ -15,8 +15,7 @@ vi.mock("./fresh-session", () => ({
   getFreshSession: async () => ({ session: current, setCookies: [] }),
 }))
 
-const { requireActor, requirePermission, requireSignedIn } =
-  await import("./session")
+const { requireActor, requirePermission } = await import("./session")
 
 const signedInAs = (role: string, twoFactorEnabled: boolean): SessionLike => ({
   user: {
@@ -60,36 +59,21 @@ describe("requireActor when signed out", () => {
   })
 })
 
-describe("two-factor enforcement (brief §7.4)", () => {
-  it("sends an owner without two-factor to setup", async () => {
-    current = signedInAs("owner", false)
-    await expect(requireActor()).rejects.toThrow(
-      "REDIRECT /admin/two-factor-setup"
-    )
-  })
-
-  it("sends an admin without two-factor to setup", async () => {
-    current = signedInAs("editor,admin", false)
-    await expect(requireActor()).rejects.toThrow(
-      "REDIRECT /admin/two-factor-setup"
-    )
-  })
+// Change 2026-10-11: two-factor is optional for every role.
+describe("no forced two-factor setup", () => {
+  it.each(["owner", "editor,admin", "editor"])(
+    "lets %s without two-factor through, with no redirect",
+    async (role) => {
+      current = signedInAs(role, false)
+      await expect(requireActor()).resolves.toMatchObject({
+        twoFactorEnabled: false,
+      })
+    }
+  )
 
   it("lets an owner with two-factor through", async () => {
     current = signedInAs("owner", true)
     await expect(requireActor()).resolves.toMatchObject({ roles: ["owner"] })
-  })
-
-  it("does not force two-factor on other roles", async () => {
-    current = signedInAs("editor", false)
-    await expect(requireActor()).resolves.toMatchObject({ roles: ["editor"] })
-  })
-
-  it("lets the setup screen through without two-factor", async () => {
-    current = signedInAs("owner", false)
-    await expect(requireSignedIn()).resolves.toMatchObject({
-      twoFactorEnabled: false,
-    })
   })
 })
 
@@ -121,14 +105,14 @@ describe("requirePermission", () => {
     )
   })
 
-  it("still enforces sign-in and two-factor first", async () => {
+  it("still enforces sign-in first, but never two-factor setup", async () => {
     current = null
     await expect(requirePermission({ page: ["read"] })).rejects.toThrow(
       /^REDIRECT \/admin\/sign-in/
     )
     current = signedInAs("owner", false)
-    await expect(requirePermission({ page: ["read"] })).rejects.toThrow(
-      "REDIRECT /admin/two-factor-setup"
-    )
+    await expect(requirePermission({ page: ["read"] })).resolves.toMatchObject({
+      roles: ["owner"],
+    })
   })
 })

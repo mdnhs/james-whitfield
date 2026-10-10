@@ -1,6 +1,5 @@
 import "server-only"
 
-import { mustSetUpTwoFactor } from "@/lib/auth/two-factor-policy"
 import { ApiError } from "@/server/api/errors"
 import type { Actor } from "@/server/auth/actor"
 import { getAuth } from "@/server/auth/auth"
@@ -9,7 +8,7 @@ import { isBanned } from "@/server/auth/fresh-session"
 import { viewAsRefusal } from "./guard"
 import { loadTarget } from "./manage"
 
-// Ruling R7. Our guard first (owners, self, banned, 2FA), then Better Auth's
+// Ruling R7. Our guard first (owners, self, banned), then Better Auth's
 // own impersonate / impersonate-admins check, then its cookies go back to the
 // browser. The start is audited by databaseHooks.session.create (auth.ts).
 export async function startViewAs(actor: Actor, id: string, headers: Headers) {
@@ -18,11 +17,6 @@ export async function startViewAs(actor: Actor, id: string, headers: Headers) {
   if (why) throw new ApiError("FORBIDDEN", why)
   if (isBanned(target))
     throw new ApiError("CONFLICT", "Unban them before viewing as them")
-  if (mustSetUpTwoFactor(target))
-    throw new ApiError(
-      "CONFLICT",
-      "They haven't set up two-factor yet, so their view can't open"
-    )
   const response = await getAuth().api.impersonateUser({
     body: { userId: id },
     headers,

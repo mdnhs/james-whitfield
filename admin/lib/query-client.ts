@@ -11,11 +11,10 @@ import { safeNext } from "@/lib/auth/safe-next"
 import { ApiError } from "./api-error"
 
 const SIGN_IN = "/admin/sign-in"
-const TWO_FACTOR_SETUP = "/admin/two-factor-setup"
 
-// Any query or mutation that learns the session is over (or not yet allowed
-// past two-factor setup) sends the whole tab there, instead of leaving each
-// widget to show its own "session has ended" text. A hard navigation, like
+// Any query or mutation that learns the session is over sends the whole tab
+// to sign-in, instead of leaving each widget to show its own "session has
+// ended" text. A hard navigation, like
 // sign-out: nothing of the old session stays in the tab.
 export function handleSessionError(error: unknown) {
   if (!(error instanceof ApiError)) return
@@ -24,12 +23,6 @@ export function handleSessionError(error: unknown) {
     const next = safeNext(`${pathname}${search}${hash}`)
     // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- a full document load on purpose: see above
     window.location.assign(`${SIGN_IN}?next=${encodeURIComponent(next)}`)
-  } else if (
-    error.code === "TWO_FACTOR_REQUIRED" &&
-    pathname !== TWO_FACTOR_SETUP
-  ) {
-    // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- a full document load on purpose: see above
-    window.location.assign(TWO_FACTOR_SETUP)
   }
 }
 

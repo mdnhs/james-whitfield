@@ -100,7 +100,7 @@ describe("POST /users/:id/impersonate", () => {
     expect((await start(owner, admin.id)).status).toBe(200)
   })
 
-  it("refuses yourself, a banned person and a target who must still set up two-factor", async () => {
+  it("refuses yourself and a banned person, but not a target without two-factor", async () => {
     const owner = await cookieFor("owner")
     const self = (await getDb().query.users.findFirst({
       where: eq(users.email, "owner@example.com"),
@@ -113,7 +113,8 @@ describe("POST /users/:id/impersonate", () => {
     const noTwoFactor = await createUser("admin", "n@example.com")
     expect((await start(owner, self.id)).status).toBe(403)
     expect((await start(owner, banned.id)).status).toBe(409)
-    expect((await start(owner, noTwoFactor.id)).status).toBe(409)
+    // Two-factor is optional for every role (change 2026-10-11).
+    expect((await start(owner, noTwoFactor.id)).status).toBe(200)
   })
 
   it("refuses while already viewing as someone", async () => {

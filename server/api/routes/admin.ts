@@ -25,16 +25,13 @@ import { themeRoutes } from "@/server/modules/theme/routes"
 import { trackingRoutes } from "@/server/modules/tracking/routes"
 import { usersRoutes } from "@/server/modules/users/routes"
 
-import { session, signedIn, twoFactorComplete } from "../middleware/auth"
+import { session, signedIn } from "../middleware/auth"
 import { sameOrigin } from "../middleware/same-origin"
 import type { AppEnv } from "../types"
 
 export const adminRoutes = new Hono<AppEnv>()
   .use(session, signedIn, sameOrigin)
   .route("/me", meRoutes)
-  // Everything below needs 2FA set up for owners and admins. /me stays above
-  // it: its handler answers before this runs.
-  .use(twoFactorComplete)
   .route("/preview", previewRoutes)
   .route("/pages", pagesRoutes)
   .route("/collections", collectionsRoutes)

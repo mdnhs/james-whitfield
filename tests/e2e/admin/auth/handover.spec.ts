@@ -1,8 +1,5 @@
 import { expect, test } from "@playwright/test"
-import { TOTP } from "otpauth"
-
-import { E2E_ORIGIN } from "../../fixtures/env"
-import { E2E_USERS, PASSWORD, signIn, signOut } from "../../support/admin"
+import { E2E_USERS, signIn, signOut } from "../../support/admin"
 import { resetTwoFactor } from "../../support/db"
 
 const GREETING = /^Good (morning|afternoon|evening), /
@@ -17,21 +14,8 @@ test("signing out leaves nothing of that user for the next one", async ({
   await resetTwoFactor(owner.email)
   await page.goto("/admin/sign-in")
   await signIn(page, owner)
-  await expect(page).toHaveURL(/\/admin\/two-factor-setup$/)
-  // Enrol through Better Auth directly (the UI flow is two-factor.spec's).
-  const headers = { origin: E2E_ORIGIN }
-  const enable = await page.request.post("/api/auth/two-factor/enable", {
-    data: { password: PASSWORD },
-    headers,
-  })
-  expect(enable.ok()).toBe(true)
-  const { totpURI } = (await enable.json()) as { totpURI: string }
-  const secret = new URL(totpURI).searchParams.get("secret") ?? ""
-  const verify = await page.request.post("/api/auth/two-factor/verify-totp", {
-    data: { code: new TOTP({ secret, digits: 6, period: 30 }).generate() },
-    headers,
-  })
-  expect(verify.ok()).toBe(true)
+  // Two-factor is optional (change 2026-10-11): straight into the panel.
+  await expect(page).toHaveURL(/\/admin$/)
 
   // The owner's dashboard, with the details only owners and admins get.
   await page.goto("/admin")
@@ -43,9 +27,9 @@ test("signing out leaves nothing of that user for the next one", async ({
 
   // The activity log through client navigation, so the route is kept (hidden)
   // once the owner moves on, with the owner's own sign-in among its rows
-  // (rows name the actor).
+  // (rows name the actor). Found by name wherever the sidebar puts it.
   const nav = page.getByRole("navigation", { name: "Main" })
-  await nav.getByRole("link", { name: "Activity log" }).click()
+  await page.getByRole("link", { name: "Activity log", exact: true }).click()
   const log = page.getByRole("table").getByRole("row")
   await expect(log.filter({ hasText: owner.name }).first()).toBeVisible()
   await nav.getByRole("link", { name: "Dashboard" }).click()

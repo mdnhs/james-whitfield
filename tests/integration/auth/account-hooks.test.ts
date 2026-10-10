@@ -7,7 +7,6 @@ import { auditLogs, sessions, users } from "@/server/db/schema"
 
 import {
   createUser,
-  markTwoFactorEnabled,
   ORIGIN,
   PASSWORD,
   signIn,
@@ -227,9 +226,9 @@ describe("Better Auth's own session endpoints", () => {
   })
 })
 
-// Like the Hono /account routes: an owner or admin without two-factor may
-// set it up and nothing else (docs/brief.md §7.4).
-describe("the two-factor rule on account changes", () => {
+// Change 2026-10-11: two-factor is optional for every role, so account
+// changes never ask for it.
+describe("account changes without two-factor", () => {
   const changes = [
     [
       "/change-password",
@@ -238,39 +237,12 @@ describe("the two-factor rule on account changes", () => {
     ["/update-user", { name: "Renamed" }],
   ] as const
 
-  describe.each(["owner", "admin"] as const)("an %s", (role) => {
-    it.each(changes)("without two-factor is refused %s", async (path, body) => {
-      const user = await createUser(role)
-      const cookie = await signIn(`${role}@example.com`)
-
-      const response = await call(path, cookie, body)
-
-      expect(response.status).toBe(403)
-      expect(await response.json()).toMatchObject({
-        code: "TWO_FACTOR_REQUIRED",
-      })
-      expect((await nameOf(user.id)).name).toBe(role)
-      expect(await accountRows()).toEqual([])
-      // The password is unchanged: it still signs in.
-      expect(await signIn(`${role}@example.com`)).toMatch(/session_token=/)
-    })
-
-    it.each(changes)("with two-factor may call %s", async (path, body) => {
+  describe.each(["owner", "admin", "editor"] as const)("an %s", (role) => {
+    it.each(changes)("may call %s", async (path, body) => {
       await createUser(role)
       const cookie = await signIn(`${role}@example.com`)
-      await markTwoFactorEnabled(`${role}@example.com`)
 
       expect((await call(path, cookie, body)).status).toBe(200)
     })
   })
-
-  it.each(changes)(
-    "does not ask other roles for two-factor on %s",
-    async (path, body) => {
-      await createUser("editor")
-      const cookie = await signIn("editor@example.com")
-
-      expect((await call(path, cookie, body)).status).toBe(200)
-    }
-  )
 })

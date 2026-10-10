@@ -21,13 +21,18 @@ import {
 } from "@/components/ui/dialog"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { roleRequiresTwoFactor } from "@/lib/auth/two-factor-policy"
+import {
+  roleRecommendsTwoFactor,
+  TWO_FACTOR_SETUP_PATH,
+} from "@/lib/auth/two-factor-policy"
 
 type Mode = "codes" | "disable" | null
 
 export function TwoFactorCard() {
   const { twoFactorEnabled, roles } = useActor()
-  const required = roleRequiresTwoFactor(roles)
+  // Optional for every role (change 2026-10-11); owners and admins are only
+  // told why it matters more for them.
+  const recommended = roleRecommendsTwoFactor(roles)
   const router = useRouter()
   const [mode, setMode] = useState<Mode>(null)
   const [password, setPassword] = useState("")
@@ -74,11 +79,16 @@ export function TwoFactorCard() {
       <div className="flex flex-col items-start gap-4">
         <StatusPill tone="warning">Off</StatusPill>
         <p className="text-sm text-muted-foreground">
-          A code from an authenticator app is asked for when you sign in on a
-          new device.
+          Turn on two-factor authentication: a code from an authenticator app is
+          asked for when you sign in on a new device.
         </p>
+        {recommended ? (
+          <p className="text-sm text-muted-foreground">
+            Strongly recommended for your role, which can change who has access.
+          </p>
+        ) : null}
         <Link
-          href="/admin/two-factor-setup"
+          href={TWO_FACTOR_SETUP_PATH}
           data-slot="button"
           className={LINK_FORM}
         >
@@ -93,19 +103,16 @@ export function TwoFactorCard() {
     <div className="flex flex-col items-start gap-4">
       <StatusPill tone="success">On</StatusPill>
       <p className="text-sm text-muted-foreground">
-        {required
-          ? "Your role requires two-factor authentication, so it can't be turned off."
-          : "A code from an authenticator app is asked for when you sign in on a new device."}
+        A code from an authenticator app is asked for when you sign in on a new
+        device.
       </p>
       <div className="flex flex-wrap gap-2">
         <Button variant="outline" onClick={() => setMode("codes")}>
           New backup codes
         </Button>
-        {required ? null : (
-          <Button variant="ghost" onClick={() => setMode("disable")}>
-            Turn off
-          </Button>
-        )}
+        <Button variant="ghost" onClick={() => setMode("disable")}>
+          Turn off
+        </Button>
       </div>
       <Dialog
         open={mode !== null}
@@ -119,7 +126,9 @@ export function TwoFactorCard() {
             <DialogDescription>
               {mode === "codes"
                 ? "Your old backup codes stop working. Each new code works once."
-                : "Signing in will only ask for your password."}
+                : recommended
+                  ? "Signing in will only ask for your password. Your role can change who has access, so keeping it on is strongly recommended."
+                  : "Signing in will only ask for your password."}
             </DialogDescription>
           </DialogHeader>
           {codes ? (

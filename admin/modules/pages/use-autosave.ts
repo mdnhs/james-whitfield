@@ -28,8 +28,7 @@ export function conflictOf(error: unknown): Conflict | null {
 }
 
 const sessionEnded = (error: unknown) =>
-  error instanceof ApiError &&
-  (error.code === "UNAUTHENTICATED" || error.code === "TWO_FACTOR_REQUIRED")
+  error instanceof ApiError && error.code === "UNAUTHENTICATED"
 
 const IDLE: AutosaveState = {
   status: "idle",

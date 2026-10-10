@@ -223,29 +223,28 @@ describe.each(ROLE_NAMES)("account self-service for %s", (role) => {
   })
 })
 
-// Mounted after twoFactorComplete (server/api/routes/admin.ts): an owner or
-// admin without two-factor reaches /me and two-factor setup, nothing else.
+// Change 2026-10-11: two-factor is optional for every role. An owner or
+// admin without it reaches every route their role allows.
 describe.each(["owner", "admin"] as const)(
   "an %s without two-factor",
   (role) => {
     it.each([
-      ["GET", "/dashboard"],
-      ["GET", "/search"],
-      ["GET", "/audit"],
-      ["GET", "/audit/facets"],
-      ["GET", "/pages"],
-      ["GET", "/account/sessions"],
-      ["DELETE", `/account/sessions/${crypto.randomUUID()}`],
-      ["POST", "/account/sessions/revoke-others"],
-    ])("%s %s → 403 TWO_FACTOR_REQUIRED", async (method, path) => {
+      ["GET", "/dashboard", 200],
+      ["GET", "/search", 200],
+      ["GET", "/audit", 200],
+      ["GET", "/audit/facets", 200],
+      ["GET", "/pages", 200],
+      ["GET", "/account/sessions", 200],
+      ["DELETE", `/account/sessions/${crypto.randomUUID()}`, 404],
+      ["POST", "/account/sessions/revoke-others", 200],
+    ] as const)("%s %s → %i", async (method, path, status) => {
       await createUser(role)
       const response = await adminRequest(
         path,
         await signIn(`${role}@example.com`),
         { method }
       )
-      expect(response.status).toBe(403)
-      expect((await response.json()).error.code).toBe("TWO_FACTOR_REQUIRED")
+      expect(response.status).toBe(status)
     })
   }
 )

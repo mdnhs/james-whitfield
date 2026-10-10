@@ -1,7 +1,6 @@
 import type { StatusTone } from "@/admin/components/dashboard/status-pill"
 import type { MePayload } from "@/lib/auth/me"
 import { hasPermission, type Permissions } from "@/lib/auth/permissions"
-import { mustSetUpTwoFactor } from "@/lib/auth/two-factor-policy"
 import type { UserDto } from "@/server/modules/users/manage"
 
 const DAY = new Intl.DateTimeFormat("en-IE", {
@@ -65,7 +64,6 @@ export function availableActions(
   if (
     allowed({ user: ["impersonate"] }) &&
     !banned &&
-    !mustSetUpTwoFactor(target) &&
     (!needsAdminView || allowed({ user: ["impersonate-admins"] }))
   )
     actions.push("view-as")

@@ -97,9 +97,9 @@ export const DASHBOARD_FIXTURE = {
       id: "two-factor",
       title: "Two-factor is on",
       description:
-        "A code from your phone keeps your account safe even if your password leaks.",
-      cta: "Set up two-factor",
-      href: "/admin/two-factor-setup",
+        "Strongly recommended for your role, which can change who has access. A code from your phone keeps your account safe even if your password leaks.",
+      cta: "Open security settings",
+      href: "/admin/account?tab=security",
       done: true,
     },
     {

@@ -8,8 +8,8 @@ import { getQueryClient } from "@/admin/lib/query-client"
 import { cancelSignOut, prepareSignOut } from "@/admin/lib/sign-out-guard"
 import { useResetOnHide } from "@/admin/lib/use-reset-on-hide"
 
-// The one sign-out path: the user menu, the sidebar's "Log out", the
-// two-factor setup escape hatch and ⌘K all call this.
+// The one sign-out path: the user menu, the sidebar's "Log out" and ⌘K all
+// call this.
 export function useSignOut() {
   const [pending, setPending] = useState(false)
   useResetOnHide(() => setPending(false))

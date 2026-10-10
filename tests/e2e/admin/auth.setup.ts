@@ -23,14 +23,17 @@ for (const [key, user] of PLAIN) {
   })
 }
 
-// Owners must use 2FA (docs/brief.md §7.4). Enrol through Better Auth's own
-// endpoints rather than the UI (the UI flow is covered by two-factor.spec).
+// Two-factor is optional for every role (change 2026-10-11), but this owner
+// keeps it on, so the shared owner session is a two-factor one. Enrol
+// through Better Auth's own endpoints rather than the UI (the UI flow is
+// covered by two-factor.spec).
 setup("signed in as an owner with two-factor", async ({ page }) => {
   const user = E2E_USERS.shellOwner
   await resetTwoFactor(user.email)
   await page.goto("/admin/sign-in")
   await signIn(page, user)
-  await expect(page).toHaveURL(/\/admin\/two-factor-setup$/)
+  // No forced setup: straight into the panel.
+  await expect(page).toHaveURL(/\/admin$/)
 
   const headers = { origin: E2E_ORIGIN }
   const enable = await page.request.post("/api/auth/two-factor/enable", {

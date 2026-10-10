@@ -10,7 +10,6 @@ import { auditLogs, users } from "@/server/db/schema"
 import {
   adminRequest,
   createUser,
-  markTwoFactorEnabled,
   ORIGIN,
   PASSWORD,
   signIn,
@@ -21,23 +20,22 @@ import { resetDb } from "../helpers/db"
 beforeEach(resetDb)
 afterAll(closeDb)
 
-// docs/brief.md §7.4: owners and admins must use two-factor. The panel
-// redirects them to setup; the API itself refuses them too.
-describe("two-factor enforcement on the admin API", () => {
+// Change 2026-10-11 (product owner): two-factor is optional for every role.
+// No admin API route refuses a signed-in user for not having it.
+describe("no two-factor gate on the admin API", () => {
   it.each(["owner", "admin"] as const)(
-    "refuses an %s without two-factor beyond /me",
+    "lets an %s without two-factor read past /me",
     async (role) => {
       await createUser(role)
       const cookie = await signIn(`${role}@example.com`)
 
       const response = await adminRequest("/audit", cookie)
 
-      expect(response.status).toBe(403)
-      expect((await response.json()).error.code).toBe("TWO_FACTOR_REQUIRED")
+      expect(response.status).toBe(200)
     }
   )
 
-  it("refuses mutations too", async () => {
+  it("lets an owner without two-factor make changes", async () => {
     await createUser("owner")
     const cookie = await signIn("owner@example.com")
 
@@ -46,11 +44,10 @@ describe("two-factor enforcement on the admin API", () => {
       body: { email: "new@example.com", name: "New", role: "editor" },
     })
 
-    expect(response.status).toBe(403)
-    expect((await response.json()).error.code).toBe("TWO_FACTOR_REQUIRED")
+    expect(response.status).toBeLessThan(300)
   })
 
-  it("still answers /me, so the client can send them to setup", async () => {
+  it("reports the flag on /me", async () => {
     await createUser("owner")
     const cookie = await signIn("owner@example.com")
 
@@ -60,19 +57,10 @@ describe("two-factor enforcement on the admin API", () => {
     expect((await response.json()).twoFactorEnabled).toBe(false)
   })
 
-  it("lets an owner through once two-factor is on", async () => {
-    await createUser("owner")
-    const cookie = await signIn("owner@example.com")
-    await markTwoFactorEnabled("owner@example.com")
-
-    expect((await adminRequest("/audit", cookie)).status).toBe(200)
-  })
-
-  it("does not require two-factor for other roles", async () => {
+  it("still checks the role", async () => {
     await createUser("viewer")
     const cookie = await signIn("viewer@example.com")
 
-    // Past the 2FA check: the role check is what refuses a viewer here.
     const response = await adminRequest("/audit", cookie)
     expect((await response.json()).error.code).toBe("FORBIDDEN")
   })
@@ -80,32 +68,12 @@ describe("two-factor enforcement on the admin API", () => {
 
 // Better Auth's admin-plugin endpoints are not served over HTTP at all
 // (tests/integration/api/admin-endpoints.test.ts). A server-side call made
-// with a user's headers still obeys the two-factor rule.
-describe("two-factor enforcement on Better Auth admin endpoints", () => {
-  it("refuses a server-side call as an owner without two-factor", async () => {
+// with an owner's headers works with or without two-factor.
+describe("Better Auth admin endpoints", () => {
+  it("allow a server-side call as an owner without two-factor", async () => {
     await createUser("owner")
     const target = await createUser("viewer")
     const cookie = await signIn("owner@example.com")
-
-    await expect(
-      getAuth().api.setRole({
-        body: { userId: target.id, role: "editor" },
-        headers: new Headers({ cookie }),
-      })
-    ).rejects.toMatchObject({ body: { code: "TWO_FACTOR_REQUIRED" } })
-    expect(
-      (
-        await getDb().query.users.findFirst({
-          where: eq(users.id, target.id),
-        })
-      )?.role
-    ).toBe("viewer")
-  })
-
-  it("allows it once two-factor is on", async () => {
-    await createUser("owner")
-    const target = await createUser("viewer")
-    const cookie = await signInWithTwoFactor("owner@example.com")
 
     const response = await getAuth().api.setRole({
       body: { userId: target.id, role: "editor" },
@@ -205,6 +173,35 @@ describe("enrolling in two-factor", () => {
     )
     expect((await adminRequest("/audit", enrolled.cookie)).status).toBe(200)
   })
+})
+
+describe("signing in with two-factor on", () => {
+  it.each(["owner", "editor"] as const)(
+    "still challenges an %s, and the password alone gets no session",
+    async (role) => {
+      await createUser(role)
+      const enrolled = await enrol(await signIn(`${role}@example.com`))
+
+      const challenge = await getAuth().api.signInEmail({
+        body: { email: `${role}@example.com`, password: PASSWORD },
+        asResponse: true,
+      })
+      expect((await challenge.clone().json()).twoFactorRedirect).toBe(true)
+      expect((await adminRequest("/me", cookieHeader(challenge))).status).toBe(
+        401
+      )
+
+      const verified = await getAuth().api.verifyTOTP({
+        body: { code: enrolled.totp.generate() },
+        headers: new Headers({ cookie: cookieHeader(challenge) }),
+        asResponse: true,
+      })
+      expect(verified.status).toBe(200)
+      expect((await adminRequest("/me", cookieHeader(verified))).status).toBe(
+        200
+      )
+    }
+  )
 })
 
 // Only a completed sign-in is audited: never the password step alone.

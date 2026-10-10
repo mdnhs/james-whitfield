@@ -8,12 +8,12 @@ import {
   isAPIError,
 } from "better-auth/api"
 
-import { parseRoles } from "@/lib/auth/permissions"
-import { roleRequiresTwoFactor } from "@/lib/auth/two-factor-policy"
 import { audit } from "@/server/lib/audit"
 
-// docs/brief.md §7.4 and Ruling R11: owners and admins keep 2FA on; nobody
-// changes it for someone else through View-as; changes are audited.
+// docs/brief.md §7.4 and Ruling R11, as changed on 2026-10-11 (2FA optional
+// for every role): anyone may turn their own 2FA on or off (Better Auth asks
+// for the password); nobody changes it for someone else through View-as;
+// every change is audited.
 const PATHS = new Set([
   "/two-factor/enable",
   "/two-factor/disable",
@@ -21,7 +21,7 @@ const PATHS = new Set([
 ])
 
 type Caller = {
-  user: { id: string; email: string; role?: string | null }
+  user: { id: string; email: string }
   session: {
     impersonatedBy?: string | null
     ipAddress?: string | null
@@ -38,15 +38,6 @@ const before = createAuthMiddleware(async (ctx) => {
     throw new APIError("FORBIDDEN", {
       code: "IMPERSONATION_READ_ONLY",
       message: "Two-factor settings can't be changed while viewing as someone",
-    })
-  }
-  if (
-    ctx.path === "/two-factor/disable" &&
-    roleRequiresTwoFactor(parseRoles(session.user.role))
-  ) {
-    throw new APIError("FORBIDDEN", {
-      code: "TWO_FACTOR_MANDATORY",
-      message: "Owners and admins must keep two-factor authentication on",
     })
   }
 })

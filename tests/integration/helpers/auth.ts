@@ -42,7 +42,7 @@ export async function markTwoFactorEnabled(email: string) {
     .where(eq(users.email, email))
 }
 
-// A signed-in owner or admin who has completed two-factor setup.
+// A signed-in user whose account has two-factor on (flag only, no challenge).
 export async function signInWithTwoFactor(email: string) {
   const cookie = await signIn(email)
   await markTwoFactorEnabled(email)
@@ -81,10 +81,9 @@ export async function viewAs(cookie: string, userId: string) {
     .join("; ")
 }
 
-// A signed-in user of `role`; owners and admins get past the 2FA gate.
+// A signed-in user of `role`, password only.
 export async function cookieFor(role: RoleName, email = `${role}@example.com`) {
   await createUser(role, email)
-  return role === "owner" || role === "admin"
-    ? signInWithTwoFactor(email)
-    : signIn(email)
+  // Two-factor is optional for every role (change 2026-10-11).
+  return signIn(email)
 }

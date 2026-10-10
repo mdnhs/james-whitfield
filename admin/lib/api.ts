@@ -14,6 +14,7 @@ import type { GlobalsRoutes } from "@/server/modules/globals/routes"
 import type { MediaRoutes } from "@/server/modules/media/routes"
 import type { PagesRoutes } from "@/server/modules/pages/routes"
 import type { SearchRoutes } from "@/server/modules/search/routes"
+import type { TaxonomyRoutes } from "@/server/modules/taxonomy/routes"
 
 import { ApiError } from "./api-error"
 
@@ -26,6 +27,8 @@ export const dashboardApi = hc<DashboardRoutes>("/api/v1/admin/dashboard")
 export const globalsApi = hc<GlobalsRoutes>("/api/v1/admin/globals")
 export const mediaApi = hc<MediaRoutes>("/api/v1/admin/media")
 export const pagesApi = hc<PagesRoutes>("/api/v1/admin/pages")
+export const categoriesApi = hc<TaxonomyRoutes>("/api/v1/admin/categories")
+export const authorsApi = hc<TaxonomyRoutes>("/api/v1/admin/authors")
 export const searchApi = hc<SearchRoutes>("/api/v1/admin/search")
 
 type Envelope = {

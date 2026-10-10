@@ -30,6 +30,7 @@ const EnvSchema = z
     S3_BUCKET: z.string().optional(),
     S3_ACCESS_KEY_ID: z.string().optional(),
     S3_SECRET_ACCESS_KEY: z.string().optional(),
+    CRON_SECRET: z.string().min(32).optional(),
   })
   .superRefine((env, ctx) => {
     if (env.MEDIA_DRIVER === "s3") {
@@ -82,6 +83,14 @@ const EnvSchema = z
         code: "custom",
         path: ["BETTER_AUTH_URL"],
         message: `BETTER_AUTH_URL must use https when SITE_ENV is "${env.SITE_ENV}"`,
+      })
+    }
+    // docs/brief.md §8.1: /v1/cron/* takes a bearer secret.
+    if (env.SITE_ENV !== "development" && !env.CRON_SECRET) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["CRON_SECRET"],
+        message: `CRON_SECRET is required when SITE_ENV is "${env.SITE_ENV}"`,
       })
     }
     if (env.SITE_ENV === "production" && env.EMAIL_DRIVER === "log") {

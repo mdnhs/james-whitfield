@@ -57,22 +57,4 @@ export const toTipTap = (blocks: LegacyBlock[]): RichTextDoc => ({
   content: blocks.map(node),
 })
 
-const inline = (content?: { text: string }[]) =>
-  (content ?? []).map((t) => t.text).join("")
-
-// One string per top-level block and per list item, joined by spaces: the
-// same text the old read-time helper counted, so reading times do not move.
-export function plainText(doc: RichTextDoc) {
-  return doc.content
-    .flatMap((n) => {
-      if (n.type === "bulletList")
-        return n.content.map((item) => inline(item.content[0].content))
-      if (n.type === "blockquote")
-        return n.content.map((p) => inline(p.content))
-      return [inline(n.content)]
-    })
-    .join(" ")
-}
-
-export const readingMinutes = (value: string) =>
-  Math.max(1, Math.round(value.split(/\s+/).length / 220))
+export { plainText, readingMinutes } from "@/lib/content/reading-time"

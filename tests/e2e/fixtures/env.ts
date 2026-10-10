@@ -15,4 +15,6 @@ export const E2E_ENV = {
   EMAIL_DRIVER: "smtp",
   SMTP_URL: process.env.SMTP_URL_E2E ?? "smtp://localhost:1025",
   EMAIL_FROM: "Magda Kennedy <hello@example.com>",
+  CRON_SECRET: "e2e-cron-secret-0123456789-abcdefghij",
+  SCHEDULER: "off",
 }

@@ -6,7 +6,7 @@ import type { DbLike } from "@/server/db/client"
 import { revisions, users } from "@/server/db/schema"
 
 // docs/brief.md §6.5: 50 publish snapshots per page, 20 per global.
-export const REVISION_LIMITS = { page: 50, setting: 20 } as const
+export const REVISION_LIMITS = { page: 50, setting: 20, article: 50 } as const
 export type RevisionEntity = keyof typeof REVISION_LIMITS
 
 const of = (entityType: RevisionEntity, entityId: string) =>

@@ -12,6 +12,10 @@ import { pagesRoutes } from "@/server/modules/pages/routes"
 import { previewRoutes } from "@/server/modules/preview/routes"
 import { searchRoutes } from "@/server/modules/search/routes"
 import { meRoutes } from "@/server/modules/session/routes"
+import {
+  authorsRoutes,
+  categoriesRoutes,
+} from "@/server/modules/taxonomy/routes"
 import { usersRoutes } from "@/server/modules/users/routes"
 
 import { session, signedIn, twoFactorComplete } from "../middleware/auth"
@@ -29,6 +33,8 @@ export const adminRoutes = new Hono<AppEnv>()
   .route("/collections", collectionsRoutes)
   .route("/globals", globalsRoutes)
   .route("/media", mediaRoutes)
+  .route("/categories", categoriesRoutes)
+  .route("/authors", authorsRoutes)
   .route("/search", searchRoutes)
   .route("/dashboard", dashboardRoutes)
   .route("/audit", auditRoutes)

@@ -283,7 +283,7 @@ function toSummary(
   r: ArticleRow,
   assets: Map<string, MediaAsset>
 ): ArticleSummary | null {
-  const image = need(assets, r.a.coverId)
+  const image = r.a.coverId ? need(assets, r.a.coverId) : null
   const avatar = need(assets, r.author.avatarId)
   if (!image || !avatar) return null
   return {
@@ -301,7 +301,9 @@ function toSummary(
 }
 
 const mediaOf = (rows: ArticleRow[]) =>
-  rows.flatMap((r) => [r.a.coverId, r.author.avatarId])
+  rows
+    .flatMap((r) => [r.a.coverId, r.author.avatarId])
+    .filter((id): id is string => id !== null)
 
 // Published, newest first: the order the fixtures listed them in.
 export async function listArticleSummaries(

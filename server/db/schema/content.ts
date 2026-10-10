@@ -9,6 +9,7 @@ import {
   real,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core"
 
@@ -132,7 +133,8 @@ export const articles = pgTable(
     slug: text().notNull().unique(),
     title: text().notNull(),
     excerpt: text().notNull(),
-    coverId: image(),
+    // Nullable: a new draft has no cover yet. Publish requires one (ArticleContent).
+    coverId: uuid().references(() => media.id, { onDelete: "restrict" }),
     categoryId: uuid()
       .notNull()
       .references(() => articleCategories.id, { onDelete: "restrict" }),
@@ -150,6 +152,12 @@ export const articles = pgTable(
       .default("draft"),
     publishedAt: timestamp({ withTimezone: true }),
     scheduledFor: timestamp({ withTimezone: true }),
+    scheduledBy: uuid().references(() => users.id, { onDelete: "set null" }),
+    // "Submit for review" (docs/brief.md §9.3); publishing clears it.
+    reviewRequestedAt: timestamp({ withTimezone: true }),
+    reviewRequestedBy: uuid().references(() => users.id, {
+      onDelete: "set null",
+    }),
     draft: jsonb().$type<unknown>(),
     seo: jsonb().$type<Record<string, unknown>>().notNull().default({}),
     ...stamps(),
@@ -166,5 +174,12 @@ export const articles = pgTable(
       table.status,
       table.publishedAt.desc()
     ),
+    // docs/plan.md Phase 5: the featured flag allows a single article.
+    uniqueIndex("articles_one_featured_idx")
+      .on(table.featured)
+      .where(sql`featured = true`),
+    index("articles_scheduled_idx")
+      .on(table.scheduledFor)
+      .where(sql`status = 'scheduled'`),
   ]
 )

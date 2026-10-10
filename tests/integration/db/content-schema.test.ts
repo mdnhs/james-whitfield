@@ -9,7 +9,10 @@ import {
   authors,
   media,
   pages,
+  redirects,
 } from "@/server/db/schema"
+
+import { insertArticle, insertTaxonomy } from "../helpers/articles"
 
 import { resetDb } from "../helpers/db"
 
@@ -87,5 +90,45 @@ describe("content schema", () => {
         .insert(pages)
         .values({ path: "/about", title: "Again", draft: doc })
     ).rejects.toMatchObject({ cause: { code: "23505" } })
+  })
+})
+
+describe("insights schema", () => {
+  it("allows one featured article", async () => {
+    const { category, author, media } = await insertTaxonomy()
+    const refs = {
+      categoryId: category.id,
+      authorId: author.id,
+      coverId: media.id,
+    }
+    await insertArticle({ ...refs, slug: "one", featured: true })
+    await expect(
+      insertArticle({ ...refs, slug: "two", featured: true })
+    ).rejects.toThrow()
+  })
+  it("allows a draft without a cover", async () => {
+    const { category, author } = await insertTaxonomy()
+    await expect(
+      getDb()
+        .insert(articles)
+        .values({
+          slug: "nocover",
+          title: "T",
+          excerpt: "",
+          categoryId: category.id,
+          authorId: author.id,
+          body: { type: "doc", content: [] },
+        })
+    ).resolves.toBeDefined()
+  })
+  it("refuses odd redirect codes and self-redirects", async () => {
+    await expect(
+      getDb()
+        .insert(redirects)
+        .values({ sourcePath: "/a", destination: "/b", statusCode: 200 })
+    ).rejects.toThrow()
+    await expect(
+      getDb().insert(redirects).values({ sourcePath: "/a", destination: "/a" })
+    ).rejects.toThrow()
   })
 })

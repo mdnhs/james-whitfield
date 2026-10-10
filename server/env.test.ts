@@ -2,6 +2,8 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 
 import { getEnv, resetEnvForTests } from "./env"
 
+const CRON = "test-cron-secret-0123456789-abcdefghij"
+
 afterEach(() => {
   vi.unstubAllEnvs()
   resetEnvForTests()
@@ -58,6 +60,7 @@ describe("getEnv BETTER_AUTH_URL", () => {
     vi.stubEnv("BETTER_AUTH_URL", authUrl)
     vi.stubEnv("EMAIL_DRIVER", "smtp")
     vi.stubEnv("SMTP_URL", "smtp://localhost:1025")
+    vi.stubEnv("CRON_SECRET", CRON)
   }
 
   it.each(["staging", "production"])("requires https in %s", (siteEnv) => {
@@ -88,6 +91,7 @@ describe("getEnv media", () => {
     vi.stubEnv("S3_BUCKET", "media")
     vi.stubEnv("S3_ACCESS_KEY_ID", "k")
     vi.stubEnv("S3_SECRET_ACCESS_KEY", "s")
+    vi.stubEnv("CRON_SECRET", CRON)
   }
 
   it.each(["staging", "production"])(
@@ -107,5 +111,16 @@ describe("getEnv media", () => {
     configure("production", "https://media.example.ie")
     vi.stubEnv("S3_BUCKET", undefined)
     expect(() => getEnv()).toThrow(/S3_BUCKET is required/)
+  })
+})
+
+describe("getEnv CRON_SECRET", () => {
+  it("requires CRON_SECRET outside development", () => {
+    vi.stubEnv("SITE_URL", "https://www.example.ie")
+    vi.stubEnv("DATABASE_URL", "postgres://user:pass@db:5432/app")
+    vi.stubEnv("SITE_ENV", "staging")
+    vi.stubEnv("BETTER_AUTH_URL", "https://x.example")
+    vi.stubEnv("CRON_SECRET", undefined)
+    expect(() => getEnv()).toThrow(/CRON_SECRET/)
   })
 })

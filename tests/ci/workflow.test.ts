@@ -55,3 +55,33 @@ describe("CI visual job (Ruling R11)", () => {
     )
   })
 })
+
+describe("deploy job (Ruling R12)", () => {
+  const deploy = job("deploy")
+
+  it("deploys only after check, e2e and visual pass, and only on pushes to main or feat/platform", () => {
+    expect(deploy).toContain("needs: [check, e2e, visual]")
+    expect(deploy).toContain("github.event_name == 'push'")
+    expect(deploy).toContain("refs/heads/main")
+    expect(deploy).toContain("refs/heads/feat/platform")
+    expect(deploy).not.toContain("pull_request")
+  })
+
+  it("targets the GitHub environment of the branch", () => {
+    expect(deploy).toContain(
+      "environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}"
+    )
+  })
+
+  it("skips with a warning when the Dokploy secrets are missing", () => {
+    expect(deploy).toContain("::warning::")
+    expect(deploy).toMatch(/exit 0/)
+    // Secrets reach curl through env, never inline in the command.
+    expect(deploy).not.toMatch(/curl[^\n]*\$\{\{ secrets\./)
+  })
+
+  it("calls Dokploy's deploy API with the application id", () => {
+    expect(deploy).toContain('"$DOKPLOY_URL/api/application.deploy"')
+    expect(deploy).toContain("x-api-key: $DOKPLOY_API_KEY")
+  })
+})

@@ -4,6 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
+    "hero:depth": "npm install --no-save --no-package-lock --prefix node_modules/.cache/hero-depth @huggingface/transformers@4.3.0 && cp scripts/generate-hero-depth.mjs node_modules/.cache/hero-depth/ && node node_modules/.cache/hero-depth/generate-hero-depth.mjs",
     "dev": "next dev",
     "build": "next build",
     "build:migrate": "esbuild scripts/migrate.ts --bundle --platform=node --target=node22 --format=cjs --outfile=dist/migrate.cjs",
@@ -92,7 +93,6 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",
-    "@huggingface/transformers": "^4.3.0",
     "@playwright/test": "^1.64.0",
     "@react-email/ui": "6.11.0",
     "@tailwindcss/postcss": "^4",

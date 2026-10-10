@@ -2,7 +2,12 @@
 // Runs Depth Anything V2 (small) locally via transformers.js — nothing runs at
 // site runtime; the output PNG is a committed asset.
 //
-//   node scripts/generate-hero-depth.mjs
+//   pnpm hero:depth
+//
+// @huggingface/transformers is not a project dependency (docs/brief.md §17:
+// it stays out of the image build). The script installs it on demand into
+// node_modules/.cache/hero-depth and runs a copy from there, so Node resolves
+// it next to the script. Paths below are relative to the repo root (the cwd).
 //
 // Output: public/images/hero/hero-depth.png (white = near, black = far),
 // slightly blurred so the parallax stretches smoothly at object edges.

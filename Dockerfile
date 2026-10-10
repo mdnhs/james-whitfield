@@ -21,7 +21,11 @@ ENV MEDIA_PUBLIC_URL=$MEDIA_PUBLIC_URL
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 # No secrets and no database at build: env and auth are read lazily at runtime.
-RUN pnpm build && pnpm build:migrate && pnpm build:admin-create
+# Version skew protection (docs/brief.md §17): the build arg wins, else the
+# git commit of the build context (scripts/deployment-id.sh).
+RUN NEXT_DEPLOYMENT_ID="$(sh scripts/deployment-id.sh .)" && export NEXT_DEPLOYMENT_ID \
+  && echo "deployment id: $NEXT_DEPLOYMENT_ID" \
+  && pnpm build && pnpm build:migrate && pnpm build:admin-create
 
 FROM node:22-alpine AS runner
 WORKDIR /app

@@ -1,7 +1,7 @@
 name: CI
 
-# Checks every push and pull request. Deploys stay with Dokploy; Phase 11 makes
-# them wait for this workflow (docs/brief.md §16).
+# Checks every push and pull request; on pushes to main and feat/platform,
+# deploys through Dokploy once everything is green (docs/brief.md §16).
 on:
   push:
     branches: [main, feat/platform]
@@ -184,3 +184,30 @@ jobs:
           name: visual-diffs
           path: test-results/
           retention-days: 7
+
+  # docs/brief.md §16 step 8 (Ruling R12): deploy only after every check is
+  # green. Dokploy's own auto-deploy is turned off (docs/runbook.md).
+  deploy:
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feat/platform')
+    needs: [check, e2e, visual]
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+    concurrency:
+      group: deploy-${{ github.ref }}
+      cancel-in-progress: false
+    steps:
+      - name: Trigger the Dokploy deploy
+        env:
+          DOKPLOY_URL: ${{ secrets.DOKPLOY_URL }}
+          DOKPLOY_API_KEY: ${{ secrets.DOKPLOY_API_KEY }}
+          DOKPLOY_APPLICATION_ID: ${{ secrets.DOKPLOY_APPLICATION_ID }}
+        run: |
+          if [ -z "$DOKPLOY_URL" ] || [ -z "$DOKPLOY_API_KEY" ] || [ -z "$DOKPLOY_APPLICATION_ID" ]; then
+            echo "::warning::Dokploy secrets are not set for this environment; nothing was deployed."
+            exit 0
+          fi
+          curl --fail-with-body -sS -X POST "$DOKPLOY_URL/api/application.deploy" \
+            -H "x-api-key: $DOKPLOY_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "{\"applicationId\":\"$DOKPLOY_APPLICATION_ID\"}"
+          echo "Deploy of ${GITHUB_SHA} requested."

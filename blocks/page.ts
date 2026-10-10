@@ -24,8 +24,10 @@ const Canonical = z
   .trim()
   .max(300)
   .refine(
-    (v) => /^\/(?![/\\])[^\s?#]*$/.test(v) || /^https:\/\/[^\s]+$/.test(v),
-    "Use a site path (/about) or an https:// address"
+    (v) =>
+      (/^\/(?![/\\])[^\s?#]*$/.test(v) || /^https:\/\/[^\s]+$/.test(v)) &&
+      (v === "/" || !v.endsWith("/")),
+    "Use a site path (/about) or an https:// address, without a trailing slash"
   )
 
 // Live on save, separate from the document (docs/brief.md §6.5, §11).

@@ -38,6 +38,11 @@ export type SeoSubject = {
   draft?: boolean
 }
 
+// A stored "" or whitespace counts as missing, so the fallbacks still apply.
+function blank(v: string | null | undefined) {
+  return v?.trim() ? v : null
+}
+
 // FNV-1a: a short, stable cache-buster for the generated card's URL.
 function hash(text: string) {
   let h = 0x811c9dc5
@@ -60,10 +65,10 @@ export function buildMetadata(s: SeoSubject, d: SeoDefaults): Metadata {
     d
   )
   const description =
-    s.seo.description ?? s.summary ?? (d.defaultDescription || null)
-  const canonical = s.seo.canonical ?? s.path
-  const ogTitle = s.seo.ogTitle ?? title
-  const ogDescription = s.seo.ogDescription ?? description
+    blank(s.seo.description) ?? blank(s.summary) ?? blank(d.defaultDescription)
+  const canonical = blank(s.seo.canonical) ?? s.path
+  const ogTitle = blank(s.seo.ogTitle) ?? title
+  const ogDescription = blank(s.seo.ogDescription) ?? description
   const image = s.ogImage
     ? {
         url: s.ogImage.src,

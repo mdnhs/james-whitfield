@@ -10,5 +10,5 @@ export type TitleDefaults = { titleTemplate: string; defaultTitle: string }
 export function documentTitle(s: TitleSubject, d: TitleDefaults) {
   if (s.home) return s.seoTitle || d.defaultTitle || s.title
   const own = s.seoTitle || s.title
-  return d.titleTemplate ? d.titleTemplate.replace("%s", own) : own
+  return d.titleTemplate ? d.titleTemplate.replace("%s", () => own) : own
 }

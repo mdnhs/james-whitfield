@@ -39,3 +39,14 @@ describe("documentTitle", () => {
     ).toBe("Home")
   })
 })
+
+describe("documentTitle replacement", () => {
+  it("keeps $ patterns in a title literal", () => {
+    expect(
+      documentTitle(
+        { home: false, title: "Save $& more", seoTitle: null },
+        defaults
+      )
+    ).toBe("Save $& more | Magda Kennedy")
+  })
+})

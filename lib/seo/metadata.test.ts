@@ -184,3 +184,61 @@ describe("rootMetadata", () => {
     expect(m.verification).toBeUndefined()
   })
 })
+
+describe("blank values", () => {
+  it("fall back like missing ones", () => {
+    const m = buildMetadata(
+      {
+        ...page(),
+        summary: "Summary.",
+        seo: {
+          ...PageSeo.parse({}),
+          description: "",
+          ogTitle: "  ",
+          ogDescription: " ",
+        },
+      },
+      defaults
+    )
+    expect(m.description).toBe("Summary.")
+    expect(m.openGraph).toMatchObject({
+      title: "About | Magda Kennedy",
+      description: "Summary.",
+    })
+  })
+})
+
+describe("PageSeo schema", () => {
+  it("gives a legacy row the new defaults", () => {
+    expect(
+      PageSeo.parse({
+        title: "T",
+        description: null,
+        ogImage: null,
+        noindex: true,
+      })
+    ).toEqual({
+      title: "T",
+      description: null,
+      ogImage: null,
+      noindex: true,
+      canonical: null,
+      ogTitle: null,
+      ogDescription: null,
+      twitterCard: "summary_large_image",
+    })
+  })
+  it("validates canonical overrides", () => {
+    for (const ok of ["/", "/about", "https://example.org/a"])
+      expect(PageSeo.safeParse({ canonical: ok }).success).toBe(true)
+    for (const bad of [
+      "/about/",
+      "//evil.com",
+      "http://x.org",
+      "/a?b=1",
+      "about",
+      "https://x.org/a/",
+    ])
+      expect(PageSeo.safeParse({ canonical: bad }).success).toBe(false)
+  })
+})

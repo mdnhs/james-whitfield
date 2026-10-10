@@ -2,6 +2,7 @@
 import * as z from "zod"
 
 import { Href, HttpsUrl, MediaRef } from "@/blocks/fields"
+import { SITE_TOKENS } from "@/lib/theme/tokens"
 import { CUSTOM_SCRIPT_HOSTS } from "@/lib/tracking/hosts"
 import { GA4_ID, GTM_ID, PIXEL_ID } from "@/lib/tracking/ids"
 
@@ -15,33 +16,8 @@ const Time = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/)
 const Day = z.number().int().min(1).max(7)
 const Hex = z.string().regex(/^#[0-9a-f]{6}$/i, "Use a #rrggbb colour")
 
-// Site colour tokens the theme can override (app/(site)/site.css @theme).
-export const SITE_TOKENS = [
-  "brand",
-  "brand-mint",
-  "cream",
-  "brand-deep",
-  "clay",
-  "stone",
-  "mist",
-  "forest",
-  "pine",
-  "ink",
-  "ink-muted",
-  "text-strong",
-  "text-muted",
-  "text-subtle",
-  "line",
-  "line-soft",
-  "line-neutral",
-  "line-faint",
-  "line-rule",
-  "surface-soft",
-  "surface-warm",
-  "hero-base",
-  "moss",
-  "spruce",
-] as const
+// Site colour tokens live with the theme engine (lib/theme/tokens.ts).
+export { SITE_TOKENS }
 
 export const SiteGlobal = z.object({
   name: s(80),

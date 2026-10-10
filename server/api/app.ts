@@ -12,6 +12,7 @@ import { cronRoutes } from "@/server/modules/scheduler/routes"
 import { errorBody, handleError } from "./errors"
 import { adminRoutes } from "./routes/admin"
 import { health } from "./routes/health"
+import { publicRoutes } from "./routes/public"
 import type { AppEnv } from "./types"
 
 const ADMIN_BODY_LIMIT = 1024 * 1024
@@ -51,6 +52,7 @@ export const app = new Hono<AppEnv>()
   .route("/v1/health", health)
   .route("/v1/cron", cronRoutes)
   .route("/v1/redirects", redirectsRoutes)
+  .route("/v1/public", publicRoutes)
   .route("/v1/admin", adminRoutes)
 
 app.onError(handleError)

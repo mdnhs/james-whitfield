@@ -1,5 +1,6 @@
+import { ContactFormGlobal, ContactGlobal } from "@/lib/content/globals"
 import { getDb } from "@/server/db/client"
-import { media, pages } from "@/server/db/schema"
+import { media, pages, services, settings } from "@/server/db/schema"
 
 export async function insertMedia(
   overrides: Partial<typeof media.$inferInsert> = {}
@@ -63,4 +64,29 @@ export async function insertPage(values: {
     })
     .returning()
   return row!
+}
+
+// The contact form's options: one service topic ("anxiety"), the formats
+// "online" / "in-person", the extra topic "something-else", and the practice
+// address that receives notifications when no recipients are set.
+export async function insertServiceAndForm() {
+  await getDb()
+    .insert(services)
+    .values({ slug: "anxiety", title: "Anxiety", body: "Body", icon: "mind" })
+  await getDb()
+    .insert(settings)
+    .values([
+      {
+        key: "contactForm",
+        value: ContactFormGlobal.parse({
+          formats: ["Online", "In person"],
+          extraTopics: ["Something else"],
+          consent: "I agree to the privacy notice.",
+        }),
+      },
+      {
+        key: "contact",
+        value: ContactGlobal.parse({ email: "practice@example.com" }),
+      },
+    ])
 }

@@ -31,6 +31,9 @@ const EnvSchema = z
     S3_ACCESS_KEY_ID: z.string().optional(),
     S3_SECRET_ACCESS_KEY: z.string().optional(),
     CRON_SECRET: z.string().min(32).optional(),
+    // docs/brief.md §13: Cloudflare Turnstile on public forms, off when unset.
+    TURNSTILE_SITE_KEY: z.string().min(1).optional(),
+    TURNSTILE_SECRET_KEY: z.string().min(1).optional(),
   })
   .superRefine((env, ctx) => {
     if (env.MEDIA_DRIVER === "s3") {
@@ -98,6 +101,18 @@ const EnvSchema = z
         code: "custom",
         path: ["CRON_SECRET"],
         message: `CRON_SECRET is required when SITE_ENV is "${env.SITE_ENV}"`,
+      })
+    }
+    if (Boolean(env.TURNSTILE_SITE_KEY) !== Boolean(env.TURNSTILE_SECRET_KEY)) {
+      ctx.addIssue({
+        code: "custom",
+        path: [
+          env.TURNSTILE_SITE_KEY
+            ? "TURNSTILE_SECRET_KEY"
+            : "TURNSTILE_SITE_KEY",
+        ],
+        message:
+          "Set both TURNSTILE_SITE_KEY and TURNSTILE_SECRET_KEY, or neither",
       })
     }
     if (env.SITE_ENV === "production" && env.EMAIL_DRIVER === "log") {

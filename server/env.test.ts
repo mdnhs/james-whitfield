@@ -134,3 +134,11 @@ describe("getEnv CRON_SECRET", () => {
     expect(() => getEnv()).toThrow(/CRON_SECRET/)
   })
 })
+
+describe("getEnv Turnstile", () => {
+  it("wants both Turnstile keys or neither", () => {
+    vi.stubEnv("TURNSTILE_SITE_KEY", "1x00000000000000000000AA")
+    vi.stubEnv("TURNSTILE_SECRET_KEY", undefined)
+    expect(() => getEnv()).toThrow(/TURNSTILE_SECRET_KEY/)
+  })
+})

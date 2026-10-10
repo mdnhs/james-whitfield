@@ -25,7 +25,7 @@ async function findRow(db: DbLike, key: string, lock = false) {
   return row ?? null
 }
 
-export async function getGlobal(key: EditableGlobalKey) {
+export async function getGlobal<K extends EditableGlobalKey>(key: K) {
   const row = await findRow(getDb(), key)
   return {
     key,

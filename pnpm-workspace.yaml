@@ -1,5 +1,9 @@
 packages: []
 
+overrides:
+  # react-email 6.11.0 re-exports render/toPlainText from a ">=2.1.0" range.
+  "@react-email/render": "2.1.0"
+
 allowBuilds:
   esbuild: true
   sharp: true

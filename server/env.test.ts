@@ -46,6 +46,16 @@ describe("getEnv email validation", () => {
     expect(() => getEnv()).toThrow(/SMTP_URL/)
   })
 
+  it("requires RESEND_API_KEY only for the resend driver", () => {
+    base()
+    vi.stubEnv("EMAIL_DRIVER", "resend")
+    vi.stubEnv("RESEND_API_KEY", undefined)
+    expect(() => getEnv()).toThrow(/RESEND_API_KEY/)
+    vi.stubEnv("RESEND_API_KEY", "re_test_123")
+    resetEnvForTests()
+    expect(getEnv().EMAIL_DRIVER).toBe("resend")
+  })
+
   it("rejects the log driver in production", () => {
     base()
     vi.stubEnv("SITE_ENV", "production")

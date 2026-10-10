@@ -52,3 +52,6 @@ next-env.d.ts
 
 # keep the documented example env
 !.env.example
+
+# react-email preview cache
+.react-email/

@@ -16,9 +16,9 @@ const EnvSchema = z
     DATABASE_URL: z.url(),
     BETTER_AUTH_SECRET: z.string().min(32),
     BETTER_AUTH_URL: z.url(),
-    // "resend" is added in Phase 6.
-    EMAIL_DRIVER: z.enum(["log", "smtp"]).default("log"),
+    EMAIL_DRIVER: z.enum(["log", "smtp", "resend"]).default("log"),
     SMTP_URL: z.string().optional(),
+    RESEND_API_KEY: z.string().startsWith("re_").optional(),
     EMAIL_FROM: z.string().min(3).default("Magda Kennedy <hello@localhost>"),
     // docs/brief.md §14. "local" writes to a mounted directory served by
     // app/uploads; "s3" is Cloudflare R2 (EU) or any S3 endpoint.
@@ -60,6 +60,13 @@ const EnvSchema = z
         code: "custom",
         path: ["SMTP_URL"],
         message: 'SMTP_URL is required when EMAIL_DRIVER is "smtp"',
+      })
+    }
+    if (env.EMAIL_DRIVER === "resend" && !env.RESEND_API_KEY) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["RESEND_API_KEY"],
+        message: 'RESEND_API_KEY is required when EMAIL_DRIVER is "resend"',
       })
     }
     // next/image only allows an https media host (next.config.ts), and §15

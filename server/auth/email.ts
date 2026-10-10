@@ -29,10 +29,10 @@ export function deliverResetEmail(
   send: Send = sendEmail
 ): void {
   void Promise.resolve()
-    .then(() => {
-      const message = isInviteLink(url)
+    .then(async () => {
+      const message = await (isInviteLink(url)
         ? inviteEmail({ name: user.name, url })
-        : passwordResetEmail({ name: user.name, url })
+        : passwordResetEmail({ name: user.name, url }))
       return send({ to: user.email, ...message })
     })
     .catch((error) => console.error("[auth] could not send email", error))

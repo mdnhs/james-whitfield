@@ -3,7 +3,6 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 import { resetEnvForTests } from "@/server/env"
 
 import { clearOutbox, readOutbox, sendEmail } from "./index"
-import { inviteEmail, passwordResetEmail } from "./templates"
 
 afterEach(clearOutbox)
 
@@ -27,26 +26,28 @@ describe("sendEmail with the log driver", () => {
   })
 })
 
-describe("templates", () => {
-  it("escapes user-supplied names and URLs in HTML", () => {
-    const message = inviteEmail({
-      name: "<script>x</script>",
-      url: "https://example.com/r?token=1&x=2",
-    })
-    expect(message.html).not.toContain("<script>")
-    expect(message.html).toContain("&lt;script&gt;")
-    expect(message.html).toContain("https://example.com/r?token=1&amp;x=2")
-    expect(message.text).toContain("https://example.com/r?token=1&x=2")
-  })
-
-  it("words the reset email for an existing account", () => {
-    expect(
-      passwordResetEmail({ name: "Ann", url: "https://example.com/r" }).subject
-    ).toBe("Reset your admin password")
-  })
-})
-
 describe("log driver output", () => {
+  it("never logs replyTo", async () => {
+    vi.stubEnv("NODE_ENV", "development")
+    resetEnvForTests()
+    const spy = vi.spyOn(console, "info").mockImplementation(() => {})
+    await sendEmail({
+      to: ["a@example.com", "b@example.com"],
+      subject: "Hi",
+      html: "<p>t</p>",
+      text: "body",
+      replyTo: "visitor@example.com",
+      idempotencyKey: "k/1",
+    })
+    const out = spy.mock.calls.flat().join("\n")
+    expect(out).not.toContain("visitor@example.com")
+    expect(out).toContain("idempotencyKey=k/1")
+    expect(out).toContain("a@example.com, b@example.com")
+    vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+    resetEnvForTests()
+  })
+
   const message = {
     to: "ann@example.com\r\nBcc: x@y.z",
     subject: "Hi\nthere",

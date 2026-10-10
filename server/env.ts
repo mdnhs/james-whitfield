@@ -52,6 +52,9 @@ const EnvSchema = z
       .optional(),
     // docs/brief.md §12.6 kill switch for every custom snippet.
     DISABLE_CUSTOM_SCRIPTS: z.stringbool().default(false),
+    // Ruling R7: a scripted model for development and E2E. Refused on
+    // staging and production so a stray variable can never fake answers.
+    AI_PROVIDER_MOCK: z.stringbool().default(false),
   })
   .superRefine((env, ctx) => {
     try {
@@ -140,6 +143,13 @@ const EnvSchema = z
         ],
         message:
           "Set both TURNSTILE_SITE_KEY and TURNSTILE_SECRET_KEY, or neither",
+      })
+    }
+    if (env.AI_PROVIDER_MOCK && env.SITE_ENV !== "development") {
+      ctx.addIssue({
+        code: "custom",
+        path: ["AI_PROVIDER_MOCK"],
+        message: `AI_PROVIDER_MOCK is only allowed when SITE_ENV is "development"`,
       })
     }
     if (env.SITE_ENV === "production" && env.EMAIL_DRIVER === "log") {

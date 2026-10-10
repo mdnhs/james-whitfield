@@ -66,6 +66,8 @@ const MATRIX: [Permissions, RoleName[]][] = [
   [{ appearance: ["read", "update", "publish"] }, ["owner", "admin"]],
   [{ settings: ["read", "update"] }, ["owner", "admin"]],
   [{ audit: ["read"] }, ["owner", "admin"]],
+  [{ ai: ["use"] }, ALL],
+  [{ ai: ["manage"] }, ["owner", "admin"]],
   [{ user: ["create", "list", "set-role", "ban"] }, ["owner", "admin"]],
   [{ session: ["list", "revoke"] }, ["owner", "admin"]],
   [{ user: ["impersonate"] }, ["owner", "admin"]],
@@ -168,9 +170,11 @@ const EDITOR: Record<string, string[]> = {
   media: ["read", "upload", "update", "delete"],
   seo: ["read", "update"],
   redirect: ["read", "manage"],
+  ai: ["use"],
 }
 const ADMIN: Record<string, string[]> = {
   ...EDITOR,
+  ai: ["use", "manage"],
   lead: ["read", "update", "export", "delete"],
   newsletter: ["read", "export", "delete"],
   tracking: ["read", "update"],
@@ -194,6 +198,7 @@ const EXACT: Record<RoleName, Record<string, string[]>> = {
     article: ["read", "create", "update", "delete"],
     collection: read,
     media: ["read", "upload", "update"],
+    ai: ["use"],
   },
   marketer: {
     dashboard: ["view"],
@@ -206,8 +211,9 @@ const EXACT: Record<RoleName, Record<string, string[]>> = {
     seo: ["read", "update"],
     redirect: ["read", "manage"],
     tracking: ["read", "update"],
+    ai: ["use"],
   },
-  intake: { dashboard: ["view"], lead: ["read", "update"] },
+  intake: { dashboard: ["view"], lead: ["read", "update"], ai: ["use"] },
   viewer: {
     dashboard: ["view"],
     page: read,
@@ -215,6 +221,7 @@ const EXACT: Record<RoleName, Record<string, string[]>> = {
     collection: read,
     globals: read,
     seo: read,
+    ai: ["use"],
   },
 }
 

@@ -20,6 +20,7 @@ export const statement = {
   appearance: ["read", "update", "publish"],
   settings: ["read", "update"],
   audit: ["read"],
+  ai: ["use", "manage"],
 } as const
 
 export const ac = createAccessControl(statement)
@@ -56,6 +57,7 @@ const editor = ac.newRole({
   media: ["read", "upload", "update", "delete"],
   seo: ["read", "update"],
   redirect: ["read", "manage"],
+  ai: ["use"],
 })
 
 // Articles and media are limited to the author's own records by the services.
@@ -65,6 +67,7 @@ const author = ac.newRole({
   article: ["read", "create", "update", "delete"],
   collection: ["read"],
   media: ["read", "upload", "update"],
+  ai: ["use"],
 })
 
 // SEO and ads people: no access to enquiries (health-adjacent data).
@@ -79,11 +82,13 @@ const marketer = ac.newRole({
   seo: ["read", "update"],
   redirect: ["read", "manage"],
   tracking: ["read", "update"],
+  ai: ["use"],
 })
 
 const intake = ac.newRole({
   dashboard: ["view"],
   lead: ["read", "update"],
+  ai: ["use"],
 })
 
 const viewer = ac.newRole({
@@ -93,6 +98,7 @@ const viewer = ac.newRole({
   collection: ["read"],
   globals: ["read"],
   seo: ["read"],
+  ai: ["use"],
 })
 
 export const roles = { owner, admin, editor, author, marketer, intake, viewer }

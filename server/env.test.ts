@@ -173,3 +173,27 @@ describe("getEnv tracking secrets", () => {
     expect(getEnv().DISABLE_CUSTOM_SCRIPTS).toBe(true)
   })
 })
+
+describe("AI_PROVIDER_MOCK", () => {
+  const base = () => {
+    vi.stubEnv("SITE_URL", "https://www.example.ie")
+    vi.stubEnv("DATABASE_URL", "postgres://user:pass@db:5432/app")
+  }
+
+  it("defaults to off and is allowed in development", () => {
+    base()
+    expect(getEnv().AI_PROVIDER_MOCK).toBe(false)
+    resetEnvForTests()
+    vi.stubEnv("AI_PROVIDER_MOCK", "1")
+    expect(getEnv().AI_PROVIDER_MOCK).toBe(true)
+  })
+
+  it("is refused outside development", () => {
+    base()
+    vi.stubEnv("SITE_ENV", "staging")
+    vi.stubEnv("CRON_SECRET", CRON)
+    vi.stubEnv("BETTER_AUTH_URL", "https://www.example.ie")
+    vi.stubEnv("AI_PROVIDER_MOCK", "1")
+    expect(() => getEnv()).toThrow(/AI_PROVIDER_MOCK/)
+  })
+})

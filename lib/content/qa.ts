@@ -17,12 +17,26 @@ export type QaFinding = {
 
 export const LEGAL_PATHS = ["/privacy", "/terms", "/disclaimer"] as const
 
+// docs/brief.md §4.6: "James" as the practitioner ("James works…", "with
+// James") or the old domain. A bare "James" (say a testimonial author's own
+// name) is not a rebrand leftover, so only these contexts match.
+const PRACTITIONER_VERBS =
+  "works|worked|helps|helped|has|had|is|was|offers|offered|will|uses|combines|believes|took|gave|trained|specialises|specializes|can"
+const REBRAND = new RegExp(
+  [
+    String.raw`\bJames Whitfield\b`,
+    "jameswhitfield",
+    String.raw`\b(?:with|by|to|from|about|see|meet|contact|ask)\s+James\b`,
+    String.raw`\bJames\s+(?:${PRACTITIONER_VERBS})\b`,
+  ].join("|")
+)
+
 const TEXT_RULES: { id: QaRuleId; message: string; pattern: RegExp }[] = [
   {
     id: "rebrand",
     message:
       "Mentions the previous practitioner (“James” or jameswhitfield.ie)",
-    pattern: /\bJames\b|jameswhitfield/,
+    pattern: REBRAND,
   },
   {
     id: "placeholder-contact",

@@ -6,11 +6,9 @@ import { hasPermission } from "@/lib/auth/permissions"
 import { roleRequiresTwoFactor } from "@/lib/auth/two-factor-policy"
 import type { QaFinding } from "@/lib/content/qa"
 import type { Actor } from "@/server/auth/actor"
-import { getSeoHealth } from "@/server/modules/seo/queries"
-import { listLiveEntities } from "@/server/modules/seo/live"
 
-import { contentGauge, type ContentGauge } from "./content-health"
-import { getContentFindings } from "./content-qa"
+import type { ContentGauge } from "./content-health"
+import { getContentReport } from "./content-qa"
 import * as repo from "./repo"
 import { DUBLIN, weekWindow } from "./week"
 
@@ -92,9 +90,7 @@ export async function getDashboard(
     subscribers,
     oldest,
     scheduled,
-    health,
-    live,
-    findings,
+    report,
     recent,
     accounts,
   ] = await Promise.all([
@@ -105,9 +101,8 @@ export async function getDashboard(
     repo.subscriberCounts(monthAgo),
     canLeads ? repo.oldestNewEnquiry() : null,
     canArticles ? repo.nextScheduledArticle() : null,
-    canSeo ? getSeoHealth() : null,
-    canSeo ? listLiveEntities() : null,
-    canFix ? getContentFindings() : null,
+    // Role-independent and cached; gated here, never inside the cache.
+    canSeo ? getContentReport() : null,
     canAudit ? repo.recentAudit(8) : null,
     canInvite ? repo.accountCount() : null,
   ])
@@ -162,17 +157,14 @@ export async function getDashboard(
     enquiriesWeek: { days, current: sum("current"), previous: sum("previous") },
     articles: articleCounts,
     subscribers,
-    seoHealth: health
-      ? { score: health.score, issues: health.issues.length }
+    seoHealth: report?.seo ?? null,
+    contentHealth: report
+      ? {
+          ...report.gauge,
+          findings: canFix ? report.findings.slice(0, FINDINGS_SHOWN) : null,
+          findingsTotal: canFix ? report.findings.length : 0,
+        }
       : null,
-    contentHealth:
-      health && live
-        ? {
-            ...contentGauge(health, live),
-            findings: findings?.slice(0, FINDINGS_SHOWN) ?? null,
-            findingsTotal: findings?.length ?? 0,
-          }
-        : null,
     recentActivity:
       recent?.map((row) => ({
         ...row,

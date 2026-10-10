@@ -74,7 +74,7 @@ export async function oldestNewEnquiry() {
     .select({ id: leads.id, name: leads.name, createdAt: leads.createdAt })
     .from(leads)
     .where(eq(leads.status, "new"))
-    .orderBy(asc(leads.createdAt))
+    .orderBy(asc(leads.createdAt), asc(leads.id))
     .limit(1)
   return row ?? null
 }

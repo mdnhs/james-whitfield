@@ -66,6 +66,19 @@ describe("scanContent (docs/brief.md §4.6)", () => {
       scanContent([src("x", { text: "His practice", slug: "st-jamess" })])
     ).toEqual([])
   })
+
+  it("flags James only as the practitioner, not as someone's own name", () => {
+    expect(
+      scanContent([src("t", { authorName: "James O'Brien", quote: "Calm." })])
+    ).toEqual([])
+    expect(
+      scanContent([
+        src("t1", { quote: "Working with James has been valuable." }),
+        src("t2", { quote: "James helped me move on." }),
+        src("t3", { text: "Meet James Whitfield." }),
+      ]).map((f) => f.label)
+    ).toEqual(["t1", "t2", "t3"])
+  })
 })
 
 describe("legalFinding", () => {

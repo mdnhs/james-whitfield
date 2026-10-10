@@ -18,3 +18,13 @@
    ```
 
    Do not run `pnpm admin:create` from a laptop against the staging database.
+
+## Phase 6 (enquiries, forms and email)
+
+- `CRON_SECRET` (Phase 5) is required in every non-development environment: the scheduler tick (`/api/v1/cron/tick`) rejects calls without it. Set it before deploying if it is not already.
+- No other new required env. Optional:
+  - `EMAIL_DRIVER=resend` + `RESEND_API_KEY`. Verify the sending domain in Resend (SPF, DKIM, DMARC) first; `EMAIL_FROM` must use it.
+  - `TURNSTILE_SITE_KEY` + `TURNSTILE_SECRET_KEY` (both or neither). The widget loads from `challenges.cloudflare.com`, so the Phase 8 CSP must allow it (script, frame and connect) once CSP ships.
+- Traefik must overwrite `X-Real-IP` with the real client address. The enquiry and newsletter limiters key on it; if it is missing, every visitor shares one bucket of 5 per 10 minutes.
+- Set the notification recipients in Admin → Site settings → Notifications (they fall back to the contact email).
+- The retention purge (closed and spam enquiries, unconfirmed subscriptions, spent rate-limit windows) runs inside the existing cron tick: no new schedule.

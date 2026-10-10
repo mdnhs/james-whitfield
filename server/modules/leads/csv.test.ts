@@ -27,6 +27,17 @@ describe("toCsv", () => {
     expect(csv).toContain(`"'-2","'\tTab"`)
     expect(csv.startsWith("﻿")).toBe(false)
   })
+  it("neutralises formula characters after leading whitespace", () => {
+    const csv = toCsv(
+      [
+        { name: "  =cmd", message: " \u00a0@SUM(A1)" },
+        { name: "  plain", message: "a =b" },
+      ],
+      cols
+    )
+    expect(csv).toContain(`"'  =cmd","' \u00a0@SUM(A1)"`)
+    expect(csv).toContain(`"  plain","a =b"`)
+  })
   it("renders null and dates", () => {
     expect(
       toCsv([{ name: null, message: new Date("2026-01-02T03:04:05Z") }], cols)

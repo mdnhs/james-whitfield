@@ -17,7 +17,9 @@ test.describe("as an owner", () => {
       page.getByRole("heading", { name: "Security health" }).first()
     ).toBeVisible()
     const activity = page.getByRole("region", { name: "Team activity" })
-    await expect(activity.getByText("Signed in").first()).toBeVisible()
+    // Newest eight entries: parallel content specs can push the sign-ins out.
+    await expect(activity.getByText("No activity yet")).toHaveCount(0)
+    await expect(activity.getByText(/ago|just now/i).first()).toBeVisible()
     await expect(
       page.getByRole("link", { name: "Invite teammate" })
     ).toBeVisible()

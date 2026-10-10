@@ -17,13 +17,22 @@ vi.mock("next/cache", async (importOriginal) => ({
 
 import { app } from "@/server/api/app"
 import { closeDb, getDb } from "@/server/db/client"
-import { articles, auditLogs, revisions } from "@/server/db/schema"
+import {
+  apiRateLimits,
+  articles,
+  auditLogs,
+  leads,
+  newsletterSubscribers,
+  revisions,
+  settings,
+} from "@/server/db/schema"
 import { findArticleBySlug } from "@/server/modules/content/repo"
 import { TICK_LOCK_KEY } from "@/server/modules/scheduler/service"
 
 import { content, insertTaxonomy } from "../helpers/articles"
 import { adminRequest, cookieFor } from "../helpers/auth"
 import { resetDb } from "../helpers/db"
+import { insertLead } from "../helpers/leads"
 
 beforeEach(async () => {
   await resetDb()
@@ -90,14 +99,14 @@ describe("cron tick", () => {
     vi.useFakeTimers({ toFake: ["Date"], now: new Date() })
     const cookie = await cookieFor("editor")
     const id = await scheduled(cookie, 2, { slug: "later-today" })
-    expect(await (await tick()).json()).toEqual({
+    expect(await (await tick()).json()).toMatchObject({
       skipped: false,
       published: [],
       failed: [],
     })
     expect(await findArticleBySlug("later-today")).toBeNull()
     vi.setSystemTime(new Date(Date.now() + 2 * 60_000 + 1_000))
-    expect(await (await tick()).json()).toEqual({
+    expect(await (await tick()).json()).toMatchObject({
       skipped: false,
       published: [id],
       failed: [],
@@ -122,7 +131,7 @@ describe("cron tick", () => {
     vi.setSystemTime(new Date(Date.now() + 3 * 60_000))
     await getDb().transaction(async (tx) => {
       await tx.execute(sql`select pg_advisory_xact_lock(${TICK_LOCK_KEY})`)
-      expect(await (await tick()).json()).toEqual({
+      expect(await (await tick()).json()).toMatchObject({
         skipped: true,
         published: [],
         failed: [],
@@ -141,7 +150,7 @@ describe("cron tick", () => {
       .set({ draft: sql`jsonb_set(draft, '{excerpt}', '""')` })
       .where(eq(articles.id, broken))
     vi.setSystemTime(new Date(Date.now() + 3 * 60_000))
-    expect(await (await tick()).json()).toEqual({
+    expect(await (await tick()).json()).toMatchObject({
       skipped: false,
       published: [fine],
       failed: [broken],
@@ -241,7 +250,7 @@ describe("author edits to a scheduled article", () => {
         .where(eq(auditLogs.action, "article.unscheduled"))
     ).toHaveLength(1)
     vi.setSystemTime(new Date(Date.now() + 5 * 60_000))
-    expect(await (await tick()).json()).toEqual({
+    expect(await (await tick()).json()).toMatchObject({
       skipped: false,
       published: [],
       failed: [],
@@ -304,5 +313,90 @@ describe("author edits to a scheduled article", () => {
     expect(row.scheduledFor).not.toBeNull()
     vi.setSystemTime(new Date(Date.now() + 5 * 60_000))
     expect((await (await tick()).json()).published).toEqual([id])
+  })
+})
+
+describe("retention purge", () => {
+  const DAY = 86_400_000
+  it("purges closed leads past retention, old spam, stale pending subscribers and spent windows", async () => {
+    const now = Date.now()
+    await getDb()
+      .insert(settings)
+      .values({
+        key: "privacy",
+        value: { enquiryRetentionMonths: 24, spamRetentionDays: 30 },
+      })
+    const keepClosed = await insertLead({
+      status: "closed",
+      statusChangedAt: new Date(now - 700 * DAY),
+    })
+    await insertLead({
+      status: "closed",
+      statusChangedAt: new Date(now - 740 * DAY),
+    })
+    await insertLead({ status: "spam", createdAt: new Date(now - 31 * DAY) })
+    const keepSpam = await insertLead({
+      status: "spam",
+      createdAt: new Date(now - 29 * DAY),
+    })
+    const keepNew = await insertLead({
+      status: "new",
+      createdAt: new Date(now - 900 * DAY),
+    })
+    await getDb()
+      .insert(newsletterSubscribers)
+      .values([
+        {
+          email: "stale@example.com",
+          status: "pending",
+          createdAt: new Date(now - 31 * DAY),
+        },
+        {
+          email: "kept@example.com",
+          status: "confirmed",
+          createdAt: new Date(now - 900 * DAY),
+        },
+      ])
+    await getDb()
+      .insert(apiRateLimits)
+      .values([
+        { key: "old", count: 9, resetAt: new Date(now - 2 * DAY) },
+        { key: "just-ended", count: 9, resetAt: new Date(now - 1000) },
+        { key: "live", count: 1, resetAt: new Date(now + 60_000) },
+      ])
+    const res = await tick()
+    expect((await res.json()).purged).toEqual({
+      closed: 1,
+      spam: 1,
+      pendingSubscribers: 1,
+      rateLimits: 1,
+    })
+    expect(
+      (await getDb().select({ id: leads.id }).from(leads))
+        .map((r) => r.id)
+        .sort()
+    ).toEqual([keepClosed.id, keepSpam.id, keepNew.id].sort())
+    expect(
+      (await getDb().select({ key: apiRateLimits.key }).from(apiRateLimits))
+        .map((r) => r.key)
+        .sort()
+    ).toEqual(["just-ended", "live"])
+    const [entry] = await getDb()
+      .select()
+      .from(auditLogs)
+      .where(eq(auditLogs.action, "lead.purge"))
+    expect(entry!.summary).toBe(
+      "Retention purge: 1 closed and 1 spam enquiries, 1 unconfirmed subscriptions"
+    )
+  })
+
+  it("audits nothing when nothing expired", async () => {
+    await tick()
+    expect(
+      await getDb()
+        .select()
+        .from(auditLogs)
+        .where(eq(auditLogs.action, "lead.purge"))
+    ).toHaveLength(0)
   })
 })

@@ -91,6 +91,27 @@ describe("ContactForm", () => {
     await fillAndSend()
     expect(await screen.findByText("PHONE-ERR")).toBeTruthy()
   })
+  it("shows a visible error when only a choice field is invalid", async () => {
+    const spy = mockApi(201, { ok: true })
+    const user = userEvent.setup()
+    render(
+      <NuqsTestingAdapter>
+        <ContactForm
+          {...props}
+          formats={[{ slug: "Not A Slug!", label: "Online" }]}
+        />
+      </NuqsTestingAdapter>
+    )
+    await user.type(screen.getByLabelText(/Name/), "Ann")
+    await user.type(screen.getByLabelText(/Email/), "ann@example.com")
+    await user.selectOptions(screen.getByLabelText(/Topic/), "anxiety")
+    await user.click(screen.getByRole("checkbox"))
+    await user.click(screen.getByRole("button", { name: "Send" }))
+    expect((await screen.findByRole("alert")).textContent).toBe("OOPS")
+    expect(spy.mock.calls.some(([u]) => String(u).endsWith("/leads"))).toBe(
+      false
+    )
+  })
   it("explains a rate limit", async () => {
     mockApi(429, { error: { code: "RATE_LIMITED" } })
     await fillAndSend()

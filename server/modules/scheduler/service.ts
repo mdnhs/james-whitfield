@@ -8,13 +8,21 @@ import { audit } from "@/server/lib/audit"
 import { invalidate, tags } from "@/server/lib/cache"
 import { publishLocked } from "@/server/modules/articles/publish"
 import { articleTags } from "@/server/modules/articles/service"
+import { purgeExpired } from "@/server/modules/leads/retention"
 
 // pg advisory lock key for the tick ("mkti").
 export const TICK_LOCK_KEY = 0x6d6b7469
 
+const NO_PURGE = {
+  closed: 0,
+  spam: 0,
+  pendingSubscribers: 0,
+  rateLimits: 0,
+}
+
 // docs/brief.md §5.5(f). One transaction holds the lock; due rows are locked
 // FOR UPDATE (skip locked) and each publishes in its own savepoint so one
-// broken draft cannot block the rest. Retention purges (Phase 6) join here.
+// broken draft cannot block the rest. The retention purge runs last, in its own savepoint.
 export async function runTick(now = new Date()) {
   const toExpire: string[] = []
   const result = await getDb().transaction(async (tx) => {
@@ -26,6 +34,7 @@ export async function runTick(now = new Date()) {
         skipped: true,
         published: [] as string[],
         failed: [] as string[],
+        purged: { ...NO_PURGE },
       }
     }
     const due = await tx
@@ -70,7 +79,14 @@ export async function runTick(now = new Date()) {
         failed.push(row.id)
       }
     }
-    return { skipped: false, published, failed }
+    // A savepoint, so a purge error cannot undo published articles.
+    let purged = { ...NO_PURGE }
+    try {
+      purged = await tx.transaction((sp) => purgeExpired(sp, now))
+    } catch (error) {
+      console.error("[scheduler] retention purge failed", error)
+    }
+    return { skipped: false, published, failed, purged }
   })
   if (toExpire.length) invalidate(toExpire)
   return result

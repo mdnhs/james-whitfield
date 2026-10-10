@@ -1,8 +1,8 @@
 import "server-only"
 
-// Formula injection (OWASP CSV injection): a leading = + - @ tab or CR turns
+// Formula injection (OWASP CSV injection): a leading = + - @ (after any whitespace), tab or CR turns
 // the cell into text with a leading apostrophe. Every cell is quoted.
-const FORMULA = /^[=+\-@\t\r]/
+const FORMULA = /^\s*[=+\-@]|^[\t\r]/
 
 function cell(value: unknown) {
   const text =

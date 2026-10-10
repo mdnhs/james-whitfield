@@ -198,6 +198,9 @@ function EnquiryForm({
     const first = Object.keys(next)[0]
     if (first || !input) {
       if (first) focus(first)
+      // Only the choice fields (format, plan) failed: no input to flag, but
+      // the visitor must still be told why nothing was sent.
+      else setFormError(copy.errors.generic)
       return
     }
     let attribution: LeadSubmission["attribution"]

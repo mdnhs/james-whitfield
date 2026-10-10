@@ -65,6 +65,11 @@ export const queryKeys = {
     overview: ["seo", "overview"] as const,
     redirects: (params: object) => ["seo", "redirects", params] as const,
   },
+  theme: {
+    detail: ["theme"] as const,
+    revisions: ["theme", "revisions"] as const,
+    colors: ["theme", "colors"] as const,
+  },
   tracking: { detail: ["tracking"] as const },
   account: {
     sessions: ["account", "sessions"] as const,

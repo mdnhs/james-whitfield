@@ -8,7 +8,11 @@ const TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]
 // Acceptance: axe reports no serious or critical violations.
 async function blocking(page: Page) {
   await page.waitForLoadState("networkidle", { timeout: 5_000 }).catch(() => {})
-  const { violations } = await new AxeBuilder({ page }).withTags(TAGS).analyze()
+  const { violations } = await new AxeBuilder({ page })
+    .withTags(TAGS)
+    // The Appearance preview frames the public site, audited on its own.
+    .exclude('iframe[title="Page preview"]')
+    .analyze()
   return violations
     .filter((v) => v.impact === "serious" || v.impact === "critical")
     .map(
@@ -35,6 +39,7 @@ const PANEL = [
   "/admin/marketing",
   "/admin/marketing/consent",
   "/admin/marketing/events",
+  "/admin/appearance",
   "/admin/no-access?from=%2Fadmin%2Fpages",
 ]
 

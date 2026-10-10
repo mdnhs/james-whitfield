@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { globalQuery } from "@/admin/modules/globals/queries"
+import { themeColorsQuery } from "@/admin/modules/appearance/queries"
 import { mediaListQuery } from "@/admin/modules/media/queries"
 import type { GlobalValue } from "@/lib/content/globals"
 import { blank } from "@/lib/seo/metadata"
@@ -43,6 +44,7 @@ export function SeoAside({
     ...mediaListQuery({ ids: values.ogImage ? [values.ogImage.mediaId] : [] }),
     enabled: Boolean(values.ogImage),
   })
+  const colors = useQuery(themeColorsQuery()).data
   const defaults = seo.data?.value as GlobalValue<"seo"> | undefined
   const image = values.ogImage ? media.data?.items[0] : undefined
   const host =
@@ -70,8 +72,8 @@ export function SeoAside({
     title: blank(values.ogTitle) ?? title,
     eyebrow: eyebrow ?? siteValue?.professionalTitle ?? "",
     siteName: siteValue?.name ?? "",
-    // Default colours until Task 7 reads GET /admin/theme/colors (R14).
-    colors: ogColors(DEFAULT_THEME.site),
+    // Phase 7 carry: the share card uses the published theme colours.
+    colors: colors ?? ogColors(DEFAULT_THEME.site),
   }
 
   return (

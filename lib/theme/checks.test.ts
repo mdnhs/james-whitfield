@@ -71,6 +71,23 @@ describe("fix automatically", () => {
     expect(fixAll(config).remaining).toEqual([])
   })
 
+  it("fixAll never leaves a theme with more failing pairs", () => {
+    const configs = [
+      withSite({ brand: "#000000" }),
+      withSite({ brand: "#ffffff" }),
+      withSite({ brand: "#000000", tokens: { "text-muted": "#dddddd" } }),
+      ThemeConfig.parse({ admin: { primary: "#000000", accent: "#ffff00" } }),
+      ThemeConfig.parse({ admin: { primary: "#ffffff" } }),
+    ]
+    for (const config of configs) {
+      const before = checkTheme(config).length
+      expect(checkTheme(fixAll(config).config).length).toBeLessThanOrEqual(
+        before
+      )
+      expect(fixAll(config).remaining.length).toBeLessThanOrEqual(before)
+    }
+  })
+
   it("rates AAA, AA and fail", () => {
     expect(rating(7.1, 4.5)).toBe("AAA")
     expect(rating(4.6, 4.5)).toBe("AA")

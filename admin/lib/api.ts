@@ -19,6 +19,7 @@ import type { PagesRoutes } from "@/server/modules/pages/routes"
 import type { SearchRoutes } from "@/server/modules/search/routes"
 import type { SeoRoutes } from "@/server/modules/seo/routes"
 import type { TaxonomyRoutes } from "@/server/modules/taxonomy/routes"
+import type { ThemeRoutes } from "@/server/modules/theme/routes"
 import type { TrackingRoutes } from "@/server/modules/tracking/routes"
 
 import { ApiError } from "./api-error"
@@ -39,6 +40,7 @@ export const categoriesApi = hc<TaxonomyRoutes>("/api/v1/admin/categories")
 export const authorsApi = hc<TaxonomyRoutes>("/api/v1/admin/authors")
 export const searchApi = hc<SearchRoutes>("/api/v1/admin/search")
 export const seoApi = hc<SeoRoutes>("/api/v1/admin/seo")
+export const themeApi = hc<ThemeRoutes>("/api/v1/admin/theme")
 export const trackingApi = hc<TrackingRoutes>("/api/v1/admin/tracking")
 
 type Envelope = {

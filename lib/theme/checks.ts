@@ -233,13 +233,37 @@ export function fixIssue(
   return null
 }
 
+// Greedy and never worse: a fix is kept only when the number of failing
+// pairs does not rise, so one repair cannot break three other pairs. The
+// best theme seen is returned, whatever order the fixes were tried in.
 export function fixAll(config: ThemeConfigValue) {
   let current = config
-  for (let round = 0; round < 10; round++) {
-    const issues = checkTheme(current)
-    const fixable = issues.map((i) => fixIssue(current, i)).find(Boolean)
-    if (!fixable) return { config: current, remaining: issues }
-    current = fixable
+  let issues = checkTheme(current)
+  let best = { config, remaining: issues }
+  const seen = new Set([JSON.stringify(config)])
+  for (let round = 0; round < 40 && issues.length > 0; round++) {
+    let accepted: {
+      config: ThemeConfigValue
+      remaining: ContrastIssue[]
+    } | null = null
+    for (const issue of issues) {
+      const candidate = fixIssue(current, issue)
+      if (!candidate) continue
+      const key = JSON.stringify(candidate)
+      if (seen.has(key)) continue
+      seen.add(key)
+      const remaining = checkTheme(candidate)
+      if (remaining.length > issues.length) continue
+      // Prefer the first fix that clears a pair outright.
+      if (!accepted || remaining.length < accepted.remaining.length)
+        accepted = { config: candidate, remaining }
+      if (remaining.length < issues.length) break
+    }
+    if (!accepted) break
+    current = accepted.config
+    issues = accepted.remaining
+    if (issues.length < best.remaining.length)
+      best = { config: current, remaining: issues }
   }
-  return { config: current, remaining: checkTheme(current) }
+  return best
 }

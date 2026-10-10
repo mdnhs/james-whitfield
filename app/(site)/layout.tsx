@@ -3,6 +3,7 @@ import { io } from "next/cache"
 import { NuqsAdapter } from "nuqs/adapters/next/app"
 import { Suspense } from "react"
 
+import { AttributionCapture } from "@/components/attribution-capture"
 import { getEnv } from "@/server/env"
 import { getSetting } from "@/server/modules/content/queries"
 
@@ -37,6 +38,7 @@ export default function SiteLayout({
           <style>{"[data-reveal]{visibility:visible!important}"}</style>
         </noscript>
         <NuqsAdapter>
+          <AttributionCapture />
           <Suspense fallback={null}>
             <SiteFrame>{children}</SiteFrame>
           </Suspense>

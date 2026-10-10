@@ -1,29 +1,55 @@
 "use client"
 
 import Image from "next/image"
-import { Suspense, useMemo, useRef, useState } from "react"
+import { Suspense, useEffect, useMemo, useRef, useState } from "react"
 import { useQueryStates } from "nuqs"
 
 import type { GlobalValue } from "@/lib/content/globals"
 import type { ContactOption, PlanOption } from "@/lib/content/types"
 import { fill } from "@/lib/fill"
+import { LeadInput, type LeadSubmission } from "@/lib/leads/schema"
 import { cn } from "@/lib/utils"
+import { readAttribution } from "../lib/attribution"
 import { contactParams } from "../lib/contact-params"
+import { fetchStamp, submitLead } from "../lib/submit-lead"
+import { trackLead } from "../lib/track"
+import { Turnstile } from "./turnstile"
 
-type Field = "name" | "email" | "topic" | "consent"
+type Field = "name" | "email" | "phone" | "topic" | "message" | "consent"
 type Errors = Partial<Record<Field, string>>
 type Copy = GlobalValue<"contactForm">
 
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const FIELDS: readonly string[] = [
+  "name",
+  "email",
+  "phone",
+  "topic",
+  "message",
+  "consent",
+]
 
-function validate(data: FormData, messages: Copy["errors"]): Errors {
+const text = (data: FormData, key: string) => String(data.get(key) ?? "")
+
+// Same schema as the API (lib/leads/schema.ts); issues map to the form's copy.
+function validate(data: FormData, messages: Copy["errors"]) {
+  const result = LeadInput.safeParse({
+    name: text(data, "name"),
+    email: text(data, "email"),
+    phone: text(data, "phone"),
+    topic: text(data, "topic"),
+    format: text(data, "format") || undefined,
+    plan: text(data, "plan") || undefined,
+    message: text(data, "message"),
+    consent: data.get("consent") ? true : false,
+  })
+  if (result.success) return { errors: {} as Errors, input: result.data }
   const errors: Errors = {}
-  if (!String(data.get("name") ?? "").trim()) errors.name = messages.name
-  if (!EMAIL.test(String(data.get("email") ?? "").trim()))
-    errors.email = messages.email
-  if (!data.get("topic")) errors.topic = messages.topic
-  if (!data.get("consent")) errors.consent = messages.consent
-  return errors
+  for (const issue of result.error.issues) {
+    const field = String(issue.path[0])
+    if (FIELDS.includes(field) && !errors[field as Field])
+      errors[field as Field] = messages[field as Field]
+  }
+  return { errors, input: null }
 }
 
 const control =
@@ -65,10 +91,17 @@ function FieldError({ id, message }: { id: string; message?: string }) {
   )
 }
 
-type Prefill = { topic?: string; format?: string; message?: string }
+type Prefill = {
+  topic?: string
+  format?: string
+  plan?: string
+  message?: string
+}
 
-// Enquiry form. No email service is connected yet, so a valid submission
-// confirms in place; send the FormData to the chosen provider in onSubmit.
+// Enquiry form. Validates client-side with the API's own schema, then POSTs to
+// /api/v1/public/leads with a signed form stamp, an empty honeypot, the
+// first-touch attribution and (when configured) a Turnstile token. API field
+// errors are shown with this form's copy; success confirms in place.
 //
 // Links can pre-fill it (see contact-params). Reading the URL opts a
 // prerendered page out of static HTML up to the nearest Suspense boundary, so
@@ -79,6 +112,7 @@ export function ContactForm(props: {
   topics: ContactOption[]
   formats: ContactOption[]
   plans: PlanOption[]
+  turnstileSiteKey: string | null
 }) {
   return (
     <div
@@ -97,6 +131,7 @@ type FormProps = {
   topics: ContactOption[]
   formats: ContactOption[]
   plans: PlanOption[]
+  turnstileSiteKey: string | null
 }
 
 function PrefilledForm(props: FormProps) {
@@ -108,8 +143,9 @@ function PrefilledForm(props: FormProps) {
   const [{ topic, format, plan }] = useQueryStates(params)
   const chosen = plan ? plans.find((p) => p.slug === plan) : undefined
   const prefill: Prefill = {
-    topic: topics.find((t) => t.slug === topic)?.label,
-    format: formats.find((f) => f.slug === format)?.label,
+    topic: topic ?? undefined,
+    format: format ?? undefined,
+    plan: plan ?? undefined,
     message: chosen
       ? fill(copy.planMessage, {
           name: chosen.name,
@@ -132,23 +168,93 @@ function EnquiryForm({
   copy,
   topics,
   formats,
+  turnstileSiteKey,
   prefill,
 }: FormProps & { prefill: Prefill }) {
   const { title, labels, placeholders, consent, button, success } = copy
   const [errors, setErrors] = useState<Errors>({})
   const [sent, setSent] = useState(false)
+  const [formError, setFormError] = useState("")
+  const [pending, setPending] = useState(false)
+  const [stamp, setStamp] = useState("")
+  const [token, setToken] = useState<string | null>(null)
+  const [widget, setWidget] = useState(0)
   const form = useRef<HTMLFormElement>(null)
 
-  const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  useEffect(() => {
+    void fetchStamp().then(setStamp)
+  }, [])
+
+  const focus = (name: string) =>
+    form.current?.querySelector<HTMLElement>(`[name="${name}"]`)?.focus()
+
+  const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    const next = validate(new FormData(event.currentTarget), copy.errors)
+    if (pending) return
+    const data = new FormData(event.currentTarget)
+    const { errors: next, input } = validate(data, copy.errors)
     setErrors(next)
+    setFormError("")
     const first = Object.keys(next)[0]
-    if (first) {
-      form.current?.querySelector<HTMLElement>(`[name="${first}"]`)?.focus()
+    if (first || !input) {
+      if (first) focus(first)
       return
     }
-    setSent(true)
+    let attribution: LeadSubmission["attribution"]
+    try {
+      attribution = readAttribution(window.sessionStorage)
+    } catch {
+      attribution = readAttribution({} as Storage)
+    }
+    const eventId = crypto.randomUUID()
+    const payload: LeadSubmission = {
+      ...input,
+      eventId,
+      sourcePath: window.location.pathname,
+      attribution,
+      stamp,
+      website: text(data, "website"),
+      // No token (widget blocked or not loaded) still goes through: the server
+      // accepts it as a flagged lead.
+      turnstileToken: token ?? undefined,
+    }
+    setPending(true)
+    const result = await submitLead(payload)
+    setPending(false)
+    if (result.ok) {
+      trackLead(eventId)
+      setSent(true)
+      return
+    }
+    // Turnstile tokens are single-use: get a fresh one for the next attempt.
+    setToken(null)
+    setWidget((n) => n + 1)
+    if (result.kind === "fields") {
+      const mapped: Errors = {}
+      for (const key of Object.keys(result.fieldErrors)) {
+        mapped[key as Field] =
+          copy.errors[key as keyof Copy["errors"]] ?? copy.errors.generic
+      }
+      setErrors(mapped)
+      const firstKey = Object.keys(mapped)[0]
+      if (firstKey) focus(firstKey)
+      else setFormError(copy.errors.generic)
+    } else {
+      setFormError(
+        result.kind === "rate-limited"
+          ? copy.errors.rateLimited
+          : copy.errors.generic
+      )
+    }
+  }
+
+  const sendAnother = () => {
+    setSent(false)
+    setErrors({})
+    setFormError("")
+    setToken(null)
+    setWidget((n) => n + 1)
+    void fetchStamp().then(setStamp)
   }
 
   // Clear a field's message as soon as it is corrected.
@@ -192,7 +298,7 @@ function EnquiryForm({
           </p>
           <button
             type="button"
-            onClick={() => setSent(false)}
+            onClick={sendAnother}
             className="mt-2 cursor-pointer self-start text-[15px] font-semibold text-clay hover:underline hover:underline-offset-4"
           >
             {copy.sendAnother}
@@ -203,7 +309,7 @@ function EnquiryForm({
           ref={form}
           noValidate
           onSubmit={onSubmit}
-          className="flex flex-col gap-6"
+          className="relative flex flex-col gap-6"
         >
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="flex flex-col gap-2">
@@ -248,8 +354,11 @@ function EnquiryForm({
                 type="tel"
                 autoComplete="tel"
                 placeholder={placeholders.phone}
+                onChange={() => clear("phone")}
                 className={cn(control, "h-12 text-base")}
+                {...invalid("phone")}
               />
+              <FieldError id="phone-error" message={errors.phone} />
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="topic" required>
@@ -274,7 +383,7 @@ function EnquiryForm({
                   {topics.map((topic) => (
                     <option
                       key={topic.slug}
-                      value={topic.label}
+                      value={topic.slug}
                       className="text-ink"
                     >
                       {topic.label}
@@ -303,9 +412,9 @@ function EnquiryForm({
                   <input
                     type="radio"
                     name="format"
-                    value={format.label}
+                    value={format.slug}
                     defaultChecked={
-                      prefill.format ? format.label === prefill.format : i === 0
+                      prefill.format ? format.slug === prefill.format : i === 0
                     }
                     className="peer sr-only"
                   />
@@ -325,8 +434,11 @@ function EnquiryForm({
               rows={5}
               defaultValue={prefill.message}
               placeholder={placeholders.message}
+              onChange={() => clear("message")}
               className={cn(control, "h-35 resize-y py-3.5")}
+              {...invalid("message")}
             />
+            <FieldError id="message-error" message={errors.message} />
           </div>
 
           <div className="flex flex-col gap-2">
@@ -354,9 +466,45 @@ function EnquiryForm({
             <FieldError id="consent-error" message={errors.consent} />
           </div>
 
+          {prefill.plan && (
+            <input type="hidden" name="plan" value={prefill.plan} />
+          )}
+
+          <div
+            aria-hidden="true"
+            className="absolute -left-[9999px] h-px w-px overflow-hidden"
+          >
+            <label>
+              Website
+              <input
+                type="text"
+                name="website"
+                tabIndex={-1}
+                autoComplete="off"
+                defaultValue=""
+              />
+            </label>
+          </div>
+
+          {turnstileSiteKey && (
+            <Turnstile
+              key={widget}
+              siteKey={turnstileSiteKey}
+              onToken={setToken}
+            />
+          )}
+
+          {formError && (
+            <p role="alert" className="text-[13px] leading-[1.4] text-clay">
+              {formError}
+            </p>
+          )}
+
           <button
             type="submit"
-            className="w-full cursor-pointer rounded-full bg-clay px-7 py-4.5 text-base leading-[1.5] font-semibold whitespace-pre text-cream transition-colors hover:bg-clay/90 focus-visible:ring-3 focus-visible:ring-clay/40 focus-visible:outline-none"
+            disabled={pending}
+            aria-busy={pending}
+            className="w-full cursor-pointer rounded-full bg-clay px-7 py-4.5 text-base leading-[1.5] font-semibold whitespace-pre text-cream transition-colors hover:bg-clay/90 focus-visible:ring-3 focus-visible:ring-clay/40 focus-visible:outline-none disabled:opacity-70"
           >
             {button}
           </button>

@@ -118,9 +118,13 @@ export async function submitLead(body: unknown, ctx: Ctx) {
   // 4. Turnstile, only when configured. Ruling R17: Cloudflare's explicit "no"
   // is spam (same answer to the visitor); an unreachable siteverify lets the
   // lead in, flagged, rather than losing a real enquiry.
-  const turnstile = turnstileEnabled()
-    ? await verifyTurnstile(input.turnstileToken, ctx.ip)
-    : "pass"
+  // A missing token (widget blocked or failed to load) is treated like an
+  // unreachable check: accepted and flagged, not spam.
+  const turnstile = !turnstileEnabled()
+    ? "pass"
+    : !input.turnstileToken
+      ? "unavailable"
+      : await verifyTurnstile(input.turnstileToken, ctx.ip)
   if (turnstile === "fail") {
     const [row] = await getDb()
       .insert(leads)
@@ -150,7 +154,7 @@ export async function submitLead(body: unknown, ctx: Ctx) {
       await tx.insert(leadActivities).values({
         leadId: row!.id,
         type: "note",
-        body: "Spam check unavailable: Cloudflare Turnstile could not be reached, so this enquiry was accepted without verification.",
+        body: "Spam check unavailable: Cloudflare Turnstile could not be reached or produced no token, so this enquiry was accepted without verification.",
         data: { kind: "turnstile-unverified" },
       })
     }

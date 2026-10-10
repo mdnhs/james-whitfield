@@ -289,4 +289,24 @@ describe("POST /public/leads with Turnstile", () => {
       true
     )
   })
+
+  it("accepts a submission with no token as a flagged lead, not spam", async () => {
+    const fetchSpy = siteverify(() => Promise.reject(new Error("unused")))
+    const res = await post(submission())
+    expect(res.status).toBe(201)
+    await drain()
+    expect(fetchSpy).not.toHaveBeenCalled()
+    const [row] = await getDb().select().from(leads)
+    expect(row).toMatchObject({ status: "new", turnstileUnverified: true })
+    const activities = await getDb()
+      .select()
+      .from(leadActivities)
+      .where(eq(leadActivities.leadId, row!.id))
+    expect(activities).toContainEqual(
+      expect.objectContaining({ data: { kind: "turnstile-unverified" } })
+    )
+    expect(readOutbox().some((m) => m.subject.startsWith("New enquiry"))).toBe(
+      true
+    )
+  })
 })

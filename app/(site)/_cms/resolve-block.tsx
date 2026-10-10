@@ -28,6 +28,7 @@ import { RichTextSection } from "@/features/richtext"
 import { FormatsSection, ServicesGrid } from "@/features/services"
 import { TestimonialsSection } from "@/features/testimonials"
 import { slugify } from "@/lib/utils"
+import { turnstileSiteKey } from "@/server/lib/turnstile"
 import * as q from "@/server/modules/content/queries"
 
 const withMedia = async <T,>(value: T) =>
@@ -174,6 +175,7 @@ export async function ResolvedBlock({ block }: { block: BlockInstance }) {
               ...form.extraTopics.map(option),
             ],
             formats: form.formats.map(option),
+            turnstileSiteKey: turnstileSiteKey(),
             plans: plans.map(({ slug, name, priceLabel, unit }) => ({
               slug,
               name,

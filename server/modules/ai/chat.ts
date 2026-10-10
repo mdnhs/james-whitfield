@@ -20,6 +20,7 @@ import {
   type AiUIMessage,
 } from "@/lib/ai/messages"
 import type { ChatInput } from "@/lib/ai/schema"
+import { hasPermission } from "@/lib/auth/permissions"
 import { parseGlobal } from "@/lib/content/globals"
 import { ApiError } from "@/server/api/errors"
 import type { Actor } from "@/server/auth/actor"
@@ -35,7 +36,7 @@ import {
   titleFrom,
 } from "./conversations"
 import { errorTag, friendlyChatError, ToolFailure } from "./errors"
-import { buildSystemPrompt } from "./prompt"
+import { buildSystemPrompt, firstNameOf } from "./prompt"
 import { getModel } from "./provider"
 import {
   decryptApiKey,
@@ -97,7 +98,14 @@ export async function startChat(
       )
 
   // Ruling R8: earlier turns from our rows; the new one saved before streaming.
-  const history = await historyFor(conversation.id, HISTORY_LIMIT - 1)
+  // Ruling R14: enquiry details need the opt-in and lead.read. Replies
+  // written under it are flagged, and stay out of the history once it's off.
+  const sharing =
+    settings.shareEnquiryDetails.enabled &&
+    hasPermission(actor.roles, { lead: ["read"] })
+  const history = await historyFor(conversation.id, HISTORY_LIMIT - 1, {
+    includeShared: sharing,
+  })
   const userMessage: AiUIMessage = {
     id: randomUUID(),
     role: "user",
@@ -112,7 +120,7 @@ export async function startChat(
     model,
     instructions: buildSystemPrompt({
       siteName: site.name,
-      userName: actor.name,
+      firstName: firstNameOf(actor.name),
       roles: actor.roles,
       today: format(new Date(), "EEEE d MMMM yyyy", { in: DUBLIN }),
       toolNames: Object.keys(tools),
@@ -158,7 +166,11 @@ export async function startChat(
           await appendMessage(
             conversation.id,
             { ...responseMessage, parts },
-            { tokensIn: turn.tokensIn, tokensOut: turn.tokensOut }
+            {
+              tokensIn: turn.tokensIn,
+              tokensOut: turn.tokensOut,
+              sharedEnquiryDetails: sharing,
+            }
           )
         await audit(actor, {
           action: "ai.chat",

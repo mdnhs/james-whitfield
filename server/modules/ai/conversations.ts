@@ -3,7 +3,17 @@ import "server-only"
 
 import { randomUUID } from "node:crypto"
 
-import { and, asc, desc, eq, lt, sql } from "drizzle-orm"
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  inArray,
+  lt,
+  notExists,
+  or,
+  sql,
+} from "drizzle-orm"
 
 import {
   textOf,
@@ -51,7 +61,11 @@ export async function ownConversation(userId: string, id: string) {
 export async function appendMessage(
   conversationId: string,
   message: AiUIMessage,
-  tokens?: { tokensIn: number; tokensOut: number }
+  meta?: {
+    tokensIn?: number
+    tokensOut?: number
+    sharedEnquiryDetails?: boolean
+  }
 ) {
   const now = new Date()
   await getDb().transaction(async (tx) => {
@@ -60,8 +74,9 @@ export async function appendMessage(
       conversationId,
       role: message.role,
       parts: message.parts,
-      tokensIn: tokens?.tokensIn ?? null,
-      tokensOut: tokens?.tokensOut ?? null,
+      tokensIn: meta?.tokensIn ?? null,
+      tokensOut: meta?.tokensOut ?? null,
+      sharedEnquiryDetails: meta?.sharedEnquiryDetails ?? false,
       createdAt: now,
     })
     await tx
@@ -71,15 +86,25 @@ export async function appendMessage(
   })
 }
 
-// Ruling R8: what the model sees of earlier turns is their text only.
+// Ruling R8: what the model sees of earlier turns is their text only. Replies
+// written while enquiry details were shared stay out once sharing is off
+// (or the person can no longer read enquiries).
 export async function historyFor(
   conversationId: string,
-  limit: number
+  limit: number,
+  options: { includeShared: boolean }
 ): Promise<AiUIMessage[]> {
   const rows = await getDb()
     .select()
     .from(aiMessages)
-    .where(eq(aiMessages.conversationId, conversationId))
+    .where(
+      and(
+        eq(aiMessages.conversationId, conversationId),
+        options.includeShared
+          ? undefined
+          : eq(aiMessages.sharedEnquiryDetails, false)
+      )
+    )
     .orderBy(desc(aiMessages.createdAt))
     .limit(limit)
   return rows
@@ -118,13 +143,14 @@ export async function getConversation(userId: string, id: string) {
     .select()
     .from(aiMessages)
     .where(eq(aiMessages.conversationId, id))
-    .orderBy(asc(aiMessages.createdAt))
+    .orderBy(desc(aiMessages.createdAt))
     .limit(200)
   return {
     id: conv.id,
     title: conv.title,
     model: conv.model,
-    messages: rows.map((r): AiUIMessage => ({
+    // The newest 200, oldest first.
+    messages: rows.reverse().map((r): AiUIMessage => ({
       id: r.id,
       role: r.role as AiUIMessage["role"],
       parts: r.parts as AiPart[],
@@ -151,13 +177,60 @@ export async function deleteConversation(actor: Actor, id: string) {
   return { ok: true as const }
 }
 
-// Spec §6: run by the cron tick inside the retention savepoint.
+// Spec §6: run by the cron tick inside the retention savepoint. Messages
+// expire on their own age, so a conversation still in use keeps no text older
+// than 90 days. Then conversations left empty, or idle for 90 days, go.
 export async function purgeStaleConversations(tx: Tx, now: Date) {
   const before = new Date(now.getTime() - RETENTION_DAYS * DAY)
-  const gone = await tx
+  const messages = await tx
+    .delete(aiMessages)
+    .where(lt(aiMessages.createdAt, before))
+    .returning({ id: aiMessages.id })
+  const conversations = await tx
     .delete(aiConversations)
-    .where(lt(aiConversations.updatedAt, before))
+    .where(
+      or(
+        lt(aiConversations.updatedAt, before),
+        // Empty ones go too, once past the hour in which a new
+        // conversation is created and gets its first message.
+        and(
+          lt(aiConversations.createdAt, new Date(now.getTime() - 3_600_000)),
+          notExists(
+            tx
+              .select({ one: sql`1` })
+              .from(aiMessages)
+              .where(eq(aiMessages.conversationId, aiConversations.id))
+          )
+        )
+      )
+    )
     .returning({ id: aiConversations.id })
+  return { conversations: conversations.length, messages: messages.length }
+}
+
+// Privacy erase: an enquirer's address can sit in an opted-in saved reply.
+// The address as a case-insensitive substring of the stored parts is exact
+// enough, and cheap at this size. Conversations left empty go too.
+export async function eraseMessagesMentioning(tx: Tx, email: string) {
+  const gone = await tx
+    .delete(aiMessages)
+    .where(
+      sql`position(lower(${email}) in lower(${aiMessages.parts}::text)) > 0`
+    )
+    .returning({ conversationId: aiMessages.conversationId })
+  const touched = [...new Set(gone.map((r) => r.conversationId))]
+  if (touched.length)
+    await tx.delete(aiConversations).where(
+      and(
+        inArray(aiConversations.id, touched),
+        notExists(
+          tx
+            .select({ one: sql`1` })
+            .from(aiMessages)
+            .where(eq(aiMessages.conversationId, aiConversations.id))
+        )
+      )
+    )
   return gone.length
 }
 

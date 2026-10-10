@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm"
 import {
+  boolean,
   check,
   index,
   integer,
@@ -44,6 +45,10 @@ export const aiMessages = pgTable(
     parts: jsonb().$type<unknown[]>().notNull(),
     tokensIn: integer(),
     tokensOut: integer(),
+    // An assistant reply written while enquiry details could be in its tools'
+    // output. Kept for its owner, but never sent back to the provider once
+    // sharing is off.
+    sharedEnquiryDetails: boolean().notNull().default(false),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [

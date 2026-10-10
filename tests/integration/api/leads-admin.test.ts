@@ -176,7 +176,7 @@ describe("leads API", () => {
         method: "DELETE",
       })
     ).json()
-    expect(erased).toEqual({ leads: 2, newsletter: 1 })
+    expect(erased).toEqual({ leads: 2, newsletter: 1, aiMessages: 0 })
     expect(await getDb().select().from(leads)).toHaveLength(1)
     expect(
       JSON.stringify(await getDb().select().from(auditLogs))

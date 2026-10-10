@@ -7,7 +7,10 @@ import { getDb } from "@/server/db/client"
 import { leads, newsletterSubscribers } from "@/server/db/schema"
 import { hashEmail } from "@/server/lib/crypto"
 import { audit } from "@/server/lib/audit"
-import { exportConversationsFor } from "@/server/modules/ai/conversations"
+import {
+  eraseMessagesMentioning,
+  exportConversationsFor,
+} from "@/server/modules/ai/conversations"
 
 import { getLeadsDetail } from "./service"
 
@@ -24,12 +27,18 @@ export async function exportPerson(actor: Actor, email: string) {
     .from(newsletterSubscribers)
     .where(eq(newsletterSubscribers.email, email.toLowerCase()))
   const found = await getLeadsDetail(ids.map((r) => r.id))
-  const aiConversations = await exportConversationsFor(email)
+  // Staff conversations are private to their author: the subject themselves
+  // or an owner (not an admin, and not someone viewing as the subject).
+  const withAi =
+    actor.impersonatedBy === null &&
+    (actor.roles.includes("owner") ||
+      actor.email.toLowerCase() === email.toLowerCase())
+  const aiConversations = withAi ? await exportConversationsFor(email) : []
   await audit(actor, {
     action: "privacy.export",
     entityType: "person",
     entityId: hashEmail(email),
-    summary: `Privacy request: ${found.length} enquiries, ${newsletter ? 1 : 0} subscriptions, ${aiConversations.length} AI conversations`,
+    summary: `Privacy request: ${found.length} enquiries, ${newsletter ? 1 : 0} subscriptions, ${aiConversations.length} AI conversations${withAi ? "" : " (not included)"}`,
   })
   return {
     email,
@@ -37,6 +46,12 @@ export async function exportPerson(actor: Actor, email: string) {
     leads: found,
     newsletter: newsletter ?? null,
     aiConversations,
+    ...(withAi
+      ? {}
+      : {
+          aiConversationsNote:
+            "AI assistant conversations are only included when the person exports their own data or an owner runs the export.",
+        }),
   }
 }
 
@@ -51,16 +66,18 @@ export async function erasePerson(actor: Actor, email: string) {
       .delete(newsletterSubscribers)
       .where(eq(newsletterSubscribers.email, email.toLowerCase()))
       .returning({ id: newsletterSubscribers.id })
+    // Opted-in enquiry quotes in saved assistant replies (spec §6).
+    const aiMessages = await eraseMessagesMentioning(tx, email)
     await audit(
       actor,
       {
         action: "privacy.erase",
         entityType: "person",
         entityId: hashEmail(email),
-        summary: `Privacy request: ${gone.length} enquiries, ${subs.length} subscriptions`,
+        summary: `Privacy request: ${gone.length} enquiries, ${subs.length} subscriptions, ${aiMessages} AI messages`,
       },
       tx
     )
-    return { leads: gone.length, newsletter: subs.length }
+    return { leads: gone.length, newsletter: subs.length, aiMessages }
   })
 }

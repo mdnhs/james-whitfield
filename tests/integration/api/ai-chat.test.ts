@@ -194,6 +194,44 @@ describe("POST /ai/chat", () => {
     expect(Number(res.headers.get("retry-after"))).toBeGreaterThan(0)
   })
 
+  it("replies written while sharing was on stay out of the history once it is off", async () => {
+    const m = model(
+      streamOf(textParts("Ann asked about anxiety.")),
+      streamOf(textParts("Second answer."))
+    )
+    await seedAi({
+      shareEnquiryDetails: { enabled: true },
+    })
+    const cookie = await cookieFor("admin")
+    const cs = await chunks(await chat(cookie, { text: "Summarise enquiries" }))
+    const id = conversationIdOf(cs)
+    const rows = await getDb()
+      .select()
+      .from(aiMessages)
+      .where(eq(aiMessages.conversationId, id))
+      .orderBy(aiMessages.createdAt)
+    expect(rows.map((r) => r.sharedEnquiryDetails)).toEqual([false, true])
+    await seedAi({ shareEnquiryDetails: { enabled: false } })
+    await chunks(
+      await chat(cookie, { conversationId: id, text: "Anything else?" })
+    )
+    const prompt = JSON.stringify(m.doStreamCalls.at(-1)!.prompt)
+    expect(prompt).not.toContain("Ann asked about anxiety")
+    expect(prompt).toContain("Summarise enquiries")
+    // The UI still shows the reply to its owner.
+    const open = await (
+      await adminRequest(`/ai/conversations/${id}`, cookie)
+    ).json()
+    expect(JSON.stringify(open.messages)).toContain("Ann asked about anxiety")
+  })
+
+  it("sends the provider the first name only", async () => {
+    const m = model(streamOf(textParts("ok")))
+    await chunks(await chat(await cookieFor("editor"), { text: "hi" }))
+    const prompt = JSON.stringify(m.doStreamCalls[0]!.prompt)
+    expect(prompt).toContain("helping editor (role")
+  })
+
   it("another person's conversation is 404 (Review Focus 4)", async () => {
     model(streamOf(textParts("x")), streamOf(textParts("y")))
     const cs = await chunks(

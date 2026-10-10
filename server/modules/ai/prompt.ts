@@ -14,18 +14,21 @@ const oneLine = (text: string, max = NAME_MAX) =>
     .slice(0, max)
     .trimEnd()
 
+// Only the first name reaches the provider: enough to address the person.
+export const firstNameOf = (name: string) => oneLine(name).split(" ")[0] ?? ""
+
 // Spec §7. The owner's extra text comes last and is framed as subordinate,
 // so it can set tone but cannot lift the safety rules.
 export function buildSystemPrompt(input: {
   siteName: string
-  userName: string
+  firstName: string
   roles: readonly RoleName[]
   today: string
   toolNames: readonly string[]
   extra: string
 }) {
   const siteName = oneLine(input.siteName)
-  const userName = oneLine(input.userName) || "a member of staff"
+  const userName = firstNameOf(input.firstName) || "a member of staff"
   const lines = [
     `You are the writing assistant inside the website admin of ${siteName || "a therapy practice"}, a counselling and psychotherapy practice in Ireland.`,
     "Help staff write and improve website content: drafts, rewrites, SEO titles and meta descriptions (about 150 characters), alt text and summaries.",

@@ -106,9 +106,9 @@ Cloudflare ▸ the media domain ▸ Rules ▸ Transform Rules ▸ Modify Respons
 
 Setup, privacy and limits: [deploy-dokploy.md "AI assistant"](./deploy-dokploy.md#ai-assistant).
 
-1. **Turn it on:** Admin ▸ Site settings ▸ AI assistant (`/admin/settings/ai-assistant`). Needs `APP_ENCRYPTION_KEY` set before the key can be saved. Press "Test connection", then Save.
-2. **Switch provider or model:** change the provider and model on the same page, enter that provider's key, "Test connection", Save. Past conversations keep their saved text.
-3. **Turn it off quickly:** switch off "Turn on the AI assistant" and Save; the topbar button disappears for everyone except owners (who see a set-up link).
+1. **Turn it on:** Admin ▸ Site settings ▸ AI assistant (`/admin/settings/ai-assistant`). Needs `APP_ENCRYPTION_KEY` set before the key can be saved. Save, then press "Test connection" (it stays disabled until the form is saved).
+2. **Switch provider or model:** change the provider and model on the same page, enter that provider's key, Save, then "Test connection". Past conversations keep their saved text.
+3. **Turn it off quickly:** switch off "Turn on the AI assistant" and Save; the topbar button disappears for everyone except owners and admins (who see a set-up link).
 4. **"The free Gemini quota is used up for today":** the provider returned 429. Wait for the reset, pick another model, or use a paid key. Chat is also limited to 30 messages per 10 minutes per user.
 5. **"The API key was rejected":** re-enter the key (rotating `APP_ENCRYPTION_KEY` also makes saved keys unreadable).
 6. Chats are audited as `ai.chat` (provider, model, token counts, tool names; never the text). Stopping a reply saves the part already streamed.

@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 
 import { resetEnvForTests } from "@/server/env"
 
@@ -48,5 +48,30 @@ describe("secrets (AES-256-GCM, Ruling R11)", () => {
     expect(secretsAvailable()).toBe(false)
     expect(() => encryptSecret("x", "p")).toThrow(SecretKeyMissingError)
     expect(decryptSecret("v1.a.b.c", "p")).toBeNull()
+  })
+})
+
+describe("secrets key length", () => {
+  afterEach(() => {
+    vi.doUnmock("@/server/env")
+    vi.resetModules()
+  })
+  it("throws a clear error when the key is not exactly 32 bytes", async () => {
+    vi.resetModules()
+    vi.doMock("@/server/env", () => ({
+      getEnv: () => ({
+        APP_ENCRYPTION_KEY: Buffer.alloc(16, 1).toString("base64"),
+      }),
+    }))
+    const secrets = await import("./secrets")
+    expect(() => secrets.encryptSecret("x", "p")).toThrow(
+      secrets.SecretKeyInvalidError
+    )
+    expect(() => secrets.encryptSecret("x", "p")).toThrow(
+      "APP_ENCRYPTION_KEY must decode to exactly 32 bytes"
+    )
+    expect(() => secrets.decryptSecret("v1.a.b.c", "p")).toThrow(
+      secrets.SecretKeyInvalidError
+    )
   })
 })

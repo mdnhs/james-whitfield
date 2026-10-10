@@ -17,9 +17,23 @@ export class SecretKeyMissingError extends Error {
 
 export const secretsAvailable = () => Boolean(getEnv().APP_ENCRYPTION_KEY)
 
+export class SecretKeyInvalidError extends Error {
+  constructor() {
+    super(
+      "APP_ENCRYPTION_KEY must decode to exactly 32 bytes (openssl rand -base64 32)"
+    )
+    this.name = "SecretKeyInvalidError"
+  }
+}
+
+// getEnv() already validates the format; this guards AES-256 directly so a
+// wrong-length key can never reach createCipheriv with a cryptic error.
 function key(): Buffer | null {
   const raw = getEnv().APP_ENCRYPTION_KEY
-  return raw ? Buffer.from(raw, "base64") : null
+  if (!raw) return null
+  const k = Buffer.from(raw, "base64")
+  if (k.length !== 32) throw new SecretKeyInvalidError()
+  return k
 }
 
 export function encryptSecret(plain: string, purpose: string): string {

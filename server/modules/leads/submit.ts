@@ -3,6 +3,11 @@ import "server-only"
 import * as z from "zod"
 
 import { LeadSubmission } from "@/lib/leads/schema"
+import {
+  CONSENT_COOKIE,
+  cookieValue,
+  readConsent,
+} from "@/lib/tracking/consent"
 import { ApiError, invalid } from "@/server/api/errors"
 import { getDb } from "@/server/db/client"
 import { leadActivities, leads } from "@/server/db/schema"
@@ -11,6 +16,8 @@ import { defer } from "@/server/lib/defer"
 import { hitLimit } from "@/server/lib/rate-limit-db"
 import { turnstileEnabled, verifyTurnstile } from "@/server/lib/turnstile"
 import { getGlobal } from "@/server/modules/globals/service"
+import { sendLeadToCapi } from "@/server/modules/tracking/capi"
+import { readConsentSettings } from "@/server/modules/tracking/settings"
 
 import { notifyNewLead } from "./notify"
 import { allowedOptions } from "./options"
@@ -35,7 +42,12 @@ const SpamCapture = z.object({
   sourcePath: cap(300),
 })
 
-type Ctx = { ip: string | null; userAgent: string; now?: Date }
+type Ctx = {
+  ip: string | null
+  userAgent: string
+  cookie?: string | null
+  now?: Date
+}
 
 export async function submitLead(body: unknown, ctx: Ctx) {
   const now = ctx.now ?? new Date()
@@ -132,6 +144,16 @@ export async function submitLead(body: unknown, ctx: Ctx) {
       .returning({ id: leads.id })
     return { ok: true as const, leadId: row!.id }
   }
+  // Ruling R9: the cookie is the truth; the browser's flag must agree.
+  const policy = await readConsentSettings()
+  const choice = policy.enabled
+    ? readConsent(
+        cookieValue(ctx.cookie, CONSENT_COOKIE),
+        { version: policy.version, months: policy.reconsentMonths },
+        now.getTime()
+      )
+    : null
+  const marketing = choice?.marketing === true
   const form = (await getGlobal("contactForm")).value
   const leadId = await getDb().transaction(async (tx) => {
     const [row] = await tx
@@ -139,13 +161,13 @@ export async function submitLead(body: unknown, ctx: Ctx) {
       .values({
         ...fields,
         privacyConsentAt: now,
-        marketingConsent: false,
+        marketingConsent: marketing,
         // The server's copy of the consent text, never the client's.
         consent: {
           privacyText: form.consent,
-          analytics: false,
-          marketing: false,
-          version: null,
+          analytics: choice?.analytics ?? false,
+          marketing,
+          version: choice ? policy.version : null,
         },
         turnstileUnverified: turnstile === "unavailable",
       })
@@ -161,5 +183,25 @@ export async function submitLead(body: unknown, ctx: Ctx) {
     return row!.id
   })
   defer(() => notifyNewLead(leadId), "lead notification")
+  if (marketing && input.marketingConsent && input.eventId) {
+    const eventId = input.eventId
+    // The raw IP goes to Meta (brief §12.5) but is never stored.
+    defer(
+      () =>
+        sendLeadToCapi({
+          leadId,
+          eventId,
+          eventTime: now,
+          sourcePath: input.sourcePath,
+          ip: ctx.ip,
+          userAgent: meta.userAgent,
+          fbp: cookieValue(ctx.cookie, "_fbp"),
+          fbc: cookieValue(ctx.cookie, "_fbc"),
+          email: input.email,
+          phone,
+        }),
+      "meta capi"
+    )
+  }
   return { ok: true as const, leadId }
 }

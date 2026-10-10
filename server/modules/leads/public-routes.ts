@@ -17,6 +17,7 @@ export const leadsPublicRoutes = new Hono<AppEnv>()
     await submitLead(body, {
       ip: clientIp(c.req.raw.headers),
       userAgent: c.req.header("user-agent") ?? "",
+      cookie: c.req.header("cookie") ?? null,
     })
     return c.json({ ok: true as const }, 201)
   })

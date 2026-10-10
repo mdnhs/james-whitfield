@@ -18,8 +18,8 @@ export function EventsView() {
         title="Event catalogue"
         description="What the site sends to the dataLayer. GTM decides what reaches GA4 and Meta, and only after consent."
       />
-      <div className="overflow-x-auto rounded-xl border">
-        <Table>
+      <div className="rounded-xl border">
+        <Table scrollLabel="Event catalogue">
           <TableHeader>
             <TableRow>
               <TableHead>dataLayer event</TableHead>

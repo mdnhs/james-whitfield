@@ -99,6 +99,12 @@ jobs:
         run: pnpm test:e2e --project=desktop --project=admin-desktop --grep-invert "parity:|visual:|lighthouse:|perf:"
         env:
           E2E_SKIP_BUILD: "1"
+      # Ruling R19: tracking specs switch shared site settings on, so they run
+      # in their own invocation after the main E2E run.
+      - name: E2E (tracking and consent)
+        run: pnpm test:e2e:tracking
+        env:
+          E2E_SKIP_BUILD: "1"
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

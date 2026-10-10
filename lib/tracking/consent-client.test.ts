@@ -154,6 +154,31 @@ describe("saveConsent", () => {
     expect(t.doc.writes.join("\n")).not.toContain("mk.session_token")
   })
 
+  it("reject after lapsed consent still clears stale tracking cookies", () => {
+    const t = env({
+      previous: null,
+      jar: "_ga=1; _ga_ABC=2; _gid=9; _gcl_au=3; _fbp=4; _fbc=5; theme=dark",
+    })
+    const reload = vi.fn()
+    const action = saveConsent(
+      { analytics: false, marketing: false },
+      "reject",
+      policy,
+      { ...t.env, reload }
+    )
+    expect(action).toBe("reject")
+    expect(reload).not.toHaveBeenCalled()
+    for (const name of ["_ga", "_ga_ABC", "_gid", "_gcl_au", "_fbp", "_fbc"])
+      expect(t.doc.writes).toContain(`${name}=; Max-Age=0; Path=/`)
+    expect(t.doc.writes.join("\n")).not.toContain("theme")
+  })
+
+  it("accept leaves existing tracking cookies alone", () => {
+    const t = env({ jar: "_ga=1" })
+    saveConsent({ analytics: true, marketing: true }, "accept", policy, t.env)
+    expect(t.doc.writes.join("\n")).not.toContain("_ga=;")
+  })
+
   it("notifies subscribers after a non-withdrawing save", () => {
     const t = env()
     const listener = vi.fn()

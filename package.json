@@ -25,6 +25,7 @@
     "test:integration": "vitest run --project integration",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "test:e2e:tracking": "playwright test --config playwright.tracking.config.ts",
     "e2e:seed": "NODE_OPTIONS=--conditions=react-server tsx scripts/e2e-seed.ts",
     "test:parity": "playwright test tests/e2e/parity",
     "test:parity:update": "playwright test tests/e2e/parity --update-snapshots"

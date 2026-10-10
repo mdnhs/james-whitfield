@@ -108,7 +108,7 @@ Phases 2–11 each get their own step-level plan, written with `superpowers:writ
 | 5     | Insights                          | 4          | `docs/plans/phase-05-insights.md` |
 | 6     | Enquiries, forms and email        | 3, 2       | `docs/plans/phase-06-enquiries.md` |
 | 7     | SEO center                        | 4, 5       | `docs/plans/phase-07-seo.md`     |
-| 8     | Marketing and tracking            | 6, 7       | `docs/plans/phase-08-marketing.md` |
+| 8     | Marketing and tracking            | 6, 7       | `docs/plans/phase-08-tracking.md` |
 | 9     | Appearance (theme customisation)  | 3, 2       | `docs/plans/phase-09-appearance.md` |
 | 10    | Users, roles and security         | 2          | `docs/plans/phase-10-users-security.md` |
 | 11    | Dashboard data, polish and launch | all        | `docs/plans/phase-11-launch.md`  |

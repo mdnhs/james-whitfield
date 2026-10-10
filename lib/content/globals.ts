@@ -370,7 +370,7 @@ const RoutePattern = z
   .max(120)
   .regex(/^\/[\w\-/]*\*?$/, 'Use a path like "/" or "/insights/*"')
 
-const allowedSrc = (src: string) => {
+export const allowedSrc = (src: string) => {
   try {
     const url = new URL(src)
     return (

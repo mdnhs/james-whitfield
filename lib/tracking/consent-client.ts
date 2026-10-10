@@ -105,8 +105,11 @@ export function saveConsent(
       { type: "application/json" }
     )
   )
-  if (action === "withdraw") {
+  // A lapsed consent (window.__mkConsent null) can still leave GA/Meta cookies
+  // behind, so a choice that grants nothing clears them whatever the action.
+  if (action === "withdraw" || (!choice.analytics && !choice.marketing))
     clearTrackingCookies(env.doc, w.location.hostname)
+  if (action === "withdraw") {
     env.reload()
     return action
   }

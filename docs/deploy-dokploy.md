@@ -35,3 +35,20 @@
 - Proxy now calls `GET /api/v1/resolve` over loopback for every public page; if the container does not listen on `127.0.0.1:$PORT`, set `INTERNAL_ORIGIN` (Phase 5 note). A slow or failing resolver only costs real 404s/redirects (fail-open), never availability.
 - After the first production deploy: submit `<SITE_URL>/sitemap.xml` in Google Search Console and Bing Webmaster Tools, add their verification codes in Admin → SEO → Defaults, and run the Rich Results Test on `/` and one article.
 - The share-card fonts ship under `assets/fonts` (SIL OFL 1.1, licence files alongside).
+
+## Phase 8 (marketing and tracking)
+
+Environment (both optional):
+
+| Variable                 | Purpose                                                                                                                                                               |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `APP_ENCRYPTION_KEY`     | Encrypts the Meta Conversions API token at rest. Generate with `openssl rand -base64 32`. Set it before saving a CAPI token; rotating it means re-entering the token. |
+| `DISABLE_CUSTOM_SCRIPTS` | Kill switch: set to stop every custom code snippet from loading, whatever the owner has saved.                                                                        |
+
+### Tracking setup
+
+1. **GTM:** Admin → Import Container → `docs/gtm-container.json` → Merge → "Rename conflicting". Leave the Meta tags paused unless the site's own Pixel is switched off (Ruling R7). Anyone who can publish the container must use 2FA (brief §12.6).
+2. **GA4 property:** Google signals off; ads personalisation off; enhanced measurement on for scrolls, outbound clicks and file downloads, with "Page changes based on browser history events" off and form interactions off; mark `generate_lead` as a key event. Mental-health counselling is a Google Ads sensitive category: no remarketing audiences, no Customer Match.
+3. **Meta Events Manager:** Automatic Advanced Matching off; no custom conversions on URLs.
+4. **CSP:** the header is Report-Only. Reports arrive in the app log as `[csp] ...`; after a clean week, Phase 10 switches the header to enforcing.
+5. Enhanced matching stays off unless the practice's DPO or legal adviser approves (brief §2.3 Q6).

@@ -33,6 +33,7 @@ export function ConsentBanner({
   const [choice, setChoice] = useState<ConsentChoice>(NONE)
   const heading = useRef<HTMLHeadingElement>(null)
   const focusHeading = useRef(false)
+  const returnFocus = useRef(false)
 
   // The cookie is browser-only: reading it after mount keeps the server HTML
   // and the first client render identical (no hydration mismatch).
@@ -64,10 +65,26 @@ export function ConsentBanner({
     }
   }, [open])
 
+  // The dialog unmounts with the focused button inside it; hand focus to the
+  // footer "Cookie settings" trigger, or <main>, so keyboard users keep place.
+  useEffect(() => {
+    if (open || !returnFocus.current) return
+    returnFocus.current = false
+    const trigger = document.querySelector<HTMLElement>(
+      "[data-cookie-settings]"
+    )
+    if (trigger) return trigger.focus()
+    const main = document.querySelector<HTMLElement>("main")
+    if (!main) return
+    if (!main.hasAttribute("tabindex")) main.tabIndex = -1
+    main.focus()
+  }, [open])
+
   if (!open) return null
 
   const commit = (c: ConsentChoice, kind: "accept" | "reject" | "custom") => {
     saveConsent(c, kind, policy)
+    returnFocus.current = true
     setOpen(false)
   }
 

@@ -6,6 +6,7 @@ import { bodyLimit } from "hono/body-limit"
 import { consentPublicRoutes } from "@/server/modules/consent/public-routes"
 import { leadsPublicRoutes } from "@/server/modules/leads/public-routes"
 import { newsletterPublicRoutes } from "@/server/modules/newsletter/public-routes"
+import { cspReportRoutes } from "@/server/modules/security/csp-report"
 
 import { errorBody } from "../errors"
 import type { AppEnv } from "../types"
@@ -34,3 +35,4 @@ export const publicRoutes = new Hono<AppEnv>()
   .route("/consent", consentPublicRoutes)
   .route("/leads", leadsPublicRoutes)
   .route("/newsletter", newsletterPublicRoutes)
+  .route("/csp-report", cspReportRoutes)

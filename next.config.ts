@@ -1,5 +1,7 @@
 import type { NextConfig } from "next"
 
+import { securityHeaders } from "./lib/tracking/csp"
+
 // The s3 driver's public host (docs/brief.md §14). Read at build: Dokploy
 // passes MEDIA_PUBLIC_URL as a build arg when the s3 driver is used.
 function mediaRemotePatterns() {
@@ -45,6 +47,14 @@ const nextConfig: NextConfig = {
   // Ruling R9: the share-card route reads these at run time.
   outputFileTracingIncludes: {
     "/og/\\[\\[\\.\\.\\.path\\]\\]": ["./assets/fonts/*.ttf"],
+  },
+  // Ruling R1/R20. Computed at build: MEDIA_PUBLIC_URL is already a build arg.
+  async headers() {
+    const media = process.env.MEDIA_PUBLIC_URL
+    return securityHeaders({
+      dev: process.env.NODE_ENV === "development",
+      mediaOrigin: media ? new URL(media).origin : null,
+    })
   },
   experimental: {
     globalNotFound: true,

@@ -75,7 +75,7 @@ export default defineConfig({
     ...VIEWPORTS.map(({ name, use }) => ({
       name,
       use,
-      testIgnore: [ADMIN, ...desktopOnly(name)],
+      testIgnore: [ADMIN, "**/tracking/**", ...desktopOnly(name)],
     })),
     ...VIEWPORTS.map(({ name, use }) => ({
       name: `admin-${name}`,

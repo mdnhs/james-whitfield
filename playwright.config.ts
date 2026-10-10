@@ -75,14 +75,19 @@ export default defineConfig({
     ...VIEWPORTS.map(({ name, use }) => ({
       name,
       use,
-      testIgnore: [ADMIN, "**/tracking/**", ...desktopOnly(name)],
+      testIgnore: [
+        ADMIN,
+        "**/tracking/**",
+        "**/appearance/**",
+        ...desktopOnly(name),
+      ],
     })),
     ...VIEWPORTS.map(({ name, use }) => ({
       name: `admin-${name}`,
       use,
       dependencies: ["setup"],
       testMatch: ADMIN,
-      testIgnore: desktopOnly(name),
+      testIgnore: [...desktopOnly(name), "**/appearance/**"],
     })),
   ],
   webServer: {

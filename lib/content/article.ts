@@ -1,5 +1,6 @@
 import * as z from "zod"
 
+import { SeoPatch } from "@/blocks/page"
 import { MediaRef } from "@/blocks/fields"
 import { ArticleBodyDoc } from "@/blocks/rich-text"
 
@@ -54,15 +55,10 @@ export const NewArticleInput = z.object({
 })
 
 // Live on save, merged per field (docs/brief.md §6.5), like pages.
-export const ArticleSeoPatch = z
-  .object({
-    title: z.string().trim().max(70).nullable().optional(),
-    description: z.string().trim().max(200).nullable().optional(),
-    ogImage: MediaRef.nullable().optional(),
-    noindex: z.boolean().optional(),
-  })
-  .strict()
-  .refine((v) => Object.keys(v).length > 0, "Nothing to change")
+export const ArticleSeoPatch = SeoPatch.refine(
+  (v) => Object.keys(v).length > 0,
+  "Nothing to change"
+)
 
 const Version = z.number().int().min(1)
 export const ScheduleInput = z.object({

@@ -3,6 +3,8 @@ packages: []
 overrides:
   # react-email 6.11.0 re-exports render/toPlainText from a ">=2.1.0" range.
   "@react-email/render": "2.1.0"
+  # schema-dts 2.0.0 asks for "^1.0.0"; 1.1.0 is newer than the 2-week rule.
+  "schema-dts-lib": "1.0.0"
 
 allowBuilds:
   esbuild: true

@@ -16,14 +16,45 @@ export const PageDocument = z.object({
 })
 export type PageDocument = z.infer<typeof PageDocument>
 
-// Live on save, separate from the document (docs/brief.md §6.5).
+export const TWITTER_CARDS = ["summary_large_image", "summary"] as const
+
+// A canonical override: a site path or another https:// address (§11).
+const Canonical = z
+  .string()
+  .trim()
+  .max(300)
+  .refine(
+    (v) => /^\/(?![/\\])[^\s?#]*$/.test(v) || /^https:\/\/[^\s]+$/.test(v),
+    "Use a site path (/about) or an https:// address"
+  )
+
+// Live on save, separate from the document (docs/brief.md §6.5, §11).
 export const PageSeo = z.object({
   title: z.string().trim().max(70).nullable().default(null),
   description: z.string().trim().max(200).nullable().default(null),
   ogImage: MediaRef.nullable().default(null),
   noindex: z.boolean().default(false),
+  canonical: Canonical.nullable().default(null),
+  ogTitle: z.string().trim().max(70).nullable().default(null),
+  ogDescription: z.string().trim().max(200).nullable().default(null),
+  twitterCard: z.enum(TWITTER_CARDS).default("summary_large_image"),
 })
 export type PageSeo = z.infer<typeof PageSeo>
+
+// Field-level merge for pages and articles alike.
+export const SeoPatch = z
+  .object({
+    title: z.string().trim().max(70).nullable().optional(),
+    description: z.string().trim().max(200).nullable().optional(),
+    ogImage: MediaRef.nullable().optional(),
+    noindex: z.boolean().optional(),
+    canonical: Canonical.nullable().optional(),
+    ogTitle: z.string().trim().max(70).nullable().optional(),
+    ogDescription: z.string().trim().max(200).nullable().optional(),
+    twitterCard: z.enum(TWITTER_CARDS).optional(),
+  })
+  .strict()
+export type SeoPatch = z.infer<typeof SeoPatch>
 
 export const PageSettings = z.object({
   // Adds the footer's "Contact" chapter to the rail.
@@ -107,15 +138,7 @@ export type DraftDocument = z.infer<typeof DraftDocument>
 export const PageMetaPatch = z
   .object({
     title: z.string().trim().min(1).max(80).optional(),
-    seo: z
-      .object({
-        title: z.string().trim().max(70).nullable().optional(),
-        description: z.string().trim().max(200).nullable().optional(),
-        ogImage: MediaRef.nullable().optional(),
-        noindex: z.boolean().optional(),
-      })
-      .strict()
-      .optional(),
+    seo: SeoPatch.optional(),
     settings: z
       .object({ showContactChapter: z.boolean().optional() })
       .strict()

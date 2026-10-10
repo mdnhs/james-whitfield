@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest"
 import {
   META_ROUTES,
   metaAllowed,
+  pixelAllowed,
   metaSourceUrl,
   pageTitle,
   sanitizePath,
@@ -125,5 +126,31 @@ describe("metaSourceUrl (CAPI, Ruling R7)", () => {
     ["//evil.example/contact", ""],
   ])("%s → %s", (href, expected) => {
     expect(metaSourceUrl(href, SITE)).toBe(expected)
+  })
+})
+
+describe("pixelAllowed (referrer must be neutral too)", () => {
+  const here = {
+    href: `${SITE}/contact`,
+    pathname: "/contact",
+    search: "",
+    hash: "",
+  }
+  it.each([
+    [`${SITE}/insights/hypnosis-for-panic`, false],
+    [`${SITE}/contact?topic=y`, false],
+    [`${SITE}/landing-page-slug`, false],
+    ["not a url", false],
+    ["https://www.google.com/search?q=x", true],
+    ["", true],
+    [`${SITE}/insights`, true],
+    [`${SITE}/`, true],
+  ])("referrer %s gives %s", (referrer, expected) => {
+    expect(pixelAllowed(here, referrer)).toBe(expected)
+  })
+  it("still requires the current URL to pass metaAllowed", () => {
+    expect(
+      pixelAllowed({ ...here, href: `${SITE}/contact?x=1`, search: "?x=1" }, "")
+    ).toBe(false)
   })
 })

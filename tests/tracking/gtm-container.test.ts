@@ -91,6 +91,17 @@ describe("docs/gtm-container.json", () => {
       ).toBe("{{GA4 - Shared event settings}}")
   })
 
+  it("requires analytics_storage on the Google tag and every GA4 event tag", () => {
+    const ga = v.tag.filter((t) => t.type === "googtag" || t.type === "gaawe")
+    expect(ga.length).toBeGreaterThan(1)
+    for (const tag of ga) {
+      expect(tag.consentSettings!.consentStatus).toBe("NEEDED")
+      expect(
+        tag.consentSettings!.consentType!.list.map((x) => x.value)
+      ).toEqual(["analytics_storage"])
+    }
+  })
+
   it("ships Meta tags paused and requiring additional consent (Ruling R7)", () => {
     const meta = v.tag.filter((t) => t.name.startsWith("Meta - "))
     expect(meta.length).toBeGreaterThan(0)

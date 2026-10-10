@@ -54,6 +54,24 @@ describe("saving snippets", () => {
     expect(revisions.items).toHaveLength(1)
   })
 
+  it("keeps snippet bodies out of the audit diff", async () => {
+    const owner = await cookieFor("owner")
+    await adminRequest("/globals/scripts", owner, {
+      method: "PUT",
+      body: {
+        version: 0,
+        value: { snippets: [entry({ inline: "window.secret=abc123" })] },
+      },
+    })
+    const [log] = await getDb()
+      .select()
+      .from(auditLogs)
+      .where(eq(auditLogs.entityId, "scripts"))
+    const text = JSON.stringify(log!.diff)
+    expect(text).not.toContain("abc123")
+    expect(text).toMatch(/redacted 20 chars sha256:[0-9a-f]{16}/)
+  })
+
   it("refuses an external script outside the allowlist", async () => {
     const res = await adminRequest(
       "/globals/scripts",

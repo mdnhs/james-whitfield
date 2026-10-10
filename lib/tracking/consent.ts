@@ -99,9 +99,19 @@ export function actionFor(
   return removed ? "withdraw" : kind
 }
 
-const TRACKING_COOKIES = [/^_ga(_|$)/, /^_gid$/, /^_gcl_/, /^_fbp$/, /^_fbc$/]
-export const isTrackingCookie = (name: string) =>
-  TRACKING_COOKIES.some((re) => re.test(name))
+// Analytics withdrawal clears the GA cookies; marketing withdrawal clears the
+// ad ones. Withdrawing marketing alone must leave _ga in place.
+const ANALYTICS_COOKIES = [/^_ga(_|$)/, /^_gid$/]
+const MARKETING_COOKIES = [/^_gcl_/, /^_fbp$/, /^_fbc$/]
+export type CookieCategory = "analytics" | "marketing"
+export const isTrackingCookie = (
+  name: string,
+  categories: readonly CookieCategory[] = ["analytics", "marketing"]
+) =>
+  (categories.includes("analytics") &&
+    ANALYTICS_COOKIES.some((re) => re.test(name))) ||
+  (categories.includes("marketing") &&
+    MARKETING_COOKIES.some((re) => re.test(name)))
 
 // GA and Meta write their cookies on the registrable domain; deleting needs
 // the exact Domain, so try the host and each parent with two or more labels.

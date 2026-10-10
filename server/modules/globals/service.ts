@@ -1,5 +1,7 @@
 import "server-only"
 
+import { createHash } from "node:crypto"
+
 import { eq } from "drizzle-orm"
 
 import type { EditableGlobalKey } from "@/lib/content/global-access"
@@ -18,6 +20,26 @@ import {
   writeRevision,
 } from "@/server/lib/revisions"
 import { assertMediaExists } from "@/server/modules/media/assert-media"
+
+// Snippet bodies are owner code, not audit material: the log keeps a hash and
+// length so a change is visible without storing the script itself.
+export function redactForAudit(key: string, value: unknown): unknown {
+  if (key !== "scripts") return value
+  const snippets = (value as { snippets?: Record<string, unknown>[] } | null)
+    ?.snippets
+  if (!Array.isArray(snippets)) return value
+  return {
+    ...(value as object),
+    snippets: snippets.map(({ inline, ...rest }) => ({
+      ...rest,
+      ...(typeof inline === "string" && inline
+        ? {
+            inline: `[redacted ${inline.length} chars sha256:${createHash("sha256").update(inline).digest("hex").slice(0, 16)}]`,
+          }
+        : {}),
+    })),
+  }
+}
 
 async function findRow(db: DbLike, key: string, lock = false) {
   const query = db.select().from(settings).where(eq(settings.key, key)).limit(1)
@@ -86,7 +108,10 @@ export async function saveGlobal(
         entityType: "setting",
         entityId: key,
         summary: note ?? `Updated ${key}`,
-        diff: topLevelDiff(before?.value, value),
+        diff: topLevelDiff(
+          redactForAudit(key, before?.value),
+          redactForAudit(key, value)
+        ),
       },
       tx
     )

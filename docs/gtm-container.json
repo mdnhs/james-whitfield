@@ -490,7 +490,14 @@
           }
         ],
         "firingTriggerId": ["2147479573"],
-        "tagFiringOption": "ONCE_PER_EVENT"
+        "tagFiringOption": "ONCE_PER_EVENT",
+        "consentSettings": {
+          "consentStatus": "NEEDED",
+          "consentType": {
+            "type": "LIST",
+            "list": [{ "type": "TEMPLATE", "value": "analytics_storage" }]
+          }
+        }
       },
       {
         "accountId": "0",
@@ -564,7 +571,14 @@
           { "type": "BOOLEAN", "key": "sendEcommerceData", "value": "false" }
         ],
         "firingTriggerId": ["101"],
-        "tagFiringOption": "ONCE_PER_EVENT"
+        "tagFiringOption": "ONCE_PER_EVENT",
+        "consentSettings": {
+          "consentStatus": "NEEDED",
+          "consentType": {
+            "type": "LIST",
+            "list": [{ "type": "TEMPLATE", "value": "analytics_storage" }]
+          }
+        }
       },
       {
         "accountId": "0",
@@ -638,7 +652,14 @@
           { "type": "BOOLEAN", "key": "sendEcommerceData", "value": "false" }
         ],
         "firingTriggerId": ["102"],
-        "tagFiringOption": "ONCE_PER_EVENT"
+        "tagFiringOption": "ONCE_PER_EVENT",
+        "consentSettings": {
+          "consentStatus": "NEEDED",
+          "consentType": {
+            "type": "LIST",
+            "list": [{ "type": "TEMPLATE", "value": "analytics_storage" }]
+          }
+        }
       },
       {
         "accountId": "0",
@@ -693,7 +714,14 @@
           { "type": "BOOLEAN", "key": "sendEcommerceData", "value": "false" }
         ],
         "firingTriggerId": ["103"],
-        "tagFiringOption": "ONCE_PER_EVENT"
+        "tagFiringOption": "ONCE_PER_EVENT",
+        "consentSettings": {
+          "consentStatus": "NEEDED",
+          "consentType": {
+            "type": "LIST",
+            "list": [{ "type": "TEMPLATE", "value": "analytics_storage" }]
+          }
+        }
       },
       {
         "accountId": "0",
@@ -756,7 +784,14 @@
           { "type": "BOOLEAN", "key": "sendEcommerceData", "value": "false" }
         ],
         "firingTriggerId": ["104"],
-        "tagFiringOption": "ONCE_PER_EVENT"
+        "tagFiringOption": "ONCE_PER_EVENT",
+        "consentSettings": {
+          "consentStatus": "NEEDED",
+          "consentType": {
+            "type": "LIST",
+            "list": [{ "type": "TEMPLATE", "value": "analytics_storage" }]
+          }
+        }
       },
       {
         "accountId": "0",
@@ -811,7 +846,14 @@
           { "type": "BOOLEAN", "key": "sendEcommerceData", "value": "false" }
         ],
         "firingTriggerId": ["105"],
-        "tagFiringOption": "ONCE_PER_EVENT"
+        "tagFiringOption": "ONCE_PER_EVENT",
+        "consentSettings": {
+          "consentStatus": "NEEDED",
+          "consentType": {
+            "type": "LIST",
+            "list": [{ "type": "TEMPLATE", "value": "analytics_storage" }]
+          }
+        }
       },
       {
         "accountId": "0",
@@ -866,7 +908,14 @@
           { "type": "BOOLEAN", "key": "sendEcommerceData", "value": "false" }
         ],
         "firingTriggerId": ["106"],
-        "tagFiringOption": "ONCE_PER_EVENT"
+        "tagFiringOption": "ONCE_PER_EVENT",
+        "consentSettings": {
+          "consentStatus": "NEEDED",
+          "consentType": {
+            "type": "LIST",
+            "list": [{ "type": "TEMPLATE", "value": "analytics_storage" }]
+          }
+        }
       },
       {
         "accountId": "0",

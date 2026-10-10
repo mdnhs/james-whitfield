@@ -10,6 +10,7 @@ import {
   isTrackingCookie,
   type ConsentAction,
   type ConsentChoice,
+  type CookieCategory,
   type ConsentPolicy,
 } from "./consent"
 
@@ -55,12 +56,13 @@ export const getServerConsentSnapshot = () => null
 
 export function clearTrackingCookies(
   doc: { cookie: string },
-  hostname: string
+  hostname: string,
+  categories: readonly CookieCategory[] = ["analytics", "marketing"]
 ) {
   const names = doc.cookie
     .split(";")
     .map((part) => part.split("=")[0]!.trim())
-    .filter(isTrackingCookie)
+    .filter((name) => isTrackingCookie(name, categories))
   for (const name of names) {
     doc.cookie = `${name}=; Max-Age=0; Path=/`
     for (const domain of cookieDomains(hostname))
@@ -75,7 +77,8 @@ export function saveConsent(
   env: ConsentEnv = browserConsentEnv()
 ): ConsentAction {
   const w = env.window
-  const action = actionFor(w.__mkConsent ?? null, choice, kind)
+  const prior = w.__mkConsent ?? null
+  const action = actionFor(prior, choice, kind)
   const id =
     decodeConsent(cookieValue(env.doc.cookie, CONSENT_COOKIE))?.id ??
     env.newId()
@@ -107,8 +110,20 @@ export function saveConsent(
   )
   // A lapsed consent (window.__mkConsent null) can still leave GA/Meta cookies
   // behind, so a choice that grants nothing clears them whatever the action.
-  if (action === "withdraw" || (!choice.analytics && !choice.marketing))
-    clearTrackingCookies(env.doc, w.location.hostname)
+  const none = !choice.analytics && !choice.marketing
+  if (action === "withdraw" || none) {
+    const categories: CookieCategory[] = none
+      ? ["analytics", "marketing"]
+      : [
+          ...(prior?.analytics && !choice.analytics
+            ? ["analytics" as const]
+            : []),
+          ...(prior?.marketing && !choice.marketing
+            ? ["marketing" as const]
+            : []),
+        ]
+    clearTrackingCookies(env.doc, w.location.hostname, categories)
+  }
   if (action === "withdraw") {
     env.reload()
     return action

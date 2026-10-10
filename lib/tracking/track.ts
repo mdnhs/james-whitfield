@@ -1,6 +1,6 @@
 import type { ConsentChoice } from "./consent"
 import { META_EVENT, pushEvent, type TrackEvent } from "./events"
-import { metaAllowed, pageTitle, sanitizePath, sanitizeUrl } from "./sanitize"
+import { pageTitle, pixelAllowed, sanitizePath, sanitizeUrl } from "./sanitize"
 
 type TrackWindow = {
   dataLayer?: unknown[]
@@ -26,7 +26,9 @@ export function track(e: TrackEvent, env: TrackEnv = browser()) {
   const { eventId } = pushEvent((w.dataLayer ??= []), e, env.newId)
   const meta = META_EVENT[e.event]
   const ready = typeof w.fbq === "function"
-  const sendable = Boolean(w.__mkConsent?.marketing) && metaAllowed(w.location)
+  const sendable =
+    Boolean(w.__mkConsent?.marketing) &&
+    pixelAllowed(w.location, env.document.referrer)
   if (e.event === "virtual_page_view")
     pendingMetaPageView = !(ready && sendable)
   if (meta && ready && sendable) {
@@ -53,7 +55,11 @@ export function flushMetaPageView(env: TrackEnv = browser()) {
   const w = env.window
   if (!pendingMetaPageView || typeof w.fbq !== "function") return false
   pendingMetaPageView = false
-  if (!w.__mkConsent?.marketing || !metaAllowed(w.location)) return false
+  if (
+    !w.__mkConsent?.marketing ||
+    !pixelAllowed(w.location, env.document.referrer)
+  )
+    return false
   w.fbq("track", "PageView", {}, { eventID: env.newId() })
   return true
 }

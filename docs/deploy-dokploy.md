@@ -48,7 +48,8 @@ Environment (both optional):
 ### Tracking setup
 
 1. **GTM:** Admin → Import Container → `docs/gtm-container.json` → Merge → "Rename conflicting". Leave the Meta tags paused unless the site's own Pixel is switched off (Ruling R7). Anyone who can publish the container must use 2FA (brief §12.6).
-2. **GA4 property:** Google signals off; ads personalisation off; enhanced measurement on for scrolls, outbound clicks and file downloads, with "Page changes based on browser history events" off and form interactions off; mark `generate_lead` as a key event. Mental-health counselling is a Google Ads sensitive category: no remarketing audiences, no Customer Match.
+2. **GA4 property:** Google signals off; ads personalisation off; enhanced measurement on for scrolls, outbound clicks and file downloads, with "Page changes based on browser history events" off, form interactions off and **"Site search" off** (otherwise the insights `q` parameter would be sent as `search_term`); mark `generate_lead` as a key event. Mental-health counselling is a Google Ads sensitive category: no remarketing audiences, no Customer Match.
 3. **Meta Events Manager:** Automatic Advanced Matching off; no custom conversions on URLs.
-4. **CSP:** the header is Report-Only. Reports arrive in the app log as `[csp] ...`; after a clean week, Phase 10 switches the header to enforcing.
-5. Enhanced matching stays off unless the practice's DPO or legal adviser approves (brief §2.3 Q6).
+4. **HSTS:** the app sends `Strict-Transport-Security` with `includeSubDomains`, so every subdomain of the site domain must serve valid HTTPS before the first deploy; browsers refuse plain HTTP on any of them.
+5. **CSP:** the header is Report-Only. Reports arrive in the app log as `[csp] ...`; after a clean week, Phase 10 switches the header to enforcing.
+6. Enhanced matching stays off unless the practice's DPO or legal adviser approves (brief §2.3 Q6).

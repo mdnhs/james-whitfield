@@ -145,13 +145,40 @@ describe("saveConsent", () => {
     expect(action).toBe("withdraw")
     expect(reload).toHaveBeenCalledOnce()
     expect(t.window.__loadGtm).not.toHaveBeenCalled()
-    for (const name of ["_ga", "_ga_ABC", "_gcl_au", "_fbp", "_fbc"]) {
+    for (const name of ["_gcl_au", "_fbp", "_fbc"]) {
       expect(t.doc.writes).toContain(`${name}=; Max-Age=0; Path=/`)
       expect(t.doc.writes).toContain(
         `${name}=; Max-Age=0; Path=/; Domain=.magdakennedy.ie`
       )
     }
     expect(t.doc.writes.join("\n")).not.toContain("mk.session_token")
+  })
+
+  it("withdrawing marketing alone keeps _ga; withdrawing analytics clears it", () => {
+    const m = env({
+      previous: { analytics: true, marketing: true },
+      jar: "_ga=1; _ga_ABC=2; _gid=9; _fbp=4",
+    })
+    saveConsent({ analytics: true, marketing: false }, "custom", policy, {
+      ...m.env,
+      reload: vi.fn(),
+    })
+    const written = m.doc.writes.join("\n")
+    expect(written).toContain("_fbp=; Max-Age=0")
+    expect(written).not.toMatch(/_ga|_gid/)
+
+    const a = env({
+      previous: { analytics: true, marketing: true },
+      jar: "_ga=1; _ga_ABC=2; _gid=9; _fbp=4",
+    })
+    saveConsent({ analytics: false, marketing: true }, "custom", policy, {
+      ...a.env,
+      reload: vi.fn(),
+    })
+    const cleared = a.doc.writes.join("\n")
+    for (const name of ["_ga", "_ga_ABC", "_gid"])
+      expect(cleared).toContain(`${name}=; Max-Age=0`)
+    expect(cleared).not.toContain("_fbp")
   })
 
   it("reject after lapsed consent still clears stale tracking cookies", () => {

@@ -67,6 +67,33 @@ export function metaAllowed(loc: {
   return !loc.search && !loc.hash && metaRoute(loc.pathname)
 }
 
+// fbevents also sends document.referrer (`rl`), so the Pixel may only run when
+// the referrer is neutral too: empty, another origin, or itself allowlisted.
+// An unparseable referrer is treated as not neutral.
+export function referrerNeutral(referrer: string, origin: string): boolean {
+  if (!referrer) return true
+  try {
+    const ref = new URL(referrer)
+    if (ref.origin !== origin) return true
+    return metaAllowed(ref)
+  } catch {
+    return false
+  }
+}
+
+// The single gate for loading, tracking and flushing the Meta Pixel.
+export function pixelAllowed(
+  loc: { href: string; pathname: string; search: string; hash: string },
+  referrer: string
+): boolean {
+  if (!metaAllowed(loc)) return false
+  try {
+    return referrerNeutral(referrer, new URL(loc.href).origin)
+  } catch {
+    return false
+  }
+}
+
 // The server-side (CAPI) twin of metaAllowed: any page outside the allowlist,
 // such as an owner-created landing page slug, is sent as the site root.
 export function metaSourceUrl(href: string, base?: string): string {

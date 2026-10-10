@@ -14,6 +14,7 @@ function toQuery(params: AuditListParams) {
     page: String(params.page),
     pageSize: String(params.pageSize),
     ...(params.action ? { action: params.action } : {}),
+    ...(params.entityType ? { entityType: params.entityType } : {}),
     ...(params.actor ? { actor: params.actor } : {}),
     ...(params.from ? { from: params.from } : {}),
     ...(params.to ? { to: params.to } : {}),
@@ -35,4 +36,11 @@ export const auditFacetsQuery = (client: AuditClient = auditApi) =>
     queryKey: queryKeys.audit.facets,
     queryFn: () => parseResponse(client.facets.$get()),
     staleTime: 5 * 60_000,
+  })
+
+export const auditDetailQuery = (id: string) =>
+  queryOptions({
+    queryKey: queryKeys.audit.detail(id),
+    queryFn: () => parseResponse(auditApi[":id"].$get({ param: { id } })),
+    staleTime: Infinity, // audit rows never change
   })

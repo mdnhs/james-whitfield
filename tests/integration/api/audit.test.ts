@@ -1,10 +1,13 @@
+import { eq } from "drizzle-orm"
 import { afterAll, beforeEach, describe, expect, it } from "vitest"
 
 import { closeDb, getDb } from "@/server/db/client"
-import { auditLogs } from "@/server/db/schema"
+import { auditLogs, users } from "@/server/db/schema"
+import { audit } from "@/server/lib/audit"
 
 import {
   adminRequest,
+  cookieFor,
   createUser,
   signIn,
   signInWithTwoFactor,
@@ -153,5 +156,92 @@ describe("GET /api/v1/admin/audit", () => {
     expect(body.actors.map((actor: { id: string }) => actor.id).sort()).toEqual(
       [owner.id, editor.id].sort()
     )
+  })
+})
+
+describe("Phase 10 filters and detail", () => {
+  const ownerRow = async () =>
+    (await getDb().query.users.findFirst({
+      where: eq(users.email, "owner@example.com"),
+    }))!
+
+  it("filters by entity and reports hasDiff and who was viewing", async () => {
+    const cookie = await cookieFor("owner")
+    const owner = await ownerRow()
+    await audit(
+      { userId: owner.id },
+      {
+        action: "page.publish",
+        entityType: "page",
+        entityId: "p1",
+        summary: "Published Home",
+        diff: { title: { from: "A", to: "B" } },
+      }
+    )
+    await audit(
+      { userId: owner.id, impersonatedBy: owner.id },
+      {
+        action: "article.create",
+        entityType: "article",
+        entityId: "a1",
+        summary: "Created",
+      }
+    )
+
+    const pages = await (
+      await adminRequest("/audit?entityType=page", cookie)
+    ).json()
+    expect(pages.items).toHaveLength(1)
+    expect(pages.items[0]).toMatchObject({
+      hasDiff: true,
+      entityId: "p1",
+      impersonatorName: null,
+    })
+    const art = await (
+      await adminRequest("/audit?entityType=article&entityId=a1", cookie)
+    ).json()
+    expect(art.items[0]).toMatchObject({
+      hasDiff: false,
+      impersonatorName: "owner",
+    })
+    const facets = await (await adminRequest("/audit/facets", cookie)).json()
+    expect(facets.entityTypes).toEqual(
+      expect.arrayContaining(["article", "page"])
+    )
+  })
+
+  it("GET /audit/:id returns the diff; 404 for unknown; 403 without audit.read", async () => {
+    const cookie = await cookieFor("owner")
+    const owner = await ownerRow()
+    await audit(
+      { userId: owner.id },
+      {
+        action: "page.publish",
+        entityType: "page",
+        entityId: "p1",
+        summary: "x",
+        diff: { title: { from: "A", to: "B" } },
+      }
+    )
+    const [row] = await getDb()
+      .select()
+      .from(auditLogs)
+      .where(eq(auditLogs.action, "page.publish"))
+    const detail = await (
+      await adminRequest(`/audit/${row!.id}`, cookie)
+    ).json()
+    expect(detail.diff).toEqual({ title: { from: "A", to: "B" } })
+    expect(detail).not.toHaveProperty("ipHash")
+    expect(detail).not.toHaveProperty("userAgent")
+    expect(
+      (
+        await adminRequest(
+          "/audit/00000000-0000-4000-8000-000000000000",
+          cookie
+        )
+      ).status
+    ).toBe(404)
+    const editor = await cookieFor("editor")
+    expect((await adminRequest(`/audit/${row!.id}`, editor)).status).toBe(403)
   })
 })

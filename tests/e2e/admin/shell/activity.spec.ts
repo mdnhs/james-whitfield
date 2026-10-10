@@ -34,6 +34,26 @@ test.describe("as an owner", () => {
       "auth.sign_in"
     )
   })
+
+  test("opens an entry's details and offers the CSV export", async ({
+    page,
+  }) => {
+    await page.goto("/admin/activity")
+    await expect(
+      page.getByRole("link", { name: "Export CSV" })
+    ).toHaveAttribute("href", /\/api\/v1\/admin\/audit\/export\.csv/)
+    await expect(page.getByRole("combobox", { name: "Entity" })).toBeVisible()
+
+    await page
+      .getByRole("button", { name: /^Details of / })
+      .first()
+      .click()
+    const dialog = page.getByRole("dialog")
+    await expect(dialog).toBeVisible()
+    await expect(
+      dialog.getByText(/No field changes were recorded|Before:/).first()
+    ).toBeVisible()
+  })
 })
 
 test.describe("as an editor", () => {

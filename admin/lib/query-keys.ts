@@ -7,6 +7,7 @@ export type AuditListParams = {
   pageSize: number
   actor?: string
   action?: string
+  entityType?: string
   from?: string
   to?: string
 }
@@ -18,6 +19,7 @@ export const queryKeys = {
     all: ["audit"] as const,
     list: (params: AuditListParams) => ["audit", "list", params] as const,
     facets: ["audit", "facets"] as const,
+    detail: (id: string) => ["audit", "detail", id] as const,
   },
   pages: {
     all: ["pages"] as const,

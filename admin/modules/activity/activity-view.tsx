@@ -8,16 +8,19 @@ import {
   tableFeatures,
   useTable,
 } from "@tanstack/react-table"
-import { HistoryIcon } from "lucide-react"
+import { DownloadIcon, HistoryIcon } from "lucide-react"
 import { useQueryStates } from "nuqs"
-import { useEffect } from "react"
+import { useEffect, useMemo, useState } from "react"
 
 import { EmptyState } from "@/admin/components/dashboard/empty-state"
-import { PageHeader } from "@/admin/components/dashboard/page-header"
+import {
+  PageHeader,
+  SECONDARY_ACTION,
+} from "@/admin/components/dashboard/page-header"
 import { CardSkeleton } from "@/admin/components/dashboard/skeletons"
 import { DataTable } from "@/admin/components/data-table/data-table"
 import { DataTablePagination } from "@/admin/components/data-table/data-table-pagination"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
@@ -27,8 +30,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { cn } from "@/lib/utils"
 
-import { activityParsers, toAuditParams, toDay } from "./params"
+import { ActivityDetail } from "./activity-detail"
+import { activityParsers, exportHref, toAuditParams, toDay } from "./params"
 import { auditFacetsQuery, auditListQuery, type AuditRow } from "./queries"
 
 const features = tableFeatures({ rowPaginationFeature })
@@ -54,27 +59,29 @@ function parseDay(value: string) {
 
 const who = (row: AuditRow) => row.actorName ?? row.actorEmail ?? "System"
 
-const columns = helper.columns([
-  helper.accessor("createdAt", {
-    header: "When",
-    cell: (info) => (
-      <time
-        dateTime={info.getValue()}
-        className="whitespace-nowrap tabular-nums"
-      >
-        {WHEN.format(new Date(info.getValue()))}
-      </time>
-    ),
-  }),
-  helper.accessor((row) => who(row), { id: "actor", header: "Who" }),
-  helper.accessor("action", {
-    header: "Action",
-    cell: (info) => (
-      <code className="font-mono text-xs">{info.getValue()}</code>
-    ),
-  }),
-  helper.accessor("summary", { header: "What" }),
-])
+const whoLabel = (row: AuditRow) =>
+  row.impersonatorName
+    ? `${row.impersonatorName} (viewing as ${who(row)})`
+    : who(row)
+
+function DetailsButton({
+  row,
+  onOpen,
+}: {
+  row: AuditRow
+  onOpen: (id: string) => void
+}) {
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={() => onOpen(row.id)}
+      aria-label={`Details of ${row.summary}`}
+    >
+      {row.hasDiff ? "Changes" : "Details"}
+    </Button>
+  )
+}
 
 export function ActivityView() {
   const [state, setState] = useQueryStates(activityParsers, {
@@ -86,6 +93,39 @@ export function ActivityView() {
     placeholderData: keepPreviousData,
   })
   const facets = useQuery(auditFacetsQuery())
+  const [detail, setDetail] = useState<string | null>(null)
+  const columns = useMemo(
+    () =>
+      helper.columns([
+        helper.accessor("createdAt", {
+          header: "When",
+          cell: (info) => (
+            <time
+              dateTime={info.getValue()}
+              className="whitespace-nowrap tabular-nums"
+            >
+              {WHEN.format(new Date(info.getValue()))}
+            </time>
+          ),
+        }),
+        helper.accessor((row) => whoLabel(row), { id: "actor", header: "Who" }),
+        helper.accessor("action", {
+          header: "Action",
+          cell: (info) => (
+            <code className="font-mono text-xs">{info.getValue()}</code>
+          ),
+        }),
+        helper.accessor("summary", { header: "What" }),
+        helper.display({
+          id: "details",
+          header: "Details",
+          cell: (info) => (
+            <DetailsButton row={info.row.original} onOpen={setDetail} />
+          ),
+        }),
+      ]),
+    [setDetail]
+  )
   const pagination = { pageIndex: params.page - 1, pageSize: params.pageSize }
 
   const table = useTable({
@@ -125,6 +165,13 @@ export function ActivityView() {
       label: action,
     })),
   ]
+  const entityItems = [
+    { value: ALL, label: "All entities" },
+    ...(facets.data?.entityTypes ?? []).map((type) => ({
+      value: type,
+      label: type,
+    })),
+  ]
   const actorItems = [
     { value: ALL, label: "Everyone" },
     ...(facets.data?.actors ?? []).map((actor) => ({
@@ -141,6 +188,19 @@ export function ActivityView() {
       <PageHeader
         title="Activity log"
         description="Who changed what, and when. Times are Irish time."
+        actions={
+          <a
+            href={exportHref(params)}
+            download
+            className={cn(
+              buttonVariants({ variant: "outline" }),
+              SECONDARY_ACTION
+            )}
+          >
+            <DownloadIcon aria-hidden />
+            Export CSV
+          </a>
+        }
       />
       <div
         role="group"
@@ -161,6 +221,27 @@ export function ActivityView() {
             </SelectTrigger>
             <SelectContent>
               {actionItems.map((item) => (
+                <SelectItem key={item.value} value={item.value}>
+                  {item.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
+        <Field className="w-full sm:w-48">
+          <FieldLabel htmlFor="activity-entity">Entity</FieldLabel>
+          <Select
+            items={entityItems}
+            value={state.entityType ?? ALL}
+            onValueChange={(value) =>
+              filter({ entityType: value === ALL ? null : String(value) })
+            }
+          >
+            <SelectTrigger id="activity-entity" className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {entityItems.map((item) => (
                 <SelectItem key={item.value} value={item.value}>
                   {item.label}
                 </SelectItem>
@@ -215,7 +296,13 @@ export function ActivityView() {
           variant="ghost"
           className="h-9"
           onClick={() =>
-            filter({ action: null, actor: null, from: null, to: null })
+            filter({
+              action: null,
+              entityType: null,
+              actor: null,
+              from: null,
+              to: null,
+            })
           }
         >
           Reset filters
@@ -244,12 +331,15 @@ export function ActivityView() {
             }
             renderCard={(row) => (
               <div className="flex flex-col gap-1 text-sm">
-                <p className="font-semibold">{who(row.original)}</p>
+                <p className="font-semibold">{whoLabel(row.original)}</p>
                 <p>{row.original.summary}</p>
                 <p className="text-xs text-muted-foreground">
                   <code className="font-mono">{row.original.action}</code> ·{" "}
                   {WHEN.format(new Date(row.original.createdAt))}
                 </p>
+                <div>
+                  <DetailsButton row={row.original} onOpen={setDetail} />
+                </div>
               </div>
             )}
           />
@@ -261,6 +351,7 @@ export function ActivityView() {
           />
         </>
       )}
+      <ActivityDetail id={detail} onClose={() => setDetail(null)} />
     </div>
   )
 }

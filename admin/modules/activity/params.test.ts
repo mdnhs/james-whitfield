@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { toAuditParams, toDay } from "./params"
+import { exportHref, toAuditParams, toDay } from "./params"
 
 describe("toAuditParams", () => {
   it("maps URL state to the API's query, dropping empty filters", () => {
@@ -10,6 +10,7 @@ describe("toAuditParams", () => {
         pageSize: 20,
         action: "auth.sign_in",
         actor: null,
+        entityType: null,
         from: new Date("2026-10-05T00:00:00Z"),
         to: null,
       })
@@ -29,6 +30,7 @@ describe("toAuditParams", () => {
       pageSize: 5000,
       action: null,
       actor: null,
+      entityType: null,
       from: null,
       to: null,
     })
@@ -42,6 +44,7 @@ describe("toAuditParams on a hand-edited URL", () => {
     pageSize: 20,
     action: null,
     actor: null,
+    entityType: null,
     from: null,
     to: null,
   }
@@ -76,5 +79,24 @@ describe("toDay", () => {
     expect(toDay(new Date("275760-01-01"))).toBeUndefined()
     expect(toDay(new Date(Number.NaN))).toBeUndefined()
     expect(toDay(null)).toBeUndefined()
+  })
+})
+
+describe("exportHref", () => {
+  it("carries the filters, not the paging", () => {
+    expect(
+      exportHref({
+        page: 3,
+        pageSize: 50,
+        action: "page.publish",
+        entityType: "page",
+        from: "2026-01-01",
+      })
+    ).toBe(
+      "/api/v1/admin/audit/export.csv?action=page.publish&entityType=page&from=2026-01-01"
+    )
+    expect(exportHref({ page: 1, pageSize: 20 })).toBe(
+      "/api/v1/admin/audit/export.csv"
+    )
   })
 })

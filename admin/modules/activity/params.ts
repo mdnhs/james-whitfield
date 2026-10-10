@@ -14,6 +14,7 @@ export const activityParsers = {
   pageSize: parseAsInteger.withDefault(20),
   action: parseAsString,
   actor: parseAsString,
+  entityType: parseAsString,
   from: parseAsIsoDate,
   to: parseAsIsoDate,
 }
@@ -40,10 +41,12 @@ export function toAuditParams(state: {
   pageSize: number
   action: string | null
   actor: string | null
+  entityType: string | null
   from: Date | null
   to: Date | null
 }): AuditListParams {
   const action = state.action?.trim()
+  const entityType = state.entityType?.trim()
   let from = toDay(state.from)
   let to = toDay(state.to)
   if (from && to && from > to) [from, to] = [to, from]
@@ -52,7 +55,19 @@ export function toAuditParams(state: {
     pageSize: Math.min(100, Math.max(1, Math.trunc(state.pageSize) || 20)),
     action: action && action.length <= 64 ? action : undefined,
     actor: state.actor && UUID.test(state.actor) ? state.actor : undefined,
+    entityType: entityType && entityType.length <= 32 ? entityType : undefined,
     from,
     to,
   }
+}
+
+// The CSV export carries the filters but not the paging.
+export function exportHref(params: AuditListParams) {
+  const query = new URLSearchParams()
+  for (const key of ["actor", "action", "entityType", "from", "to"] as const) {
+    const value = params[key]
+    if (value) query.set(key, value)
+  }
+  const qs = query.toString()
+  return `/api/v1/admin/audit/export.csv${qs ? `?${qs}` : ""}`
 }

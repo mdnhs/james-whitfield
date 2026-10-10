@@ -41,7 +41,9 @@ const isSitePath = (value: unknown): value is string =>
   typeof value === "string" &&
   value.startsWith("/") &&
   !value.startsWith("//") &&
-  !value.startsWith("/\\")
+  !value.startsWith("/\\") &&
+  // The URL parser strips tab/LF/CR, so "/\t/evil" would become "//evil".
+  !/[\x00-\x20\\]/.test(value)
 
 async function articleRedirect(request: NextRequest) {
   try {
@@ -59,10 +61,9 @@ async function articleRedirect(request: NextRequest) {
     }
     if (!isSitePath(destination)) return null
     if (!REDIRECT_STATUSES.includes(statusCode as number)) return null
-    return NextResponse.redirect(
-      new URL(destination, request.url),
-      statusCode as number
-    )
+    const target = new URL(destination, request.url)
+    if (target.origin !== request.nextUrl.origin) return null
+    return NextResponse.redirect(target, statusCode as number)
   } catch {
     return null
   }

@@ -152,15 +152,27 @@ describe("article redirects (Ruling R1)", () => {
     expect(res.headers.get("x-middleware-next")).toBe("1")
   })
 
-  it.each(["https://evil.example/x", "//evil.example", "/\\evil.example"])(
-    "ignores an off-site destination %s",
-    async (destination) => {
-      stub({ destination, statusCode: 301 })
-      const res = await proxy(at("/insights/old"))
-      expect(res.headers.get("x-middleware-next")).toBe("1")
-      expect(res.headers.get("location")).toBeNull()
-    }
-  )
+  it.each([
+    "https://evil.example/x",
+    "//evil.example",
+    "/\\evil.example",
+    "/\t/evil.example/x",
+    "/\n/evil.example/x",
+    "/\r/evil.example/x",
+  ])("ignores an off-site destination %s", async (destination) => {
+    stub({ destination, statusCode: 301 })
+    const res = await proxy(at("/insights/old"))
+    expect(res.headers.get("x-middleware-next")).toBe("1")
+    expect(res.headers.get("location")).toBeNull()
+  })
+
+  it("keeps an encoded-tab destination on this origin", async () => {
+    stub({ destination: "/%09/evil.example", statusCode: 301 })
+    const res = await proxy(at("/insights/old"))
+    expect(new URL(res.headers.get("location")!).origin).toBe(
+      "http://localhost:3000"
+    )
+  })
 
   it.each([200, 303, 404, "301", null])(
     "ignores a status code of %s",

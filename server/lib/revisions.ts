@@ -22,7 +22,7 @@ export async function writeRevision(
     entityId: string
     version: number
     snapshot: unknown
-    createdBy: string
+    createdBy: string | null
     note?: string | null
   }
 ) {

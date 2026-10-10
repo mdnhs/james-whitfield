@@ -10,9 +10,13 @@ import type { AppEnv } from "@/server/api/types"
 import {
   ArticleIdParam,
   ArticleListQuery,
+  ArticleRevisionParam,
   ArticleSeoPatch,
   DraftInput,
   NewArticleInput,
+  ScheduleInput,
+  UnpublishInput,
+  VersionInput,
 } from "./schema"
 import * as service from "./service"
 
@@ -73,6 +77,68 @@ export const articlesRoutes = new Hono<AppEnv>()
     c.json(
       await service.submitForReview(c.get("actor")!, c.req.valid("param").id)
     )
+  )
+  .post(
+    "/:id/publish",
+    can({ article: ["publish"] }),
+    id,
+    zValidator("json", VersionInput, validationHook),
+    async (c) =>
+      c.json(
+        await service.publishArticle(
+          c.get("actor")!,
+          c.req.valid("param").id,
+          c.req.valid("json").version
+        )
+      )
+  )
+  .post(
+    "/:id/schedule",
+    can({ article: ["publish"] }),
+    id,
+    zValidator("json", ScheduleInput, validationHook),
+    async (c) =>
+      c.json(
+        await service.scheduleArticle(
+          c.get("actor")!,
+          c.req.valid("param").id,
+          c.req.valid("json")
+        )
+      )
+  )
+  .post(
+    "/:id/unpublish",
+    can({ article: ["publish"] }),
+    id,
+    zValidator("json", UnpublishInput, validationHook),
+    async (c) =>
+      c.json(
+        await service.unpublishArticle(
+          c.get("actor")!,
+          c.req.valid("param").id,
+          c.req.valid("json")
+        )
+      )
+  )
+  .get("/:id/revisions", read, id, async (c) =>
+    c.json(await service.articleRevisions(c.req.valid("param").id))
+  )
+  .post(
+    "/:id/revisions/:rev/restore",
+    update,
+    zValidator("param", ArticleRevisionParam, validationHook),
+    zValidator("json", VersionInput, validationHook),
+    async (c) => {
+      const { id: articleId, rev } = c.req.valid("param")
+      return c.json(
+        await service.restoreArticleRevision(
+          c.get("actor")!,
+          articleId,
+          rev,
+          c.req.valid("json").version
+        )
+      )
+    }
   )
   .delete("/:id", can({ article: ["delete"] }), id, async (c) =>
     c.json(

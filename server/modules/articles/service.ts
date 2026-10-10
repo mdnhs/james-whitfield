@@ -26,8 +26,13 @@ import { articleCategories, articles, authors } from "@/server/db/schema"
 import { audit } from "@/server/lib/audit"
 import { invalidate, tags } from "@/server/lib/cache"
 import { conflictError, userName } from "@/server/lib/conflict"
-import { deleteRevisions } from "@/server/lib/revisions"
+import {
+  deleteRevisions,
+  findRevision,
+  listRevisions,
+} from "@/server/lib/revisions"
 import { assertMediaExists } from "@/server/modules/media/assert-media"
+import { createRedirect } from "@/server/modules/redirects/service"
 
 import {
   assertCanDelete,
@@ -36,6 +41,7 @@ import {
   isOwn,
   ownAuthorId,
 } from "./access"
+import { articlePath, parseContent, publishLocked } from "./publish"
 import type { ArticleListQuery } from "./schema"
 
 export type ArticleRow = typeof articles.$inferSelect
@@ -380,4 +386,162 @@ export async function searchArticleHits(q: string, limit = 5) {
     label: r.title,
     href: `/admin/insights/${r.id}`,
   }))
+}
+export async function publishArticle(
+  actor: Actor,
+  id: string,
+  version: number
+) {
+  const { row, redirectsChanged } = await getDb().transaction(async (tx) => {
+    const row = await findArticle(tx, id, true)
+    if (row.version !== version) throw await conflictError(tx, row)
+    return publishLocked(tx, row, actor)
+  })
+  invalidate(articleTags(id, redirectsChanged ? [tags.redirects] : []))
+  return { version: row.version, publishedAt: row.publishedAt, slug: row.slug }
+}
+
+export async function scheduleArticle(
+  actor: Actor,
+  id: string,
+  input: { version: number; at: string }
+) {
+  const at = new Date(input.at)
+  if (at.getTime() <= Date.now() + 30_000) {
+    throw new ApiError("VALIDATION_FAILED", "Pick a time in the future", {
+      at: ["Pick a time at least a minute ahead"],
+    })
+  }
+  return getDb().transaction(async (tx) => {
+    const row = await findArticle(tx, id, true)
+    if (row.version !== input.version) throw await conflictError(tx, row)
+    if (row.status !== "draft" && row.status !== "archived") {
+      throw new ApiError(
+        "BAD_REQUEST",
+        "This article is live or already scheduled. Publish the changes instead."
+      )
+    }
+    // Validate now so the tick rarely meets a broken draft (Ruling R5).
+    const content = parseContent(row.draft ?? null)
+    const saved = await writeIfVersion(tx, id, input.version, {
+      status: "scheduled",
+      scheduledFor: at,
+      scheduledBy: actor.userId,
+      updatedBy: actor.userId,
+    })
+    await audit(
+      actor,
+      {
+        action: "article.schedule",
+        entityType: "article",
+        entityId: id,
+        summary: `Scheduled “${content.title}” for ${at.toISOString()}`,
+      },
+      tx
+    )
+    return { version: saved.version, scheduledFor: saved.scheduledFor }
+  })
+}
+
+export async function unpublishArticle(
+  actor: Actor,
+  id: string,
+  input: { version: number; archive: boolean; redirectTo: string | null }
+) {
+  const result = await getDb().transaction(async (tx) => {
+    const row = await findArticle(tx, id, true)
+    if (row.version !== input.version) throw await conflictError(tx, row)
+    const wasLive = row.status === "published"
+    if (!wasLive && row.status !== "scheduled")
+      throw new ApiError(
+        "BAD_REQUEST",
+        "This article isn't published or scheduled"
+      )
+    const status = input.archive ? ("archived" as const) : ("draft" as const)
+    let redirected = false
+    if (wasLive && input.redirectTo) {
+      const from = articlePath(row.slug)
+      if (input.redirectTo === from)
+        throw new ApiError("VALIDATION_FAILED", "Choose another page", {
+          redirectTo: ["That is this article"],
+        })
+      if (input.redirectTo !== "/insights") {
+        const [target] = await tx
+          .select({ id: articles.id })
+          .from(articles)
+          .where(
+            and(
+              eq(articles.slug, input.redirectTo.slice("/insights/".length)),
+              eq(articles.status, "published")
+            )
+          )
+        if (!target)
+          throw new ApiError(
+            "VALIDATION_FAILED",
+            "Choose a published article",
+            { redirectTo: ["That article isn't live"] }
+          )
+      }
+      await createRedirect(tx, {
+        from,
+        to: input.redirectTo,
+        articleId: id,
+        note: "Automatic: the article was unpublished",
+        createdBy: actor.userId,
+      })
+      redirected = true
+    }
+    const saved = await writeIfVersion(tx, id, input.version, {
+      status,
+      scheduledFor: null,
+      scheduledBy: null,
+      updatedBy: actor.userId,
+    })
+    await audit(
+      actor,
+      {
+        action: input.archive ? "article.archive" : "article.unpublish",
+        entityType: "article",
+        entityId: id,
+        summary: `${input.archive ? "Archived" : "Unpublished"} “${row.title}”`,
+      },
+      tx
+    )
+    return { version: saved.version, status, wasLive, redirected }
+  })
+  if (result.wasLive)
+    invalidate(articleTags(id, result.redirected ? [tags.redirects] : []))
+  return { version: result.version, status: result.status }
+}
+
+export const articleRevisions = (id: string) =>
+  listRevisions(getDb(), "article", id)
+
+export async function restoreArticleRevision(
+  actor: Actor,
+  id: string,
+  revisionId: string,
+  version: number
+) {
+  return getDb().transaction(async (tx) => {
+    const row = await findArticle(tx, id, true)
+    await assertCanEdit(tx, actor, row, draftOf(row).authorId)
+    const revision = await findRevision(tx, "article", id, revisionId)
+    if (!revision) throw new ApiError("NOT_FOUND", "That version doesn't exist")
+    const saved = await writeIfVersion(tx, id, version, {
+      draft: revision.snapshot as ArticleDraft,
+      updatedBy: actor.userId,
+    })
+    await audit(
+      actor,
+      {
+        action: "article.restore",
+        entityType: "article",
+        entityId: id,
+        summary: `Loaded version ${revision.version} of “${row.title}” into the draft`,
+      },
+      tx
+    )
+    return { version: saved.version }
+  })
 }

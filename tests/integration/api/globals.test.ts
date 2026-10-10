@@ -113,7 +113,7 @@ describe("globals API", () => {
     expect((await restored.json()).value.blurb).toBe("Blurb 3")
   })
 
-  it.each(["tracking", "scripts", "theme", "nope"])(
+  it.each(["tracking", "theme", "nope"])(
     "%s is not served by the generic route",
     async (key) => {
       expect(

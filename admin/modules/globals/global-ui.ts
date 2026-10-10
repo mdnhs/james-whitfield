@@ -55,4 +55,33 @@ export const GLOBAL_FIELD_UI: Partial<
       description: "Ask again after this many months (6 at most)",
     },
   },
+  scripts: {
+    "snippets.$.src": {
+      label: "Script address",
+      description:
+        "https only, on an allowed host. Leave empty when you paste code below.",
+    },
+    "snippets.$.inline": { label: "Inline code", widget: "textarea" },
+    "snippets.$.placement": {
+      label: "When it loads",
+      options: [
+        { value: "head", label: "Early: as soon as the page is interactive" },
+        { value: "body", label: "Late: when the browser is idle" },
+      ],
+    },
+    "snippets.$.category": {
+      label: "Needs consent for",
+      options: [
+        { value: "necessary", label: "Nothing (strictly necessary)" },
+        { value: "analytics", label: "Analytics" },
+        { value: "marketing", label: "Marketing" },
+      ],
+    },
+    "snippets.$.routes": {
+      label: "Pages",
+      description:
+        'Leave empty for every page. "/insights/*" matches every article.',
+    },
+    "snippets.$.enabled": { label: "Enabled" },
+  },
 }

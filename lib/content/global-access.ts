@@ -16,6 +16,7 @@ export const EDITABLE_GLOBAL_KEYS = [
   "notifications",
   "privacy",
   "consent",
+  "scripts",
 ] as const satisfies readonly GlobalKey[]
 export type EditableGlobalKey = (typeof EDITABLE_GLOBAL_KEYS)[number]
 
@@ -44,6 +45,8 @@ export const GLOBAL_ACCESS: Record<EditableGlobalKey, Access> = {
     read: { tracking: ["read"] },
     update: { tracking: ["update"] },
   },
+  // Owner-only (brief §7.2 code.update): custom code runs on every page.
+  scripts: { read: { code: ["update"] }, update: { code: ["update"] } },
 }
 
 // /admin/settings/<slug> (lib/admin/nav.ts) → the documents it edits.
@@ -80,4 +83,5 @@ export const GLOBAL_LABELS: Record<EditableGlobalKey, string> = {
   notifications: "Notifications",
   privacy: "Privacy",
   consent: "Consent banner",
+  scripts: "Custom code",
 }

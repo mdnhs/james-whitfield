@@ -374,7 +374,11 @@ const allowedSrc = (src: string) => {
   try {
     const url = new URL(src)
     return (
-      url.protocol === "https:" && CUSTOM_SCRIPT_HOSTS.includes(url.hostname)
+      url.protocol === "https:" &&
+      !url.username &&
+      !url.password &&
+      !url.port &&
+      CUSTOM_SCRIPT_HOSTS.includes(url.hostname)
     )
   } catch {
     return false

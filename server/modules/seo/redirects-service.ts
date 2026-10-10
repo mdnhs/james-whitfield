@@ -9,7 +9,10 @@ import { getDb, type DbLike } from "@/server/db/client"
 import { articles, pages, redirects } from "@/server/db/schema"
 import { audit } from "@/server/lib/audit"
 import { invalidate, REDIRECT_TAGS } from "@/server/lib/cache"
-import { createRedirect } from "@/server/modules/redirects/service"
+import {
+  createRedirect,
+  lockRedirects,
+} from "@/server/modules/redirects/service"
 
 export const LIVE_SOURCE_WARNING =
   "A live page is at this address, so the redirect waits until that page is unpublished or moved."
@@ -113,6 +116,8 @@ async function written(db: DbLike, sourcePath: string) {
 
 export async function createManualRedirect(actor: Actor, input: RedirectInput) {
   const result = await getDb().transaction(async (tx) => {
+    // Before the "taken" check, so concurrent same-source creates get a 409.
+    await lockRedirects(tx)
     const [taken] = await tx
       .select({ id: redirects.id })
       .from(redirects)
@@ -153,6 +158,7 @@ export async function updateRedirect(
   patch: RedirectPatch
 ) {
   const result = await getDb().transaction(async (tx) => {
+    await lockRedirects(tx)
     const before = await findRow(tx, id)
     // A new destination, or switching a row back on, goes through the
     // flattening writer so it can neither chain nor loop (Ruling R5).
@@ -206,6 +212,7 @@ export async function updateRedirect(
 
 export async function deleteRedirect(actor: Actor, id: string) {
   await getDb().transaction(async (tx) => {
+    await lockRedirects(tx)
     const row = await findRow(tx, id)
     await tx.delete(redirects).where(eq(redirects.id, id))
     await audit(

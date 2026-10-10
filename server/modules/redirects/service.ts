@@ -6,9 +6,22 @@ import { ApiError } from "@/server/api/errors"
 import type { DbLike } from "@/server/db/client"
 import { redirects } from "@/server/db/schema"
 
+// pg advisory lock key for redirect writes ("mkrd").
+export const REDIRECTS_LOCK_KEY = 0x6d6b7264
+
+// Serialises every transaction that writes redirects, so two writers can't
+// each miss the other's row and leave a loop or an unflattened chain.
+// Transaction-scoped and re-entrant within a session: callers take it at the
+// start of their transaction and the writers below take it again harmlessly.
+// Pass a transaction: on a bare pool connection it is released at once.
+export async function lockRedirects(db: DbLike) {
+  await db.execute(sql`select pg_advisory_xact_lock(${REDIRECTS_LOCK_KEY})`)
+}
+
 // A path that is live again must not redirect away (Review Focus 1).
 // Reports whether a redirect was removed, so the caller can expire the tag.
 export async function releasePath(db: DbLike, path: string) {
+  await lockRedirects(db)
   const gone = await db
     .delete(redirects)
     .where(eq(redirects.sourcePath, path))
@@ -60,6 +73,7 @@ export async function createRedirect(
   }
 ) {
   if (entry.from === pathOf(entry.to)) return null
+  await lockRedirects(db)
   const to = await finalTarget(db, entry.from, entry.to)
   // A switched-off row starting at the target stays as it is: repointing it
   // would make it point at itself.

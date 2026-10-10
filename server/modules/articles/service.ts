@@ -40,7 +40,10 @@ import {
   assertMediaExists,
   assertShareImage,
 } from "@/server/modules/media/assert-media"
-import { createRedirect } from "@/server/modules/redirects/service"
+import {
+  createRedirect,
+  lockRedirects,
+} from "@/server/modules/redirects/service"
 
 import {
   assertCanDelete,
@@ -407,6 +410,7 @@ export async function deleteArticle(actor: Actor, id: string) {
     assertCanDelete(actor, row)
     await deleteRevisions(tx, "article", id)
     // Redirects into or out of a deleted article would 301 to a 404.
+    await lockRedirects(tx)
     const gone = await tx
       .delete(redirects)
       .where(

@@ -9,7 +9,7 @@ vi.mock("next/cache", async (importOriginal) => ({
 }))
 
 import { closeDb, getDb } from "@/server/db/client"
-import { auditLogs, redirects } from "@/server/db/schema"
+import { auditLogs, redirects, settings } from "@/server/db/schema"
 
 import { insertArticle, insertTaxonomy } from "../helpers/articles"
 import { adminRequest, cookieFor } from "../helpers/auth"
@@ -151,6 +151,26 @@ describe("redirects admin", () => {
     expect(await redirectMap()).toEqual({ "/a": "/c", "/b": "/c", "/z": "/c" })
   })
 
+  it("serialises concurrent opposite creates so no loop is stored", async () => {
+    const cookie = await cookieFor("editor")
+    const post = (sourcePath: string, destination: string) =>
+      adminRequest("/seo/redirects", cookie, {
+        method: "POST",
+        body: { sourcePath, destination },
+      })
+    for (let round = 0; round < 5; round++) {
+      await getDb().delete(redirects)
+      const results = await Promise.all([post("/a", "/b"), post("/b", "/a")])
+      const statuses = results.map((r) => r.status).sort()
+      expect(statuses, `round ${round}`).toEqual([201, 400])
+      const loser = results.find((r) => r.status === 400)!
+      expect((await loser.json()).error.fieldErrors.destination).toEqual([
+        "That would create a redirect loop",
+      ])
+      expect(await getDb().$count(redirects)).toBe(1)
+    }
+  })
+
   it("rejects loops (Review Focus 3)", async () => {
     const cookie = await cookieFor("editor")
     await adminRequest("/seo/redirects", cookie, {
@@ -255,6 +275,40 @@ describe("redirects admin", () => {
 })
 
 describe("page address change (Ruling R6)", () => {
+  it("warns when the header or footer still links to the old address", async () => {
+    await getDb()
+      .insert(settings)
+      .values([
+        {
+          key: "navigation",
+          value: { links: [{ label: "Team", href: "/team#people" }] },
+        },
+        {
+          key: "footer",
+          value: {
+            columns: [
+              { title: "Practice", links: [{ label: "Team", href: "/team" }] },
+            ],
+          },
+        },
+      ])
+    const asset = await insertMedia()
+    const page = await insertPage({
+      path: "/team",
+      document: heroDocument(asset.id),
+      published: true,
+    })
+    const res = await adminRequest(
+      `/pages/${page.id}/path`,
+      await cookieFor("editor"),
+      { method: "PATCH", body: { path: "/our-team" } }
+    )
+    expect((await res.json()).warnings).toEqual([
+      "The header navigation still links to /team",
+      "The footer still links to /team",
+    ])
+  })
+
   it("moves a published custom page and leaves an automatic 301", async () => {
     const asset = await insertMedia()
     const page = await insertPage({
@@ -267,7 +321,11 @@ describe("page address change (Ruling R6)", () => {
       method: "PATCH",
       body: { path: "/our-team" },
     })
-    expect(await res.json()).toEqual({ path: "/our-team", redirected: true })
+    expect(await res.json()).toEqual({
+      path: "/our-team",
+      redirected: true,
+      warnings: [],
+    })
     const [row] = await getDb().select().from(redirects)
     expect(row).toMatchObject({
       sourcePath: "/team",
@@ -304,6 +362,7 @@ describe("page address change (Ruling R6)", () => {
     expect(await (await move(draft.id, "/moved")).json()).toEqual({
       path: "/moved",
       redirected: false,
+      warnings: [],
     })
     expect((await move(draft.id, "/taken")).status).toBe(409)
     expect((await move(about.id, "/about-us")).status).toBe(403)

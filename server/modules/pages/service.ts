@@ -1,6 +1,6 @@
 import "server-only"
 
-import { and, asc, eq, sql } from "drizzle-orm"
+import { and, asc, eq, inArray, sql } from "drizzle-orm"
 
 import { collectMediaIds } from "@/blocks/media-refs"
 import {
@@ -11,11 +11,12 @@ import {
   type PageMetaPatch,
 } from "@/blocks/page"
 import { hasPermission } from "@/lib/auth/permissions"
+import { parseGlobal } from "@/lib/content/globals"
 import type { NewPageInput } from "@/lib/content/page-path"
 import { ApiError, invalid } from "@/server/api/errors"
 import type { Actor } from "@/server/auth/actor"
 import { getDb, type DbLike } from "@/server/db/client"
-import { pages } from "@/server/db/schema"
+import { pages, settings } from "@/server/db/schema"
 import { audit } from "@/server/lib/audit"
 import { invalidate, REDIRECT_TAGS, tags } from "@/server/lib/cache"
 import { conflictError, userName } from "@/server/lib/conflict"
@@ -29,7 +30,10 @@ import {
   assertMediaExists,
   assertShareImage,
 } from "@/server/modules/media/assert-media"
-import { recordPathChange } from "@/server/modules/redirects/service"
+import {
+  lockRedirects,
+  recordPathChange,
+} from "@/server/modules/redirects/service"
 
 const changedSincePublish = sql<boolean>`${pages.draft} is distinct from ${pages.published}`
 // Section ids in the working copy, for the link widget's anchor picker.
@@ -343,12 +347,37 @@ export async function createPage(actor: Actor, input: NewPageInput) {
   return { id: row.id, path: row.path }
 }
 
+// Header and footer links still pointing at a moved page's old address.
+// They keep working through the redirect (or not, for a draft), so the
+// editor is told rather than the links being rewritten.
+async function navigationWarnings(db: DbLike, oldPath: string) {
+  const rows = await db
+    .select({ key: settings.key, value: settings.value })
+    .from(settings)
+    .where(inArray(settings.key, ["navigation", "footer"]))
+  const value = (key: string) => rows.find((r) => r.key === key)?.value
+  const hits = (links: { href: string }[]) =>
+    links.some(
+      (l) => l.href.split(/[?#]/)[0]!.replace(/(.)\/+$/, "$1") === oldPath
+    )
+  const nav = parseGlobal("navigation", value("navigation"))
+  const footer = parseGlobal("footer", value("footer"))
+  const warnings: string[] = []
+  if (hits([...nav.links, nav.cta]))
+    warnings.push(`The header navigation still links to ${oldPath}`)
+  if (hits(footer.columns.flatMap((c) => c.links)))
+    warnings.push(`The footer still links to ${oldPath}`)
+  return warnings
+}
+
 export async function changePagePath(actor: Actor, id: string, path: string) {
   const result = await getDb().transaction(async (tx) => {
+    await lockRedirects(tx)
     const row = await findPage(tx, id, true)
     if (row.systemKey)
       throw new ApiError("FORBIDDEN", "System pages keep their address")
-    if (row.path === path) return { path, redirected: false }
+    if (row.path === path)
+      return { path, redirected: false, warnings: [] as string[] }
     const [taken] = await tx
       .select({ id: pages.id })
       .from(pages)
@@ -382,7 +411,8 @@ export async function changePagePath(actor: Actor, id: string, path: string) {
       },
       tx
     )
-    return { path, redirected }
+    const warnings = await navigationWarnings(tx, row.path)
+    return { path, redirected, warnings }
   })
   invalidate([
     tags.page(id),

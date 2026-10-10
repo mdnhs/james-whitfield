@@ -1,6 +1,7 @@
 import "server-only"
 
-import type { RoleName } from "@/lib/auth/permissions"
+import { hasPermission, type RoleName } from "@/lib/auth/permissions"
+import { VIEW_AS_ADMIN_ROLES } from "@/server/auth/view-as-limit"
 
 // docs/brief.md §7.2 invariants that need no database. The last-owner rule
 // needs a count, so it lives in manage.ts inside the access lock (R2).
@@ -46,4 +47,25 @@ export function losesOwner(
   if (!target.roles.includes("owner")) return false
   if (action === "ban" || action === "delete") return true
   return action === "set-role" && !nextRoles?.includes("owner")
+}
+
+// May `actor` view as `target`? Checked when a View-as starts and again on
+// every request of that session, so a later role change or promotion of the
+// target ends it (final review I1).
+export function viewAsRefusal(
+  actor: GuardActor,
+  target: GuardTarget
+): string | null {
+  const why = refusal(actor, target, "impersonate")
+  if (why) return why
+  if (!hasPermission(actor.roles, { user: ["impersonate"] }))
+    return "You can't view as this person"
+  if (
+    target.roles.some((role) =>
+      (VIEW_AS_ADMIN_ROLES as readonly RoleName[]).includes(role)
+    ) &&
+    !hasPermission(actor.roles, { user: ["impersonate-admins"] })
+  )
+    return "You can't view as this person"
+  return null
 }

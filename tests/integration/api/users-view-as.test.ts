@@ -5,7 +5,13 @@ import { app } from "@/server/api/app"
 import { closeDb, getDb } from "@/server/db/client"
 import { auditLogs, sessions, users } from "@/server/db/schema"
 
-import { adminRequest, cookieFor, createUser, ORIGIN } from "../helpers/auth"
+import {
+  adminRequest,
+  cookieFor,
+  createUser,
+  ORIGIN,
+  signIn,
+} from "../helpers/auth"
 import { resetDb } from "../helpers/db"
 
 beforeEach(resetDb)
@@ -250,5 +256,86 @@ describe("POST /users/:id/impersonate", () => {
       .where(eq(auditLogs.action, "user.view_as_expired"))
     expect(audits).toHaveLength(1)
     expect(audits[0]!.entityId).toBe(editor.id)
+  })
+})
+
+// Final review I1: rights are re-checked after a View-as starts.
+describe("View-as after a role change", () => {
+  const idOf = async (email: string) =>
+    (await getDb().query.users.findFirst({ where: eq(users.email, email) }))!.id
+  const viewAsSessions = async () =>
+    (await getDb().select().from(sessions)).filter((s) => s.impersonatedBy)
+  // An admin (admin@example.com) viewing as an editor, plus an owner.
+  async function setUp() {
+    const owner = await cookieFor("owner")
+    const admin = await cookieFor("admin")
+    const editor = await createUser("editor", "ed@example.com")
+    const viewing = apply(
+      admin,
+      (await start(admin, editor.id)).headers.getSetCookie()
+    )
+    expect((await adminRequest("/me", viewing)).status).toBe(200)
+    return {
+      owner,
+      admin,
+      editor,
+      viewing,
+      adminId: await idOf("admin@example.com"),
+    }
+  }
+  const setRoles = (cookie: string, id: string, roles: string[]) =>
+    adminRequest(`/users/${id}/role`, cookie, {
+      method: "PATCH",
+      body: { roles },
+    })
+
+  it("demoting the viewer ends the View-as session they started", async () => {
+    const { owner, admin, viewing, adminId } = await setUp()
+    expect((await setRoles(owner, adminId, ["viewer"])).status).toBe(200)
+    expect(await viewAsSessions()).toHaveLength(0)
+    expect((await adminRequest("/me", viewing)).status).toBe(401)
+    // Their own sign-in is untouched.
+    expect((await adminRequest("/me", admin)).status).toBe(200)
+  })
+
+  it("promoting the person being viewed to owner ends the View-as session", async () => {
+    const { owner, editor, viewing } = await setUp()
+    expect((await setRoles(owner, editor.id, ["owner"])).status).toBe(200)
+    expect(await viewAsSessions()).toHaveLength(0)
+    expect((await adminRequest("/me", viewing)).status).toBe(401)
+  })
+
+  it("an unchanged role leaves the View-as session alone", async () => {
+    const { owner, editor, viewing } = await setUp()
+    expect((await setRoles(owner, editor.id, ["editor"])).status).toBe(200)
+    expect((await adminRequest("/me", viewing)).status).toBe(200)
+  })
+
+  // Defence in depth: changes written outside setRoles still end the view.
+  it.each([
+    ["the viewer loses the right to view as", { role: "viewer" }, "admin"],
+    ["the viewer is banned", { banned: true }, "admin"],
+    ["the person viewed now holds admin", { role: "admin" }, "editor"],
+  ] as const)(
+    "a session check refuses View-as when %s",
+    async (_, change, who) => {
+      const { admin, viewing, adminId, editor } = await setUp()
+      await getDb()
+        .update(users)
+        .set(change)
+        .where(eq(users.id, who === "admin" ? adminId : editor.id))
+      expect((await adminRequest("/me", viewing)).status).toBe(401)
+      expect(await viewAsSessions()).toHaveLength(0)
+      if (!("banned" in change))
+        expect((await adminRequest("/me", admin)).status).toBe(200)
+    }
+  )
+
+  it("normal sessions are unaffected by the check", async () => {
+    const { admin, viewing } = await setUp()
+    const editorOwn = await signIn("ed@example.com")
+    expect((await adminRequest("/me", editorOwn)).status).toBe(200)
+    expect((await adminRequest("/me", admin)).status).toBe(200)
+    expect((await adminRequest("/me", viewing)).status).toBe(200)
   })
 })

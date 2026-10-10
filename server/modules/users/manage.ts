@@ -6,6 +6,7 @@ import {
   eq,
   ilike,
   inArray,
+  isNotNull,
   ne,
   or,
   sql,
@@ -280,6 +281,17 @@ export async function setRoles(actor: Actor, id: string, input: RolesInput) {
           .update(users)
           .set({ role: next, updatedAt: new Date() })
           .where(eq(users.id, id))
+        // Rights are checked when a View-as starts, so a role change ends the
+        // View-as sessions this person started and those of them (I1).
+        const endedViewAs = await tx
+          .delete(sessions)
+          .where(
+            or(
+              eq(sessions.impersonatedBy, id),
+              and(eq(sessions.userId, id), isNotNull(sessions.impersonatedBy))
+            )
+          )
+          .returning({ id: sessions.id })
         await audit(
           actor,
           {
@@ -287,7 +299,12 @@ export async function setRoles(actor: Actor, id: string, input: RolesInput) {
             entityType: "user",
             entityId: id,
             summary: `Changed ${target.email}'s role to ${input.roles.join(", ")}`,
-            diff: { role: { from: target.role, to: next } },
+            diff: {
+              role: { from: target.role, to: next },
+              ...(endedViewAs.length && {
+                endedViewAs: { from: null, to: endedViewAs.length },
+              }),
+            },
           },
           tx
         )

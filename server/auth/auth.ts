@@ -16,7 +16,7 @@ import { parseAuthSecrets } from "./secrets"
 import { responseScrub } from "./response-scrub"
 import { signInAudit } from "./sign-in-audit"
 import { twoFactorPolicy } from "./two-factor-policy"
-import { VIEW_AS_SECONDS } from "./view-as-limit"
+import { VIEW_AS_ADMIN_ROLES, VIEW_AS_SECONDS } from "./view-as-limit"
 
 export function buildAuth() {
   const env = getEnv()
@@ -104,7 +104,7 @@ export function buildAuth() {
         ac,
         roles,
         defaultRole: "viewer",
-        adminRoles: ["owner", "admin"],
+        adminRoles: [...VIEW_AS_ADMIN_ROLES],
         impersonationSessionDuration: VIEW_AS_SECONDS,
       }),
       twoFactor({ issuer: "Magda Kennedy Admin" }),

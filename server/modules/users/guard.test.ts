@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { losesOwner, refusal } from "./guard"
+import { losesOwner, refusal, viewAsRefusal } from "./guard"
 
 const owner = { userId: "o1", roles: ["owner"] as const }
 const admin = { userId: "a1", roles: ["admin"] as const }
@@ -56,5 +56,23 @@ describe("losesOwner", () => {
     expect(losesOwner(o, "delete")).toBe(true)
     expect(losesOwner(o, "revoke")).toBe(false)
     expect(losesOwner(t("e", ["editor"]), "delete")).toBe(false)
+  })
+})
+
+describe("viewAsRefusal", () => {
+  it("needs impersonate, and impersonate-admins for an owner or admin", () => {
+    expect(viewAsRefusal(admin, t("e", ["editor"]))).toBeNull()
+    expect(viewAsRefusal(owner, t("a2", ["admin"]))).toBeNull()
+    expect(viewAsRefusal(admin, t("a2", ["admin"]))).toBe(
+      "You can't view as this person"
+    )
+    expect(viewAsRefusal(admin, t("x", ["editor", "owner"]))).toBe(
+      "Only an owner can manage another owner"
+    )
+    const demoted = { userId: "d1", roles: ["viewer"] as const }
+    expect(viewAsRefusal(demoted, t("e", ["editor"]))).toBe(
+      "You can't view as this person"
+    )
+    expect(viewAsRefusal(owner, t("o1", ["owner"]))).toMatch(/your own/)
   })
 })

@@ -29,7 +29,8 @@
     "test:e2e:appearance": "playwright test --config playwright.appearance.config.ts",
     "e2e:seed": "NODE_OPTIONS=--conditions=react-server tsx scripts/e2e-seed.ts",
     "test:parity": "playwright test tests/e2e/parity",
-    "test:parity:update": "playwright test tests/e2e/parity --update-snapshots"
+    "test:parity:update": "playwright test tests/e2e/parity --update-snapshots",
+    "test:visual:linux": "scripts/visual-baselines-linux.sh"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.1141.0",

@@ -1,0 +1,48 @@
+# Linux visual baselines (scripts/visual-baselines-linux.sh). Same image,
+# architecture and service names as CI's visual job (.github/workflows/ci.yml).
+services:
+  postgres:
+    image: postgres:17-alpine
+    platform: linux/amd64
+    environment:
+      POSTGRES_USER: mk
+      POSTGRES_PASSWORD: mk
+      POSTGRES_DB: mk_e2e
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mk -d mk_e2e"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+  mailpit:
+    image: axllent/mailpit:v1.31.4
+    platform: linux/amd64
+  runner:
+    image: ${PW_IMAGE}
+    # CI runners are x86_64; arm64 Chromium can differ by a few pixels.
+    platform: linux/amd64
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+    working_dir: /app
+    volumes:
+      - ${WORK}:/app
+      - pnpm-store:/root/.local/share/pnpm/store
+    environment:
+      CI: "1"
+      E2E_SKIP_BUILD: "1"
+      DATABASE_URL_E2E: postgres://mk:mk@postgres:5432/mk_e2e
+      SMTP_URL_E2E: smtp://mailpit:1025
+      MAILPIT_URL: http://mailpit:8025
+    command:
+      - bash
+      - -lc
+      - >-
+        corepack enable && corepack prepare pnpm@10.32.1 --activate &&
+        pnpm install --frozen-lockfile && pnpm build &&
+        pnpm test:e2e --project=desktop --project=tablet --project=mobile
+        --project=admin-desktop --project=admin-tablet --project=admin-mobile
+        --grep "parity:|visual:" --update-snapshots --workers=2
+volumes:
+  pnpm-store:

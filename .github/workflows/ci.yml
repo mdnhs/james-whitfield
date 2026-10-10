@@ -6,6 +6,12 @@ on:
   push:
     branches: [main, feat/platform]
   pull_request:
+  workflow_dispatch:
+    inputs:
+      update_baselines:
+        description: "Record Linux visual baselines and upload them as an artifact"
+        type: boolean
+        default: false
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -92,11 +98,16 @@ jobs:
       # Fails fast on a migration or seeding problem; Playwright's global
       # setup reseeds before the tests run.
       - run: pnpm e2e:seed
-      # Visual baselines (public parity, admin "visual:") are macOS-only until
-      # Phase 11 records Linux ones, and Lighthouse runs locally only, so CI
-      # skips all three.
-      - name: E2E (desktop, without visual baselines, Lighthouse or perf)
-        run: pnpm test:e2e --project=desktop --project=admin-desktop --grep-invert "parity:|visual:|lighthouse:|perf:"
+      # Visual snapshots run in the visual job (Linux image); budgets in the
+      # next step.
+      - name: E2E (desktop, without visual snapshots, budgets or perf)
+        run: pnpm test:e2e --project=desktop --project=admin-desktop --grep-invert "parity:|visual:|lighthouse:|budget:|perf:"
+        env:
+          E2E_SKIP_BUILD: "1"
+      # docs/brief.md §16 Quality row; Ruling R10. Lighthouse 13.5 needs
+      # Node ≥ 22.19 (setup-node 22 installs the latest 22.x).
+      - name: Quality budgets (Lighthouse, images, JavaScript)
+        run: pnpm test:e2e --project=desktop --project=mobile --project=admin-desktop --grep "lighthouse:|budget:"
         env:
           E2E_SKIP_BUILD: "1"
       # Ruling R19: tracking specs switch shared site settings on, so they run
@@ -115,5 +126,61 @@ jobs:
         if: failure()
         with:
           name: playwright-traces
+          path: test-results/
+          retention-days: 7
+
+  # Ruling R11: snapshots compare only inside the image that recorded them
+  # (scripts/visual-baselines-linux.sh uses the same one).
+  visual:
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.0-noble
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: mk
+          POSTGRES_PASSWORD: mk
+          POSTGRES_DB: mk_e2e
+        options: >-
+          --health-cmd "pg_isready -U mk -d mk_e2e"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      mailpit:
+        image: axllent/mailpit:v1.31.4
+    env:
+      DATABASE_URL_E2E: postgres://mk:mk@postgres:5432/mk_e2e
+      SMTP_URL_E2E: smtp://mailpit:1025
+      MAILPIT_URL: http://mailpit:8025
+      HOME: /root
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.32.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - name: Visual parity and admin snapshots (Linux baselines)
+        run: >-
+          pnpm test:e2e --project=desktop --project=tablet --project=mobile
+          --project=admin-desktop --project=admin-tablet --project=admin-mobile
+          --grep "parity:|visual:" ${{ inputs.update_baselines && '--update-snapshots' || '' }}
+        env:
+          E2E_SKIP_BUILD: "1"
+      - uses: actions/upload-artifact@v4
+        if: ${{ inputs.update_baselines }}
+        with:
+          name: linux-baselines
+          path: tests/e2e/__screenshots__/linux
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: visual-diffs
           path: test-results/
           retention-days: 7

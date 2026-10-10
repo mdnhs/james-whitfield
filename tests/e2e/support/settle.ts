@@ -21,5 +21,7 @@ export async function settle(page: Page) {
   await page.waitForFunction(() =>
     Array.from(document.images).every((image) => image.complete)
   )
-  await page.waitForTimeout(400)
+  // Scrubbed scroll animations (scrub: 1) catch up over a second after the
+  // scroll back to the top; slow runners need the full lag before capture.
+  await page.waitForTimeout(1_500)
 }

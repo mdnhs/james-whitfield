@@ -9,9 +9,8 @@ import { STORAGE } from "../../support/storage"
 // are measured from its generatedAt, and the browser clock is frozen at the
 // same instant. Charts skip their animation under reduced motion, so the
 // capture is stable, and the greeting goes by the answer's generatedAt
-// (11:00 in Dublin: "Good morning"). Titles start with "visual:" because
-// the baselines are macOS-only and run in CI's `visual` job (Phase 11
-// Task 5).
+// (11:00 in Dublin: "Good morning"). Titles start with "visual:" so CI
+// runs these in the visual job against the Linux baselines (Phase 11).
 const NOW = new Date(DASHBOARD_FIXTURE.generatedAt)
 
 test.use({ storageState: STORAGE.owner, reducedMotion: "reduce" })

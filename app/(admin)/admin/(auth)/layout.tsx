@@ -13,14 +13,14 @@ export default function AuthLayout({
     <main className="grid min-h-svh gap-4 bg-background p-3 sm:p-4 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)]">
       <section
         aria-hidden
-        className="relative isolate hidden flex-col justify-between overflow-hidden rounded-[28px] bg-[linear-gradient(150deg,#0b2f17_0%,#12612b_48%,#16823a_78%,#3f9d5e_100%)] p-10 text-white lg:flex xl:p-12"
+        className="bg-hero relative isolate hidden flex-col justify-between overflow-hidden rounded-[28px] p-10 lg:flex xl:p-12"
       >
         <Swirl className="absolute inset-0 -z-10 size-full" />
         <div
           className="absolute inset-0 -z-10 opacity-[0.12] mix-blend-overlay"
           style={{ backgroundImage: NOISE }}
         />
-        <div className="absolute -top-32 -left-24 -z-10 size-96 rounded-full bg-[#3f9d5e]/30 blur-3xl" />
+        <div className="absolute -top-32 -left-24 -z-10 size-96 rounded-full bg-primary/30 blur-3xl" />
         <BrandMark tone="inverse" />
         <div className="flex max-w-lg flex-col gap-5">
           <p className="text-[2.5rem] leading-[1.1] font-semibold tracking-tight text-balance">

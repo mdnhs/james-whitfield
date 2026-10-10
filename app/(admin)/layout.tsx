@@ -1,10 +1,11 @@
 import type { Metadata } from "next"
 import { Geist_Mono, Plus_Jakarta_Sans } from "next/font/google"
 
+import { Suspense } from "react"
+
 import "./admin.css"
-import { Toaster } from "@/components/ui/sonner"
-import { ThemeProvider } from "@/components/theme-provider"
 import { cn } from "@/lib/utils"
+import { AdminFrame } from "./_frame/admin-frame"
 
 const sans = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -25,7 +26,8 @@ export const metadata: Metadata = {
 
 // Separate root layout: no Lenis, GSAP or site chrome, and its own tokens.
 // next-themes sets `.light`/`.dark` on <html> from an inline script before
-// hydration, hence suppressHydrationWarning on that element only.
+// hydration, hence suppressHydrationWarning on that element only. The script
+// now streams with AdminFrame and still runs before the boundary is revealed.
 export default function AdminRootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
@@ -37,10 +39,9 @@ export default function AdminRootLayout({
       suppressHydrationWarning
     >
       <body>
-        <ThemeProvider>
-          {children}
-          <Toaster position="top-center" />
-        </ThemeProvider>
+        <Suspense fallback={<div className="min-h-svh bg-background" />}>
+          <AdminFrame>{children}</AdminFrame>
+        </Suspense>
       </body>
     </html>
   )

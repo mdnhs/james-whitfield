@@ -6,16 +6,17 @@ import { useRef, useSyncExternalStore } from "react"
 import { stepsTimeline } from "@/lib/layout-math"
 
 const DESKTOP = "(min-width: 1024px) and (pointer: fine)"
+const REDUCED = "(prefers-reduced-motion: reduce)"
 
-// Off during SSR and on touch/mobile, where the steps are a swipe list.
-function useDesktop() {
+// False during SSR; follows the media query on the client.
+function useMedia(media: string) {
   return useSyncExternalStore(
     (onChange) => {
-      const query = matchMedia(DESKTOP)
+      const query = matchMedia(media)
       query.addEventListener("change", onChange)
       return () => query.removeEventListener("change", onChange)
     },
-    () => matchMedia(DESKTOP).matches,
+    () => matchMedia(media).matches,
     () => false
   )
 }
@@ -44,7 +45,13 @@ export function StepsStory({
   // from the start; each later card gets its own window to surface.
   const { surface } = stepsTimeline(count)
   const track = useRef<HTMLDivElement>(null)
-  const desktop = useDesktop()
+  // Off on touch/mobile, where the steps are a swipe list.
+  const desktop = useMedia(DESKTOP)
+  // Reduced motion keeps the pin and the sideways walk (without them the
+  // later cards sit off-screen) but drops the dim-and-rise: a card at 0.3
+  // opacity fails text contrast, and reduced-motion users see every reveal
+  // at once elsewhere on the site.
+  const reduced = useMedia(REDUCED)
   // Later cards are resolved inside this section's own track when the
   // timeline is built (Scrollytelling reads `.current` lazily). A global
   // selector could hit a copy of this section kept in a hidden route.
@@ -75,19 +82,21 @@ export function StepsStory({
           </div>
         </Scrollytelling.Pin>
 
-        {Array.from({ length: count - 1 }, (_, i) => (
-          <Scrollytelling.Animation
-            key={i + 1}
-            tween={{
-              ...surface(i + 1),
-              target: stepAt(i + 1),
-              fromTo: [
-                { opacity: 0.3, y: 28, scale: 0.94 },
-                { opacity: 1, y: 0, scale: 1, ease: "sine.out" },
-              ],
-            }}
-          />
-        ))}
+        {reduced
+          ? null
+          : Array.from({ length: count - 1 }, (_, i) => (
+              <Scrollytelling.Animation
+                key={i + 1}
+                tween={{
+                  ...surface(i + 1),
+                  target: stepAt(i + 1),
+                  fromTo: [
+                    { opacity: 0.3, y: 28, scale: 0.94 },
+                    { opacity: 1, y: 0, scale: 1, ease: "sine.out" },
+                  ],
+                }}
+              />
+            ))}
 
         {/* Hold briefly on the first card before the track starts moving. */}
         <Scrollytelling.Animation

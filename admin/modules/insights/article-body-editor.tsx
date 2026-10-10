@@ -2,7 +2,7 @@
 
 import type { JSONContent } from "@tiptap/core"
 import { Placeholder } from "@tiptap/extensions"
-import { EditorContent, useEditor } from "@tiptap/react"
+import { EditorContent, useEditor, useEditorState } from "@tiptap/react"
 import { BubbleMenu } from "@tiptap/react/menus"
 import { BoldIcon, ItalicIcon, LinkIcon } from "lucide-react"
 import { useEffect, useMemo, useRef, useState } from "react"
@@ -70,6 +70,14 @@ export function ArticleBodyEditor({
     if (editor && editor.isEditable === readOnly)
       editor.setEditable(!readOnly, false)
   }, [editor, readOnly])
+  const marks = useEditorState({
+    editor,
+    selector: ({ editor: e }) => ({
+      bold: !!e?.isActive("bold"),
+      italic: !!e?.isActive("italic"),
+      link: !!e?.isActive("link"),
+    }),
+  })
   const minutes = useMemo(() => readingMinutes(plainText(value)), [value])
   return (
     <div className="rounded-xl border bg-card">
@@ -91,7 +99,7 @@ export function ArticleBodyEditor({
             <Toggle
               size="sm"
               aria-label="Bold"
-              pressed={editor.isActive("bold")}
+              pressed={marks?.bold}
               onPressedChange={() => editor.chain().focus().toggleBold().run()}
             >
               <BoldIcon aria-hidden />
@@ -99,7 +107,7 @@ export function ArticleBodyEditor({
             <Toggle
               size="sm"
               aria-label="Italic"
-              pressed={editor.isActive("italic")}
+              pressed={marks?.italic}
               onPressedChange={() =>
                 editor.chain().focus().toggleItalic().run()
               }
@@ -109,8 +117,8 @@ export function ArticleBodyEditor({
             <Toggle
               size="sm"
               aria-label="Remove link"
-              pressed={editor.isActive("link")}
-              disabled={!editor.isActive("link")}
+              pressed={marks?.link}
+              disabled={!marks?.link}
               onPressedChange={() =>
                 editor.chain().focus().extendMarkRange("link").unsetLink().run()
               }

@@ -1,6 +1,6 @@
 "use client"
 
-import type { Editor } from "@tiptap/react"
+import { useEditorState, type Editor } from "@tiptap/react"
 import {
   BoldIcon,
   Heading2Icon,
@@ -28,6 +28,18 @@ export function RichTextToolbar({
   const [href, setHref] = useState<string | null>(null)
   const [linkError, setLinkError] = useState<string | null>(null)
   const errorId = useId()
+  const active = useEditorState({
+    editor,
+    selector: ({ editor: e }) => ({
+      bold: e.isActive("bold"),
+      italic: e.isActive("italic"),
+      h2: e.isActive("heading", { level: 2 }),
+      h3: e.isActive("heading", { level: 3 }),
+      bulletList: e.isActive("bulletList"),
+      blockquote: e.isActive("blockquote"),
+      link: e.isActive("link"),
+    }),
+  })
   const chain = () => editor.chain().focus()
   const apply = () => {
     if (href === null) return
@@ -53,31 +65,23 @@ export function RichTextToolbar({
   )
   return (
     <div className="flex flex-wrap items-center gap-1 border-b p-1">
-      {mark("Bold", BoldIcon, editor.isActive("bold"), () =>
-        chain().toggleBold().run()
-      )}
-      {mark("Italic", ItalicIcon, editor.isActive("italic"), () =>
+      {mark("Bold", BoldIcon, active.bold, () => chain().toggleBold().run())}
+      {mark("Italic", ItalicIcon, active.italic, () =>
         chain().toggleItalic().run()
       )}
-      {mark(
-        "Heading 2",
-        Heading2Icon,
-        editor.isActive("heading", { level: 2 }),
-        () => chain().toggleHeading({ level: 2 }).run()
+      {mark("Heading 2", Heading2Icon, active.h2, () =>
+        chain().toggleHeading({ level: 2 }).run()
       )}
-      {mark(
-        "Heading 3",
-        Heading3Icon,
-        editor.isActive("heading", { level: 3 }),
-        () => chain().toggleHeading({ level: 3 }).run()
+      {mark("Heading 3", Heading3Icon, active.h3, () =>
+        chain().toggleHeading({ level: 3 }).run()
       )}
-      {mark("Bullet list", ListIcon, editor.isActive("bulletList"), () =>
+      {mark("Bullet list", ListIcon, active.bulletList, () =>
         chain().toggleBulletList().run()
       )}
-      {mark("Quote", QuoteIcon, editor.isActive("blockquote"), () =>
+      {mark("Quote", QuoteIcon, active.blockquote, () =>
         chain().toggleBlockquote().run()
       )}
-      {mark("Link", LinkIcon, editor.isActive("link"), () =>
+      {mark("Link", LinkIcon, active.link, () =>
         setHref(editor.getAttributes("link").href ?? "")
       )}
       {onImage ? (

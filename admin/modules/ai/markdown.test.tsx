@@ -1,7 +1,8 @@
 // admin/modules/ai/markdown.test.tsx
 // @vitest-environment jsdom
 import { render, screen } from "@testing-library/react"
-import { describe, expect, it } from "vitest"
+import userEvent from "@testing-library/user-event"
+import { describe, expect, it, vi } from "vitest"
 
 import { Markdown, parseBlocks, safeHref } from "./markdown"
 
@@ -74,5 +75,95 @@ describe("Markdown (no raw HTML, ever)", () => {
       { kind: "p", text: "a b" },
       { kind: "ul", items: ["x", "y"] },
     ])
+  })
+
+  it("draws tables with column headers in a scrollable, focusable region", () => {
+    const { container } = render(
+      <Markdown
+        text={
+          "| Page | Score |\n| :--- | ---: |\n| About | **92** |\n| Fees | 61 |\n\nAfter."
+        }
+      />
+    )
+    const region = screen.getByRole("region", { name: "Table" })
+    expect(region.getAttribute("tabindex")).toBe("0")
+    const heads = screen.getAllByRole("columnheader")
+    expect(heads.map((h) => h.textContent)).toEqual(["Page", "Score"])
+    expect(heads[0]!.getAttribute("scope")).toBe("col")
+    expect(heads[1]!.className).toContain("text-right")
+    expect(container.querySelectorAll("tbody tr")).toHaveLength(2)
+    expect(container.querySelector("tbody strong")!.textContent).toBe("92")
+    expect(screen.getByText("After.").tagName).toBe("P")
+  })
+
+  it("parses table edge cases: ragged rows, escaped pipes, no table without a rule", () => {
+    expect(
+      parseBlocks("a | b\n--|--\n| x |\ny | z \\| w | extra\nafter")
+    ).toEqual([
+      {
+        kind: "table",
+        head: ["a", "b"],
+        align: [null, null],
+        rows: [
+          ["x", ""],
+          ["y", "z | w"],
+        ],
+      },
+      { kind: "p", text: "after" },
+    ])
+    expect(parseBlocks("a | b\nc | d")).toEqual([
+      { kind: "p", text: "a | b c | d" },
+    ])
+  })
+
+  it("labels fenced code with its language and copies it", async () => {
+    const writeText = vi.fn(() => Promise.resolve())
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText },
+      configurable: true,
+    })
+    render(<Markdown text={'```json\n{ "a": 1 }\n```\n\n```\nplain\n```'} />)
+    expect(screen.getByText("json")).toBeTruthy()
+    expect(screen.getByText("Code")).toBeTruthy()
+    expect(screen.getByRole("region", { name: "json block" }).textContent).toBe(
+      '{ "a": 1 }'
+    )
+    await userEvent.click(
+      screen.getByRole("button", { name: "Copy json code" })
+    )
+    expect(writeText).toHaveBeenCalledWith('{ "a": 1 }')
+    expect(await screen.findByRole("button", { name: "Copied" })).toBeTruthy()
+    expect(screen.getByRole("button", { name: "Copy code" })).toBeTruthy()
+  })
+
+  it("renders quotes, rules, numbered starts and headings without adding to the outline", () => {
+    const { container } = render(
+      <Markdown
+        text={
+          "# Big\n### Small\n\n> quoted\n> on\n>\n> two\n\n---\n\n3. three\n4. four"
+        }
+      />
+    )
+    expect(container.querySelector("h1, h2, h3, h4, h5, h6")).toBeNull()
+    expect(screen.getByText("Big").tagName).toBe("P")
+    const quote = container.querySelector("blockquote")!
+    expect([...quote.querySelectorAll("p")].map((p) => p.textContent)).toEqual([
+      "quoted on",
+      "two",
+    ])
+    expect(container.querySelector("hr")).toBeTruthy()
+    expect(container.querySelector("ol")!.getAttribute("start")).toBe("3")
+  })
+
+  it("keeps the link rules inside tables and quotes", () => {
+    const { container } = render(
+      <Markdown
+        text={
+          "| Link |\n| --- |\n| [x](/api/v1/admin/leads/export) |\n\n> [y](mailto:a@b.ie?body=hi) [z](javascript:alert(1))"
+        }
+      />
+    )
+    expect(container.querySelector("a")).toBeNull()
+    expect(container.textContent).toContain("x (/api/v1/admin/leads/export)")
   })
 })

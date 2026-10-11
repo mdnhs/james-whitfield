@@ -1,17 +1,64 @@
 // admin/modules/ai/markdown.tsx
+"use client"
+
+import { CheckIcon, CopyIcon } from "lucide-react"
 import Link from "next/link"
 import type { ReactNode } from "react"
 
-// A small, safe Markdown subset for assistant replies: paragraphs, headings
-// (drawn as bold paragraphs, so a reply never adds to the page outline),
-// lists, fenced code, inline code, bold, italic and links. Everything else,
-// raw HTML included, stays text: React escapes it, and nothing here sets
-// innerHTML. The admin had no renderer to reuse.
-type Block =
+import { Button } from "@/components/ui/button"
+
+import { useCopy } from "./use-copy"
+
+// A safe Markdown subset for assistant replies: paragraphs, headings (drawn
+// as styled paragraphs, so a reply never adds to the page outline), lists,
+// block quotes, tables, rules, fenced code, inline code, bold, italic and
+// links. Everything else, raw HTML included, stays text: React escapes it,
+// and nothing here sets innerHTML. The admin had no renderer to reuse.
+type Align = "left" | "center" | "right" | null
+export type Block =
   | { kind: "p"; text: string }
-  | { kind: "h"; text: string }
-  | { kind: "ul" | "ol"; items: string[] }
-  | { kind: "code"; text: string }
+  | { kind: "h"; level: number; text: string }
+  | { kind: "ul"; items: string[] }
+  | { kind: "ol"; items: string[]; start: number }
+  | { kind: "code"; lang: string; text: string }
+  | { kind: "quote"; paragraphs: string[] }
+  | { kind: "table"; head: string[]; align: Align[]; rows: string[][] }
+  | { kind: "hr" }
+
+const FENCE = /^\s{0,3}(`{3,}|~{3,})\s*([^\s`]*)/
+const HEADING = /^\s{0,3}(#{1,6})\s+(.*?)(?:\s+#+)?\s*$/
+const RULE = /^\s{0,3}([-*_])(?:\s*\1){2,}\s*$/
+const ITEM = /^\s*([-*+]|\d{1,9}[.)])\s+(.*)$/
+const QUOTE = /^\s{0,3}>\s?(.*)$/
+const TABLE_RULE = /^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$/
+
+// A label like "ts" or "c++"; anything stranger is just "Code".
+const langOf = (raw: string) => (/^[\w+#.-]{1,20}$/.test(raw) ? raw : "")
+
+function cells(line: string): string[] {
+  let row = line.trim()
+  if (row.startsWith("|")) row = row.slice(1)
+  if (row.endsWith("|") && !row.endsWith("\\|")) row = row.slice(0, -1)
+  return row.split(/(?<!\\)\|/).map((c) => c.trim().replace(/\\\|/g, "|"))
+}
+
+const alignOf = (cell: string): Align =>
+  cell.startsWith(":") && cell.endsWith(":")
+    ? "center"
+    : cell.endsWith(":")
+      ? "right"
+      : cell.startsWith(":")
+        ? "left"
+        : null
+
+function isTableStart(lines: string[], i: number) {
+  const head = lines[i]!
+  const rule = lines[i + 1]
+  if (!head.includes("|") || rule === undefined || !rule.includes("-"))
+    return false
+  if (!TABLE_RULE.test(rule)) return false
+  return cells(head).length === cells(rule).length
+}
 
 export function parseBlocks(source: string): Block[] {
   const lines = source.replace(/\r\n?/g, "\n").split("\n")
@@ -23,27 +70,79 @@ export function parseBlocks(source: string): Block[] {
   }
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i]!
-    if (line.startsWith("```")) {
+    const fence = FENCE.exec(line)
+    if (fence) {
       flush()
+      const marker = fence[1]!
       const code: string[] = []
-      for (i++; i < lines.length && !lines[i]!.startsWith("```"); i++)
+      for (i++; i < lines.length && !lines[i]!.trim().startsWith(marker); i++)
         code.push(lines[i]!)
-      blocks.push({ kind: "code", text: code.join("\n") })
+      blocks.push({
+        kind: "code",
+        lang: langOf(fence[2]!),
+        text: code.join("\n"),
+      })
       continue
     }
-    const heading = /^#{1,6}\s+(.*)$/.exec(line)
+    const heading = HEADING.exec(line)
     if (heading) {
       flush()
-      blocks.push({ kind: "h", text: heading[1]! })
+      blocks.push({ kind: "h", level: heading[1]!.length, text: heading[2]! })
       continue
     }
-    const item = /^\s*([-*+]|\d+[.)])\s+(.*)$/.exec(line)
+    if (RULE.test(line)) {
+      flush()
+      blocks.push({ kind: "hr" })
+      continue
+    }
+    if (isTableStart(lines, i)) {
+      flush()
+      const head = cells(line)
+      const align = cells(lines[i + 1]!).map(alignOf)
+      const rows: string[][] = []
+      for (i += 2; i < lines.length && lines[i]!.includes("|"); i++) {
+        if (!lines[i]!.trim()) break
+        const row = cells(lines[i]!).slice(0, head.length)
+        while (row.length < head.length) row.push("")
+        rows.push(row)
+      }
+      i--
+      blocks.push({ kind: "table", head, align, rows })
+      continue
+    }
+    const quote = QUOTE.exec(line)
+    if (quote) {
+      flush()
+      const paragraphs: string[] = []
+      let current: string[] = []
+      for (; i < lines.length; i++) {
+        const q = QUOTE.exec(lines[i]!)
+        if (!q) break
+        if (q[1]!.trim()) current.push(q[1]!.trim())
+        else if (current.length) {
+          paragraphs.push(current.join(" "))
+          current = []
+        }
+      }
+      i--
+      if (current.length) paragraphs.push(current.join(" "))
+      blocks.push({ kind: "quote", paragraphs })
+      continue
+    }
+    const item = ITEM.exec(line)
     if (item) {
       flush()
-      const kind = /\d/.test(item[1]!) ? "ol" : "ul"
+      const ordered = /\d/.test(item[1]!)
       const last = blocks.at(-1)
-      if (last && last.kind === kind) last.items.push(item[2]!)
-      else blocks.push({ kind, items: [item[2]!] })
+      if (last && last.kind === (ordered ? "ol" : "ul"))
+        (last as { items: string[] }).items.push(item[2]!)
+      else if (ordered)
+        blocks.push({
+          kind: "ol",
+          items: [item[2]!],
+          start: Number.parseInt(item[1]!, 10) || 1,
+        })
+      else blocks.push({ kind: "ul", items: [item[2]!] })
       continue
     }
     if (!line.trim()) flush()
@@ -84,6 +183,7 @@ export function safeHref(raw: string): string | null {
 
 const INLINE =
   /(`[^`]+`)|(\*\*[^*]+\*\*)|(\*[^*\s][^*]*\*|_[^_\s][^_]*_)|(\[[^\]]+\]\([^)\s]+\))/g
+const LINK = "font-medium text-primary underline underline-offset-2"
 
 function inline(text: string): ReactNode[] {
   const out: ReactNode[] = []
@@ -96,13 +196,17 @@ function inline(text: string): ReactNode[] {
       out.push(
         <code
           key={key++}
-          className="rounded bg-muted px-1 font-mono text-[0.85em]"
+          className="rounded-md border bg-card px-1 py-px font-mono text-[0.85em]"
         >
           {t.slice(1, -1)}
         </code>
       )
     else if (m[2])
-      out.push(<strong key={key++}>{inline(t.slice(2, -2))}</strong>)
+      out.push(
+        <strong key={key++} className="font-semibold">
+          {inline(t.slice(2, -2))}
+        </strong>
+      )
     else if (m[3]) out.push(<em key={key++}>{inline(t.slice(1, -1))}</em>)
     else {
       const [, label, href] = /^\[([^\]]+)\]\(([^)\s]+)\)$/.exec(t)!
@@ -112,11 +216,7 @@ function inline(text: string): ReactNode[] {
           `${label} (${href})`
         ) : safe.startsWith("/") ? (
           // Same-site: client navigation, so the open sheet survives it.
-          <Link
-            key={key++}
-            href={safe}
-            className="underline underline-offset-2"
-          >
+          <Link key={key++} href={safe} className={LINK}>
             {label}
           </Link>
         ) : (
@@ -125,7 +225,7 @@ function inline(text: string): ReactNode[] {
             href={safe}
             target="_blank"
             rel="noopener noreferrer nofollow"
-            className="underline underline-offset-2"
+            className={LINK}
           >
             {label}
           </a>
@@ -138,37 +238,141 @@ function inline(text: string): ReactNode[] {
   return out
 }
 
+function CodeBlock({ lang, text }: { lang: string; text: string }) {
+  const { copied, copy } = useCopy()
+  const label = lang || "Code"
+  return (
+    <div className="overflow-hidden rounded-xl border bg-card">
+      <div className="flex items-center justify-between gap-2 border-b py-1 pr-1 pl-3">
+        <span className="font-mono text-xs text-muted-foreground">{label}</span>
+        <Button
+          variant="ghost"
+          size="xs"
+          aria-label={copied ? "Copied" : `Copy ${lang ? `${lang} ` : ""}code`}
+          onClick={() => void copy(text)}
+        >
+          {copied ? <CheckIcon /> : <CopyIcon />}
+          {copied ? "Copied" : "Copy"}
+        </Button>
+      </div>
+      <pre
+        // Scrolls sideways: reachable by keyboard (WCAG 2.1.1).
+        tabIndex={0}
+        role="region"
+        aria-label={`${label} block`}
+        className="overflow-x-auto p-3 font-mono text-[0.8125rem] leading-relaxed outline-none focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-inset"
+      >
+        <code>{text}</code>
+      </pre>
+    </div>
+  )
+}
+
+const ALIGN = { left: "text-left", center: "text-center", right: "text-right" }
+
+function Table({ block }: { block: Extract<Block, { kind: "table" }> }) {
+  const align = (i: number) => ALIGN[block.align[i] ?? "left"]
+  return (
+    <div
+      tabIndex={0}
+      role="region"
+      aria-label="Table"
+      className="max-w-full overflow-x-auto rounded-xl border bg-card outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+    >
+      <table className="w-full border-collapse text-[0.8125rem]">
+        <thead className="bg-muted/60">
+          <tr>
+            {block.head.map((cell, i) => (
+              <th
+                key={i}
+                scope="col"
+                className={`px-3 py-2 font-semibold ${align(i)}`}
+              >
+                {inline(cell)}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {block.rows.map((row, r) => (
+            <tr key={r} className="border-t align-top">
+              {row.map((cell, i) => (
+                <td key={i} className={`px-3 py-2 ${align(i)}`}>
+                  {inline(cell)}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+const HEADING_CLASS = [
+  "",
+  "mt-2 text-[1.0625rem] font-semibold tracking-tight",
+  "mt-2 text-base font-semibold tracking-tight",
+  "mt-1 font-semibold",
+]
+
 export function Markdown({ text }: { text: string }) {
   return (
-    <div className="flex flex-col gap-2 leading-relaxed">
+    <div className="flex min-w-0 flex-col gap-3 leading-relaxed">
       {parseBlocks(text).map((block, i) => {
-        if (block.kind === "h")
-          return (
-            <p key={i} className="font-semibold">
-              {inline(block.text)}
-            </p>
-          )
-        if (block.kind === "code")
-          return (
-            <pre
-              key={i}
-              className="overflow-x-auto rounded-md bg-muted p-3 text-xs"
-            >
-              <code>{block.text}</code>
-            </pre>
-          )
-        if (block.kind === "p") return <p key={i}>{inline(block.text)}</p>
-        const List = block.kind
-        return (
-          <List
-            key={i}
-            className={List === "ul" ? "list-disc pl-5" : "list-decimal pl-5"}
-          >
-            {block.items.map((item, j) => (
-              <li key={j}>{inline(item)}</li>
-            ))}
-          </List>
-        )
+        switch (block.kind) {
+          case "h":
+            return (
+              <p
+                key={i}
+                className={HEADING_CLASS[block.level] ?? "font-semibold"}
+              >
+                {inline(block.text)}
+              </p>
+            )
+          case "code":
+            return <CodeBlock key={i} lang={block.lang} text={block.text} />
+          case "table":
+            return <Table key={i} block={block} />
+          case "hr":
+            return <hr key={i} className="my-1 border-border" />
+          case "quote":
+            return (
+              <blockquote
+                key={i}
+                className="flex flex-col gap-2 border-l-2 border-primary/60 pl-3 text-muted-foreground"
+              >
+                {block.paragraphs.map((p, j) => (
+                  <p key={j}>{inline(p)}</p>
+                ))}
+              </blockquote>
+            )
+          case "p":
+            return <p key={i}>{inline(block.text)}</p>
+          case "ul":
+            return (
+              <ul
+                key={i}
+                className="flex list-disc flex-col gap-1 pl-5 marker:text-primary"
+              >
+                {block.items.map((item, j) => (
+                  <li key={j}>{inline(item)}</li>
+                ))}
+              </ul>
+            )
+          case "ol":
+            return (
+              <ol
+                key={i}
+                start={block.start === 1 ? undefined : block.start}
+                className="flex list-decimal flex-col gap-1 pl-5 marker:text-muted-foreground"
+              >
+                {block.items.map((item, j) => (
+                  <li key={j}>{inline(item)}</li>
+                ))}
+              </ol>
+            )
+        }
       })}
     </div>
   )

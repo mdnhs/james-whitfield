@@ -1,6 +1,11 @@
 // tests/e2e/ai/assistant.spec.ts
 import AxeBuilder from "@axe-core/playwright"
-import { expect, request as playwrightRequest, test } from "@playwright/test"
+import {
+  expect,
+  request as playwrightRequest,
+  test,
+  type Page,
+} from "@playwright/test"
 
 import { E2E_ORIGIN } from "../fixtures/env"
 import { disableAi, enableAi } from "../support/ai"
@@ -189,24 +194,228 @@ test("Stop aborts the request and the partial reply is saved", async ({
   await owner.dispose()
 })
 
-test("axe: the open sheet has no serious or critical violations", async ({
+type ChatBody = {
+  conversationId?: string | null
+  text?: string
+  regenerate?: boolean
+  editMessageId?: string
+  context?: { path: string; entity?: { type: string; id: string } }
+}
+type Part = { type: string; text?: string }
+type Message = { id: string; role: string; parts: Part[] }
+
+async function ownerApi() {
+  return playwrightRequest.newContext({
+    baseURL: E2E_ORIGIN,
+    storageState: STORAGE.owner,
+  })
+}
+async function savedMessages(title: string) {
+  const owner = await ownerApi()
+  const { items } = await api<{ items: { id: string; title: string }[] }>(
+    owner,
+    "GET",
+    "/ai/conversations"
+  )
+  const hit = items.find((c) => c.title === title)
+  const conv = hit
+    ? await api<{ messages: Message[] }>(
+        owner,
+        "GET",
+        `/ai/conversations/${hit.id}`
+      )
+    : { messages: [] }
+  await owner.dispose()
+  return conv.messages.map(
+    (m) => `${m.role}:${m.parts.map((p) => p.text ?? "").join("")}`
+  )
+}
+const chatRequest = (page: Page) =>
+  page.waitForRequest((r) => r.url().endsWith("/ai/chat"))
+
+test("Expand widens the panel to half the window and is remembered", async ({
   page,
 }) => {
   await page.goto("/admin")
   await page.getByRole("button", { name: "AI assistant" }).click()
   const sheet = page.getByRole("dialog", { name: "AI assistant" })
   await expect(sheet).toBeVisible()
-  // The sheet fades in; axe must measure the settled colours.
-  await sheet.evaluate((el) =>
-    Promise.all(el.getAnimations({ subtree: true }).map((a) => a.finished))
+  const width = async () => (await sheet.boundingBox())!.width
+  await expect.poll(width).toBeGreaterThanOrEqual(480)
+  expect(await width()).toBeLessThanOrEqual(560)
+  const expand = sheet.getByRole("button", { name: "Expand" })
+  await expect(expand).toHaveAttribute("aria-pressed", "false")
+  await expand.click()
+  await expect(expand).toHaveAttribute("aria-pressed", "true")
+  await expect.poll(width).toBeCloseTo(720, -1)
+  await page.reload()
+  await page.getByRole("button", { name: "AI assistant" }).click()
+  await expect(sheet.getByRole("button", { name: "Expand" })).toHaveAttribute(
+    "aria-pressed",
+    "true"
   )
-  const { violations } = await new AxeBuilder({ page })
-    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
-    .include('[data-slot="sheet-content"]')
-    .analyze()
-  expect(
-    violations
-      .filter((v) => v.impact === "serious" || v.impact === "critical")
-      .map((v) => v.id)
-  ).toEqual([])
+  await expect.poll(width).toBeCloseTo(720, -1)
+  await sheet.getByRole("button", { name: "Expand" }).click()
+  await expect.poll(width).toBeLessThanOrEqual(560)
+  await sheet.getByRole("button", { name: "Close" }).click()
+  await expect(sheet).toBeHidden()
 })
+
+test("in a page editor the starters and the next message are about that page", async ({
+  page,
+}) => {
+  const owner = await ownerApi()
+  const { items } = await api<{ items: { id: string; title: string }[] }>(
+    owner,
+    "GET",
+    "/pages"
+  )
+  await owner.dispose()
+  const target = items[0]!
+  await page.goto(`/admin/pages/${target.id}`)
+  await page.getByRole("button", { name: "AI assistant" }).click()
+  const sheet = page.getByRole("dialog", { name: "AI assistant" })
+  await expect(
+    sheet.getByRole("button", { name: "Check this page's SEO" })
+  ).toBeVisible()
+  await expect(
+    sheet.getByRole("button", { name: "Which pages need SEO work?" })
+  ).toHaveCount(0)
+  await expect(sheet.getByText(`${target.title} page`)).toBeVisible()
+
+  await sheet
+    .getByRole("button", { name: "Write a meta description for this page" })
+    .click()
+  let request = chatRequest(page)
+  await sheet.getByRole("button", { name: "Send" }).click()
+  const body = (await request).postDataJSON() as ChatBody
+  expect(body).toEqual({
+    conversationId: null,
+    text: "Write a meta description for this page",
+    context: {
+      path: `/admin/pages/${target.id}`,
+      entity: { type: "page", id: target.id },
+    },
+  })
+  const log = sheet.getByRole("log")
+  await expect(log).toContainText(
+    "Mock reply: Write a meta description for this page"
+  )
+
+  // The chip's ✕ leaves the page out of the next message only.
+  await sheet
+    .getByRole("button", { name: /^Don't use .+ for the next message$/ })
+    .click()
+  await expect(sheet.getByText(`${target.title} page`)).toHaveCount(0)
+  request = chatRequest(page)
+  await sheet.getByLabel("Message the AI assistant").fill("Without the page")
+  await sheet.getByLabel("Message the AI assistant").press("Enter")
+  const second = (await request).postDataJSON() as ChatBody
+  expect(second.context).toBeUndefined()
+  expect(second.conversationId).toEqual(expect.any(String))
+  await expect(sheet.getByText(`${target.title} page`)).toBeVisible()
+  await expect(log).toContainText("Mock reply: Without the page")
+})
+
+test("Regenerate re-runs the last turn and replaces its reply", async ({
+  page,
+}) => {
+  await page.goto("/admin")
+  await page.getByRole("button", { name: "AI assistant" }).click()
+  const sheet = page.getByRole("dialog", { name: "AI assistant" })
+  const log = sheet.getByRole("log")
+  await sheet.getByLabel("Message the AI assistant").fill("Regenerate this one")
+  await sheet.getByLabel("Message the AI assistant").press("Enter")
+  await expect(log).toContainText("Mock reply: Regenerate this one")
+  const regenerate = sheet.getByRole("button", { name: "Regenerate" })
+  await expect(regenerate).toBeVisible()
+
+  const request = chatRequest(page)
+  await regenerate.click()
+  const body = (await request).postDataJSON() as ChatBody
+  expect(body).toMatchObject({
+    conversationId: expect.any(String),
+    regenerate: true,
+  })
+  expect(body.text).toBeUndefined()
+  await expect(regenerate).toBeVisible()
+  await expect(log.getByText("Mock reply: Regenerate this one")).toHaveCount(1)
+  await expect
+    .poll(() => savedMessages("Regenerate this one"))
+    .toEqual([
+      "user:Regenerate this one",
+      "assistant:Mock reply: Regenerate this one",
+    ])
+})
+
+test("Edit replaces the last message and the reply after it", async ({
+  page,
+}) => {
+  await page.goto("/admin")
+  await page.getByRole("button", { name: "AI assistant" }).click()
+  const sheet = page.getByRole("dialog", { name: "AI assistant" })
+  const log = sheet.getByRole("log")
+  await sheet
+    .getByLabel("Message the AI assistant")
+    .fill("Edit test first draft")
+  await sheet.getByLabel("Message the AI assistant").press("Enter")
+  await expect(log).toContainText("Mock reply: Edit test first draft")
+
+  await sheet.getByRole("button", { name: "Edit" }).click()
+  const edit = sheet.getByLabel("Edit your message")
+  await expect(edit).toBeFocused()
+  await edit.fill("Edit test second draft")
+  const request = chatRequest(page)
+  await sheet.getByRole("button", { name: "Save" }).click()
+  const body = (await request).postDataJSON() as ChatBody
+  expect(body).toMatchObject({
+    conversationId: expect.any(String),
+    text: "Edit test second draft",
+    editMessageId: expect.stringMatching(/^[0-9a-f-]{36}$/),
+  })
+  await expect(log).toContainText("Mock reply: Edit test second draft")
+  await expect(log).not.toContainText("first draft")
+  // The title stays the first message's; the turns are the edited ones.
+  await expect
+    .poll(() => savedMessages("Edit test first draft"))
+    .toEqual([
+      "user:Edit test second draft",
+      "assistant:Mock reply: Edit test second draft",
+    ])
+})
+
+for (const colorScheme of ["light", "dark"] as const) {
+  test(`axe: the open sheet has no serious or critical violations (${colorScheme})`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({ colorScheme })
+    await page.goto("/admin")
+    await page.getByRole("button", { name: "AI assistant" }).click()
+    const sheet = page.getByRole("dialog", { name: "AI assistant" })
+    await expect(sheet).toBeVisible()
+    const audit = async () => {
+      // The sheet fades in; axe must measure the settled colours.
+      await sheet.evaluate((el) =>
+        Promise.all(el.getAnimations({ subtree: true }).map((a) => a.finished))
+      )
+      const { violations } = await new AxeBuilder({ page })
+        .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+        .include('[data-slot="sheet-content"]')
+        .analyze()
+      return violations
+        .filter((v) => v.impact === "serious" || v.impact === "critical")
+        .map((v) => v.id)
+    }
+    // The empty state: greeting and starter cards.
+    expect(await audit()).toEqual([])
+    // A conversation: bubbles, a Markdown reply and its actions.
+    await sheet
+      .getByLabel("Message the AI assistant")
+      .fill(`Axe check in ${colorScheme}`)
+    await sheet.getByLabel("Message the AI assistant").press("Enter")
+    await expect(
+      sheet.getByRole("button", { name: "Regenerate" })
+    ).toBeVisible()
+    expect(await audit()).toEqual([])
+  })
+}

@@ -34,10 +34,9 @@ const THEMES = [
   { value: "system", label: "System", icon: MonitorIcon },
 ] as const
 
-// The avatar block: name, email, role badge (docs/brief.md §9.1). The
-// aria-label names the button, so the initials, email and badge are hidden
-// from assistive tech: what is left visible (the name) then sits inside the
-// accessible name, as WCAG 2.5.3 (label in name) asks.
+// The avatar alone in the topbar; name, email and role badge sit in the
+// menu it opens (docs/brief.md §9.1). The aria-label names the button, so
+// the initials are hidden from assistive tech.
 export function UserMenu() {
   const { user, roles } = useActor()
   const { theme, setTheme } = useTheme()
@@ -48,28 +47,13 @@ export function UserMenu() {
     <DropdownMenu>
       <DropdownMenuTrigger
         aria-label={`Account menu for ${user.name}`}
-        className="flex min-w-0 items-center gap-3 rounded-full p-1 outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 sm:pr-3"
+        className="flex shrink-0 rounded-full p-1 outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50"
       >
         <Avatar aria-hidden className="size-11">
           <AvatarFallback className="bg-primary font-semibold text-primary-foreground">
             {initials(user.name)}
           </AvatarFallback>
         </Avatar>
-        <span className="hidden min-w-0 flex-col text-left sm:flex">
-          <span className="truncate text-sm font-semibold">{user.name}</span>
-          <span aria-hidden className="truncate text-xs text-muted-foreground">
-            {user.email}
-          </span>
-        </span>
-        {roleLabel ? (
-          <Badge
-            aria-hidden
-            variant="secondary"
-            className="hidden capitalize xl:inline-flex"
-          >
-            {roleLabel}
-          </Badge>
-        ) : null}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-60">
         <DropdownMenuGroup>
@@ -78,6 +62,11 @@ export function UserMenu() {
               {user.name}
             </span>
             <span className="truncate text-xs font-normal">{user.email}</span>
+            {roleLabel ? (
+              <Badge variant="secondary" className="mt-2 capitalize">
+                {roleLabel}
+              </Badge>
+            ) : null}
           </DropdownMenuLabel>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />

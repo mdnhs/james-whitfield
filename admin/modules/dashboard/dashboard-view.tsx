@@ -244,9 +244,10 @@ function DashboardBody({ data }: { data: Dashboard }) {
                     aria-label="Content findings"
                     className="flex flex-col gap-2 text-sm"
                   >
-                    {health.findings.map((finding) => (
+                    {health.findings.map((finding, index) => (
+                      // Two collection entries can share a title and href.
                       <li
-                        key={`${finding.rule}:${finding.href}:${finding.label}`}
+                        key={`${index}:${finding.rule}:${finding.href}:${finding.label}`}
                       >
                         <Link
                           href={finding.href}

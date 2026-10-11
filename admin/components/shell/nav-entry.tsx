@@ -6,9 +6,6 @@ import {
   SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
 import { isActivePath, type NavItem } from "@/lib/admin/nav"
 
@@ -34,7 +31,6 @@ export function NavEntry({
 }) {
   const Icon = NAV_ICONS[item.id]
   const active = isActivePath(pathname, item.href)
-  const children = item.children ?? []
   return (
     <SidebarMenuItem>
       {/* The 4px active bar on the panel's left edge (the group's p-2 away). */}
@@ -68,30 +64,6 @@ export function NavEntry({
         >
           {formatBadge(badge)}
         </SidebarMenuBadge>
-      ) : null}
-      {active && children.length > 1 ? (
-        <SidebarMenuSub className="mt-1">
-          {children.map((child) => {
-            const current = pathname === child.href
-            return (
-              <SidebarMenuSubItem key={child.id}>
-                <SidebarMenuSubButton
-                  isActive={current}
-                  className="h-8"
-                  render={
-                    <Link
-                      href={child.href}
-                      onClick={onNavigate}
-                      aria-current={current ? "page" : undefined}
-                    />
-                  }
-                >
-                  <span>{child.label}</span>
-                </SidebarMenuSubButton>
-              </SidebarMenuSubItem>
-            )
-          })}
-        </SidebarMenuSub>
       ) : null}
     </SidebarMenuItem>
   )

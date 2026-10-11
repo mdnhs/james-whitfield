@@ -104,9 +104,17 @@ export function SiteFooter({
               </li>
             ) : null}
           </ul>
-          <p className="font-plex-mono">
-            © <CopyrightYear /> {footer.copyrightName}
-          </p>
+          <div className="flex items-center gap-6">
+            <Link
+              href="/admin/sign-in"
+              className="transition-opacity hover:opacity-70"
+            >
+              Login
+            </Link>
+            <p className="font-plex-mono">
+              © <CopyrightYear /> {footer.copyrightName}
+            </p>
+          </div>
         </div>
       </Container>
     </footer>

@@ -161,17 +161,29 @@ test.describe("as an owner", () => {
       "Marketing",
       "Appearance",
       "Site settings",
-      "Users & roles",
-      "Activity log",
     ]) {
       await expect(
         nav.getByRole("link", { name: label, exact: true })
       ).toBeVisible()
     }
+    // Users & roles and Activity log are icon buttons in the footer dock.
+    const account = page.getByRole("navigation", { name: "Account" })
+    for (const label of ["Users & roles", "Activity log", "Help"]) {
+      await expect(account.getByRole("link", { name: label })).toBeVisible()
+      await expect(nav.getByRole("link", { name: label })).toHaveCount(0)
+    }
     await expect(
       nav.getByRole("link", { name: "SEO", exact: true })
     ).toHaveAttribute("aria-current", "page")
-    await expect(nav.getByRole("link", { name: "Redirects" })).toBeVisible()
+    // Sub-pages are vertical tabs in the page, not sidebar entries.
+    await expect(nav.getByRole("link", { name: "Redirects" })).toHaveCount(0)
+    const tabs = page.getByRole("navigation", { name: "SEO" })
+    await expect(tabs.getByRole("link", { name: "Overview" })).toHaveAttribute(
+      "aria-current",
+      "page"
+    )
+    await tabs.getByRole("link", { name: "Redirects" }).click()
+    await expect(page).toHaveURL(/\/admin\/seo\/redirects$/)
   })
 
   test("the Marketing pages are real pages, not placeholders", async ({

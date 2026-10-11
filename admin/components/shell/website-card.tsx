@@ -5,13 +5,13 @@ import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 // The inspiration's "Download our Mobile App" slot, as "Your website"
-// (docs/brief.md §9.1). "Preview drafts" sits under "Open site".
+// (docs/brief.md §9.1).
 export function WebsiteCard({
   siteUrl,
-  canPreview,
+  children,
 }: {
   siteUrl: string
-  canPreview: boolean
+  children?: React.ReactNode
 }) {
   return (
     <div className="bg-promo relative isolate overflow-hidden rounded-[18px] p-5 group-data-[collapsible=icon]:hidden">
@@ -39,17 +39,7 @@ export function WebsiteCard({
         <ExternalLinkIcon data-icon="inline-end" />
         <span className="sr-only"> (opens in a new tab)</span>
       </a>
-      {canPreview ? (
-        <a
-          href="/api/v1/admin/preview?path=/"
-          target="_blank"
-          rel="noreferrer"
-          className="mt-2 block text-center text-sm font-semibold underline-offset-4 hover:underline"
-        >
-          Preview drafts
-          <span className="sr-only"> (opens in a new tab)</span>
-        </a>
-      ) : null}
+      {children ? <div className="mt-3">{children}</div> : null}
     </div>
   )
 }

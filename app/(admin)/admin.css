@@ -210,6 +210,9 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    /* Narrow, quiet scrollbars across the admin (sidebar, tab rows, tables). */
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
   }
   body {
     @apply bg-background font-sans text-foreground antialiased;

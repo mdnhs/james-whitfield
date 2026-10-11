@@ -8,6 +8,7 @@ import { SidebarProvider } from "@/components/ui/sidebar"
 import { TooltipProvider } from "@/components/ui/tooltip"
 
 import { AppSidebar } from "./app-sidebar"
+import { SectionTabs } from "./section-tabs"
 import { Topbar } from "./topbar"
 
 // Floating panels on the canvas with 16px gutters: a 288px sidebar panel
@@ -37,14 +38,20 @@ export function AdminShell({
             Skip to content
           </a>
           <AppSidebar siteUrl={siteUrl} badges={{ "new-leads": newLeads }} />
-          <div className="flex min-h-svh min-w-0 flex-1 flex-col gap-4 p-3 sm:p-4 lg:pl-0">
+          {/* The content panel scrolls inside its own rounded corners, below a
+              still topbar. --content-h is its visible height (the svh less the
+              gutters, the 72px topbar and the gap) for sticky panes inside.
+              `relative` makes it the containing block for absolute children
+              (sr-only labels, popovers), so they clip and scroll with it
+              instead of stretching the document into a second scrollbar. */}
+          <div className="flex h-svh min-w-0 flex-1 flex-col gap-4 p-3 [--content-h:calc(100svh-112px)] sm:p-4 sm:[--content-h:calc(100svh-120px)] lg:pl-0">
             <Topbar />
             <main
               id="main"
               tabIndex={-1}
-              className="rounded-card flex-1 bg-sidebar p-4 outline-none sm:p-6 lg:p-8"
+              className="rounded-card relative min-h-0 flex-1 overflow-y-auto overscroll-contain bg-sidebar p-4 outline-none sm:p-6 lg:p-8"
             >
-              {children}
+              <SectionTabs>{children}</SectionTabs>
             </main>
           </div>
         </SidebarProvider>

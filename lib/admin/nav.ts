@@ -22,6 +22,8 @@ export type NavItem = NavLink & {
   children?: readonly NavLink[]
   // Phase 6 fills this with the new-enquiry count.
   badge?: "new-leads"
+  // Drawn as an icon button in the sidebar's footer dock, not in the menu.
+  dock?: true
 }
 
 export type Destination = NavLink & { parent: string | null }
@@ -228,6 +230,13 @@ export const NAV: readonly NavItem[] = [
       setting("forms", "Forms & microcopy", "globals"),
       setting("notifications", "Notifications", "settings"),
       setting("privacy", "Privacy", "settings"),
+      {
+        id: "settings-ai-assistant",
+        label: "AI assistant",
+        href: "/admin/settings/ai-assistant",
+        permission: { ai: ["manage"] },
+        keywords: ["ai", "gemini", "claude", "openai", "chatbot"],
+      },
     ],
   },
   {
@@ -236,6 +245,7 @@ export const NAV: readonly NavItem[] = [
     label: "Users & roles",
     href: "/admin/users",
     permission: { user: ["list"] },
+    dock: true,
     keywords: ["team", "invite", "people", "permissions"],
   },
   {
@@ -244,11 +254,12 @@ export const NAV: readonly NavItem[] = [
     label: "Activity log",
     href: "/admin/activity",
     permission: { audit: ["read"] },
+    dock: true,
     keywords: ["audit", "history", "changes"],
   },
 ]
 
-// Sits below the groups with "Log out", outside the gated navigation.
+// In the footer dock with "Log out", outside the gated navigation.
 export const HELP_LINK: NavLink = {
   id: "help",
   label: "Help",

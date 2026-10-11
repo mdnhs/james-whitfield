@@ -428,7 +428,7 @@ function Builder({
           <div className="grid items-start gap-5 xl:grid-cols-[272px_minmax(0,1fr)_minmax(0,1.1fr)]">
             <nav
               aria-label="Page outline"
-              className="rounded-card flex flex-col gap-4 bg-card p-4 xl:sticky xl:top-4 xl:max-h-[calc(100svh-2rem)] xl:overflow-y-auto"
+              className="rounded-card flex flex-col gap-4 bg-card p-4 xl:sticky xl:top-4 xl:max-h-[calc(var(--content-h)-2rem)] xl:overflow-y-auto"
             >
               <div className="flex items-center justify-between gap-2 px-1">
                 <h2 className="text-card-title">Blocks</h2>
@@ -551,7 +551,7 @@ function Builder({
             <PreviewPane
               path={page.path}
               refreshKey={state.savedAt}
-              className="h-[75svh] xl:sticky xl:top-4 xl:h-[calc(100svh-2rem)]"
+              className="h-[75svh] xl:sticky xl:top-4 xl:h-[calc(var(--content-h)-2rem)]"
             />
           </div>
         </TabsContent>

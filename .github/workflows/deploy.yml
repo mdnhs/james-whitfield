@@ -1,0 +1,63 @@
+name: Build & Deploy to Dokploy (GHCR)
+
+on:
+  push:
+    branches: [main, feat/platform]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: deploy-james-whitfield
+  cancel-in-progress: false
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}:latest
+            ghcr.io/${{ github.repository }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Dokploy Deployment
+        env:
+          DOKPLOY_URL: ${{ secrets.DOKPLOY_URL }}
+          DOKPLOY_API_KEY: ${{ secrets.DOKPLOY_API_KEY }}
+          DOKPLOY_APPLICATION_ID: ${{ secrets.DOKPLOY_APPLICATION_ID }}
+        run: |
+          echo "Triggering Dokploy deploy for james-whitfield (Magda Kennedy)..."
+          if [ -z "$DOKPLOY_URL" ] || [ -z "$DOKPLOY_API_KEY" ] || [ -z "$DOKPLOY_APPLICATION_ID" ]; then
+            echo "::error::Dokploy secrets are not set (DOKPLOY_URL, DOKPLOY_API_KEY, DOKPLOY_APPLICATION_ID)."
+            exit 1
+          fi
+          curl --fail-with-body -sS -X POST "$DOKPLOY_URL/api/application.deploy" \
+            -H "x-api-key: $DOKPLOY_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "{\"applicationId\":\"$DOKPLOY_APPLICATION_ID\"}"
+          echo "Deployment successfully triggered on Dokploy."

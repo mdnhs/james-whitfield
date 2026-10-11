@@ -4,7 +4,9 @@ import { getToolName, isToolUIPart, type UIMessage } from "ai"
 import { TOOL_LABELS, type ToolName } from "./labels"
 
 // Isomorphic: the server saves with it and the sheet renders with it.
-export type AiMetadata = { conversationId?: string }
+// `userMessageId` is the saved id of the turn's user message, so the sheet
+// can later ask to edit it (the browser's own ids never reach the server).
+export type AiMetadata = { conversationId?: string; userMessageId?: string }
 export type AiUIMessage = UIMessage<AiMetadata>
 export type AiPart = AiUIMessage["parts"][number]
 

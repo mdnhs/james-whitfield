@@ -28,11 +28,15 @@ import { audit } from "@/server/lib/audit"
 import { findSetting } from "@/server/modules/content/repo"
 import { DUBLIN } from "@/server/modules/dashboard/week"
 
+import { contextSubject } from "./context"
 import {
   appendMessage,
   createConversation,
+  dropLastReply,
   historyFor,
   ownConversation,
+  ownUserMessage,
+  replaceFrom,
   titleFrom,
 } from "./conversations"
 import { errorTag, friendlyChatError, ToolFailure } from "./errors"
@@ -61,8 +65,13 @@ function assertCanChat(s: AiStored, actor: Actor) {
 }
 
 // Ruling R10: provider, model, counts and tool names; never text or titles.
-const summary = (s: AiStored, t: Turn, stopped: boolean) =>
-  `Asked the AI assistant (${s.provider} · ${s.model} · ${t.tokensIn} in / ${t.tokensOut} out tokens${t.tools.size ? ` · tools: ${[...t.tools].join(", ")}` : ""}${stopped ? " · stopped" : ""})`
+const summary = (
+  s: AiStored,
+  t: Turn,
+  stopped: boolean,
+  mode: "regenerated" | "edited" | null
+) =>
+  `Asked the AI assistant (${s.provider} · ${s.model} · ${t.tokensIn} in / ${t.tokensOut} out tokens${t.tools.size ? ` · tools: ${[...t.tools].join(", ")}` : ""}${mode ? ` · ${mode}` : ""}${stopped ? " · stopped" : ""})`
 
 function streamError(error: unknown, s: AiStored) {
   if (error instanceof ToolFailure) return error.message
@@ -83,6 +92,44 @@ async function saving<T>(write: () => Promise<T>): Promise<T> {
   }
 }
 
+// Which conversation, and what was written before streaming. A plain
+// message is appended. Regenerate drops the last reply, if any, and runs the
+// turn again from the person's last message. Edit replaces one of their own
+// messages and everything after it. Ownership of the conversation, and of the
+// message within it, is part of every lookup, so another person's ids are
+// simply not found (Review Focus 4).
+async function prepareTurn(actor: Actor, input: ChatInput, model: string) {
+  if (input.regenerate) {
+    const conversation = await ownConversation(
+      actor.userId,
+      input.conversationId!
+    )
+    await saving(() => dropLastReply(conversation.id))
+    return { conversation, mode: "regenerated" as const }
+  }
+  const userMessage: AiUIMessage = {
+    id: randomUUID(),
+    role: "user",
+    parts: [{ type: "text", text: input.text! }],
+  }
+  if (input.editMessageId) {
+    const conversation = await ownConversation(
+      actor.userId,
+      input.conversationId!
+    )
+    const from = await ownUserMessage(conversation.id, input.editMessageId)
+    await saving(() => replaceFrom(conversation.id, from, userMessage))
+    return { conversation, mode: "edited" as const }
+  }
+  const conversation = input.conversationId
+    ? await ownConversation(actor.userId, input.conversationId)
+    : await saving(() =>
+        createConversation(actor.userId, titleFrom(input.text!), model)
+      )
+  await saving(() => appendMessage(conversation.id, userMessage))
+  return { conversation, mode: null }
+}
+
 export async function startChat(
   actor: Actor,
   input: ChatInput,
@@ -91,27 +138,20 @@ export async function startChat(
   const { value: settings } = await readAiSettings()
   assertCanChat(settings, actor)
   const model = await getModel({ ...settings, apiKey: decryptApiKey(settings) })
-  const conversation = input.conversationId
-    ? await ownConversation(actor.userId, input.conversationId)
-    : await saving(() =>
-        createConversation(actor.userId, titleFrom(input.text), settings.model)
-      )
+  const { conversation, mode } = await prepareTurn(actor, input, settings.model)
 
-  // Ruling R8: earlier turns from our rows; the new one saved before streaming.
+  // Ruling R8: every turn comes from our rows, the new one saved first.
   // Ruling R14: enquiry details need the opt-in and lead.read. Replies
   // written under it are flagged, and stay out of the history once it's off.
   const sharing =
     settings.shareEnquiryDetails.enabled &&
     hasPermission(actor.roles, { lead: ["read"] })
-  const history = await historyFor(conversation.id, HISTORY_LIMIT - 1, {
+  const history = await historyFor(conversation.id, HISTORY_LIMIT, {
     includeShared: sharing,
   })
-  const userMessage: AiUIMessage = {
-    id: randomUUID(),
-    role: "user",
-    parts: [{ type: "text", text: input.text }],
-  }
-  await saving(() => appendMessage(conversation.id, userMessage))
+  const userMessage = history.at(-1)
+  if (userMessage?.role !== "user")
+    throw new ApiError("CONFLICT", "There's no message to answer yet")
 
   const tools = buildTools({ actor, settings })
   const site = parseGlobal("site", (await findSetting("site"))?.value)
@@ -125,10 +165,9 @@ export async function startChat(
       today: format(new Date(), "EEEE d MMMM yyyy", { in: DUBLIN }),
       toolNames: Object.keys(tools),
       extra: settings.systemPrompt,
+      context: await contextSubject(actor, input.context),
     }),
-    messages: await convertToModelMessages(
-      trimHistory([...history, userMessage])
-    ),
+    messages: await convertToModelMessages(trimHistory(history)),
     tools,
     stopWhen: isStepCount(MAX_STEPS),
     maxOutputTokens: settings.maxOutputTokens,
@@ -154,7 +193,9 @@ export async function startChat(
     sendReasoning: false,
     generateMessageId: randomUUID,
     messageMetadata: ({ part }) =>
-      part.type === "start" ? { conversationId: conversation.id } : undefined,
+      part.type === "start"
+        ? { conversationId: conversation.id, userMessageId: userMessage.id }
+        : undefined,
     onError: (error) => streamError(error, settings),
     // A stopped answer keeps what was streamed: its text and the labels of
     // finished lookups. Half-done tool calls are dropped, so the saved row
@@ -179,7 +220,8 @@ export async function startChat(
           summary: summary(
             settings,
             turn,
-            isAborted || isCancelled === true || signal?.aborted === true
+            isAborted || isCancelled === true || signal?.aborted === true,
+            mode
           ),
         })
       } catch (error) {

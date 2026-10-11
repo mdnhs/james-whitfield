@@ -8,6 +8,7 @@ import {
   asc,
   desc,
   eq,
+  gte,
   inArray,
   lt,
   notExists,
@@ -77,6 +78,80 @@ export async function appendMessage(
       tokensIn: meta?.tokensIn ?? null,
       tokensOut: meta?.tokensOut ?? null,
       sharedEnquiryDetails: meta?.sharedEnquiryDetails ?? false,
+      createdAt: now,
+    })
+    await tx
+      .update(aiConversations)
+      .set({ updatedAt: now })
+      .where(eq(aiConversations.id, conversationId))
+  })
+}
+
+// Regenerate: the newest message goes if it is a reply, so the turn can run
+// again from the person's last message. Callers check ownership first.
+export async function dropLastReply(conversationId: string) {
+  return getDb().transaction(async (tx) => {
+    const [last] = await tx
+      .select({ id: aiMessages.id, role: aiMessages.role })
+      .from(aiMessages)
+      .where(eq(aiMessages.conversationId, conversationId))
+      .orderBy(desc(aiMessages.createdAt), desc(aiMessages.id))
+      .limit(1)
+      .for("update")
+    if (last?.role !== "assistant") return false
+    await tx
+      .delete(aiMessages)
+      .where(
+        and(
+          eq(aiMessages.id, last.id),
+          eq(aiMessages.conversationId, conversationId)
+        )
+      )
+    return true
+  })
+}
+
+// Edit: one of the person's own messages in this conversation, or not found.
+// Callers check the conversation's ownership first; the id must also belong
+// to it, so a message from another conversation is never touched.
+export async function ownUserMessage(conversationId: string, id: string) {
+  const [row] = await getDb()
+    .select({ id: aiMessages.id, createdAt: aiMessages.createdAt })
+    .from(aiMessages)
+    .where(
+      and(
+        eq(aiMessages.id, id),
+        eq(aiMessages.conversationId, conversationId),
+        eq(aiMessages.role, "user")
+      )
+    )
+    .limit(1)
+  if (!row) throw new ApiError("NOT_FOUND", "That message doesn't exist")
+  return row
+}
+
+// The edited message and everything after it go; the new text takes its
+// place, in one transaction.
+export async function replaceFrom(
+  conversationId: string,
+  from: { createdAt: Date },
+  message: AiUIMessage
+) {
+  const now = new Date()
+  await getDb().transaction(async (tx) => {
+    await tx
+      .delete(aiMessages)
+      .where(
+        and(
+          eq(aiMessages.conversationId, conversationId),
+          gte(aiMessages.createdAt, from.createdAt)
+        )
+      )
+    await tx.insert(aiMessages).values({
+      id: UUID.test(message.id) ? message.id : randomUUID(),
+      conversationId,
+      role: message.role,
+      parts: message.parts,
       createdAt: now,
     })
     await tx

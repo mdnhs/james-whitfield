@@ -147,11 +147,50 @@ export const ListModelsInput = z.object({
 })
 export type ListModelsInput = z.infer<typeof ListModelsInput>
 
-// Ruling R8: the browser sends the new text only; history is the server's.
-export const ChatInput = z.object({
-  conversationId: z.uuid().nullable().optional(),
-  text: z.string().trim().min(1, "Type a message").max(MAX_INPUT_CHARS),
+// Where in the admin the person is. Ids only: the server looks the title up
+// with the person's own permissions, and nothing else from the screen is sent.
+export const ChatContext = z.object({
+  path: z
+    .string()
+    .max(200)
+    .regex(/^\/admin(\/[A-Za-z0-9._~%/-]*)?$/, "Use an admin path"),
+  entity: z
+    .object({ type: z.enum(["page", "article"]), id: z.uuid() })
+    .optional(),
 })
+export type ChatContext = z.infer<typeof ChatContext>
+
+// Ruling R8: the browser sends the new text only; history is the server's.
+// Two variations on that: `regenerate` re-runs the last turn (no text), and
+// `editMessageId` replaces one of the person's own messages and what follows.
+export const ChatInput = z
+  .object({
+    conversationId: z.uuid().nullable().optional(),
+    text: z
+      .string()
+      .trim()
+      .min(1, "Type a message")
+      .max(MAX_INPUT_CHARS)
+      .optional(),
+    regenerate: z.literal(true).optional(),
+    editMessageId: z.uuid().optional(),
+    context: ChatContext.optional(),
+  })
+  .superRefine((v, ctx) => {
+    const issue = (path: string, message: string) =>
+      ctx.addIssue({ code: "custom", path: [path], message })
+    if (v.regenerate) {
+      if (!v.conversationId)
+        issue("conversationId", "Pick a conversation to regenerate")
+      if (v.text !== undefined) issue("text", "Regenerate takes no text")
+      if (v.editMessageId)
+        issue("editMessageId", "Edit or regenerate, not both")
+      return
+    }
+    if (v.text === undefined) issue("text", "Type a message")
+    if (v.editMessageId && !v.conversationId)
+      issue("conversationId", "Pick a conversation to edit")
+  })
 export type ChatInput = z.infer<typeof ChatInput>
 
 export const ConversationParam = z.object({ id: z.uuid() })

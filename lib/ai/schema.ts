@@ -19,7 +19,7 @@ export const PROVIDER_LABELS: Record<AiProvider, string> = {
 
 // Suggestions the form fills in when the provider changes.
 export const DEFAULT_MODEL: Record<AiProvider, string> = {
-  google: "gemini-flash-latest",
+  google: "gemini-flash-lite-latest",
   anthropic: "claude-haiku-4-5",
   "openai-compatible": "",
 }
@@ -46,7 +46,7 @@ export const ModelId = z
   .max(100)
   .regex(
     /^[A-Za-z0-9][A-Za-z0-9._:/@-]*$/,
-    "Use the model's ID, like gemini-flash-latest"
+    "Use the model's ID, like gemini-flash-lite-latest"
   )
 
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"])

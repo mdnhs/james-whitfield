@@ -366,7 +366,7 @@ function SettingsForm({ doc }: { doc: AiAdmin }) {
               {...register("model", {
                 validate: (v) =>
                   ModelId.safeParse(v).success ||
-                  "Use the model's ID, like gemini-flash-latest",
+                  "Use the model's ID, like gemini-flash-lite-latest",
               })}
             />
             <Button

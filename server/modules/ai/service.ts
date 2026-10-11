@@ -287,9 +287,9 @@ export async function testConnection(actor: Actor) {
     await generateText({
       model,
       prompt: "Reply with the single word OK.",
-      maxOutputTokens: 16,
+      maxOutputTokens: 64,
       maxRetries: 0,
-      timeout: 20_000,
+      timeout: 30_000,
     })
     result = { ok: true, message: `Connected: ${value.model} replied.` }
   } catch (error) {

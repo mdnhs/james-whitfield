@@ -31,7 +31,7 @@ const { values } = parseArgs({
 })
 const url =
   process.env.DRILL_DATABASE_URL ??
-  "postgres://mk:mk@localhost:5432/mk_restore_drill"
+  "postgres://mk:mk@localhost:5435/mk_restore_drill"
 const db = assertDrillDatabase(url)
 const psql = (args: string[], input?: Buffer) => {
   const result = spawnSync(

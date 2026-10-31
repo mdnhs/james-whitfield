@@ -78,7 +78,7 @@ export function AboutSection({
             data-magnetic
             className={cn(
               buttonVariants(),
-              "h-12.5 gap-0 rounded-full bg-clay px-[27px] py-0 text-[15px] leading-[normal] font-semibold whitespace-pre text-cream hover:bg-clay/90"
+              "h-12.5 w-full gap-0 rounded-full bg-clay px-[27px] py-0 text-[15px] leading-[normal] font-semibold whitespace-pre text-cream hover:bg-clay/90 sm:w-auto"
             )}
           >
             {`${cta.label}  →`}

@@ -79,7 +79,7 @@ export function HowItWorksSection({
               data-magnetic
               className={cn(
                 buttonVariants(),
-                "h-13.5 shrink-0 rounded-full bg-clay px-[31px] py-0 text-[15px] leading-[normal] font-semibold text-white hover:bg-clay/90"
+                "h-13.5 w-full shrink-0 rounded-full bg-clay px-[31px] py-0 text-[15px] leading-[normal] font-semibold text-white hover:bg-clay/90 sm:w-auto"
               )}
             >
               {cta.label}

@@ -83,7 +83,7 @@ export function ClinicSection({
               target="_blank"
               rel="noopener noreferrer"
               data-magnetic
-              className="rounded-full bg-clay px-5.5 py-3.25 text-[14.5px] leading-[1.5] font-semibold whitespace-pre text-cream transition-colors hover:bg-clay/90"
+              className="block w-full rounded-full bg-clay px-5.5 py-3.25 text-center text-[14.5px] leading-[1.5] font-semibold whitespace-pre text-cream transition-colors hover:bg-clay/90 sm:inline-block sm:w-auto"
             >
               {directionsLabel}
             </a>

@@ -79,7 +79,7 @@ export function FeaturedArticle({
           data-magnetic
           className={cn(
             buttonVariants(),
-            "h-auto rounded-full bg-clay px-7 py-4 text-[15px] leading-[normal] font-semibold text-cream hover:bg-clay/90"
+            "h-auto w-full rounded-full bg-clay px-7 py-4 text-[15px] leading-[normal] font-semibold text-cream hover:bg-clay/90 sm:w-auto"
           )}
         >
           {copy.readArticle}

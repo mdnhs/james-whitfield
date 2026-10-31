@@ -6,7 +6,7 @@ import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 const ctaBase =
-  "h-12.5 rounded-full px-[27px] py-0 text-[15px] font-semibold leading-[normal]"
+  "h-12.5 w-full sm:w-auto rounded-full px-[27px] py-0 text-[15px] font-semibold leading-[normal]"
 
 // data-hero / data-reveal / data-magnetic are animation hooks for HeroMotion
 // (data-magnetic is handled page-wide by PageMotion).
@@ -40,7 +40,10 @@ export function HeroContent({ content }: { content: BlockView<"hero.home"> }) {
         {description}
       </p>
 
-      <div data-hero="ctas" className="flex flex-wrap gap-4 pt-3">
+      <div
+        data-hero="ctas"
+        className="flex w-full flex-col gap-4 pt-3 sm:flex-row sm:flex-wrap"
+      >
         <div data-hero="cta" data-reveal>
           <Link
             href={primaryCta.href}

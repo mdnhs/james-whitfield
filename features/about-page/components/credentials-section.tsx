@@ -51,7 +51,7 @@ export function CredentialsSection({
             data-magnetic
             className={cn(
               buttonVariants(),
-              "h-auto rounded-full bg-clay px-7 py-4 text-base leading-[1.5] font-semibold whitespace-pre text-cream hover:bg-clay/90"
+              "h-auto w-full rounded-full bg-clay px-7 py-4 text-base leading-[1.5] font-semibold whitespace-pre text-cream hover:bg-clay/90 sm:w-auto"
             )}
           >
             {cta.label}

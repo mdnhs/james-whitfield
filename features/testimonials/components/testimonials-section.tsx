@@ -1,13 +1,11 @@
 import type { BlockView } from "@/blocks/media-refs"
 import { Eyebrow } from "@/components/eyebrow"
 import { Container } from "@/components/layout/container"
-import { splitColumns } from "@/lib/layout-math"
 import type { TestimonialView } from "@/lib/content/types"
 import { cn } from "@/lib/utils"
-import { TestimonialCard } from "./testimonial-card"
+import { TestimonialCarousel } from "./testimonial-carousel"
 
-// "page" (inner pages) uses the pill eyebrow, the pine heading and two
-// top-aligned columns.
+// "page" (inner pages) uses the pill eyebrow and the pine heading.
 export function TestimonialsSection({
   id,
   content,
@@ -57,23 +55,7 @@ export function TestimonialsSection({
           </h2>
         </header>
 
-        <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-2 lg:gap-8">
-          {splitColumns(items, 2).map((column, i) => (
-            // The right column sits lower on desktop so the cards read in
-            // order, left then right, as each one rises in on scroll.
-            <div
-              key={i}
-              className={cn(
-                "flex flex-col gap-6",
-                !page && i % 2 === 1 && "lg:mt-24"
-              )}
-            >
-              {column.map((item) => (
-                <TestimonialCard key={item.id} item={item} />
-              ))}
-            </div>
-          ))}
-        </div>
+        <TestimonialCarousel items={items} label={title} />
       </Container>
     </section>
   )

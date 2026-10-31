@@ -82,7 +82,7 @@ export function EnterpriseSection({
           data-magnetic
           className={cn(
             buttonVariants(),
-            "h-auto min-h-12.5 max-w-full rounded-full bg-clay px-[27px] py-3.5 text-center text-[15px] leading-[1.35] font-semibold whitespace-normal text-cream hover:bg-clay/90 sm:whitespace-nowrap"
+            "h-auto min-h-12.5 w-full max-w-full rounded-full bg-clay px-[27px] py-3.5 text-center text-[15px] leading-[1.35] font-semibold whitespace-normal text-cream hover:bg-clay/90 sm:w-auto sm:whitespace-nowrap"
           )}
         >
           {cta.label}

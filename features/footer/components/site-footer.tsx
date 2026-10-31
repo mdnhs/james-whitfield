@@ -65,7 +65,7 @@ export function SiteFooter({
               </nav>
             ))}
 
-            <div className="col-span-2 sm:w-60">
+            <div className="sm:w-60">
               <h2 className={columnTitle}>Contact</h2>
               <address className="mt-4 flex flex-col gap-4 not-italic">
                 {footer.contactLines.map((line, i) => (
@@ -87,7 +87,7 @@ export function SiteFooter({
         />
 
         <div className="flex flex-col-reverse gap-4 text-xs leading-[normal] text-mist sm:flex-row sm:items-center sm:justify-between">
-          <ul className="flex gap-6 leading-[normal]">
+          <ul className="grid grid-cols-2 gap-x-6 gap-y-3 leading-[normal] sm:flex sm:gap-6">
             {footer.legalLinks.map((link, i) => (
               <li key={i}>
                 <Link
@@ -104,7 +104,7 @@ export function SiteFooter({
               </li>
             ) : null}
           </ul>
-          <div className="flex items-center gap-6">
+          <div className="grid grid-cols-2 items-center gap-6 sm:flex">
             <Link
               href="/admin/sign-in"
               className="transition-opacity hover:opacity-70"

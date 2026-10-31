@@ -1,6 +1,6 @@
 // The one place that decides what env every test process sees.
 export const TEST_DATABASE_URL =
-  process.env.DATABASE_URL_TEST ?? "postgres://mk:mk@localhost:5432/mk_test"
+  process.env.DATABASE_URL_TEST ?? "postgres://mk:mk@localhost:5435/mk_test"
 
 export const TEST_ENV = {
   NODE_ENV: "test",

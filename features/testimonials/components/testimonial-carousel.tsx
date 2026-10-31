@@ -54,8 +54,10 @@ export function TestimonialCarousel({
     >
       <ul
         ref={track}
+        // Focusable so keyboard users can scroll it with the arrow keys.
+        tabIndex={0}
         onScroll={update}
-        className="-mx-4 flex snap-x snap-mandatory scroll-px-4 [scrollbar-width:none] gap-6 overflow-x-auto px-4 pb-2 lg:gap-8 [&::-webkit-scrollbar]:hidden"
+        className="-mx-4 flex rounded-xl outline-none focus-visible:ring-3 focus-visible:ring-pine/30 snap-x snap-mandatory scroll-px-4 [scrollbar-width:none] gap-6 overflow-x-auto px-4 pb-2 lg:gap-8 [&::-webkit-scrollbar]:hidden"
       >
         {items.map((item, i) => (
           <li

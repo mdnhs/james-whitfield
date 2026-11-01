@@ -17,8 +17,9 @@ async function mainNav(page: Page): Promise<Locator> {
   return page.getByRole("navigation", { name: "Main" })
 }
 
-async function linkLabels(nav: Locator) {
-  return (await nav.getByRole("link").allTextContents()).map((t) => t.trim())
+// Web-first: retries until the streamed nav has drawn its links.
+async function expectLinks(nav: Locator, labels: string[]) {
+  await expect(nav.getByRole("link")).toHaveText(labels)
 }
 
 test.describe("as intake", () => {
@@ -27,7 +28,7 @@ test.describe("as intake", () => {
   test("sees only the dashboard and enquiries", async ({ page }) => {
     await page.goto("/admin")
     const nav = await mainNav(page)
-    expect(await linkLabels(nav)).toEqual(["Dashboard", "Enquiries"])
+    await expectLinks(nav, ["Dashboard", "Enquiries"])
     await expect(nav.getByText("Growth", { exact: true })).toHaveCount(0)
   })
 
@@ -58,7 +59,7 @@ test.describe("as a viewer", () => {
     page,
   }) => {
     await page.goto("/admin")
-    expect(await linkLabels(await mainNav(page))).toEqual([
+    await expectLinks(await mainNav(page), [
       "Dashboard",
       "Pages",
       "Insights",
@@ -85,7 +86,7 @@ test.describe("as an editor", () => {
 
   test("sees content sections, SEO and content settings", async ({ page }) => {
     await page.goto("/admin")
-    expect(await linkLabels(await mainNav(page))).toEqual([
+    await expectLinks(await mainNav(page), [
       "Dashboard",
       "Pages",
       "Insights",

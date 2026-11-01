@@ -261,24 +261,25 @@ function StarterCard({
   starter: Starter
   onPick: (prompt: string) => void
 }) {
-  const titleId = useId()
   const descId = useId()
   const Icon = starter.icon
+  // The button holds only the title, so its visible text is its name (axe
+  // label-content-name-mismatch); its ::after stretches the hit area over the
+  // whole card, and the description is read as its description.
   return (
-    <button
-      type="button"
-      aria-labelledby={titleId}
-      aria-describedby={descId}
-      onClick={() => onPick(starter.title)}
-      className="flex w-full flex-col items-start gap-3 rounded-2xl border bg-card p-3.5 text-left transition-colors outline-none hover:border-primary/50 hover:bg-accent/40 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-    >
+    <div className="relative flex w-full flex-col items-start gap-3 rounded-2xl border bg-card p-3.5 text-left transition-colors hover:border-primary/50 hover:bg-accent/40 has-focus-visible:border-ring has-focus-visible:ring-3 has-focus-visible:ring-ring/50">
       <span className="grid size-8 place-items-center rounded-full bg-accent text-accent-foreground">
         <Icon aria-hidden="true" className="size-4" />
       </span>
       <span className="flex flex-col gap-0.5">
-        <span id={titleId} className="text-sm leading-snug font-medium">
+        <button
+          type="button"
+          aria-describedby={descId}
+          onClick={() => onPick(starter.title)}
+          className="text-left text-sm leading-snug font-medium outline-none after:absolute after:inset-0 after:rounded-2xl"
+        >
           {starter.title}
-        </span>
+        </button>
         <span
           id={descId}
           className="text-xs leading-snug text-muted-foreground"
@@ -286,6 +287,6 @@ function StarterCard({
           {starter.description}
         </span>
       </span>
-    </button>
+    </div>
   )
 }

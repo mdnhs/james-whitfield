@@ -45,15 +45,15 @@ export function UserMenu() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger
-        aria-label={`Account menu for ${user.name}`}
-        className="flex shrink-0 rounded-full p-1 outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50"
-      >
+      <DropdownMenuTrigger className="flex shrink-0 rounded-full p-1 outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50">
         <Avatar aria-hidden className="size-11">
           <AvatarFallback className="bg-primary font-semibold text-primary-foreground">
             {initials(user.name)}
           </AvatarFallback>
         </Avatar>
+        {/* Named by text, not aria-label, so the visible initials never
+            contradict the accessible name (axe label-content-name-mismatch). */}
+        <span className="sr-only">Account menu for {user.name}</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-60">
         <DropdownMenuGroup>

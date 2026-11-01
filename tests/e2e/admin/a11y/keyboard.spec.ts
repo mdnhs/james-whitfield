@@ -48,10 +48,14 @@ test("every control in the shell is reachable and shows focus", async ({
       if (!element || element === document.body) return null
       element.dataset.tabStop = String(index)
       const style = getComputedStyle(element)
+      // Text minus aria-hidden parts (kbd hints, avatar initials), as a
+      // screen reader would name the control.
+      const text = element.cloneNode(true) as HTMLElement
+      text.querySelectorAll("[aria-hidden]").forEach((node) => node.remove())
       return {
         name: (
           element.getAttribute("aria-label") ??
-          element.textContent ??
+          text.textContent ??
           ""
         ).trim(),
         focused: {

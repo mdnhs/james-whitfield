@@ -54,6 +54,8 @@ const eslintConfig = defineConfig([
     "dist/**",
     "playwright-report/**",
     "test-results/**",
+    // Remotion project with its own package.json and tsconfig.
+    "video/**",
     "next-env.d.ts",
   ]),
 ]);

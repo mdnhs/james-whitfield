@@ -45,7 +45,7 @@ jobs:
       DATABASE_URL_TEST: postgres://mk:mk@localhost:5432/mk_test
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           version: 10.32.1
       - uses: actions/setup-node@v4
@@ -92,7 +92,7 @@ jobs:
       MAILPIT_URL: http://localhost:8025
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           version: 10.32.1
       - uses: actions/setup-node@v4
@@ -177,7 +177,7 @@ jobs:
       HOME: /root
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           version: 10.32.1
       - uses: actions/setup-node@v4

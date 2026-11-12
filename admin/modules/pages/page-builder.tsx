@@ -42,10 +42,18 @@ import { BlockForm } from "./block-form"
 import { BLOCK_ICONS } from "./block-icons"
 import { BlockMeta } from "./block-meta"
 import { BlockOutline } from "./block-outline"
-import { docReducer, errorsByBlock, type DocAction } from "./builder-state"
+import {
+  docReducer,
+  errorsByBlock,
+  firstVisibleErrorBlock,
+  publishProblems,
+  type DocAction,
+  type PublishProblem,
+} from "./builder-state"
 import { ConflictDialog } from "./conflict-dialog"
 import { HistorySheet } from "./history-sheet"
 import { PreviewPane, previewSrc } from "./preview-pane"
+import { PublishProblems } from "./publish-problems"
 import { pageDetailQuery, pageRevisionsQuery, type PageDetail } from "./queries"
 import { SaveIndicator } from "./save-indicator"
 import { SeoForm } from "./seo-form"
@@ -123,6 +131,8 @@ function Builder({
   const [blockErrors, setBlockErrors] = useState<
     ReadonlyMap<string, Record<string, string[]>>
   >(() => new Map())
+  // Every error the last failed publish reported, shown above the editor.
+  const [problems, setProblems] = useState<PublishProblem[]>([])
   // A publish, discard or restore found a newer version on the server.
   const [stale, setStale] = useState<Conflict | null>(null)
   const [dismissed, setDismissed] = useState<Conflict | null>(null)
@@ -217,7 +227,8 @@ function Builder({
     if (error instanceof ApiError && error.code === "VALIDATION_FAILED") {
       const errors = errorsByBlock(error.fieldErrors, docRef.current)
       setBlockErrors(errors)
-      const [first] = errors.keys()
+      setProblems(publishProblems(error.fieldErrors, docRef.current))
+      const first = firstVisibleErrorBlock(errors, docRef.current)
       if (first) setSelectedId(first)
     }
     toast.error(error.message)
@@ -243,6 +254,7 @@ function Builder({
         hasUnpublishedChanges: false,
       })
       setBlockErrors(new Map())
+      setProblems([])
       setUnpublished(false)
       toast.success("Published")
       void queryClient.invalidateQueries({ queryKey: queryKeys.pages.all })
@@ -393,6 +405,7 @@ function Builder({
           </Button>
         </div>
       ) : null}
+      <PublishProblems problems={problems} />
       {readOnly ? (
         <p
           role="note"

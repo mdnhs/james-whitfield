@@ -21,6 +21,7 @@ const view = (
   status: "open",
   botActive: true,
   needsHuman: false,
+  hasEmail: false,
   agentName: null,
   messages,
   lastId: messages.at(-1)?.id ?? 0,
@@ -217,5 +218,50 @@ describe("dialog", () => {
     expect(document.activeElement).toBe(last)
     fireEvent.keyDown(dialog, { key: "Escape" })
     expect(onClose).toHaveBeenCalled()
+  })
+
+  it("moves focus to the composer after start and back to the form after Start a new chat", async () => {
+    queue = [
+      { status: 404, body: {} },
+      { status: 201, body: view([msg(1, "visitor")]) },
+      { status: 200, body: view([msg(1, "visitor")], { status: "closed" }) },
+    ]
+    render(<Harness />)
+    await flush()
+    fireEvent.change(screen.getByLabelText(/^name/i), {
+      target: { value: "Sam" },
+    })
+    fireEvent.change(screen.getByLabelText(/^message/i), {
+      target: { value: "Hi" },
+    })
+    fireEvent.click(screen.getByRole("checkbox"))
+    fireEvent.click(screen.getByRole("button", { name: /start chat/i }))
+    await flush()
+    expect(document.activeElement).toBe(screen.getByRole("textbox"))
+    await tick(3000)
+    const again = screen.getByRole("button", { name: "Start a new chat" })
+    expect(document.activeElement).toBe(again)
+    fireEvent.click(again)
+    await flush()
+    expect(document.activeElement).toBe(screen.getByLabelText(/^name/i))
+  })
+})
+
+describe("email ask", () => {
+  it("shows when a human is needed and no email is stored, hidden when hasEmail", async () => {
+    queue = [{ status: 200, body: view([msg(1, "ai")], { needsHuman: true }) }]
+    const first = render(<Harness />)
+    await flush()
+    expect(screen.getByRole("button", { name: "Save email" })).toBeTruthy()
+    first.unmount()
+    queue = [
+      {
+        status: 200,
+        body: view([msg(1, "ai")], { needsHuman: true, hasEmail: true }),
+      },
+    ]
+    render(<Harness />)
+    await flush()
+    expect(screen.queryByRole("button", { name: "Save email" })).toBeNull()
   })
 })

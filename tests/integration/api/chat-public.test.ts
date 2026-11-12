@@ -295,13 +295,16 @@ describe("chat public api", () => {
   })
 
   it("/email stores the address on an open chat only", async () => {
-    const { cookie } = await begin()
+    const { cookie, view } = await begin()
+    expect(view.hasEmail).toBe(false)
     const res = await chatRequest("/email", {
       method: "POST",
       body: { email: "aoife@example.com" },
       cookie,
     })
     expect(res.status).toBe(200)
+    const after = await chatRequest("/conversation", { cookie })
+    expect(((await after.json()) as { hasEmail: boolean }).hasEmail).toBe(true)
     const [row] = await getDb().select().from(chatConversations)
     expect(row!.visitorEmail).toBe("aoife@example.com")
     await chatRequest("/end", { method: "POST", cookie })

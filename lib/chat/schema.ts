@@ -36,6 +36,7 @@ export type VisitorView = {
   status: "open" | "closed"
   botActive: boolean
   needsHuman: boolean
+  hasEmail: boolean
   agentName: string | null
   messages: VisitorMessage[]
   lastId: number

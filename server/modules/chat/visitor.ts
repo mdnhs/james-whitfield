@@ -111,6 +111,7 @@ export async function view(
     status: chat.status as VisitorView["status"],
     botActive,
     needsHuman: chat.needsHuman,
+    hasEmail: Boolean(chat.visitorEmail),
     agentName,
     messages: rows.map((m) => ({
       id: m.id,

@@ -21,6 +21,7 @@ const view = (
   status: "open",
   botActive: true,
   needsHuman: false,
+  hasEmail: false,
   agentName: null,
   messages: ids.map((i) => msg(i)),
   lastId: ids.at(-1) ?? 0,
@@ -154,5 +155,37 @@ describe("useChat polling", () => {
     rerender({ open: true })
     await flush()
     expect(result.current.unread).toBe(false)
+  })
+
+  it("runs a poll requested while one is in flight right after it", async () => {
+    let release!: () => void
+    const gate = new Promise<void>((r) => (release = r))
+    responses = [
+      () => {
+        throw new Error("unused")
+      },
+    ]
+    responses = []
+    let n = 0
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      urls.push(String(input))
+      n += 1
+      if (n === 1) {
+        await gate
+        return json(200, view([1]))()
+      }
+      if (String(input).endsWith("/messages"))
+        return json(201, { ok: true, id: 2 })()
+      return json(200, view([1, 2]))()
+    })
+    const { result } = renderHook(() => useChat(true))
+    await flush() // first poll is now waiting on the gate
+    await act(async () => {
+      await result.current.send("hello")
+    })
+    release()
+    await flush()
+    expect(urls.filter((u) => u.includes("/conversation"))).toHaveLength(2)
+    expect(result.current.messages.map((m) => m.id)).toEqual([1, 2])
   })
 })

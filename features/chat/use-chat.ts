@@ -38,6 +38,7 @@ export function useChat(open: boolean) {
     closed: false,
     botActive: false,
     needsHuman: false,
+    hasEmail: false,
     agentName: null as string | null,
   })
   const [exists, setExists] = useState(false)
@@ -45,7 +46,6 @@ export function useChat(open: boolean) {
   const [reconnecting, setReconnecting] = useState(false)
   const [notice, setNotice] = useState<ChatNotice>(null)
   const [unread, setUnread] = useState(false)
-  const [emailSaved, setEmailSaved] = useState(false)
 
   // Opening the panel reads everything: adjust during render, not in an effect.
   const [prevOpen, setPrevOpen] = useState(open)
@@ -88,6 +88,7 @@ export function useChat(open: boolean) {
       closed: view.status === "closed",
       botActive: view.botActive,
       needsHuman: view.needsHuman,
+      hasEmail: view.hasEmail,
       agentName: view.agentName,
     })
     existsRef.current = true
@@ -99,6 +100,7 @@ export function useChat(open: boolean) {
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined
     let inflight = false
+    let queued = false
     let failures = 0
     let alive = true
 
@@ -119,7 +121,11 @@ export function useChat(open: boolean) {
     }
 
     const poll = async () => {
-      if (inflight) return
+      // A poll asked for mid-flight (after a send) runs right after it.
+      if (inflight) {
+        queued = true
+        return
+      }
       inflight = true
       clearTimeout(timer)
       const result = await getConversation(lastId.current)
@@ -141,6 +147,11 @@ export function useChat(open: boolean) {
       } else {
         failures += 1
         setReconnecting(result.kind === "network")
+      }
+      if (queued) {
+        queued = false
+        void poll()
+        return
       }
       schedule()
     }
@@ -189,7 +200,6 @@ export function useChat(open: boolean) {
           loadedRef.current = true
           setLoaded(true)
           setNotice(null)
-          setEmailSaved(Boolean(input.email))
           engine.current.schedule()
         }
       } else if (result.kind === "network") setNotice("offline")
@@ -221,7 +231,7 @@ export function useChat(open: boolean) {
 
   const saveEmail = useCallback(async (email: string) => {
     const result = await apiSaveEmail(email)
-    if (result.ok) setEmailSaved(true)
+    if (result.ok) setMeta((m) => ({ ...m, hasEmail: true }))
     return result
   }, [])
 
@@ -238,11 +248,11 @@ export function useChat(open: boolean) {
       closed: false,
       botActive: false,
       needsHuman: false,
+      hasEmail: false,
       agentName: null,
     })
     setExists(false)
     setNotice(null)
-    setEmailSaved(false)
   }, [])
 
   return {
@@ -252,7 +262,7 @@ export function useChat(open: boolean) {
     reconnecting,
     notice,
     unread,
-    emailSaved,
+    emailSaved: meta.hasEmail,
     ended: meta.closed,
     botActive: meta.botActive,
     needsHuman: meta.needsHuman,

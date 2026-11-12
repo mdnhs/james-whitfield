@@ -136,7 +136,7 @@ function StartForm({
     <form
       onSubmit={submit}
       noValidate
-      className="flex flex-1 flex-col gap-4 overflow-y-auto px-5 py-5"
+      className="flex flex-1 flex-col gap-4 overflow-y-auto px-5 pt-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]"
     >
       <p className="text-base leading-6 text-ink">{welcome}</p>
       <div>
@@ -295,7 +295,7 @@ export function ChatPanel({
   const composer = useRef<HTMLTextAreaElement>(null)
   const restart = useRef<HTMLButtonElement>(null)
   const list = useRef<HTMLUListElement>(null)
-  const focused = useRef(false)
+  const focusedFor = useRef<boolean | null>(null)
   const seen = useRef<Set<number> | null>(null)
 
   const [status, setStatus] = useState<ChatStatus | null>(null)
@@ -320,11 +320,13 @@ export function ChatPanel({
     }
   }, [])
 
-  // First focus: the start form's first field, or the composer when a chat
-  // exists. Until the cookie lookup lands, focus stays on the dialog.
+  // Focus the start form's first field, or the composer when a chat exists,
+  // on open and again whenever the view swaps (start, start a new chat): the
+  // focused control unmounts then. Until the cookie lookup lands, focus stays
+  // on the dialog.
   useEffect(() => {
-    if (!loaded || focused.current) return
-    focused.current = true
+    if (!loaded || focusedFor.current === exists) return
+    focusedFor.current = exists
     ;(exists ? composer.current : nameField.current)?.focus()
   }, [loaded, exists])
 
@@ -501,7 +503,7 @@ export function ChatPanel({
           ) : null}
           {emailAsk ? <EmailAsk chat={chat} note={emailNote} /> : null}
           {ended ? (
-            <div className="border-t border-brand/15 px-4 py-3">
+            <div className="border-t border-brand/15 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
               <button
                 ref={restart}
                 type="button"
@@ -514,7 +516,7 @@ export function ChatPanel({
           ) : (
             <form
               onSubmit={submitMessage}
-              className="flex items-end gap-2 border-t border-brand/15 px-4 py-3"
+              className="flex items-end gap-2 border-t border-brand/15 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
             >
               <textarea
                 ref={composer}

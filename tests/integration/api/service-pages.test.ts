@@ -1,4 +1,6 @@
-import { eq } from "drizzle-orm"
+import { readFileSync } from "node:fs"
+
+import { eq, sql } from "drizzle-orm"
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest"
 
 const next = vi.hoisted(() => ({ revalidateTag: vi.fn() }))
@@ -13,6 +15,7 @@ vi.mock("next/cache", async (importOriginal) => ({
 import { closeDb, getDb } from "@/server/db/client"
 import {
   ctaBands,
+  faqs,
   pages,
   redirects,
   revisions,
@@ -252,5 +255,137 @@ describe("service detail pages", () => {
     expect((await disable(await cookieFor("editor"), service.id)).status).toBe(
       404
     )
+  })
+})
+
+// Spec: a service already linked to a page by a hand-typed page_path keeps
+// that link (migration 0016 backfills pages.service_id).
+const BACKFILL = readFileSync(
+  "server/db/migrations/0016_service_page_backfill.sql",
+  "utf8"
+)
+
+async function legacySetup() {
+  const base = await setup()
+  await getDb()
+    .update(services)
+    .set({ pagePath: "/team" })
+    .where(eq(services.id, base.service.id))
+  const page = await insertPage({
+    path: "/team",
+    document: heroDocument(base.asset.id),
+    published: true,
+  })
+  return { ...base, page }
+}
+
+describe("legacy linked services", () => {
+  it("the backfill links a page at the service's page_path", async () => {
+    const { service, page } = await legacySetup()
+    // A system page at a page_path is never claimed.
+    await getDb().insert(services).values({
+      slug: "s",
+      title: "S",
+      body: "B",
+      icon: "mind",
+      pagePath: "/services",
+    })
+    await getDb().execute(sql.raw(BACKFILL))
+    expect((await findPage(page.id))!.serviceId).toBe(service.id)
+    const [system] = await getDb()
+      .select()
+      .from(pages)
+      .where(eq(pages.path, "/services"))
+    expect(system!.serviceId).toBeNull()
+  })
+
+  it("enable 409s and keeps a legacy link, backfilled or not", async () => {
+    const { service, page } = await legacySetup()
+    const cookie = await cookieFor("editor")
+    const before = await enable(cookie, service.id)
+    expect(before.status).toBe(409)
+    expect((await before.json()).error.message).toBe(
+      "This service already has a details page"
+    )
+    await getDb().execute(sql.raw(BACKFILL))
+    expect((await enable(cookie, service.id)).status).toBe(409)
+    expect((await findService(service.id)).pagePath).toBe("/team")
+    expect((await findPage(page.id))!.path).toBe("/team")
+    expect(
+      await getDb().select().from(pages).where(eq(pages.path, "/services/a"))
+    ).toHaveLength(0)
+  })
+
+  it("disable deletes the linked legacy page", async () => {
+    const { service, page } = await legacySetup()
+    await getDb().execute(sql.raw(BACKFILL))
+    expect((await disable(await cookieFor("editor"), service.id)).status).toBe(
+      204
+    )
+    expect(await findPage(page.id)).toBeUndefined()
+    expect((await findService(service.id)).pagePath).toBe("")
+  })
+
+  it("a slug change leaves a page outside /services/<slug> in place", async () => {
+    const { service, page } = await legacySetup()
+    await getDb().execute(sql.raw(BACKFILL))
+    const cookie = await cookieFor("editor")
+    expect((await patchService(cookie, service.id, { slug: "b" })).status).toBe(
+      200
+    )
+    expect((await findPage(page.id))!.path).toBe("/team")
+    expect((await findService(service.id)).pagePath).toBe("/team")
+    expect(
+      await getDb()
+        .select()
+        .from(redirects)
+        .where(eq(redirects.sourcePath, "/team"))
+    ).toHaveLength(0)
+  })
+
+  it("hide and delete reach the legacy page through its link", async () => {
+    const { service, page } = await legacySetup()
+    await getDb().execute(sql.raw(BACKFILL))
+    const cookie = await cookieFor("editor")
+    await patchService(cookie, service.id, { isVisible: false })
+    expect(await getPublishedPage("/team")).toBeNull()
+    expect((await getRouteTable()).live).not.toContain("/team")
+    const res = await adminRequest(
+      `/collections/services/${service.id}`,
+      cookie,
+      {
+        method: "DELETE",
+      }
+    )
+    expect(res.status).toBe(200)
+    expect(await findPage(page.id)).toBeUndefined()
+  })
+})
+
+describe("admin services list", () => {
+  it("tells each service its detail page", async () => {
+    const { service } = await setup()
+    const [other] = await getDb()
+      .insert(services)
+      .values({ slug: "z", title: "Z", body: "B", icon: "mind" })
+      .returning()
+    await getDb().insert(faqs).values({ question: "Q?", answer: "A." })
+    const cookie = await cookieFor("editor")
+    const { pageId } = await (await enable(cookie, service.id)).json()
+    const list = await (
+      await adminRequest("/collections/services", cookie)
+    ).json()
+    const byId = new Map(
+      list.items.map((i: { id: string }) => [i.id, i] as const)
+    )
+    expect(byId.get(service.id)).toMatchObject({
+      detailPage: { id: pageId, path: "/services/a", status: "draft" },
+    })
+    expect(byId.get(other!.id)).toMatchObject({ detailPage: null })
+    const faqList = await (
+      await adminRequest("/collections/faqs", cookie)
+    ).json()
+    expect(faqList.items).toHaveLength(1)
+    expect(faqList.items[0]).not.toHaveProperty("detailPage")
   })
 })

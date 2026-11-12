@@ -22,7 +22,9 @@ import {
 } from "@/server/lib/conflict"
 import { assertMediaExists } from "@/server/modules/media/assert-media"
 import {
+  detailPagesByService,
   removeServicePage,
+  serviceRow,
   syncServicePage,
 } from "@/server/modules/service-pages/service"
 
@@ -55,11 +57,18 @@ const toItem = (name: CollectionSlug, row: Row, usedOn: string[]) => ({
 export async function listItems(name: CollectionSlug) {
   const e = entryFor(name)
   const db = getDb()
-  const [rows, usage] = await Promise.all([
+  const [rows, usage, detailPages] = await Promise.all([
     db.select().from(e.table).orderBy(asc(e.table.sort)),
     collectionUsage(db),
+    name === "services" ? detailPagesByService(db) : null,
   ])
-  const items = rows.map((row) => toItem(name, row, usage(e.tag, row.id).shown))
+  const items = rows.map((row) => {
+    const item = toItem(name, row, usage(e.tag, row.id).shown)
+    // Services also say whether their detail page is on (the admin switch).
+    return detailPages
+      ? { ...item, detailPage: detailPages.get(row.id) ?? null }
+      : item
+  })
   return { items, page: 1, pageSize: items.length, total: items.length }
 }
 
@@ -159,12 +168,11 @@ export async function updateItem(
       if (!next) return null
       // A service's detail page follows its slug and visibility.
       if (name === "services") {
-        type ServiceRow = Parameters<typeof syncServicePage>[2]
         expire = await syncServicePage(
           tx,
           actor,
-          current as unknown as ServiceRow,
-          next as unknown as ServiceRow
+          serviceRow(current),
+          serviceRow(next)
         )
       }
       await audit(

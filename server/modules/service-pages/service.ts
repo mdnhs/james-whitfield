@@ -1,6 +1,6 @@
 import "server-only"
 
-import { and, asc, eq, ne } from "drizzle-orm"
+import { and, asc, eq, isNotNull, ne } from "drizzle-orm"
 
 import type { PageDocument } from "@/blocks/page"
 import { serviceTemplate } from "@/blocks/service-template"
@@ -59,8 +59,17 @@ export async function enableServicePage(actor: Actor, serviceId: string) {
       .for("update")
       .limit(1)
     if (!service) throw new ApiError("NOT_FOUND", "That service doesn't exist")
-    if (await linkedPage(tx, serviceId)) {
-      throw new ApiError("CONFLICT", "This service already has a page")
+    // A legacy hand-typed page_path that still names a page counts as a
+    // link too: it is kept, never overwritten.
+    const [legacy] = service.pagePath
+      ? await tx
+          .select({ id: pages.id })
+          .from(pages)
+          .where(eq(pages.path, service.pagePath))
+          .limit(1)
+      : []
+    if (legacy || (await linkedPage(tx, serviceId))) {
+      throw new ApiError("CONFLICT", "This service already has a details page")
     }
     const [band] = await tx
       .select({ id: ctaBands.id })
@@ -125,6 +134,35 @@ export async function disableServicePage(actor: Actor, serviceId: string) {
 
 type ServiceRow = { id: string; slug: string; isVisible: boolean }
 
+// The fields the hook reads, from a services row typed generically.
+export const serviceRow = (row: Record<string, unknown>): ServiceRow => ({
+  id: String(row.id),
+  slug: String(row.slug),
+  isVisible: row.isVisible === true,
+})
+
+export type DetailPage = {
+  id: string
+  path: string
+  status: "draft" | "published"
+}
+
+// Each service's linked detail page, for the admin list's switch.
+export async function detailPagesByService(db: DbLike = getDb()) {
+  const rows = await db
+    .select({
+      serviceId: pages.serviceId,
+      id: pages.id,
+      path: pages.path,
+      status: pages.status,
+    })
+    .from(pages)
+    .where(isNotNull(pages.serviceId))
+  return new Map<string, DetailPage>(
+    rows.map(({ serviceId, ...page }) => [serviceId!, page])
+  )
+}
+
 // Runs in the services update transaction: a new slug moves the page (a
 // published one leaves a redirect behind) and a visibility change expires
 // it. Returns the tags to expire after commit.
@@ -140,7 +178,10 @@ export async function syncServicePage(
   if (before.isVisible !== after.isVisible) {
     expire.push(tags.page(page.id), tags.routes)
   }
-  if (before.slug === after.slug) return expire
+  // Only a page at /services/<old slug> follows the slug; a linked page
+  // elsewhere (a legacy /team, say) keeps its address.
+  if (before.slug === after.slug || page.path !== servicePagePath(before.slug))
+    return expire
   const path = servicePagePath(after.slug)
   const [taken] = await tx
     .select({ id: pages.id })

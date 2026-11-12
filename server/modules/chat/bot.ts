@@ -19,7 +19,7 @@ import { getGlobal } from "@/server/modules/globals/service"
 import { loadKnowledge } from "./knowledge"
 import { isCrisis } from "./crisis"
 import { notifyNeedsHuman, type AlertReason } from "./notify"
-import { buildBotPrompt, toModelMessages } from "./prompt"
+import { buildBotPrompt, endWithUnanswered, toModelMessages } from "./prompt"
 import * as repo from "./repo"
 
 export type BotOutcome = "replied" | "skipped" | "handoff" | "failed"
@@ -120,6 +120,7 @@ async function run(id: string): Promise<Result> {
     const chat = await repo.byId(id)
     if (!chat || !botOwns(chat)) return stop()
 
+    const handledBefore = handled
     const seen: Hist = await repo.recentForModel(id, 20)
     const newest = seen.findLast((m) => m.sender === "visitor")
     if (!newest) return stop()
@@ -169,7 +170,9 @@ async function run(id: string): Promise<Result> {
           today: format(new Date(), "EEEE d MMMM yyyy", { in: DUBLIN }),
         }),
         messages: toModelMessages(
-          seen.map((m) => ({ role: m.sender, content: m.body }))
+          (round === 0 ? seen : endWithUnanswered(seen, handledBefore)).map(
+            (m) => ({ role: m.sender, content: m.body })
+          )
         ),
         maxOutputTokens: 300,
         abortSignal: AbortSignal.timeout(25_000),

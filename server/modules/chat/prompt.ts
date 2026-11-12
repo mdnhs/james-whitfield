@@ -49,3 +49,13 @@ export function buildBotPrompt(input: {
   lines.push("", "KNOWLEDGE:", "<<<", input.knowledge, ">>>")
   return lines.join("\n")
 }
+
+// Visitor turns newer than the last one answered go after the bot's answer,
+// so the model's history always ends with a visitor turn, not its own reply.
+export function endWithUnanswered<T extends { id: number; sender: string }>(
+  history: readonly T[],
+  handled: number
+): T[] {
+  const late = (m: T) => m.sender === "visitor" && m.id > handled
+  return [...history.filter((m) => !late(m)), ...history.filter(late)]
+}

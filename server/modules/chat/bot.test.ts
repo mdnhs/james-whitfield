@@ -243,6 +243,12 @@ describe("maybeReply", () => {
     expect(calls).toBe(2)
     expect(aiMsgs()).toHaveLength(2)
     expect(state.lease).toBe(false)
+    const second = JSON.parse(state.prompts[1]!) as {
+      role: string
+      content: unknown
+    }[]
+    expect(second.at(-1)?.role).toBe("user")
+    expect(JSON.stringify(second.at(-1)?.content)).toContain("one more thing")
   })
 
   it("(f) the handoff tool stores the answer, then a handoff notice", async () => {

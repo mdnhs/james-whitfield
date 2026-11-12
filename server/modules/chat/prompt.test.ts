@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { buildBotPrompt, toModelMessages } from "./prompt"
+import { buildBotPrompt, endWithUnanswered, toModelMessages } from "./prompt"
 
 const base = {
   botName: "Assistant",
@@ -44,6 +44,18 @@ describe("buildBotPrompt", () => {
     const p = buildBotPrompt({ ...base, knowledge: "no contact" })
     expect(p).not.toMatch(/\S+@\S+/)
     expect(p).toContain("Aoife")
+  })
+})
+
+describe("endWithUnanswered", () => {
+  it("moves unanswered visitor turns after the ai answer", () => {
+    const h = [
+      { id: 1, sender: "visitor" },
+      { id: 2, sender: "visitor" },
+      { id: 3, sender: "ai" },
+    ]
+    expect(endWithUnanswered(h, 1).map((m) => m.id)).toEqual([1, 3, 2])
+    expect(endWithUnanswered(h, 2).map((m) => m.id)).toEqual([1, 2, 3])
   })
 })
 

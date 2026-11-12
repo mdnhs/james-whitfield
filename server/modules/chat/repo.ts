@@ -439,3 +439,35 @@ export async function staffOnline(
     limit 1`)
   return rows.length > 0
 }
+
+// Compare-and-set: only an open, unassigned chat can be claimed, so two staff
+// acting at once cannot both win.
+export async function assignIfUnassigned(
+  id: string,
+  userId: string,
+  db: DbLike = getDb()
+): Promise<ChatRow | null> {
+  const [row] = await db
+    .update(chatConversations)
+    .set({ assignedTo: userId })
+    .where(
+      and(
+        eq(chatConversations.id, id),
+        eq(chatConversations.status, "open"),
+        sql`${chatConversations.assignedTo} is null`
+      )
+    )
+    .returning()
+  return row ?? null
+}
+
+export async function userRole(
+  userId: string,
+  db: DbLike = getDb()
+): Promise<{ name: string; role: string | null } | null> {
+  const [row] = await db
+    .select({ name: users.name, role: users.role })
+    .from(users)
+    .where(eq(users.id, userId))
+  return row ?? null
+}

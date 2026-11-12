@@ -1,5 +1,6 @@
 import "server-only"
 
+import { hasPermission, parseRoles } from "@/lib/auth/permissions"
 import { ApiError } from "@/server/api/errors"
 import type { Actor } from "@/server/auth/actor"
 import { audit } from "@/server/lib/audit"
@@ -54,19 +55,28 @@ export async function detail(id: string, after: number) {
 async function claim(actor: Actor, id: string) {
   const before = await load(id)
   if (before.status !== "open") throw closedError()
+  let joined = false
+  if (before.assignedTo !== actor.userId) {
+    const taken = () =>
+      new ApiError("CONFLICT", "Someone else is handling this chat")
+    if (before.assignedTo !== null) throw taken()
+    const assigned = await repo.assignIfUnassigned(id, actor.userId)
+    if (assigned) {
+      joined = true
+      await repo.addMessage({
+        conversationId: id,
+        sender: "system",
+        body: `${actor.name} joined the chat.`,
+      })
+    } else {
+      const now = await load(id)
+      if (now.status !== "open") throw closedError()
+      if (now.assignedTo !== actor.userId) throw taken()
+    }
+  }
   const updated = await repo.setAi(id, false)
   if (!updated) throw closedError()
-  if (before.assignedTo === null) {
-    const assigned = await repo.assign(id, actor.userId)
-    if (!assigned) throw closedError()
-    await repo.addMessage({
-      conversationId: id,
-      sender: "system",
-      body: `${actor.name} joined the chat.`,
-    })
-    return { chat: assigned, joined: true }
-  }
-  return { chat: updated, joined: false }
+  return { chat: updated, joined }
 }
 
 export async function reply(actor: Actor, id: string, body: string) {
@@ -106,6 +116,10 @@ export async function handback(actor: Actor, id: string) {
   if (before.assignedTo !== null && before.assignedTo !== actor.userId) {
     throw new ApiError("CONFLICT", "Another team member is on this chat")
   }
+  // Nothing to hand back: no notice, no bot run, so repeated clicks are inert.
+  if (before.assignedTo === null && before.aiEnabled && !before.needsHuman) {
+    return { chat: toStaff(before) }
+  }
   if (before.assignedTo !== null && !(await repo.assign(id, null))) {
     throw closedError()
   }
@@ -131,8 +145,12 @@ export async function assign(actor: Actor, id: string, userId: string | null) {
   if (before.status !== "open") throw closedError()
   let name: string | null = null
   if (userId) {
-    name = await repo.assigneeName(userId)
-    if (name === null) throw new ApiError("NOT_FOUND", "User not found")
+    const user = await repo.userRole(userId)
+    if (!user) throw new ApiError("NOT_FOUND", "User not found")
+    if (!hasPermission(parseRoles(user.role), { chat: ["reply"] })) {
+      throw new ApiError("BAD_REQUEST", "That person can't reply to chats")
+    }
+    name = user.name
   }
   const chat = await repo.assign(id, userId)
   if (!chat) throw closedError()

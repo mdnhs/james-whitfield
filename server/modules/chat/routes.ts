@@ -31,7 +31,11 @@ const ReadBody = z.object({
 // Staff who can reply count as online while they use the inbox.
 const presence = createMiddleware<AppEnv>(async (c, next) => {
   const actor = c.get("actor")
-  if (actor && hasPermission(actor.roles, { chat: ["reply"] })) {
+  if (
+    actor &&
+    !actor.impersonatedBy &&
+    hasPermission(actor.roles, { chat: ["reply"] })
+  ) {
     await touchPresence(actor.userId)
   }
   await next()

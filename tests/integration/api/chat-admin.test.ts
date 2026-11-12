@@ -323,6 +323,71 @@ describe("chat admin API", () => {
     ).toBe(404)
   })
 
+  it("two staff replying at once: one holder, one join notice, the other gets 409", async () => {
+    const a = await cookieFor("intake", "a@example.com")
+    const b = await cookieFor("intake", "b@example.com")
+    const chat = await newChat()
+    const send = (cookie: string) =>
+      adminRequest(`/chat/${chat.id}/messages`, cookie, {
+        method: "POST",
+        body: { body: "hello" },
+      })
+    const statuses = (await Promise.all([send(a), send(b)]))
+      .map((r) => r.status)
+      .sort()
+    expect(statuses).toEqual([201, 409])
+    const joins = (await messages(chat.id)).filter((m) =>
+      m.body.endsWith(" joined the chat.")
+    )
+    expect(joins).toHaveLength(1)
+    expect((await row(chat.id)).assignedTo).not.toBeNull()
+  })
+
+  it("repeated handback adds one notice and defers the bot once", async () => {
+    const cookie = await cookieFor("intake")
+    const chat = await newChat()
+    await adminRequest(`/chat/${chat.id}/takeover`, cookie, { method: "POST" })
+    for (let i = 0; i < 3; i++) {
+      expect(
+        (
+          await adminRequest(`/chat/${chat.id}/handback`, cookie, {
+            method: "POST",
+          })
+        ).status
+      ).toBe(200)
+    }
+    await Promise.all(mocks.tasks)
+    expect(
+      (await messages(chat.id)).filter(
+        (m) => m.body === "The assistant is back on this chat."
+      )
+    ).toHaveLength(1)
+    expect(mocks.maybeReply).toHaveBeenCalledTimes(1)
+  })
+
+  it("assign rejects someone who cannot reply to chats", async () => {
+    const admin = await cookieFor("admin")
+    const viewer = await createUser("viewer", "v2@example.com")
+    const chat = await newChat()
+    const res = await adminRequest(`/chat/${chat.id}/assign`, admin, {
+      method: "POST",
+      body: { userId: viewer.id },
+    })
+    expect(res.status).toBe(400)
+    expect((await row(chat.id)).assignedTo).toBeNull()
+  })
+
+  it("view-as does not mark the target online", async () => {
+    await createUser("owner", "o@example.com")
+    const target = await createUser("intake", "t@example.com")
+    const cookie = await viewAs(
+      await signInWithTwoFactor("o@example.com"),
+      target.id
+    )
+    expect((await adminRequest("/chat", cookie)).status).toBe(200)
+    expect(await getDb().select().from(chatPresence)).toHaveLength(0)
+  })
+
   it("view-as can read but every mutation is 403", async () => {
     await createUser("owner", "o@example.com")
     const target = await createUser("intake", "t@example.com")

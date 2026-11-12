@@ -9,7 +9,7 @@ import { PageMotion } from "@/components/page-motion"
 import { ArticleCard } from "@/features/insights/components/article-card"
 import { InsightsRail } from "@/features/insights/components/insights-rail"
 import { ARTICLE_SHELL_SLUG } from "@/lib/content/article-slug"
-import { categoryHref } from "@/lib/content/taxonomy"
+import { categoryHref } from "@/lib/content/category-href"
 import { categorySubject } from "@/lib/seo/category"
 import { breadcrumbNode, graph } from "@/lib/seo/json-ld"
 import { buildMetadata } from "@/lib/seo/metadata"
@@ -67,7 +67,7 @@ export default async function CategoryPage({
       <JsonLd
         graph={graph([
           breadcrumbNode(origin, [
-            { name: copy.breadcrumbHome || "Home", path: "/" },
+            { name: copy.breadcrumbHome, path: "/" },
             { name: insightsName, path: "/insights" },
             { name: category.name, path: categoryHref(category.slug) },
           ]),
@@ -101,7 +101,7 @@ export default async function CategoryPage({
                 href="/insights"
                 className="text-white/70 transition-colors hover:text-white"
               >
-                {copy.breadcrumbInsights}
+                {insightsName}
               </Link>
               <span aria-hidden className="text-white/40">
                 /

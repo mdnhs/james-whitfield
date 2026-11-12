@@ -3,7 +3,13 @@ import { describe, expect, it } from "vitest"
 import { resolvePath } from "./route-resolution"
 
 const table = {
-  live: ["/", "/about", "/insights", "/insights/calm"],
+  live: [
+    "/",
+    "/about",
+    "/insights",
+    "/insights/calm",
+    "/insights/category/sleep",
+  ],
   redirects: {
     "/old": { destination: "/about", statusCode: 301 },
     "/about": { destination: "/services", statusCode: 301 },
@@ -43,6 +49,15 @@ describe("resolvePath (Ruling R3)", () => {
     expect(resolvePath(table, "/no/such/page")).toEqual({ kind: "pass" })
     expect(resolvePath({ live: [], redirects: {} }, "/")).toEqual({
       kind: "pass",
+    })
+  })
+
+  it("answers live for a category hub and missing for an unknown one", () => {
+    expect(resolvePath(table, "/insights/category/sleep")).toEqual({
+      kind: "live",
+    })
+    expect(resolvePath(table, "/insights/category/nope")).toEqual({
+      kind: "missing",
     })
   })
 })

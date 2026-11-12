@@ -1,5 +1,5 @@
 import { PageSeo } from "@/blocks/page"
-import { categoryHref } from "@/lib/content/taxonomy"
+import { categoryHref } from "@/lib/content/category-href"
 import type { CategoryDetail } from "@/lib/content/types"
 
 import type { SeoSubject } from "./metadata"

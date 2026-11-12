@@ -9,9 +9,10 @@ export type Resolution =
   | { kind: "redirect"; destination: string; statusCode: number }
 
 // Shapes the CMS owns: one segment (system and custom pages), service
-// landing pages and articles.
+// landing pages, articles and category hubs.
 // Deeper unknown paths already 404 through app/global-not-found.tsx.
-const CMS_SHAPE = /^\/(?:[^/]+|(?:insights|services)\/[^/]+)$/
+const CMS_SHAPE =
+  /^\/(?:[^/]+|(?:insights|services)\/[^/]+|insights\/category\/[^/]+)$/
 
 // Ruling R3: live content > redirect > missing > pass. "/" is never missing.
 export function resolvePath(table: RouteTable, path: string): Resolution {

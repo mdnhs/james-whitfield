@@ -1,7 +1,7 @@
 import Link from "next/link"
 
 import { MediaImage } from "@/components/media-image"
-import { categoryHref } from "@/lib/content/taxonomy"
+import { categoryHref } from "@/lib/content/category-href"
 import type { ArticleSummary } from "@/lib/content/types"
 import { cn } from "@/lib/utils"
 

@@ -4,7 +4,7 @@ import { and, desc, eq, max } from "drizzle-orm"
 
 import { PageSeo, type PageDocument } from "@/blocks/page"
 import type { ArticleBodyDoc } from "@/blocks/rich-text"
-import { categoryHref } from "@/lib/content/taxonomy"
+import { categoryHref } from "@/lib/content/category-href"
 import { getDb, type DbLike } from "@/server/db/client"
 import { articleCategories, articles, pages } from "@/server/db/schema"
 

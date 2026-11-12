@@ -2,7 +2,7 @@ import Link from "next/link"
 
 import { Container } from "@/components/layout/container"
 import { MediaImage } from "@/components/media-image"
-import { categoryHref } from "@/lib/content/taxonomy"
+import { categoryHref } from "@/lib/content/category-href"
 import type { GlobalValue } from "@/lib/content/globals"
 import type { ArticleSummary } from "@/lib/content/types"
 import { fill } from "@/lib/fill"

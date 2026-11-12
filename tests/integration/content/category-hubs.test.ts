@@ -1,8 +1,17 @@
 import { eq } from "drizzle-orm"
-import { afterAll, beforeEach, describe, expect, it } from "vitest"
+import { afterAll, beforeEach, describe, expect, it, vi } from "vitest"
+
+// 'use cache' is inert outside Next; its helpers must be too.
+vi.mock("next/cache", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("next/cache")>()),
+  cacheTag: vi.fn(),
+  cacheLife: vi.fn(),
+  revalidateTag: vi.fn(),
+}))
 
 import { closeDb, getDb } from "@/server/db/client"
 import { articleCategories } from "@/server/db/schema"
+import { getRouteTable } from "@/server/modules/redirects/queries"
 import { findCategoryBySlug } from "@/server/modules/content/repo"
 import { listCategoryHubs } from "@/server/modules/seo/live"
 
@@ -58,5 +67,17 @@ describe("category hubs", () => {
       seoDescription: "",
     })
     expect(await findCategoryBySlug("nope")).toBeNull()
+  })
+
+  it("puts visible category hubs in the route table", async () => {
+    await insertTaxonomy("vis")
+    const { category: hidden } = await insertTaxonomy("hid")
+    await getDb()
+      .update(articleCategories)
+      .set({ isVisible: false })
+      .where(eq(articleCategories.id, hidden.id))
+    const { live } = await getRouteTable()
+    expect(live).toContain("/insights/category/cat-vis")
+    expect(live).not.toContain("/insights/category/cat-hid")
   })
 })

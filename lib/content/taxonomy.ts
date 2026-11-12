@@ -25,5 +25,4 @@ export const AuthorInput = z.object({
   isVisible: z.boolean(),
 })
 
-// The category hub page for a slug.
-export const categoryHref = (slug: string) => `/insights/category/${slug}`
+export { categoryHref } from "./category-href"

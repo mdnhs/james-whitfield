@@ -43,6 +43,7 @@ test.describe("as an editor", () => {
     await page.getByRole("button", { name: "Image", exact: true }).click()
     await page
       .getByRole("dialog", { name: "Choose an image" })
+      .getByRole("list")
       .getByRole("button")
       .first()
       .click()
@@ -52,6 +53,7 @@ test.describe("as an editor", () => {
     await page.getByRole("button", { name: "Choose cover image" }).click()
     await page
       .getByRole("dialog", { name: "Choose an image" })
+      .getByRole("list")
       .getByRole("button")
       .first()
       .click()

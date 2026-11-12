@@ -21,6 +21,7 @@ export const statement = {
   settings: ["read", "update"],
   audit: ["read"],
   ai: ["use", "manage"],
+  chat: ["read", "reply", "manage"],
 } as const
 
 export const ac = createAccessControl(statement)
@@ -88,6 +89,7 @@ const marketer = ac.newRole({
 const intake = ac.newRole({
   dashboard: ["view"],
   lead: ["read", "update"],
+  chat: ["read", "reply"],
   ai: ["use"],
 })
 

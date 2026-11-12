@@ -230,6 +230,7 @@ export const NAV: readonly NavItem[] = [
       setting("forms", "Forms & microcopy", "globals"),
       setting("notifications", "Notifications", "settings"),
       setting("privacy", "Privacy", "settings"),
+      setting("chat", "Live chat", "settings"),
       {
         id: "settings-ai-assistant",
         label: "AI assistant",

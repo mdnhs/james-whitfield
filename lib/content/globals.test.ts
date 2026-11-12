@@ -3,7 +3,12 @@ import { describe, expect, it, vi } from "vitest"
 
 import { resolveSiteTokens, SITE_DEFAULT } from "@/lib/theme/site"
 
-import { GLOBALS, parseGlobal, type GlobalKey } from "./globals"
+import {
+  GLOBALS,
+  parseGlobal,
+  PUBLIC_GLOBAL_KEYS,
+  type GlobalKey,
+} from "./globals"
 
 describe("globals", () => {
   it("every key parses an empty document to safe defaults", () => {
@@ -45,6 +50,39 @@ describe("globals", () => {
     expect(() =>
       GLOBALS.site.parse({ social: [{ label: "L", url: "https://x.ie/a" }] })
     ).not.toThrow()
+  })
+})
+
+describe("chat global", () => {
+  it("parses an empty document to the documented defaults", () => {
+    expect(parseGlobal("chat", {})).toEqual({
+      enabled: false,
+      welcome: "Hi, how can we help?",
+      offlineNote:
+        "No one is online right now. Leave your email and Magda's team will reply.",
+      bot: {
+        enabled: false,
+        name: "Assistant",
+        extraInstructions: "",
+        maxAiReplies: 20,
+      },
+    })
+  })
+  it("rejects maxAiReplies out of 1..50 and an over-long bot name", () => {
+    expect(() => GLOBALS.chat.parse({ bot: { maxAiReplies: 0 } })).toThrow()
+    expect(() => GLOBALS.chat.parse({ bot: { maxAiReplies: 51 } })).toThrow()
+    expect(() =>
+      GLOBALS.chat.parse({ bot: { name: "x".repeat(41) } })
+    ).toThrow()
+    expect(() =>
+      GLOBALS.chat.parse({ bot: { name: "x".repeat(40) } })
+    ).not.toThrow()
+  })
+  it("is never public, and privacy gains chat retention (12 months)", () => {
+    expect(PUBLIC_GLOBAL_KEYS as readonly string[]).not.toContain("chat")
+    expect(parseGlobal("privacy", {}).chatRetentionMonths).toBe(12)
+    expect(() => GLOBALS.privacy.parse({ chatRetentionMonths: 0 })).toThrow()
+    expect(() => GLOBALS.privacy.parse({ chatRetentionMonths: 61 })).toThrow()
   })
 })
 

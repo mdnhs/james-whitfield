@@ -51,6 +51,15 @@ export const GLOBAL_FIELD_UI: Partial<
         "Off by default: enquiries can contain health information, and email copies leave the admin.",
     },
   },
+  chat: {
+    enabled: { label: "Show the chat on the site" },
+    "bot.enabled": {
+      label: "AI assistant answers first",
+      description:
+        "Needs an AI provider key in AI assistant settings. Chats are sent to that provider.",
+    },
+    "bot.maxAiReplies": { label: "Assistant replies per chat" },
+  },
   consent: {
     version: {
       description:

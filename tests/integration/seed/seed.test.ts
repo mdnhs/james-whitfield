@@ -68,7 +68,7 @@ describe("content seed", () => {
       authors: 4,
       articles: 7,
       pages: 9,
-      settings: 14,
+      settings: 15,
     })
     expect(await seedContent({ force: true })).toMatchObject({ skipped: false })
     expect(await counts()).toEqual(first)

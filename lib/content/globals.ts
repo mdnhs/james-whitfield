@@ -6,7 +6,8 @@ import { ThemeConfig } from "@/lib/theme/schema"
 import { CUSTOM_SCRIPT_HOSTS } from "@/lib/tracking/hosts"
 import { GA4_ID, GTM_ID, PIXEL_ID } from "@/lib/tracking/ids"
 
-const s = (max: number) => z.string().trim().max(max).default("")
+const s = (max: number, fallback = "") =>
+  z.string().trim().max(max).default(fallback)
 const Link = z.object({
   label: s(60),
   href: Href.or(z.literal("")).default(""),
@@ -440,6 +441,26 @@ export const PrivacyGlobal = z.object({
   spamRetentionDays: z.number().int().min(1).max(365).default(30),
   newsletterDoubleOptIn: z.boolean().default(true),
   ipSaltRotatedAt: z.iso.datetime().nullable().default(null),
+  chatRetentionMonths: z.number().int().min(1).max(60).default(12),
+})
+
+// Live chat. Operator-only (not in PUBLIC_GLOBAL_KEYS): the public widget gets
+// a reduced copy from its own endpoint, never this document.
+export const ChatGlobal = z.object({
+  enabled: z.boolean().default(false),
+  welcome: s(200, "Hi, how can we help?"),
+  offlineNote: s(
+    200,
+    "No one is online right now. Leave your email and Magda's team will reply."
+  ),
+  bot: z
+    .object({
+      enabled: z.boolean().default(false),
+      name: s(40, "Assistant"),
+      extraInstructions: s(1000),
+      maxAiReplies: z.number().int().min(1).max(50).default(20),
+    })
+    .prefault({}),
 })
 
 export const GLOBALS = {
@@ -457,6 +478,7 @@ export const GLOBALS = {
   theme: ThemeGlobal,
   notifications: NotificationsGlobal,
   privacy: PrivacyGlobal,
+  chat: ChatGlobal,
 } as const
 
 export type GlobalKey = keyof typeof GLOBALS

@@ -260,19 +260,31 @@ describe("can() without a session", () => {
 // seo is seo.read. 200 = past can(); the body is a defaults document.
 const GLOBALS_READ: Record<
   RoleName,
-  { site: number; notifications: number; contact: number; seo: number }
+  {
+    site: number
+    notifications: number
+    chat: number
+    contact: number
+    seo: number
+  }
 > = {
-  owner: { site: 200, notifications: 200, contact: 200, seo: 200 },
-  admin: { site: 200, notifications: 200, contact: 200, seo: 200 },
-  editor: { site: 403, notifications: 403, contact: 200, seo: 200 },
-  author: { site: 403, notifications: 403, contact: 403, seo: 403 },
-  marketer: { site: 403, notifications: 403, contact: 200, seo: 200 },
-  intake: { site: 403, notifications: 403, contact: 403, seo: 403 },
-  viewer: { site: 403, notifications: 403, contact: 200, seo: 200 },
+  owner: { site: 200, notifications: 200, chat: 200, contact: 200, seo: 200 },
+  admin: { site: 200, notifications: 200, chat: 200, contact: 200, seo: 200 },
+  editor: { site: 403, notifications: 403, chat: 403, contact: 200, seo: 200 },
+  author: { site: 403, notifications: 403, chat: 403, contact: 403, seo: 403 },
+  marketer: {
+    site: 403,
+    notifications: 403,
+    chat: 403,
+    contact: 200,
+    seo: 200,
+  },
+  intake: { site: 403, notifications: 403, chat: 403, contact: 403, seo: 403 },
+  viewer: { site: 403, notifications: 403, chat: 403, contact: 200, seo: 200 },
 }
 
 describe.each(ROLE_NAMES)("globals read routes for %s", (role) => {
-  it.each(["site", "notifications", "contact", "seo"] as const)(
+  it.each(["site", "notifications", "chat", "contact", "seo"] as const)(
     "GET /globals/%s",
     async (key) => {
       const response = await adminRequest(
@@ -282,6 +294,13 @@ describe.each(ROLE_NAMES)("globals read routes for %s", (role) => {
       expect(response.status).toBe(GLOBALS_READ[role][key])
     }
   )
+})
+
+// The chat inbox routes land in a later live-chat task; until then the rows
+// stay pending. Expected: owner/admin/intake past can(), marketer and viewer
+// (and every other role) FORBIDDEN on /api/v1/admin/chat.
+describe("chat inbox routes (pending)", () => {
+  it.todo("GET /chat is forbidden for marketer and viewer")
 })
 
 // docs/brief.md §7.2 collection rows. 404 means "past can(), no such item";

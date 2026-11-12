@@ -1,9 +1,8 @@
 import type { Metadata } from "next"
-import Link from "next/link"
 import { NuqsAdapter } from "nuqs/adapters/next/app"
 import { siteFontClassName } from "./(site)/fonts"
 import "./(site)/site.css"
-import { Container } from "@/components/layout/container"
+import { NotFoundView } from "@/components/not-found-view"
 
 export const metadata: Metadata = {
   title: "Page not found",
@@ -20,18 +19,7 @@ export default function GlobalNotFound() {
       <body>
         <NuqsAdapter>
           <main data-page-root>
-            <Container className="py-32 text-center">
-              <h1 className="text-3xl font-semibold">Page not found</h1>
-              <p className="mt-4">This page does not exist.</p>
-              <nav
-                aria-label="Helpful links"
-                className="mt-8 flex flex-wrap justify-center gap-6 underline"
-              >
-                <Link href="/">Back to home</Link>
-                <Link href="/insights">Read the insights</Link>
-                <Link href="/contact">Get in touch</Link>
-              </nav>
-            </Container>
+            <NotFoundView />
           </main>
         </NuqsAdapter>
       </body>

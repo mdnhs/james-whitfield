@@ -6,10 +6,9 @@ import { useLenis } from "lenis/react"
 import { gsap, ScrollTrigger, useGSAP } from "@/lib/gsap"
 import { cn } from "@/lib/utils"
 import { findTarget } from "@/lib/page-root"
+import { glideTo } from "@/components/smooth-scroll"
 
 type Chapter = { label: string; target: string }
-
-const EASE = (t: number) => 1 - Math.pow(1 - t, 4)
 
 // Wayfinding for the scroll journey. Desktop: a rail on the right edge with a
 // dot per chapter, a fill that tracks overall progress, and labels that open on
@@ -68,7 +67,7 @@ export function JourneyRail({ chapters }: { chapters: Chapter[] }) {
   const go = (target: string) => {
     const el = findTarget(target, rail.current)
     if (!el || !lenis) return
-    lenis.scrollTo(target === "home" ? 0 : el, { duration: 1.6, easing: EASE })
+    glideTo(lenis, target === "home" ? 0 : el)
   }
 
   return (

@@ -214,17 +214,43 @@ export function PageMotion() {
                   `top ${Math.min(el.offsetHeight, document.documentElement.clientHeight)}px`,
                 end: "top top",
                 scrub: true,
+                invalidateOnRefresh: true,
               },
             })
+
+            // Sticking alone stops the card dead: one frame it travels at full
+            // scroll speed, the next it stands still, and the reader feels it
+            // as a jolt. So the card keeps rising at scroll speed the moment it
+            // sticks and brakes to a halt over the first part of the cover.
+            // Its bottom edge never rises faster than the next card's top, so
+            // no seam opens between them.
+            const BRAKE = 0.5
+            const glide = (p: number) =>
+              p < BRAKE ? (p - (p * p) / (2 * BRAKE)) / (BRAKE / 2) : 1
+            timeline.to(
+              el,
+              {
+                y: () =>
+                  -Math.min(
+                    el.offsetHeight,
+                    document.documentElement.clientHeight
+                  ) *
+                  (BRAKE / 2),
+                ease: glide,
+                force3D: true,
+              },
+              0
+            )
 
             // Phones neither shrink nor dim the covered card: at a 390px width
             // either one shows through the next card's rounded corners as a
             // dark gap. There the covered card stays as it was and the corners
-            // simply reveal its own colour.
+            // simply reveal its own colour. The sink eases in so it, too,
+            // starts without a kick.
             if (sm)
               timeline
-                .to(shade, { opacity: 0.55, force3D: true }, 0)
-                .to(el, { scale: 0.94, force3D: true }, 0)
+                .to(shade, { opacity: 0.55, ease: "sine.in", force3D: true }, 0)
+                .to(el, { scale: 0.94, ease: "sine.in", force3D: true }, 0)
 
             // A flat card (the hero) takes on the stack's rounded top corners
             // as it sinks, so it leaves like every other card.

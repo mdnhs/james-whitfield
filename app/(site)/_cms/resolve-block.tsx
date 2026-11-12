@@ -29,9 +29,10 @@ import { RichTextSection } from "@/features/richtext"
 import { FormatsSection, ServicesGrid } from "@/features/services"
 import { JourneySection } from "@/features/journey"
 import { TestimonialsSection } from "@/features/testimonials"
-import { select, visiblePlans } from "@/lib/content/select"
+import { select, visiblePlans, withLivePagePaths } from "@/lib/content/select"
 import { slugify } from "@/lib/utils"
 import { turnstileSiteKey } from "@/server/lib/turnstile"
+import { getRouteTable } from "@/server/modules/redirects/queries"
 import * as q from "@/server/modules/content/queries"
 
 const withMedia = async <T,>(value: T) =>
@@ -108,14 +109,20 @@ export async function ResolvedBlock({ block }: { block: BlockInstance }) {
       return <ApproachSection id={id} content={block.data} />
     case "about.credentials":
       return <CredentialsSection id={id} content={block.data} />
-    case "services.grid":
+    case "services.grid": {
+      // A service links to its landing page only when that page is live.
+      const [services, { live }] = await Promise.all([
+        q.getServices(),
+        getRouteTable(),
+      ])
       return (
         <ServicesGrid
           id={id}
           content={block.data}
-          services={await q.getServices()}
+          services={withLivePagePaths(services, live)}
         />
       )
+    }
     case "services.plans":
       return (
         <FormatsSection

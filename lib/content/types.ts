@@ -79,7 +79,8 @@ export type ArticleSummary = {
   title: string
   excerpt: string
   image: MediaAsset
-  category: { slug: string; name: string }
+  // isVisible: hidden categories have no hub page, so labels must not link.
+  category: { slug: string; name: string; isVisible: boolean }
   author: { name: string; avatar: MediaAsset | null }
   date: { iso: string; label: string }
   readingMinutes: number

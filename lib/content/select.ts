@@ -16,3 +16,11 @@ export const select = <T extends { id: string }>(
 // visitor cannot see.
 export const PLAN_LIMIT = 4
 export const visiblePlans = <T>(plans: T[]) => plans.slice(0, PLAN_LIMIT)
+
+// A service's landing page link only counts when that page is live; otherwise
+// the grid falls back to the block's own link.
+export const withLivePagePaths = <T extends { pagePath: string }>(
+  services: T[],
+  live: string[]
+): T[] =>
+  services.map((s) => (live.includes(s.pagePath) ? s : { ...s, pagePath: "" }))

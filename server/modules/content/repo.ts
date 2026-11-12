@@ -316,7 +316,11 @@ function toSummary(
     title: r.a.title,
     excerpt: r.a.excerpt,
     image,
-    category: { slug: r.category.slug, name: r.category.name },
+    category: {
+      slug: r.category.slug,
+      name: r.category.name,
+      isVisible: r.category.isVisible,
+    },
     author: { name: r.author.name, avatar },
     date: articleDate(r.a.publishedAt ?? r.a.createdAt),
     readingMinutes: r.a.readingMinutes,

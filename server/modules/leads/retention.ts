@@ -1,11 +1,12 @@
 import "server-only"
 
-import { and, eq, isNull, lt, or } from "drizzle-orm"
+import { and, eq, isNull, lt, or, sql } from "drizzle-orm"
 
 import { parseGlobal } from "@/lib/content/globals"
 import type { Tx } from "@/server/db/client"
 import {
   apiRateLimits,
+  chatConversations,
   leads,
   newsletterSubscribers,
   settings,
@@ -82,6 +83,30 @@ export async function purgeExpired(tx: Tx, now: Date) {
       .returning({ key: apiRateLimits.key })
   )
   const ai = await purgeStaleConversations(tx, now)
+  const chatBefore = new Date(now)
+  chatBefore.setUTCMonth(chatBefore.getUTCMonth() - privacy.chatRetentionMonths)
+  const chats = count(
+    await tx
+      .delete(chatConversations)
+      .where(
+        lt(
+          sql`coalesce(${chatConversations.closedAt}, ${chatConversations.lastMessageAt})`,
+          chatBefore
+        )
+      )
+      .returning({ id: chatConversations.id })
+  )
+  if (chats > 0) {
+    await audit(
+      null,
+      {
+        action: "chat.purge",
+        entityType: "chat",
+        summary: `Retention purge: ${chats} live chats past the retention window`,
+      },
+      tx
+    )
+  }
   if (closed + spam + pendingSubscribers > 0) {
     await audit(
       null,
@@ -111,5 +136,6 @@ export async function purgeExpired(tx: Tx, now: Date) {
     rateLimits,
     aiConversations: ai.conversations,
     aiMessages: ai.messages,
+    chats,
   }
 }

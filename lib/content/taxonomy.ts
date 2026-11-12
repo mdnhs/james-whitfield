@@ -11,6 +11,8 @@ export const CategoryInput = z.object({
   slug: Slug,
   name: text(60),
   description: optionalText(300),
+  seoTitle: optionalText(70).optional(),
+  seoDescription: optionalText(200).optional(),
   relatedServiceId: z.uuid().nullable(),
   isVisible: z.boolean(),
 })
@@ -22,3 +24,6 @@ export const AuthorInput = z.object({
   avatar: MediaRef.nullable(),
   isVisible: z.boolean(),
 })
+
+// The category hub page for a slug.
+export const categoryHref = (slug: string) => `/insights/category/${slug}`

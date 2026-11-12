@@ -16,6 +16,7 @@ export const MICROCOPY: GlobalValue<"microcopy"> = {
   searchPlaceholder: "Search articles",
   showing: "Showing {shown} of {total}",
   noResults: "No articles match that yet.",
+  categoryEmpty: "No articles in this topic yet.",
   clearFilters: "Clear filters",
   pagination: "Pagination",
   previousPage: "Previous page",

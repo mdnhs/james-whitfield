@@ -75,6 +75,8 @@ export type TaxonomyItem = {
   isVisible: boolean
   articleCount: number
   description?: string | null
+  seoTitle?: string | null
+  seoDescription?: string | null
   relatedServiceId?: string | null
   roleTitle?: string | null
   bio?: string | null

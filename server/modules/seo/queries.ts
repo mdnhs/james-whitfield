@@ -5,19 +5,28 @@ import { cacheLife, cacheTag } from "next/cache"
 import { tags } from "@/server/lib/cache"
 
 import { computeSeoHealth } from "./health"
-import { isIndexable, listLiveEntities } from "./live"
+import { isIndexable, listCategoryHubs, listLiveEntities } from "./live"
 
 // Callers have awaited connection(): the build has no database.
 export async function getSitemapEntries() {
   "use cache"
-  cacheTag(tags.routes, tags.articles)
+  cacheTag(tags.routes, tags.articles, tags.categories)
   cacheLife("max")
-  const live = await listLiveEntities()
+  const [live, hubs] = await Promise.all([
+    listLiveEntities(),
+    listCategoryHubs(),
+  ])
   // Page SEO saves expire only page:<id> (noindex, canonical live there).
   for (const e of live) if (e.kind === "page") cacheTag(tags.page(e.id))
-  return live
-    .filter(isIndexable)
-    .map((e) => ({ path: e.path, lastModified: e.updatedAt.toISOString() }))
+  return [
+    ...live
+      .filter(isIndexable)
+      .map((e) => ({ path: e.path, lastModified: e.updatedAt.toISOString() })),
+    ...hubs.map((h) => ({
+      path: h.path,
+      lastModified: h.updatedAt.toISOString(),
+    })),
+  ]
 }
 
 // Ruling R11: cached; page SEO saves expire page:<id>, article SEO saves

@@ -1,11 +1,12 @@
 import "server-only"
 
-import { desc, eq } from "drizzle-orm"
+import { and, desc, eq, max } from "drizzle-orm"
 
 import { PageSeo, type PageDocument } from "@/blocks/page"
 import type { ArticleBodyDoc } from "@/blocks/rich-text"
+import { categoryHref } from "@/lib/content/taxonomy"
 import { getDb, type DbLike } from "@/server/db/client"
-import { articles, pages } from "@/server/db/schema"
+import { articleCategories, articles, pages } from "@/server/db/schema"
 
 export type LiveEntity = {
   kind: "page" | "article"
@@ -87,3 +88,26 @@ export async function listLiveEntities(
 // Ruling R16: noindex and canonical-elsewhere entities stay out of the sitemap.
 export const isIndexable = (e: LiveEntity) =>
   !e.seo.noindex && (e.seo.canonical === null || e.seo.canonical === e.path)
+
+// Visible categories with at least one published article: their hub pages are
+// reachable and worth indexing; an empty hub stays out of the sitemap.
+export async function listCategoryHubs(db: DbLike = getDb()) {
+  const rows = await db
+    .select({
+      slug: articleCategories.slug,
+      updatedAt: max(articles.updatedAt),
+    })
+    .from(articleCategories)
+    .innerJoin(articles, eq(articles.categoryId, articleCategories.id))
+    .where(
+      and(
+        eq(articles.status, "published"),
+        eq(articleCategories.isVisible, true)
+      )
+    )
+    .groupBy(articleCategories.slug)
+  return rows.map((r) => ({
+    path: categoryHref(r.slug),
+    updatedAt: r.updatedAt ?? new Date(0),
+  }))
+}

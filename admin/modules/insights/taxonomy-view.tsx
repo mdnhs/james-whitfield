@@ -65,6 +65,8 @@ const OVERRIDES = {
     slug: { label: "Slug" },
     name: { label: "Name" },
     description: { label: "Description" },
+    seoTitle: { label: "SEO title" },
+    seoDescription: { label: "SEO description", widget: "textarea" },
     relatedServiceId: {
       label: "Related service",
       widget: "collection",
@@ -87,6 +89,8 @@ const NEW_VALUES = {
     slug: "",
     name: "",
     description: "",
+    seoTitle: "",
+    seoDescription: "",
     relatedServiceId: null,
     isVisible: true,
   },
@@ -106,6 +110,8 @@ function valuesOf(name: Taxonomy, item: TaxonomyItem) {
         slug: item.slug,
         name: item.name,
         description: item.description ?? "",
+        seoTitle: item.seoTitle ?? "",
+        seoDescription: item.seoDescription ?? "",
         relatedServiceId: item.relatedServiceId ?? null,
         isVisible: item.isVisible,
       }

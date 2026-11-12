@@ -111,6 +111,9 @@ export const articleCategories = pgTable("article_categories", {
   slug: text().notNull().unique(),
   name: text().notNull(),
   description: text().notNull().default(""),
+  // Optional overrides for the category hub page's title and meta description.
+  seoTitle: text().notNull().default(""),
+  seoDescription: text().notNull().default(""),
   // Replaces TOPIC_FOR: the article CTA pre-fills this service.
   relatedServiceId: uuid().references(() => services.id, {
     onDelete: "set null",

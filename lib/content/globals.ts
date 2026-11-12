@@ -209,6 +209,7 @@ export const MicrocopyGlobal = z.object({
   // "{shown}" and "{total}" are replaced.
   showing: s(60),
   noResults: s(80),
+  categoryEmpty: s(120),
   clearFilters: s(30),
   pagination: s(30),
   previousPage: s(30),

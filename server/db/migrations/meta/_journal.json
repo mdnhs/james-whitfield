@@ -99,6 +99,13 @@
       "when": 1794505473433,
       "tag": "0013_service_page_path",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1794505873224,
+      "tag": "0014_category_seo",
+      "breakpoints": true
     }
   ]
 }

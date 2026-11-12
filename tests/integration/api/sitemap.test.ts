@@ -35,7 +35,7 @@ const page = (
 })
 
 describe("getSitemapEntries", () => {
-  it("lists published, indexable pages and articles only", async () => {
+  it("lists published, indexable pages, articles and category hubs only", async () => {
     const { media, category, author } = await insertTaxonomy()
     const article = await insertArticle({
       slug: "calm",
@@ -53,9 +53,34 @@ describe("getSitemapEntries", () => {
       ])
     const entries = await getSitemapEntries()
     expect(entries.map((e) => e.path).sort()).toEqual(
-      ["/about", `/insights/${article.slug}`].sort()
+      [
+        "/about",
+        `/insights/${article.slug}`,
+        `/insights/category/${category.slug}`,
+      ].sort()
     )
     for (const e of entries)
       expect(Number.isNaN(Date.parse(e.lastModified))).toBe(false)
+  })
+
+  it("includes a category hub only once it has a published article", async () => {
+    const { media, category, author } = await insertTaxonomy("sleep")
+    const hub = `/insights/category/${category.slug}`
+    const paths = async () => (await getSitemapEntries()).map((e) => e.path)
+    await insertArticle({
+      slug: "draft",
+      status: "draft",
+      categoryId: category.id,
+      authorId: author.id,
+      coverId: media.id,
+    })
+    expect(await paths()).not.toContain(hub)
+    await insertArticle({
+      slug: "live",
+      categoryId: category.id,
+      authorId: author.id,
+      coverId: media.id,
+    })
+    expect(await paths()).toContain(hub)
   })
 })

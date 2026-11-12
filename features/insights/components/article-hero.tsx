@@ -2,6 +2,7 @@ import Link from "next/link"
 
 import { Container } from "@/components/layout/container"
 import { MediaImage } from "@/components/media-image"
+import { categoryHref } from "@/lib/content/taxonomy"
 import type { GlobalValue } from "@/lib/content/globals"
 import type { ArticleSummary } from "@/lib/content/types"
 import { fill } from "@/lib/fill"
@@ -77,7 +78,9 @@ export function ArticleHero({
 
         <div className="flex max-w-260 flex-col gap-6">
           <div data-motion="rise" className="flex items-center gap-3">
-            <CategoryTag className="h-7 px-3">{category}</CategoryTag>
+            <Link href={categoryHref(article.category.slug)}>
+              <CategoryTag className="h-7 px-3">{category}</CategoryTag>
+            </Link>
             <span className="text-sm leading-[1.5] text-white/75">
               {fill(copy.readTime, { minutes: article.readingMinutes })}
             </span>

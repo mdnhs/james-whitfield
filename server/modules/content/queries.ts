@@ -111,6 +111,14 @@ export async function getCategories() {
   return rows
 }
 
+export async function getCategory(slug: string) {
+  "use cache"
+  cacheTag(tags.categories)
+  const category = await repo.findCategoryBySlug(slug)
+  lifetime(category !== null)
+  return category
+}
+
 // Articles join categories, authors, media and (for the CTA topic) services.
 const ARTICLE_TAGS = [
   tags.articles,
@@ -135,6 +143,13 @@ export async function getArticle(slug: string) {
   if (article) cacheTag(tags.article(article.id))
   lifetime(article !== null)
   return article
+}
+
+export async function getCategoryArticles(slug: string) {
+  "use cache"
+  cacheTag(...ARTICLE_TAGS)
+  const all = await repo.listArticleSummaries()
+  return all.filter((a) => a.category.slug === slug)
 }
 
 // Same category first, then the newest of the rest (the old helper's rule).

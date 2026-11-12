@@ -66,6 +66,13 @@ export type CtaBandView = {
 
 export type CategoryView = { id: string; slug: string; name: string }
 
+// A category's hub page (/insights/category/<slug>).
+export type CategoryDetail = CategoryView & {
+  description: string
+  seoTitle: string
+  seoDescription: string
+}
+
 export type ArticleSummary = {
   id: string
   slug: string

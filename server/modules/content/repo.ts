@@ -19,6 +19,7 @@ import { BlockInstance } from "@/blocks/registry"
 import type {
   ArticleDetail,
   ArticleSummary,
+  CategoryDetail,
   CategoryView,
   CtaBandView,
   FaqView,
@@ -247,6 +248,22 @@ export async function listCategories(db = getDb()): Promise<CategoryView[]> {
     .where(visible(t.articleCategories))
     .orderBy(asc(t.articleCategories.sort))
   return rows.map(({ id, slug, name }) => ({ id, slug, name }))
+}
+
+export async function findCategoryBySlug(
+  slug: string,
+  db = getDb()
+): Promise<CategoryDetail | null> {
+  const [r] = await db
+    .select()
+    .from(t.articleCategories)
+    .where(
+      and(eq(t.articleCategories.slug, slug), visible(t.articleCategories))
+    )
+    .limit(1)
+  if (!r) return null
+  const { id, name, description, seoTitle, seoDescription } = r
+  return { id, slug: r.slug, name, description, seoTitle, seoDescription }
 }
 
 // Summaries never carry bodies: they feed client components (§4.7).

@@ -1,6 +1,7 @@
 import Link from "next/link"
 
 import { MediaImage } from "@/components/media-image"
+import { categoryHref } from "@/lib/content/taxonomy"
 import type { ArticleSummary } from "@/lib/content/types"
 import { cn } from "@/lib/utils"
 
@@ -94,7 +95,7 @@ export function Byline({
 
 export function ArticleCard({ article }: { article: ArticleSummary }) {
   const { slug, title, excerpt, image, author, date } = article
-  const category = article.category.name
+  const category = article.category
 
   return (
     <article
@@ -113,9 +114,15 @@ export function ArticleCard({ article }: { article: ArticleSummary }) {
         />
       </div>
       <div className="flex min-w-0 flex-1 flex-col items-start gap-1 sm:contents">
-        <CategoryTag className="h-auto bg-transparent px-0 font-plex-mono text-xs leading-4 font-medium tracking-[1px] text-clay sm:h-8 sm:bg-brand-deep sm:px-4 sm:font-sans sm:text-sm sm:leading-[1.5] sm:tracking-normal sm:text-cream">
-          {category}
-        </CategoryTag>
+        {/* Above the title link's card-wide overlay, so it stays clickable. */}
+        <Link
+          href={categoryHref(category.slug)}
+          className="relative z-10 rounded-full outline-none focus-visible:ring-3 focus-visible:ring-clay/50"
+        >
+          <CategoryTag className="h-auto bg-transparent px-0 font-plex-mono text-xs leading-4 font-medium tracking-[1px] text-clay sm:h-8 sm:bg-brand-deep sm:px-4 sm:font-sans sm:text-sm sm:leading-[1.5] sm:tracking-normal sm:text-cream">
+            {category.name}
+          </CategoryTag>
+        </Link>
         <div className="flex flex-col gap-2.5">
           <h3 className="text-[17px] leading-6 font-semibold text-forest sm:text-2xl sm:leading-[1.36] sm:font-medium sm:tracking-[-0.48px] sm:text-ink">
             {/* The link covers the card so the whole tile is clickable. */}

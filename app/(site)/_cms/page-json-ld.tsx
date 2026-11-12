@@ -12,6 +12,7 @@ import {
   graph,
   personNode,
   planNodes,
+  serviceFormatNodes,
   url,
   websiteNode,
 } from "@/lib/seo/json-ld"
@@ -88,6 +89,22 @@ export async function PageJsonLd({ page }: { page: PublishedPage }) {
   if (faq?.type === "faq") {
     const node = faqNode(select(await getFaqs(), faq.data.selection))
     if (node) nodes.push(node)
+  }
+  const serviceFaq = visible.find((b) => b.type === "service.faq")
+  if (serviceFaq?.type === "service.faq") {
+    const node = faqNode(serviceFaq.data.items)
+    if (node) nodes.push(node)
+  }
+  const formats = visible.find((b) => b.type === "service.formats")
+  if (formats?.type === "service.formats") {
+    nodes.push(
+      ...serviceFormatNodes({
+        origin,
+        path: page.path,
+        plans: formats.data.plans,
+        siteName: site.name,
+      })
+    )
   }
   if (visible.some((b) => b.type === "services.plans")) {
     nodes.push(

@@ -19,8 +19,12 @@ test("rail targets the visible page after navigating between pages that share #f
   page,
 }) => {
   await page.goto("/")
-  await mainNav(page).getByRole("link", { name: "Contact" }).click()
-  await expect(page).toHaveURL(/\/contact$/)
+  // A click that lands while the home page is still hydrating can be lost on
+  // a slow CI runner; click again until the route changes.
+  await expect(async () => {
+    await mainNav(page).getByRole("link", { name: "Contact" }).click()
+    await expect(page).toHaveURL(/\/contact$/, { timeout: 2_000 })
+  }).toPass({ timeout: 15_000 })
   const rail = await openRail(page)
   await rail.getByRole("button", { name: "FAQ" }).click()
   await expect(page.locator("#faq:visible")).toBeInViewport()

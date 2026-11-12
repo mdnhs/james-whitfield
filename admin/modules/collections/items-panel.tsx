@@ -30,6 +30,14 @@ import { collectionsApi, parseResponse } from "@/admin/lib/api"
 import { queryKeys } from "@/admin/lib/query-keys"
 import { useResetOnHide } from "@/admin/lib/use-reset-on-hide"
 import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Switch } from "@/components/ui/switch"
 import {
   COLLECTION_LABELS,
@@ -62,8 +70,12 @@ export function ItemsPanel({
   const canUpdate = usePermission({ collection: ["update"] }) && !readOnly
   const canDelete = usePermission({ collection: ["delete"] }) && !readOnly
   const [editing, setEditing] = useState<EditableItem | "new" | null>(null)
+  const [removing, setRemoving] = useState<Item | null>(null)
   const [busy, setBusy] = useState<ReadonlySet<string>>(new Set())
-  useResetOnHide(() => setEditing(null))
+  useResetOnHide(() => {
+    setEditing(null)
+    setRemoving(null)
+  })
   const noun = ITEM_NOUN[name]
   const key = queryKeys.collections.list(name)
   const refresh = () => queryClient.invalidateQueries({ queryKey: key })
@@ -148,6 +160,7 @@ export function ItemsPanel({
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Couldn't remove")
     } finally {
+      setRemoving(null)
       await refresh()
     }
   }
@@ -253,7 +266,7 @@ export function ItemsPanel({
                           size="sm"
                           className="hover:bg-danger-soft hover:text-danger text-muted-foreground"
                           aria-label={`Remove ${item.title}`}
-                          onClick={() => void remove(item)}
+                          onClick={() => setRemoving(item)}
                         >
                           Remove
                         </Button>
@@ -266,6 +279,35 @@ export function ItemsPanel({
           </ul>
         </SortableRoot>
       )}
+      <Dialog
+        open={removing !== null}
+        onOpenChange={(next) => !next && setRemoving(null)}
+      >
+        <DialogContent className="gap-5 p-6 sm:max-w-md">
+          <DialogHeader className="gap-3">
+            <DialogTitle className="text-lg font-semibold">
+              {`Remove ${removing?.title ?? ""}?`}
+            </DialogTitle>
+            <DialogDescription>
+              {removing && removing.usedOn.length > 0
+                ? `It is shown on: ${removing.usedOn.join(", ")}.`
+                : "It isn't shown on any page."}{" "}
+              This removes it everywhere.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="-mx-6 -mb-6 rounded-b-xl border-t bg-muted/50 p-4 sm:justify-end">
+            <Button variant="outline" onClick={() => setRemoving(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => removing && void remove(removing)}
+            >
+              Remove
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <ItemSheet
         name={name}
         item={editing}

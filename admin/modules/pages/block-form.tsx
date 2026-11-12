@@ -7,9 +7,9 @@ import type * as z from "zod"
 
 import { toFields } from "@/admin/components/schema-form/to-fields"
 import { FieldWidget } from "@/admin/components/schema-form/widgets"
+import { ItemsPanel } from "@/admin/modules/collections/items-panel"
 import type { DraftBlock } from "@/blocks/page"
 import { BLOCK_BY_TYPE } from "@/blocks/registry"
-import { ItemsPanel } from "@/admin/modules/collections/items-panel"
 import { FieldGroup } from "@/components/ui/field"
 import { collectionsOf } from "@/lib/content/block-collections"
 

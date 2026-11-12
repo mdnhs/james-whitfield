@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { render, screen, waitFor } from "@testing-library/react"
+import { act, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
@@ -11,7 +11,30 @@ import type { MePayload } from "@/lib/auth/me"
 const del = vi.fn()
 const toastError = vi.fn()
 const sheet = vi.fn()
+const order = vi.fn()
+const dnd: { onDragEnd?: (e: unknown) => void } = {}
+const perms: { allowed: Set<string> | null } = { allowed: null }
 
+vi.mock("@/admin/lib/actor-context", async (orig) => ({
+  ...(await orig<typeof import("@/admin/lib/actor-context")>()),
+  usePermission: (p: { collection?: string[] }) =>
+    perms.allowed === null ||
+    (p.collection ?? []).every((a) => perms.allowed!.has(a)),
+}))
+vi.mock("@dnd-kit/core", async (orig) => {
+  const actual = await orig<typeof import("@dnd-kit/core")>()
+  return {
+    ...actual,
+    DndContext: (props: { onDragEnd?: (e: unknown) => void } & object) => {
+      dnd.onDragEnd = props.onDragEnd
+      return (
+        <actual.DndContext
+          {...(props as React.ComponentProps<typeof actual.DndContext>)}
+        />
+      )
+    },
+  }
+})
 vi.mock("sonner", () => ({
   toast: { error: (m: string) => toastError(m), success: vi.fn() },
 }))
@@ -19,7 +42,7 @@ vi.mock("@/admin/lib/api", () => ({
   collectionsApi: {
     ":name": {
       ":id": { $delete: (a: unknown) => del(a), $patch: vi.fn() },
-      order: { $patch: vi.fn() },
+      order: { $patch: (a: unknown) => order(a) },
     },
   },
   parseResponse: (p: Promise<unknown>) => p,
@@ -77,7 +100,10 @@ function setup(readOnly: boolean, roles = ["owner"]) {
   )
 }
 
-beforeEach(() => vi.clearAllMocks())
+beforeEach(() => {
+  vi.clearAllMocks()
+  perms.allowed = null
+})
 
 describe("ItemsPanel", () => {
   it("lists items and names the other pages that show them", async () => {
@@ -111,8 +137,61 @@ describe("ItemsPanel", () => {
     await userEvent.click(
       screen.getByRole("button", { name: "Remove Is it free?" })
     )
+    await userEvent.click(screen.getByRole("button", { name: "Remove" }))
     await waitFor(() =>
       expect(toastError).toHaveBeenCalledWith("Still used on Home")
+    )
+  })
+
+  it("asks first, listing where the item shows; Cancel sends nothing", async () => {
+    setup(false)
+    await screen.findByText("Is it free?")
+    await userEvent.click(
+      screen.getByRole("button", { name: "Remove Is it free?" })
+    )
+    expect(await screen.findByText("Remove Is it free??")).toBeTruthy()
+    expect(
+      screen.getByText(
+        /It is shown on: Home, Contact\. This removes it everywhere\./
+      )
+    ).toBeTruthy()
+    await userEvent.click(screen.getByRole("button", { name: "Cancel" }))
+    expect(del).not.toHaveBeenCalled()
+  })
+
+  it("deletes on Confirm", async () => {
+    del.mockResolvedValue({})
+    setup(false)
+    await screen.findByText("Is it free?")
+    await userEvent.click(
+      screen.getByRole("button", { name: "Remove Is it free?" })
+    )
+    await userEvent.click(screen.getByRole("button", { name: "Remove" }))
+    await waitFor(() =>
+      expect(del).toHaveBeenCalledWith({ param: { name: "faqs", id: "a" } })
+    )
+  })
+
+  it("with collection:update only: Edit shown, Add and Remove hidden", async () => {
+    perms.allowed = new Set(["update"])
+    setup(false)
+    await screen.findByText("Is it free?")
+    expect(screen.getAllByRole("button", { name: /Edit/ })).toHaveLength(2)
+    expect(screen.queryByRole("button", { name: /Add/ })).toBeNull()
+    expect(screen.queryByRole("button", { name: /Remove/ })).toBeNull()
+  })
+
+  it("keyboard reorder sends the new ids to PATCH /order", async () => {
+    order.mockResolvedValue({})
+    setup(false)
+    await screen.findByText("Is it free?")
+    // jsdom has no layout for dnd-kit's sensors: drive its drop handler.
+    act(() => dnd.onDragEnd?.({ active: { id: "a" }, over: { id: "b" } }))
+    await waitFor(() =>
+      expect(order).toHaveBeenCalledWith({
+        param: { name: "faqs" },
+        json: { ids: ["b", "a"] },
+      })
     )
   })
 })

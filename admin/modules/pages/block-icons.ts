@@ -6,12 +6,15 @@ import {
   ClockIcon,
   CompassIcon,
   FootprintsIcon,
+  GemIcon,
   GraduationCapIcon,
   LayoutGridIcon,
   LibraryBigIcon,
+  ListChecksIcon,
   MailIcon,
   MapPinIcon,
   MegaphoneIcon,
+  MessageCircleQuestionMarkIcon,
   MessageSquareTextIcon,
   NewspaperIcon,
   PanelTopIcon,
@@ -22,11 +25,12 @@ import {
   SparklesIcon,
   TagsIcon,
   UserRoundIcon,
+  WalletIcon,
   type LucideIcon,
 } from "lucide-react"
 
 // defineBlock's `icon` names (blocks/*.ts), imported one by one so the
-// admin bundle carries 23 icons, not all of lucide.
+// admin bundle carries 27 icons, not all of lucide.
 export const BLOCK_ICONS: Record<string, LucideIcon> = {
   Sparkles: SparklesIcon,
   PanelTop: PanelTopIcon,
@@ -51,4 +55,8 @@ export const BLOCK_ICONS: Record<string, LucideIcon> = {
   MessageSquareText: MessageSquareTextIcon,
   MapPin: MapPinIcon,
   Pilcrow: PilcrowIcon,
+  ListChecks: ListChecksIcon,
+  Gem: GemIcon,
+  Wallet: WalletIcon,
+  MessageCircleQuestionMark: MessageCircleQuestionMarkIcon,
 }

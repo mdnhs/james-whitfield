@@ -27,6 +27,9 @@ describe("block widgets (the checklist in the plan)", () => {
     ["hero.home", "members.avatars.$", "media"],
     ["hero.page", "image", "media"],
     ["hero.page", "focal", "focal"],
+    ["hero.page", "cta", "link"],
+    ["service.intro", "body", "textarea"],
+    ["service.benefits", "items.$.icon", "icon"],
     ["credibility", "badges.$.icon", "icon"],
     ["about.intro", "paragraphs.$", "textarea"],
     ["about.intro", "stats.$.value", "stat"],
@@ -55,6 +58,8 @@ describe("block widgets (the checklist in the plan)", () => {
   })
   it("marks the optional parts nullable", () => {
     expect(at("hero.page", "focal").nullable).toBe(true)
+    expect(at("hero.page", "cta").nullable).toBe(true)
+    expect(at("service.faq", "initiallyOpen").nullable).toBe(true)
     expect(at("band", "tint").nullable).toBe(true)
     expect(at("newsletter", "override").nullable).toBe(true)
     expect(at("about.credentials", "items.$.url").nullable).toBe(true)

@@ -8,10 +8,31 @@ import { BLOCKS, BlockInstance } from "./registry"
 import { RichTextDoc } from "./rich-text"
 
 describe("block registry", () => {
-  it("declares the 23 section types once each", () => {
+  it("declares the 27 section types once each", () => {
     const types = BLOCKS.map((block) => block.type)
-    expect(types).toHaveLength(23)
-    expect(new Set(types).size).toBe(23)
+    expect(types).toHaveLength(27)
+    expect(new Set(types).size).toBe(27)
+    expect(types).toEqual(
+      expect.arrayContaining([
+        "service.intro",
+        "service.benefits",
+        "service.formats",
+        "service.faq",
+      ])
+    )
+  })
+
+  it("keeps the service sections to custom pages, once each", () => {
+    for (const type of [
+      "service.intro",
+      "service.benefits",
+      "service.formats",
+      "service.faq",
+    ] as const) {
+      const block = BLOCKS.find((b) => b.type === type)!
+      expect(block.allowedOn, type).toEqual(["custom"])
+      expect(block.max, type).toBe(1)
+    }
   })
 
   it("rejects empty data for every block that has required fields", () => {
@@ -167,6 +188,41 @@ describe("block registry", () => {
         photo: media,
       },
       richtext: { doc: { type: "doc", content: [] }, width: "narrow" },
+      "service.intro": {
+        eyebrow: "E",
+        title: "T",
+        body: "B",
+        forYouHeading: "H",
+        forYou: ["a", "b"],
+      },
+      "service.benefits": {
+        eyebrow: "E",
+        title: "T",
+        items: Array(3).fill({ icon: "evidence", title: "T", body: "B" }),
+      },
+      "service.formats": {
+        eyebrow: "E",
+        title: "T",
+        subtitle: "S",
+        featuredTag: "F",
+        plans: [
+          {
+            name: "N",
+            priceLabel: "€1",
+            unit: "U",
+            summary: "S",
+            features: [],
+            ctaLabel: "C",
+            featured: false,
+          },
+        ],
+      },
+      "service.faq": {
+        title: "T",
+        subtitle: "S",
+        items: [{ question: "Q", answer: "A" }],
+        initiallyOpen: null,
+      },
     }
     expect(Object.keys(data).sort()).toEqual(BLOCKS.map((b) => b.type).sort())
     for (const block of BLOCKS) {

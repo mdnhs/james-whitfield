@@ -141,9 +141,7 @@ describe("page nodes", () => {
   })
 
   it("marks up FAQs and plans", () => {
-    expect(
-      faqNode([{ id: "1", question: "Does it work?", answer: "Often." }])
-    ).toEqual({
+    expect(faqNode([{ question: "Does it work?", answer: "Often." }])).toEqual({
       "@type": "FAQPage",
       mainEntity: [
         {

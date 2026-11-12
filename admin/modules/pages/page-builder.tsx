@@ -479,6 +479,7 @@ function Builder({
                     block={selected}
                     errors={blockErrors.get(selected.id)}
                     readOnly={readOnly}
+                    pageTitle={page.title}
                     onChange={onData}
                   />
                   <div className="flex flex-col gap-4 border-t pt-6">

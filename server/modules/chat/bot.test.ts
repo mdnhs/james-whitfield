@@ -298,6 +298,16 @@ describe("maybeReply", () => {
     expect(state.msgs.at(-3)?.body).toBe("new one")
   })
 
+  it("answers a message that lands during the last round", async () => {
+    state.model = model((n) => {
+      if (n <= 3) push("visitor", `more ${n}`)
+    })
+    await maybeReply(ID)
+    expect(calls).toBe(4)
+    expect(state.msgs.at(-1)?.sender).toBe("ai")
+    expect(state.msgs.at(-3)?.body).toBe("more 3")
+  })
+
   it("answers repeated identical text", async () => {
     state.model = model((n) => {
       if (n === 1) push("visitor", "What do you offer?")

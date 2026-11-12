@@ -75,12 +75,14 @@ export async function handOff(
   id: string,
   reason: AlertReason
 ): Promise<"handoff"> {
-  await repo.addMessage({
+  const stored = await repo.addMessage({
     conversationId: id,
     sender: "system",
     body: NOTICES[reason],
     noticeKind: reason,
   })
+  // A refused notice on a closed chat means: no flag, no alert.
+  if (!stored && (await repo.byId(id))?.status !== "open") return "handoff"
   await repo.flagNeedsHuman(id)
   await notifyNeedsHuman(id, reason)
   return "handoff"
@@ -89,18 +91,20 @@ export async function handOff(
 export async function maybeReply(id: string): Promise<BotOutcome> {
   if (!(await isActive())) return "skipped"
   let replied = false
+  let handled = 0
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     if (!(await repo.claimLease(id, LEASE_MS)))
       return replied ? "replied" : "skipped"
     let r: Result
     try {
-      r = await run(id)
+      r = await run(id, handled)
     } finally {
       await repo.releaseLease(id)
     }
     if (r.outcome === "handoff" || r.outcome === "failed") return r.outcome
     if (r.outcome === "skipped") return replied ? "replied" : "skipped"
     replied = true
+    handled = r.handled
     // A visitor message may have landed after the last read and before the
     // release: its own deferred run saw the lease held and skipped.
     const hist = await repo.recentForModel(id, 20)
@@ -110,8 +114,8 @@ export async function maybeReply(id: string): Promise<BotOutcome> {
   return "replied"
 }
 
-async function run(id: string): Promise<Result> {
-  let handled = 0
+async function run(id: string, since: number): Promise<Result> {
+  let handled = since
   let replied = false
   const done = (outcome: BotOutcome): Result => ({ outcome, handled })
   const stop = () => done(replied ? "replied" : "skipped")
@@ -125,7 +129,7 @@ async function run(id: string): Promise<Result> {
     const newest = seen.findLast((m) => m.sender === "visitor")
     if (!newest) return stop()
     let pending: Hist
-    if (round === 0) {
+    if (round === 0 && since === 0) {
       // Only an unanswered visitor turn, nothing after it.
       if (seen.at(-1)?.sender !== "visitor") return stop()
       const lastOther = seen.findLastIndex((m) => m.sender !== "visitor")
@@ -170,9 +174,10 @@ async function run(id: string): Promise<Result> {
           today: format(new Date(), "EEEE d MMMM yyyy", { in: DUBLIN }),
         }),
         messages: toModelMessages(
-          (round === 0 ? seen : endWithUnanswered(seen, handledBefore)).map(
-            (m) => ({ role: m.sender, content: m.body })
-          )
+          (round === 0 && since === 0
+            ? seen
+            : endWithUnanswered(seen, handledBefore)
+          ).map((m) => ({ role: m.sender, content: m.body }))
         ),
         maxOutputTokens: 300,
         abortSignal: AbortSignal.timeout(25_000),

@@ -2,6 +2,7 @@ import { io } from "next/cache"
 import type { Thing } from "schema-dts"
 
 import { JsonLd } from "@/components/json-ld"
+import { isServicePagePath } from "@/lib/content/page-path"
 import { select, visiblePlans } from "@/lib/content/select"
 import type { PublishedPage } from "@/lib/content/types"
 import {
@@ -14,7 +15,12 @@ import {
   websiteNode,
 } from "@/lib/seo/json-ld"
 import { getEnv } from "@/server/env"
-import { getFaqs, getPlans, getSetting } from "@/server/modules/content/queries"
+import {
+  getFaqs,
+  getPlans,
+  getPublishedPage,
+  getSetting,
+} from "@/server/modules/content/queries"
 
 export async function PageJsonLd({ page }: { page: PublishedPage }) {
   await io()
@@ -37,16 +43,21 @@ export async function PageJsonLd({ page }: { page: PublishedPage }) {
       />
     )
   }
-  const hero = visible.find((b) => b.type === "hero.page")
-  const nodes: Thing[] = [
-    breadcrumbNode(origin, [
-      { name: copy.breadcrumbHome || "Home", path: "/" },
-      {
-        name: hero?.type === "hero.page" ? hero.data.title : page.title,
-        path: page.path,
-      },
-    ]),
-  ]
+  const heroTitle = (p: PublishedPage) => {
+    const hero = p.document.blocks.find(
+      (b) => !b.hidden && b.type === "hero.page"
+    )
+    return hero?.type === "hero.page" ? hero.data.title : p.title
+  }
+  const crumbs = [{ name: copy.breadcrumbHome || "Home", path: "/" }]
+  if (isServicePagePath(page.path)) {
+    const services = await getPublishedPage("/services")
+    if (services) {
+      crumbs.push({ name: heroTitle(services), path: "/services" })
+    }
+  }
+  crumbs.push({ name: heroTitle(page), path: page.path })
+  const nodes: Thing[] = [breadcrumbNode(origin, crumbs)]
   const faq = visible.find((b) => b.type === "faq")
   if (faq?.type === "faq") {
     const node = faqNode(select(await getFaqs(), faq.data.selection))

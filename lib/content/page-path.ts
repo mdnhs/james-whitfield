@@ -15,16 +15,30 @@ export const RESERVED_SEGMENTS = [
 // The [page] route's build shell. The pattern below cannot produce it.
 export const PAGE_SHELL_SEGMENT = "__page"
 
+// Service landing pages nest one level under the system /services page.
+const SERVICES_SEGMENT = "services"
+const SERVICE_PREFIX = `/${SERVICES_SEGMENT}/`
+
+export function isServicePagePath(path: string): boolean {
+  return CUSTOM_PAGE_SHAPE.test(path) && path.startsWith(SERVICE_PREFIX)
+}
+
+const CUSTOM_PAGE_SHAPE = /^\/(?:services\/)?[a-z0-9]+(?:-[a-z0-9]+)*$/
+
 export const CustomPagePath = z
   .string()
   .trim()
-  .max(61)
+  .max(71)
   .regex(
-    /^\/[a-z0-9]+(?:-[a-z0-9]+)*$/,
-    "Use one lower-case segment, e.g. /team"
+    CUSTOM_PAGE_SHAPE,
+    "Use one lower-case segment, e.g. /team, or /services/<segment>"
   )
   .refine(
-    (path) => !(RESERVED_SEGMENTS as readonly string[]).includes(path.slice(1)),
+    (path) =>
+      isServicePagePath(path) ||
+      !([...RESERVED_SEGMENTS, SERVICES_SEGMENT] as readonly string[]).includes(
+        path.slice(1)
+      ),
     "That address is reserved"
   )
 

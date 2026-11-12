@@ -32,6 +32,7 @@ describe("resolvePath (Ruling R3)", () => {
   })
   it("calls CMS-shaped unknowns missing", () => {
     expect(resolvePath(table, "/no-such-page")).toEqual({ kind: "missing" })
+    expect(resolvePath(table, "/services/nope")).toEqual({ kind: "missing" })
     expect(resolvePath(table, "/insights/nope")).toEqual({ kind: "missing" })
     expect(resolvePath(table, "/insights/__shell")).toEqual({ kind: "missing" })
   })

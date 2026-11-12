@@ -7,7 +7,6 @@ import {
   HistoryIcon,
   LayersIcon,
   LockIcon,
-  PlusIcon,
   RotateCwIcon,
   TriangleAlertIcon,
   XIcon,
@@ -29,7 +28,7 @@ import { usePermission } from "@/admin/lib/actor-context"
 import { pagesApi, parseResponse } from "@/admin/lib/api"
 import { ApiError } from "@/admin/lib/api-error"
 import { queryKeys } from "@/admin/lib/query-keys"
-import { DraftDocument, type DraftBlock } from "@/blocks/page"
+import { DraftDocument } from "@/blocks/page"
 import { BLOCK_BY_TYPE } from "@/blocks/registry"
 import { useEditorTab } from "@/admin/modules/seo/use-editor-tab"
 import { Button } from "@/components/ui/button"
@@ -41,7 +40,6 @@ import { cn } from "@/lib/utils"
 import { AddressForm } from "./address-form"
 import { BlockForm } from "./block-form"
 import { BLOCK_ICONS } from "./block-icons"
-import { BlockLibrary } from "./block-library"
 import { BlockMeta } from "./block-meta"
 import { BlockOutline } from "./block-outline"
 import { docReducer, errorsByBlock, type DocAction } from "./builder-state"
@@ -118,7 +116,7 @@ function Builder({
   const [doc, setDoc] = useState(() => toDraft(page.draft))
   const docRef = useRef(doc)
   const [selectedId, setSelectedId] = useState<string | null>(
-    doc.blocks[0]?.id ?? null
+    doc.blocks.find((block) => !block.hidden)?.id ?? null
   )
   // Keyed by block id when publish fails, so a later reorder cannot move
   // the markers; a block's own edit clears them.
@@ -129,7 +127,6 @@ function Builder({
   const [stale, setStale] = useState<Conflict | null>(null)
   const [dismissed, setDismissed] = useState<Conflict | null>(null)
   const [unpublished, setUnpublished] = useState(page.hasUnpublishedChanges)
-  const [libraryOpen, setLibraryOpen] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
 
   const { state, schedule, flush, exclusive, overwrite, reset, getVersion } =
@@ -445,35 +442,13 @@ function Builder({
                 </p>
               ) : (
                 <BlockOutline
-                  doc={doc}
+                  blocks={doc.blocks}
                   selectedId={selectedId}
                   invalidIds={invalidIds}
                   readOnly={readOnly}
                   onSelect={setSelectedId}
-                  onMove={(from, to) => apply({ type: "move", from, to })}
-                  onToggleHidden={(block: DraftBlock) =>
-                    apply({
-                      type: "meta",
-                      id: block.id,
-                      patch: { hidden: !block.hidden },
-                    })
-                  }
-                  onRemove={(id) => {
-                    if (window.confirm("Remove this block?"))
-                      apply({ type: "remove", id })
-                  }}
                 />
               )}
-              {canEdit ? (
-                <Button
-                  variant="outline"
-                  className="h-11 rounded-xl border-dashed font-semibold text-primary hover:border-primary hover:bg-accent hover:text-accent-foreground"
-                  onClick={() => setLibraryOpen(true)}
-                >
-                  <PlusIcon data-icon="inline-start" />
-                  Add block
-                </Button>
-              ) : null}
             </nav>
             <section
               aria-label="Block settings"
@@ -512,8 +487,6 @@ function Builder({
                     </h3>
                     <BlockMeta
                       block={selected}
-                      first={doc.blocks[0]?.id === selected.id}
-                      errors={blockErrors.get(selected.id)}
                       readOnly={readOnly}
                       onChange={(patch) =>
                         apply({ type: "meta", id: selected.id, patch })
@@ -529,25 +502,10 @@ function Builder({
                   >
                     <LayersIcon className="size-6" />
                   </span>
-                  <p className="font-semibold">
-                    {doc.blocks.length === 0
-                      ? "Start with a block"
-                      : "Choose a block to edit it"}
-                  </p>
+                  <p className="font-semibold">Choose a block to edit it</p>
                   <p className="max-w-xs text-sm text-muted-foreground">
-                    {doc.blocks.length === 0
-                      ? "Pages are built from blocks: a hero, text, FAQs and more."
-                      : "Pick one from the outline to change its content."}
+                    Pick one from the outline to change its content.
                   </p>
-                  {canEdit && doc.blocks.length === 0 ? (
-                    <Button
-                      className={FORM_ACTION}
-                      onClick={() => setLibraryOpen(true)}
-                    >
-                      <PlusIcon data-icon="inline-start" />
-                      Add block
-                    </Button>
-                  ) : null}
                 </div>
               )}
             </section>
@@ -570,17 +528,6 @@ function Builder({
           />
         </TabsContent>
       </Tabs>
-      <BlockLibrary
-        open={libraryOpen}
-        onOpenChange={setLibraryOpen}
-        kind={page.kind}
-        doc={doc}
-        onAdd={(type) => {
-          const before = new Set(docRef.current.blocks.map((b) => b.id))
-          const next = apply({ type: "add", blockType: type })
-          setSelectedId(next.blocks.find((b) => !before.has(b.id))?.id ?? null)
-        }}
-      />
       <HistorySheet
         open={historyOpen}
         onOpenChange={setHistoryOpen}

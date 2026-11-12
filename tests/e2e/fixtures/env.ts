@@ -1,7 +1,8 @@
 // E2E runs `next start` against its own database (created by docker init).
 // Mail goes to Mailpit: `next start` runs with NODE_ENV=production, where the
 // log driver never prints bodies, so reset links are read from its API.
-export const E2E_PORT = 3100
+// E2E_PORT overrides it when 3100 is taken by another app on this machine.
+export const E2E_PORT = Number(process.env.E2E_PORT ?? 3100)
 export const E2E_ORIGIN = `http://localhost:${E2E_PORT}`
 export const MAILPIT_URL = process.env.MAILPIT_URL ?? "http://localhost:8027"
 

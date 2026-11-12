@@ -15,12 +15,12 @@ export function HeroSection({ content }: { content: BlockView<"hero.home"> }) {
           still clears the 100px site header, which overlays the hero. */}
       <Container
         data-hero="foreground"
-        className="relative z-10 flex flex-1 flex-col justify-end pt-36 pb-14 lg:pt-28 lg:pb-47"
+        className="relative z-10 flex flex-1 flex-col justify-end pt-28 pb-7 sm:pt-36 sm:pb-14 lg:pt-28 lg:pb-47"
       >
         <HeroContent content={content} />
         <MemberBadge
           members={content.members}
-          className="mt-12 self-start lg:absolute lg:right-14 lg:bottom-14 lg:mt-0"
+          className="mt-5.5 self-start sm:mt-12 lg:absolute lg:right-14 lg:bottom-14 lg:mt-0"
         />
       </Container>
     </HeroMotion>

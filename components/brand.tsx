@@ -13,8 +13,8 @@ export function Brand({
   logo?: MediaAsset | null
 }) {
   return (
-    <Link href="/" className="flex items-center gap-3">
-      <span className="relative flex size-12 shrink-0 items-center justify-center overflow-clip rounded-full bg-brand-mint">
+    <Link href="/" className="flex items-center gap-2.5 lg:gap-3">
+      <span className="relative flex size-10 shrink-0 items-center justify-center overflow-clip rounded-full bg-brand-mint lg:size-12">
         <Image
           src={logo?.src ?? "/images/hero/logo-mark.svg"}
           alt=""
@@ -23,7 +23,7 @@ export function Brand({
           className={logo ? "size-7 object-contain" : undefined}
         />
       </span>
-      <span className="font-geist text-xl leading-[normal] font-semibold whitespace-nowrap text-white">
+      <span className="font-geist text-[17px] leading-6 font-semibold whitespace-nowrap text-white lg:text-xl lg:leading-[normal]">
         {name}
       </span>
     </Link>

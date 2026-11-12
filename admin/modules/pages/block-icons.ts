@@ -17,6 +17,7 @@ import {
   PanelTopIcon,
   PilcrowIcon,
   QuoteIcon,
+  RouteIcon,
   ScaleIcon,
   SparklesIcon,
   TagsIcon,
@@ -25,7 +26,7 @@ import {
 } from "lucide-react"
 
 // defineBlock's `icon` names (blocks/*.ts), imported one by one so the
-// admin bundle carries 22 icons, not all of lucide.
+// admin bundle carries 23 icons, not all of lucide.
 export const BLOCK_ICONS: Record<string, LucideIcon> = {
   Sparkles: SparklesIcon,
   PanelTop: PanelTopIcon,
@@ -33,6 +34,7 @@ export const BLOCK_ICONS: Record<string, LucideIcon> = {
   UserRound: UserRoundIcon,
   Footprints: FootprintsIcon,
   Quote: QuoteIcon,
+  Route: RouteIcon,
   Megaphone: MegaphoneIcon,
   Newspaper: NewspaperIcon,
   CircleHelp: CircleHelpIcon,

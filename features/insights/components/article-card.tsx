@@ -27,16 +27,60 @@ export function Byline({
   author,
   date,
   size = 28,
-}: Pick<ArticleSummary, "author" | "date"> & { size?: number }) {
+  compact = false,
+  stacked = false,
+}: Pick<ArticleSummary, "author" | "date"> & {
+  size?: number
+  // Phones: text only, at caption size (the list rows).
+  compact?: boolean
+  // Phones: name over date, so the line can sit beside a button.
+  stacked?: boolean
+}) {
+  if (stacked)
+    return (
+      <p className="flex min-w-0 items-center gap-2.5 text-sm leading-[1.5] text-ink-muted sm:gap-2 sm:whitespace-pre">
+        {author.avatar && (
+          <MediaImage
+            media={author.avatar}
+            alt=""
+            width={size}
+            height={size}
+            className="size-8 shrink-0 rounded-full sm:size-auto"
+          />
+        )}
+        <span className="flex min-w-0 flex-col text-[13px] leading-4.75 sm:block sm:text-sm sm:leading-[1.5]">
+          <span className="truncate font-semibold text-ink sm:font-normal sm:text-ink-muted">
+            {author.name}
+          </span>
+          <span aria-hidden className="hidden sm:inline">
+            {"  •  "}
+          </span>
+          <time
+            dateTime={date.iso}
+            className="text-[#686561] sm:text-ink-muted"
+          >
+            {date.label}
+          </time>
+        </span>
+      </p>
+    )
+
   return (
-    <p className="flex items-center gap-2 text-sm leading-[1.5] whitespace-pre text-ink-muted">
+    <p
+      className={cn(
+        "flex items-center gap-2 whitespace-pre",
+        compact
+          ? "text-[13px] leading-4.75 text-[#686561] sm:text-sm sm:leading-[1.5] sm:text-ink-muted"
+          : "text-sm leading-[1.5] text-ink-muted"
+      )}
+    >
       {author.avatar && (
         <MediaImage
           media={author.avatar}
           alt=""
           width={size}
           height={size}
-          className="shrink-0 rounded-full"
+          className={cn("shrink-0 rounded-full", compact && "hidden sm:block")}
         />
       )}
       <span>
@@ -55,9 +99,11 @@ export function ArticleCard({ article }: { article: ArticleSummary }) {
   return (
     <article
       data-article
-      className="group relative flex flex-col items-start gap-5"
+      // Phones: a compact row (thumbnail beside the copy) on a white card;
+      // sm+: the stacked card. The copy wrapper dissolves (contents) on sm+.
+      className="group relative flex items-center gap-3.5 rounded-[18px] bg-white p-2.5 sm:flex-col sm:items-start sm:gap-5 sm:rounded-none sm:bg-transparent sm:p-0"
     >
-      <div className="relative h-62.5 w-full overflow-clip rounded-2xl bg-mist">
+      <div className="relative size-24 shrink-0 overflow-clip rounded-[14px] bg-mist sm:h-62.5 sm:w-full sm:rounded-2xl">
         <MediaImage
           media={image}
           alt=""
@@ -66,22 +112,26 @@ export function ArticleCard({ article }: { article: ArticleSummary }) {
           className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
         />
       </div>
-      <CategoryTag>{category}</CategoryTag>
-      <div className="flex flex-col gap-2.5">
-        <h3 className="text-2xl leading-[1.36] font-medium tracking-[-0.48px] text-ink">
-          {/* The link covers the card so the whole tile is clickable. */}
-          <Link
-            href={`/insights/${slug}`}
-            className="outline-none group-hover:underline group-hover:decoration-1 group-hover:underline-offset-4 after:absolute after:inset-0 after:rounded-2xl focus-visible:after:ring-3 focus-visible:after:ring-clay/50"
-          >
-            {title}
-          </Link>
-        </h3>
-        <p className="text-base leading-[1.5] tracking-[-0.32px] text-text-muted">
-          {excerpt}
-        </p>
+      <div className="flex min-w-0 flex-1 flex-col items-start gap-1 sm:contents">
+        <CategoryTag className="h-auto bg-transparent px-0 font-plex-mono text-xs leading-4 font-medium tracking-[1px] text-clay sm:h-8 sm:bg-brand-deep sm:px-4 sm:font-sans sm:text-sm sm:leading-[1.5] sm:tracking-normal sm:text-cream">
+          {category}
+        </CategoryTag>
+        <div className="flex flex-col gap-2.5">
+          <h3 className="text-[17px] leading-6 font-semibold text-forest sm:text-2xl sm:leading-[1.36] sm:font-medium sm:tracking-[-0.48px] sm:text-ink">
+            {/* The link covers the card so the whole tile is clickable. */}
+            <Link
+              href={`/insights/${slug}`}
+              className="outline-none group-hover:underline group-hover:decoration-1 group-hover:underline-offset-4 after:absolute after:inset-0 after:rounded-2xl focus-visible:after:ring-3 focus-visible:after:ring-clay/50"
+            >
+              {title}
+            </Link>
+          </h3>
+          <p className="hidden text-base leading-[1.5] tracking-[-0.32px] text-text-muted sm:block">
+            {excerpt}
+          </p>
+        </div>
+        <Byline author={author} date={date} compact />
       </div>
-      <Byline author={author} date={date} />
     </article>
   )
 }

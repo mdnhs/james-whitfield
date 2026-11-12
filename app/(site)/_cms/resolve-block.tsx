@@ -27,6 +27,7 @@ import {
 } from "@/features/insights"
 import { RichTextSection } from "@/features/richtext"
 import { FormatsSection, ServicesGrid } from "@/features/services"
+import { JourneySection } from "@/features/journey"
 import { TestimonialsSection } from "@/features/testimonials"
 import { select, visiblePlans } from "@/lib/content/select"
 import { slugify } from "@/lib/utils"
@@ -62,6 +63,8 @@ export async function ResolvedBlock({ block }: { block: BlockInstance }) {
       const items = select(await q.getTestimonials(), block.data.selection)
       return <TestimonialsSection id={id} content={block.data} items={items} />
     }
+    case "journey":
+      return <JourneySection id={id} content={block.data} />
     case "band": {
       const band = await q.getCtaBand(block.data.bandId)
       return band ? (
@@ -161,6 +164,7 @@ export async function ResolvedBlock({ block }: { block: BlockInstance }) {
           content={block.data}
           contact={contact}
           channels={copy.contactChannels}
+          quickActions={copy.quickActions}
           form={{
             copy: form,
             topics: [

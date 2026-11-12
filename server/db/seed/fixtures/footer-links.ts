@@ -30,7 +30,6 @@ export const FOOTER = {
       ],
     },
   ],
-  contactLines: ["[email]", "[phone]", "[Dublin, Ireland]"],
   contactNote: "Online sessions available - Ireland, UK & USA.",
   legalLinks: LEGAL_LINKS,
   copyrightName: "Magda Kennedy",

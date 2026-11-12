@@ -22,21 +22,25 @@ function PlanCard({
       data-motion="deal tilt"
       data-tilt="3"
       className={cn(
-        "relative flex flex-col gap-6 overflow-clip rounded-[20px] p-7 xl:p-9",
-        featured ? "bg-pine text-cream" : "bg-stone"
+        "relative flex flex-col gap-4 overflow-clip rounded-3xl px-5 py-6 sm:gap-6 sm:rounded-[20px] sm:p-7 xl:p-9",
+        featured
+          ? "bg-pine text-cream"
+          : "border border-line bg-white sm:border-0 sm:bg-stone"
       )}
     >
-      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 sm:gap-x-4">
         <h3
           className={cn(
-            "text-xl leading-[1.5] font-semibold tracking-[-0.2px]",
-            featured ? "text-cream" : "text-text-strong"
+            "text-[17px] leading-6 font-semibold sm:text-xl sm:leading-[1.5] sm:tracking-[-0.2px]",
+            featured
+              ? "text-mist sm:text-cream"
+              : "text-pine sm:text-text-strong"
           )}
         >
           {name}
         </h3>
         {featured && (
-          <span className="rounded-full bg-clay px-3 py-1.5 text-xs leading-[1.5] font-semibold whitespace-nowrap text-cream">
+          <span className="rounded-full bg-clay px-2.5 py-1.25 font-plex-mono text-xs leading-4 font-medium tracking-[1px] whitespace-nowrap text-white uppercase sm:px-3 sm:py-1.5 sm:font-sans sm:leading-[1.5] sm:font-semibold sm:tracking-normal sm:text-cream sm:normal-case">
             {featuredTag}
           </span>
         )}
@@ -46,16 +50,20 @@ function PlanCard({
         <p className="flex items-baseline gap-2.5 whitespace-nowrap">
           <span
             className={cn(
-              "font-display text-[52px] leading-none [font-variation-settings:'SOFT'_0,'WONK'_1]",
-              featured ? "font-bold text-cream" : "font-semibold text-forest"
+              "font-display text-[40px] leading-11 font-bold tracking-[-0.5px] [font-variation-settings:'SOFT'_0,'WONK'_1] sm:text-[52px] sm:leading-none sm:tracking-normal",
+              featured
+                ? "text-cream"
+                : "text-ink sm:font-semibold sm:text-forest"
             )}
           >
             {priceLabel}
           </span>
           <span
             className={cn(
-              "text-[15px] leading-[1.5]",
-              featured ? "text-cream/70" : "text-text-muted/85"
+              "text-[15px] leading-5.75 sm:leading-[1.5]",
+              featured
+                ? "text-mist sm:text-cream/70"
+                : "text-[#686561] sm:text-text-muted/85"
             )}
           >
             {unit}
@@ -63,8 +71,10 @@ function PlanCard({
         </p>
         <p
           className={cn(
-            "max-w-71.25 text-sm leading-[1.6]",
-            featured ? "text-cream/80" : "text-text-muted"
+            "text-[15px] leading-5.75 sm:max-w-71.25 sm:text-sm sm:leading-[1.6]",
+            featured
+              ? "text-mist sm:text-cream/80"
+              : "text-ink-muted sm:text-text-muted"
           )}
         >
           {summary}
@@ -74,7 +84,7 @@ function PlanCard({
       {/* Grows so the buttons line up across cards of different length. */}
       <ul
         className={cn(
-          "flex flex-1 flex-col gap-3.5 border-t pt-5",
+          "flex flex-1 flex-col gap-2.5 sm:gap-3.5 sm:border-t sm:pt-5",
           featured ? "border-white/15" : "border-line"
         )}
       >
@@ -82,24 +92,30 @@ function PlanCard({
           <li key={i} className="flex items-center gap-2.5">
             <span
               className={cn(
-                "flex size-6 shrink-0 items-center justify-center rounded-full",
-                featured ? "bg-white" : "bg-pine"
+                "flex size-5.5 shrink-0 items-center justify-center rounded-full sm:size-6",
+                // Mobile: clay disc on the featured card, mint elsewhere; sm+:
+                // white on featured, pine elsewhere. The check flips to match.
+                featured ? "bg-clay sm:bg-white" : "bg-mist sm:bg-pine"
               )}
             >
               <Image
-                src={
-                  featured
-                    ? "/images/services/icon-check-dark.svg"
-                    : "/images/services/icon-check-light.svg"
-                }
+                src="/images/services/icon-check-dark.svg"
                 alt=""
                 width={11.1571}
                 height={8.20216}
+                className={featured ? "hidden sm:block" : "sm:hidden"}
+              />
+              <Image
+                src="/images/services/icon-check-light.svg"
+                alt=""
+                width={11.1571}
+                height={8.20216}
+                className={featured ? "sm:hidden" : "hidden sm:block"}
               />
             </span>
             <span
               className={cn(
-                "text-base leading-[1.5] font-medium",
+                "text-[15px] leading-5.75 sm:text-base sm:leading-[1.5] sm:font-medium",
                 featured ? "text-cream" : "text-ink-muted"
               )}
             >
@@ -114,10 +130,10 @@ function PlanCard({
         href={contactHref({ plan: plan.slug })}
         data-magnetic
         className={cn(
-          "flex w-full items-center justify-center rounded-full px-7 py-4 text-[15px] leading-[1.5] font-semibold transition-colors duration-300",
+          "flex h-13 w-full items-center justify-center rounded-full px-6 text-base leading-5 font-semibold transition-colors duration-300 sm:h-auto sm:px-7 sm:py-4 sm:text-[15px] sm:leading-[1.5]",
           featured
             ? "bg-clay text-cream hover:bg-clay/90"
-            : "border border-[#d5dacd] bg-white text-pine hover:border-pine/40 hover:bg-cream"
+            : "border border-brand bg-white text-brand hover:bg-cream sm:border-[#d5dacd] sm:text-pine sm:hover:border-pine/40"
         )}
       >
         {ctaLabel}
@@ -141,23 +157,23 @@ export function FormatsSection({
     <section
       id={id}
       aria-labelledby={`${id}-heading`}
-      className="bg-white py-20 lg:py-28"
+      className="bg-cream py-12 sm:bg-white sm:py-20 lg:py-28"
     >
-      <Container className="flex flex-col gap-14">
-        <header className="flex flex-col items-center gap-3 text-center">
+      <Container className="flex flex-col gap-6 sm:gap-14">
+        <header className="flex flex-col items-start gap-3 text-left sm:items-center sm:text-center">
           <div data-motion="rise">
             <Eyebrow className="uppercase">{eyebrow}</Eyebrow>
           </div>
           <h2
             id={`${id}-heading`}
             data-motion="words"
-            className="font-display text-[38px] leading-[1.3] font-bold text-pine [font-variation-settings:'SOFT'_0,'WONK'_1] sm:text-[52px]"
+            className="font-display text-[30px] leading-9 font-bold tracking-[-0.3px] text-forest [font-variation-settings:'SOFT'_0,'WONK'_1] sm:text-[52px] sm:leading-[1.3] sm:tracking-normal sm:text-pine"
           >
             {title}
           </h2>
           <p
             data-motion="rise"
-            className="max-w-120 text-base leading-[1.6] text-text-muted"
+            className="max-w-120 text-[15px] leading-5.75 text-[#686561] sm:text-base sm:leading-[1.6] sm:text-text-muted"
           >
             {subtitle}
           </p>
@@ -165,7 +181,7 @@ export function FormatsSection({
 
         <ul
           data-motion="deal-group"
-          className="grid grid-cols-1 gap-6 lg:grid-cols-3"
+          className="grid grid-cols-1 gap-3.5 sm:gap-6 lg:grid-cols-3"
         >
           {plans.map((plan) => (
             <PlanCard

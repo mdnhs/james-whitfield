@@ -8,10 +8,10 @@ import { BLOCKS, BlockInstance } from "./registry"
 import { RichTextDoc } from "./rich-text"
 
 describe("block registry", () => {
-  it("declares the 22 section types once each", () => {
+  it("declares the 23 section types once each", () => {
     const types = BLOCKS.map((block) => block.type)
-    expect(types).toHaveLength(22)
-    expect(new Set(types).size).toBe(22)
+    expect(types).toHaveLength(23)
+    expect(new Set(types).size).toBe(23)
   })
 
   it("rejects empty data for every block that has required fields", () => {
@@ -137,6 +137,12 @@ describe("block registry", () => {
         title: "T",
         subtitle: "S",
         featuredTag: "F",
+      },
+      journey: {
+        eyebrow: "E",
+        title: "T",
+        steps: Array(2).fill({ title: "T", body: "B", tag: "G" }),
+        cta: link,
       },
       "session.timeline": {
         eyebrow: "E",

@@ -29,7 +29,7 @@ export function SiteHeader({
           className
         )}
       >
-        <Container className="flex h-25 items-center justify-between transition-[height] duration-500 ease-out group-data-scrolled/header:h-18">
+        <Container className="flex h-18 items-center justify-between transition-[height] duration-500 ease-out group-data-scrolled/header:h-18 lg:h-25">
           <Brand name={site.name} logo={logo} />
 
           <nav

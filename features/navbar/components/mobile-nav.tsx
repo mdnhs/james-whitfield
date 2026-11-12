@@ -2,8 +2,9 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { Menu, X } from "lucide-react"
+import { X } from "lucide-react"
 
+import { Menu02Icon } from "@/components/icons/menu-02-icon"
 import {
   Sheet,
   SheetClose,
@@ -29,9 +30,9 @@ export function MobileNav({
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger
         aria-label="Open menu"
-        className="flex size-11 items-center justify-center rounded-full border border-white/40 text-white lg:hidden"
+        className="flex size-11 items-center justify-center rounded-full border border-white/40 bg-white/10 text-white backdrop-blur-sm lg:hidden"
       >
-        <Menu className="size-5" />
+        <Menu02Icon className="size-5" />
       </SheetTrigger>
 
       <SheetContent

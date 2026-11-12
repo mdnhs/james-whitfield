@@ -21,10 +21,10 @@ export function AboutSection({
     <section
       id={id}
       aria-labelledby={`${id}-heading`}
-      className="bg-white pt-9 pb-16 lg:pb-26"
+      className="bg-white py-12 sm:pt-9 sm:pb-16 lg:pb-26"
     >
-      <Container className="flex flex-col gap-12 lg:flex-row lg:items-start lg:gap-14 xl:gap-24">
-        <div className="flex w-full flex-col items-start gap-6 lg:w-[44%] lg:shrink-0 xl:w-130">
+      <Container className="flex flex-col gap-5 sm:gap-12 lg:flex-row lg:items-start lg:gap-14 xl:gap-24">
+        <div className="flex w-full flex-col items-start gap-6 max-sm:gap-5 lg:w-[44%] lg:shrink-0 xl:w-130">
           <div data-motion="rise">
             <Eyebrow>{eyebrow}</Eyebrow>
           </div>
@@ -32,30 +32,30 @@ export function AboutSection({
           <h2
             id={`${id}-heading`}
             data-motion="words"
-            className="text-[28px] leading-[1.24] font-semibold tracking-[-0.6px] text-ink sm:text-[37px]"
+            className="font-display text-[30px] leading-9 font-bold tracking-[-0.3px] text-ink [font-variation-settings:'SOFT'_0,'WONK'_1] sm:font-sans sm:text-[37px] sm:leading-[1.24] sm:font-semibold sm:tracking-[-0.6px] sm:[font-variation-settings:normal]"
           >
             {headline}
           </h2>
 
-          <blockquote className="flex w-full gap-5 pt-2.5">
+          <blockquote className="flex w-full gap-3.5 sm:gap-5 sm:pt-2.5">
             <span
               aria-hidden
               data-motion="grow"
-              className="w-0.5 shrink-0 self-stretch bg-clay"
+              className="w-0.75 shrink-0 self-stretch rounded-xs bg-clay sm:w-0.5 sm:rounded-none"
             />
             <p
               data-motion="words"
-              className="font-geist text-[19px] leading-[1.5] font-medium tracking-[-0.2px] text-clay"
+              className="font-geist text-lg leading-6.75 font-medium text-clay sm:text-[19px] sm:leading-[1.5] sm:tracking-[-0.2px]"
             >
               {quote}
             </p>
           </blockquote>
         </div>
 
-        <div className="flex min-w-0 flex-1 flex-col items-start gap-10.5">
+        <div className="flex min-w-0 flex-1 flex-col items-start gap-5 sm:gap-10.5">
           <div
             data-motion="stagger"
-            className="flex flex-col gap-6 text-[17px] leading-[1.72] text-ink-muted"
+            className="flex flex-col gap-5 text-[15px] leading-5.75 text-ink-muted sm:gap-6 sm:text-[17px] sm:leading-[1.72]"
           >
             {paragraphs.map((paragraph, i) => (
               <p key={i}>{paragraph}</p>
@@ -64,7 +64,7 @@ export function AboutSection({
 
           <ul
             data-motion="deal-group"
-            className="grid w-full grid-cols-1 gap-3.5 pt-1.5 sm:grid-cols-3"
+            className="grid w-full grid-cols-3 gap-2 sm:gap-3.5 sm:pt-1.5"
           >
             {stats.map((stat, i) => (
               <StatCard key={i} stat={stat} />
@@ -78,10 +78,13 @@ export function AboutSection({
             data-magnetic
             className={cn(
               buttonVariants(),
-              "h-12.5 w-full gap-0 rounded-full bg-clay px-[27px] py-0 text-[15px] leading-[normal] font-semibold whitespace-pre text-cream hover:bg-clay/90 sm:w-auto"
+              "h-13 w-full gap-0 rounded-full border border-brand bg-transparent px-6 py-0 text-base leading-5 font-semibold whitespace-pre text-brand hover:bg-brand/5 sm:h-12.5 sm:w-auto sm:border-0 sm:bg-clay sm:px-[27px] sm:text-[15px] sm:leading-[normal] sm:text-cream sm:hover:bg-clay/90"
             )}
           >
-            {`${cta.label}  →`}
+            {cta.label}
+            <span aria-hidden className="hidden sm:inline">
+              {"  →"}
+            </span>
           </Link>
         </div>
       </Container>

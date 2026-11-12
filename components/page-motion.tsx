@@ -77,7 +77,7 @@ export function PageMotion() {
           xl: "(min-width: 1280px)",
         },
         (context) => {
-          const { motion, desktop, fine } = context.conditions ?? {}
+          const { motion, desktop, fine, sm } = context.conditions ?? {}
           if (!motion) return
 
           // Stacked cards. A card taller than the viewport can only stick once
@@ -206,19 +206,25 @@ export function PageMotion() {
             )
             if (!next || !shade) return
 
-            const timeline = gsap
-              .timeline({
-                defaults: { ease: "none" },
-                scrollTrigger: {
-                  trigger: next,
-                  start: () =>
-                    `top ${Math.min(el.offsetHeight, document.documentElement.clientHeight)}px`,
-                  end: "top top",
-                  scrub: true,
-                },
-              })
-              .to(shade, { opacity: 0.55, force3D: true }, 0)
-              .to(el, { scale: 0.94, force3D: true }, 0)
+            const timeline = gsap.timeline({
+              defaults: { ease: "none" },
+              scrollTrigger: {
+                trigger: next,
+                start: () =>
+                  `top ${Math.min(el.offsetHeight, document.documentElement.clientHeight)}px`,
+                end: "top top",
+                scrub: true,
+              },
+            })
+
+            // Phones neither shrink nor dim the covered card: at a 390px width
+            // either one shows through the next card's rounded corners as a
+            // dark gap. There the covered card stays as it was and the corners
+            // simply reveal its own colour.
+            if (sm)
+              timeline
+                .to(shade, { opacity: 0.55, force3D: true }, 0)
+                .to(el, { scale: 0.94, force3D: true }, 0)
 
             // A flat card (the hero) takes on the stack's rounded top corners
             // as it sinks, so it leaves like every other card.

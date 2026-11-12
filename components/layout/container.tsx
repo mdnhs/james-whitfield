@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils"
 
-// Site content column: 1440px max with the design's 66px desktop gutter.
+// Site content column: 1440px max with the design's 66px desktop gutter and
+// the mobile design's 20px gutter.
 export function Container({
   className,
   ...props
@@ -8,7 +9,7 @@ export function Container({
   return (
     <div
       className={cn(
-        "mx-auto w-full max-w-360 px-4 sm:px-6 lg:px-16.5",
+        "mx-auto w-full max-w-360 px-5 sm:px-6 lg:px-16.5",
         className
       )}
       {...props}

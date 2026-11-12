@@ -17,6 +17,7 @@ import {
   faq,
   heroHome,
   insightsLatest,
+  journey,
   processBlock,
   testimonials,
 } from "./home"
@@ -33,6 +34,7 @@ export const BLOCKS = [
   aboutIntro,
   processBlock,
   testimonials,
+  journey,
   band,
   insightsLatest,
   faq,
@@ -85,6 +87,7 @@ export const BlockInstance = z.discriminatedUnion("type", [
   instance(aboutIntro),
   instance(processBlock),
   instance(testimonials),
+  instance(journey),
   instance(band),
   instance(insightsLatest),
   instance(faq),

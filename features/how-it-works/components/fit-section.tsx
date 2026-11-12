@@ -4,6 +4,7 @@ import type { BlockView } from "@/blocks/media-refs"
 import { Eyebrow } from "@/components/eyebrow"
 import { Container } from "@/components/layout/container"
 import { pairRows } from "@/lib/layout-math"
+import { cn } from "@/lib/utils"
 
 function Mark({ good }: { good: boolean }) {
   return good ? (
@@ -51,23 +52,23 @@ export function FitSection({
     <section
       id={id}
       aria-labelledby={`${id}-heading`}
-      className="bg-white py-20 lg:py-30"
+      className="bg-cream py-12 sm:bg-white sm:py-20 lg:py-30"
     >
-      <Container className="flex flex-col gap-14">
-        <header className="flex flex-col items-center gap-3 text-center">
+      <Container className="flex flex-col gap-5 sm:gap-14">
+        <header className="flex flex-col items-start gap-3 text-left sm:items-center sm:text-center">
           <div data-motion="rise">
             <Eyebrow className="uppercase">{eyebrow}</Eyebrow>
           </div>
           <h2
             id={`${id}-heading`}
             data-motion="words"
-            className="max-w-145 font-display text-[38px] leading-[1.2] font-bold text-pine [font-variation-settings:'SOFT'_0,'WONK'_1] sm:text-[52px]"
+            className="max-w-145 font-display text-[30px] leading-9 font-bold tracking-[-0.3px] text-forest [font-variation-settings:'SOFT'_0,'WONK'_1] sm:text-[52px] sm:leading-[1.2] sm:tracking-normal sm:text-pine"
           >
             {title}
           </h2>
           <p
             data-motion="rise"
-            className="max-w-113.5 text-base leading-[1.6] text-text-muted"
+            className="max-w-113.5 text-[15px] leading-5.75 text-[#686561] sm:text-base sm:leading-[1.6] sm:text-text-muted"
           >
             {subtitle}
           </p>
@@ -112,25 +113,70 @@ export function FitSection({
           </tbody>
         </table>
 
-        {/* Mobile and tablet: the two lists one after the other. */}
-        <div className="flex flex-col gap-10 lg:hidden">
-          {[good, poor].map((list, n) => (
-            <div key={list.heading} className="flex flex-col gap-5">
-              <h3 className="text-2xl leading-[1.2] font-semibold text-brand">
-                {list.heading}
-              </h3>
-              <ul
-                data-motion="stagger"
-                className="flex flex-col overflow-clip rounded-3xl"
+        {/* Tablet: the two lists one after the other. Phones: each list is a
+            card (pine for the good fit) with compact rows. */}
+        <div className="flex flex-col gap-3.5 sm:gap-10 lg:hidden">
+          {[good, poor].map((list, n) => {
+            const yes = n === 0
+            return (
+              <div
+                key={list.heading}
+                className={cn(
+                  "flex flex-col gap-3.5 rounded-[22px] px-5 py-5.5 sm:gap-5 sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0",
+                  yes ? "bg-pine" : "border border-line bg-white"
+                )}
               >
-                {list.items.map((item, i) => (
-                  <li key={i} className="border border-line-faint bg-stone p-6">
-                    <Item good={n === 0}>{item}</Item>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+                <h3
+                  className={cn(
+                    "text-xl leading-6.5 font-semibold tracking-[-0.2px] sm:text-2xl sm:leading-[1.2] sm:tracking-normal sm:text-brand",
+                    yes ? "text-cream" : "text-ink"
+                  )}
+                >
+                  {list.heading}
+                </h3>
+                <ul
+                  data-motion="stagger"
+                  className="flex flex-col gap-3.5 sm:gap-0 sm:overflow-clip sm:rounded-3xl"
+                >
+                  {list.items.map((item, i) => (
+                    <li
+                      key={i}
+                      className="sm:border sm:border-line-faint sm:bg-stone sm:p-6"
+                    >
+                      <span
+                        className={cn(
+                          "flex items-start gap-3 text-[15px] leading-5.75 sm:hidden",
+                          yes ? "text-cream" : "text-ink-muted"
+                        )}
+                      >
+                        {yes ? (
+                          <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-clay">
+                            <Image
+                              src="/images/services/icon-check-light.svg"
+                              alt=""
+                              width={11.1571}
+                              height={8.20216}
+                            />
+                          </span>
+                        ) : (
+                          <span
+                            aria-hidden
+                            className="flex size-6 shrink-0 items-center justify-center rounded-full bg-stone text-xs text-ink-muted"
+                          >
+                            ×
+                          </span>
+                        )}
+                        {item}
+                      </span>
+                      <span className="hidden sm:block">
+                        <Item good={yes}>{item}</Item>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )
+          })}
         </div>
       </Container>
     </section>

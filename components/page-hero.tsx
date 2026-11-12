@@ -18,9 +18,14 @@ export function PageHero({
   return (
     <section
       aria-labelledby="page-hero-heading"
-      className="relative flex min-h-svh w-full flex-col overflow-clip bg-hero-base lg:h-svh lg:min-h-190"
+      // Mobile: a compact band with rounded bottom corners over white (the
+      // page continues in white beneath them); sm+: the full-height hero.
+      className="relative flex w-full flex-col overflow-clip bg-white sm:min-h-svh sm:bg-hero-base lg:h-svh lg:min-h-190"
     >
-      <div aria-hidden className="absolute inset-0">
+      <div
+        aria-hidden
+        className="absolute inset-0 overflow-clip rounded-b-[28px] bg-hero-base sm:rounded-none"
+      >
         <div
           data-motion="parallax"
           className="absolute inset-x-0 -inset-y-[8%]"
@@ -42,18 +47,20 @@ export function PageHero({
             backgroundImage: `linear-gradient(180deg, rgba(8,18,15,0.5) 0%, rgba(8,18,15,0) 30%, rgba(8,18,15,0) 55%, rgba(8,23,20,0.9) 100%), linear-gradient(rgba(10,23,20,${tint}), rgba(10,23,20,${tint}))`,
           }}
         />
+        {/* Mobile: the short band reads under one even teal wash. */}
+        <div className="absolute inset-0 bg-linear-to-b from-[rgba(8,20,18,0.7)] to-[rgba(10,38,38,0.92)] sm:hidden" />
       </div>
 
-      <Container className="relative flex flex-1 flex-col justify-end gap-7 pb-14 lg:pb-18">
+      <Container className="relative flex flex-1 flex-col justify-end gap-3.5 pt-25 pb-9 sm:gap-7 sm:pt-0 sm:pb-14 lg:pb-18">
         <nav
           aria-label="Breadcrumb"
           data-motion="rise"
           data-reveal
-          className="inline-flex items-center gap-2.25 self-start rounded-full border border-white/10 bg-[rgba(231,239,238,0.05)] py-2.25 pr-4 pl-3.5 text-sm leading-[1.5] backdrop-blur-sm"
+          className="inline-flex items-center gap-1.5 self-start rounded-full border border-white/10 bg-[rgba(231,239,238,0.05)] px-3 py-1.5 text-[13px] leading-4.75 backdrop-blur-sm sm:gap-2.25 sm:py-2.25 sm:pr-4 sm:pl-3.5 sm:text-sm sm:leading-[1.5]"
         >
           <span
             aria-hidden
-            className="size-1.5 shrink-0 rounded-full bg-white"
+            className="hidden size-1.5 shrink-0 rounded-full bg-white sm:block"
           />
           <Link
             href="/"
@@ -69,12 +76,12 @@ export function PageHero({
           </span>
         </nav>
 
-        <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
+        <div className="flex flex-col gap-3.5 sm:gap-6 xl:flex-row xl:items-end xl:justify-between">
           <h1
             id="page-hero-heading"
             data-motion="rise"
             data-reveal
-            className="font-display text-[64px] leading-[1.05] font-semibold text-white [font-variation-settings:'SOFT'_0,'WONK'_1] sm:text-[96px] xl:text-[120px]"
+            className="font-display text-[40px] leading-11 font-bold tracking-[-0.5px] text-white [font-variation-settings:'SOFT'_0,'WONK'_1] sm:text-[96px] sm:leading-[1.05] sm:font-semibold sm:tracking-normal xl:text-[120px]"
           >
             {title}
           </h1>
@@ -82,7 +89,7 @@ export function PageHero({
             data-motion="rise"
             data-reveal
             data-delay="0.15"
-            className="max-w-90 text-lg leading-[1.55] text-white/84 sm:text-xl"
+            className="max-w-90 text-[17px] leading-6.5 text-mist sm:text-xl sm:leading-[1.55] sm:text-white/84"
           >
             {subtitle}
           </p>

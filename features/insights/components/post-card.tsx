@@ -11,14 +11,14 @@ export function PostCard({ article }: { article: ArticleSummary }) {
   return (
     <article
       data-motion="deal"
-      className="group flex flex-col gap-6 text-forest"
+      className="group relative flex flex-col gap-3.5 text-forest sm:gap-6"
     >
       <Link
         href={href}
         tabIndex={-1}
         aria-hidden
         data-motion="tilt"
-        className="relative block h-58.5 overflow-clip rounded-xl bg-[#e5e5e5]"
+        className="relative block h-45 overflow-clip rounded-[18px] bg-[#e5e5e5] sm:h-58.5 sm:rounded-xl"
       >
         {/* Oversized frame gives the scroll parallax room to drift. */}
         <div
@@ -36,11 +36,12 @@ export function PostCard({ article }: { article: ArticleSummary }) {
       </Link>
 
       <div className="flex flex-col items-start">
-        <span className="mt-px rounded-full bg-brand px-3 py-1.5 font-dm-mono text-sm leading-5.25 whitespace-nowrap text-white uppercase">
+        {/* Mobile: the tag sits on the image's top-left corner. */}
+        <span className="absolute top-3 left-3 rounded-full bg-pine px-2.5 py-1.25 font-plex-mono text-xs leading-4 font-medium tracking-[1px] whitespace-nowrap text-white uppercase sm:static sm:mt-px sm:bg-brand sm:px-3 sm:py-1.5 sm:font-dm-mono sm:text-sm sm:leading-5.25 sm:font-normal sm:tracking-normal">
           {category}
         </span>
 
-        <h3 className="pt-3 text-[28.1px] leading-[40.63px] lg:whitespace-pre-line">
+        <h3 className="text-xl leading-6.5 font-semibold tracking-[-0.2px] sm:pt-3 sm:text-[28.1px] sm:leading-[40.63px] sm:font-normal sm:tracking-normal lg:whitespace-pre-line">
           <Link
             href={href}
             className="hover:underline hover:underline-offset-4"
@@ -49,20 +50,25 @@ export function PostCard({ article }: { article: ArticleSummary }) {
           </Link>
         </h3>
 
-        <p className="pt-3 text-base leading-6">{excerpt}</p>
+        <p className="line-clamp-3 pt-1.5 text-[15px] leading-5.75 text-[#686561] sm:line-clamp-none sm:pt-3 sm:text-base sm:leading-6 sm:text-forest">
+          {excerpt}
+        </p>
 
-        <div className="flex items-center gap-2 pt-4.5 text-base leading-6 whitespace-nowrap">
+        <div className="flex items-center gap-2 pt-3.5 text-[13px] leading-4.75 whitespace-nowrap text-[#686561] sm:pt-4.5 sm:text-base sm:leading-6 sm:text-forest">
           {author.avatar && (
             <MediaImage
               media={author.avatar}
               alt=""
               width={32}
               height={32}
-              className="size-8 rounded-full object-cover"
+              className="size-6 rounded-full object-cover sm:size-8"
             />
           )}
           <span>{author.name}</span>
-          <span aria-hidden className="size-1.25 rounded-full bg-forest" />
+          <span
+            aria-hidden
+            className="size-0.75 rounded-full bg-current sm:size-1.25"
+          />
           <time dateTime={date.iso}>{date.label}</time>
         </div>
       </div>

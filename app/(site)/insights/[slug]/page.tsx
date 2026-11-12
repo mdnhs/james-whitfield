@@ -110,7 +110,13 @@ export default async function ArticlePage({
           ]),
         ])}
       />
-      <main key={slug} data-page-root className="bg-ink">
+      <main
+        key={slug}
+        data-page-root
+        // Behind the stacked cards: dark where they shrink and dim (sm+), white
+        // on phones, where it only shows through a card's rounded top corners.
+        className="bg-white sm:bg-ink"
+      >
         <StackCard id="home" rounded={false}>
           <ArticleHero article={article} copy={copy} />
         </StackCard>

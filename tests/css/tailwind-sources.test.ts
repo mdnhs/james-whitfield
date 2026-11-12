@@ -21,8 +21,8 @@ async function build(file: string) {
 // show exactly which sources each stylesheet reads.
 // Used only in admin/modules/auth/two-factor-setup.tsx:
 const ADMIN_ONLY = `.${["tracking", "\\[0\\.3em\\]"].join("-")}`
-// Used only in features/how-it-works/components/how-it-works-section.tsx:
-const FEATURES_ONLY = `.${["leading", "\\[1\\.18\\]"].join("-")}`
+// Used only in features/insights/components/insights-section.tsx:
+const FEATURES_ONLY = `.${["max-w", "\\[697px\\]"].join("-")}`
 
 describe("Tailwind sources", () => {
   it("the site stylesheet ignores admin/**", async () => {

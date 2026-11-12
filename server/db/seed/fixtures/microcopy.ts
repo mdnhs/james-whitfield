@@ -8,6 +8,7 @@ export const MICROCOPY: GlobalValue<"microcopy"> = {
   featured: "Featured",
   featuredLabel: "Featured article",
   readArticle: "Read article →",
+  loadMore: "Load more articles",
   readTime: "{minutes} min read",
   allArticles: "All articles",
   filterLabel: "Filter by category",
@@ -40,6 +41,7 @@ export const MICROCOPY: GlobalValue<"microcopy"> = {
     clinic: "Clinic",
     hours: "Hours",
   },
+  quickActions: { call: "Call", email: "Email", directions: "Directions" },
   contactChapter: "Contact",
   articleChapters: {
     welcome: "Welcome",

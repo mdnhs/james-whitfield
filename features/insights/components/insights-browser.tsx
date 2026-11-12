@@ -55,6 +55,7 @@ type Shared = {
   categories: CategoryView[]
   copy: GlobalValue<"microcopy">
   pageSize: number
+  paging: BlockView<"insights.browser">["paging"]
 }
 type ViewProps = Shared & { state: State; update: Update }
 
@@ -114,6 +115,7 @@ export function InsightsBrowser({
     categories,
     copy,
     pageSize: content.pageSize,
+    paging: content.paging,
   }
 
   return (
@@ -121,9 +123,9 @@ export function InsightsBrowser({
       <section
         id={id}
         aria-label={copy.featuredLabel}
-        className="bg-white pt-12 pb-20 lg:pt-20 lg:pb-30"
+        className="bg-white pt-6 pb-8 sm:pt-12 sm:pb-20 lg:pt-20 lg:pb-30"
       >
-        <Container className="flex flex-col gap-14">
+        <Container className="flex flex-col gap-5 sm:gap-14">
           {withUrl(FilterBar, params, shared)}
           {featured}
         </Container>
@@ -131,14 +133,14 @@ export function InsightsBrowser({
 
       <section
         aria-labelledby={`${id}-heading`}
-        className="bg-stone py-20 lg:py-30"
+        className="bg-cream pt-8 pb-12 sm:bg-stone sm:py-20 lg:py-30"
       >
-        <Container className="flex flex-col gap-12">
-          <div className="flex flex-wrap items-end justify-between gap-4">
+        <Container className="flex flex-col gap-4 sm:gap-12">
+          <div className="flex items-end justify-between gap-4 sm:flex-wrap">
             <h2
               id={`${id}-heading`}
               data-motion="words"
-              className="font-display text-[38px] leading-[1.3] font-bold text-pine [font-variation-settings:'SOFT'_0,'WONK'_1] sm:text-[52px]"
+              className="text-xl leading-6.5 font-semibold tracking-[-0.2px] text-forest sm:font-display sm:text-[52px] sm:leading-[1.3] sm:font-bold sm:tracking-normal sm:text-pine sm:[font-variation-settings:'SOFT'_0,'WONK'_1]"
             >
               {content.heading}
             </h2>
@@ -155,11 +157,11 @@ function FilterBar({ categories, copy, state, update }: ViewProps) {
   const filters = [{ slug: null, name: copy.allArticles }, ...categories]
 
   return (
-    <div className="flex flex-col gap-5 border-b border-line-soft pb-7 lg:flex-row lg:items-center lg:justify-between">
+    <div className="flex flex-col gap-3.5 sm:gap-5 sm:border-b sm:border-line-soft sm:pb-7 lg:flex-row lg:items-center lg:justify-between">
       <div
         role="group"
         aria-label={copy.filterLabel}
-        className="-mx-4 flex [scrollbar-width:none] gap-2.5 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:px-0"
+        className="-mx-5 flex [scrollbar-width:none] gap-2 overflow-x-auto px-5 sm:mx-0 sm:flex-wrap sm:gap-2.5 sm:px-0"
       >
         {filters.map((item) => {
           const selected = item.slug === state.category
@@ -170,10 +172,10 @@ function FilterBar({ categories, copy, state, update }: ViewProps) {
               aria-pressed={selected}
               onClick={() => update({ category: item.slug, page: null })}
               className={cn(
-                "shrink-0 cursor-pointer rounded-full px-4.5 py-2.5 text-base leading-[1.5] font-medium whitespace-nowrap transition-colors duration-300 outline-none focus-visible:ring-3 focus-visible:ring-clay/50",
+                "shrink-0 cursor-pointer rounded-full border px-4 py-2 text-[13px] leading-4.75 font-medium whitespace-nowrap transition-colors duration-300 outline-none focus-visible:ring-3 focus-visible:ring-clay/50 sm:border-0 sm:px-4.5 sm:py-2.5 sm:text-base sm:leading-[1.5]",
                 selected
-                  ? "bg-pine text-cream"
-                  : "bg-stone text-ink-muted hover:bg-mist"
+                  ? "border-pine bg-pine text-cream"
+                  : "border-pine/25 bg-white text-pine hover:bg-mist sm:bg-stone sm:text-ink-muted"
               )}
             >
               {item.name}
@@ -182,12 +184,13 @@ function FilterBar({ categories, copy, state, update }: ViewProps) {
         })}
       </div>
 
-      <label className="flex shrink-0 items-center gap-2 rounded-full border border-line px-4.5 py-2.75 transition-colors focus-within:border-pine/50">
+      <label className="order-first flex h-12 shrink-0 items-center gap-2.5 rounded-full bg-stone px-4 transition-colors sm:order-none sm:h-auto sm:gap-2 sm:border sm:border-line sm:bg-transparent sm:px-4.5 sm:py-2.75 sm:focus-within:border-pine/50">
         <Image
           src="/images/insights/icon-search.svg"
           alt=""
           width={24}
           height={24}
+          className="size-4.5 sm:size-6"
         />
         <span className="sr-only">{copy.searchLabel}</span>
         <input
@@ -198,7 +201,7 @@ function FilterBar({ categories, copy, state, update }: ViewProps) {
             update({ q: event.target.value || null, page: null }, "replace")
           }
           placeholder={copy.searchPlaceholder}
-          className="w-full bg-transparent text-base leading-[1.5] text-ink outline-none placeholder:text-text-subtle lg:w-42.5"
+          className="w-full bg-transparent text-[15px] leading-5.75 text-ink outline-none placeholder:text-text-subtle sm:text-base sm:leading-[1.5] lg:w-42.5"
         />
       </label>
     </div>
@@ -208,7 +211,8 @@ function FilterBar({ categories, copy, state, update }: ViewProps) {
 function useResults(
   articles: ArticleSummary[],
   pageSize: number,
-  state: State
+  state: State,
+  paging: Shared["paging"] = "pages"
 ) {
   const category = state.category
   const deferredQuery = useDeferredValue(state.q.trim().toLowerCase())
@@ -231,23 +235,42 @@ function useResults(
 
   const pages = Math.max(1, Math.ceil(filtered.length / pageSize))
   const current = Math.min(Math.max(1, state.page), pages)
-  const visible = filtered.slice((current - 1) * pageSize, current * pageSize)
+  // "loadMore" keeps every earlier batch on screen; "pages" shows one page.
+  const visible = filtered.slice(
+    paging === "loadMore" ? 0 : (current - 1) * pageSize,
+    current * pageSize
+  )
   const key = `${category}|${deferredQuery}|${current}`
 
   return { filtered, pages, current, visible, key }
 }
 
-function Count({ articles, pageSize, copy, state }: ViewProps) {
-  const { filtered, visible } = useResults(articles, pageSize, state)
+function Count({ articles, pageSize, paging, copy, state }: ViewProps) {
+  const { filtered, visible } = useResults(articles, pageSize, state, paging)
   return (
-    <p aria-live="polite" className="text-base leading-[1.5] text-text-muted">
+    <p
+      aria-live="polite"
+      className="text-[13px] leading-4.75 whitespace-nowrap text-[#686561] sm:text-base sm:leading-[1.5] sm:text-text-muted"
+    >
       {fill(copy.showing, { shown: visible.length, total: filtered.length })}
     </p>
   )
 }
 
-function Results({ articles, pageSize, copy, state, update }: ViewProps) {
-  const { pages, current, visible, key } = useResults(articles, pageSize, state)
+function Results({
+  articles,
+  pageSize,
+  paging,
+  copy,
+  state,
+  update,
+}: ViewProps) {
+  const { pages, current, visible, key } = useResults(
+    articles,
+    pageSize,
+    state,
+    paging
+  )
   const grid = useRef<HTMLDivElement>(null)
   const lenis = useLenis()
 
@@ -297,7 +320,7 @@ function Results({ articles, pageSize, copy, state, update }: ViewProps) {
     <>
       <div ref={grid}>
         {visible.length ? (
-          <div className="grid grid-cols-1 gap-x-7 gap-y-14 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:gap-x-7 sm:gap-y-14 md:grid-cols-2 lg:grid-cols-3">
             {visible.map((article) => (
               <ArticleCard key={article.id} article={article} />
             ))}
@@ -316,7 +339,18 @@ function Results({ articles, pageSize, copy, state, update }: ViewProps) {
         )}
       </div>
 
-      {pages > 1 && (
+      {paging === "loadMore" && current < pages && (
+        <button
+          type="button"
+          // Replace, not push: Back leaves the list rather than un-loading.
+          onClick={() => update({ page: current + 1 }, "replace")}
+          className="h-13 w-full cursor-pointer rounded-full border border-brand text-base leading-5 font-semibold text-brand transition-colors hover:bg-brand/5 sm:mx-auto sm:w-auto sm:px-8"
+        >
+          {copy.loadMore || copy.nextPage}
+        </button>
+      )}
+
+      {paging === "pages" && pages > 1 && (
         <nav aria-label={copy.pagination} className="flex justify-center">
           <ol className="flex items-center gap-2.5">
             <li>

@@ -103,7 +103,6 @@ export const FooterGlobal = z.object({
     )
     .max(4)
     .default([]),
-  contactLines: z.array(s(80)).max(4).default([]),
   contactNote: s(200),
   legalLinks: z.array(Link).max(6).default([]),
   copyrightName: s(80),
@@ -178,6 +177,20 @@ export const ContactFormGlobal = z.object({
     .prefault({}),
   // "{name}", "{price}" and "{unit}" come from the plan in ?plan=.
   planMessage: s(200),
+  // Phones walk the form in three steps (topic, format, details).
+  steps: z
+    .object({
+      // "{n}" and "{total}" are filled in, e.g. "Step {n} of {total}".
+      progress: s(40),
+      back: s(30),
+      next: s(30),
+      // Reassurance under the button, e.g. "Confidential · I reply personally".
+      note: s(80),
+      topic: z.object({ title: s(80), subtitle: s(160) }).prefault({}),
+      format: z.object({ title: s(80), subtitle: s(160) }).prefault({}),
+      details: z.object({ title: s(80), subtitle: s(160) }).prefault({}),
+    })
+    .prefault({}),
 })
 
 export const MicrocopyGlobal = z.object({
@@ -186,6 +199,7 @@ export const MicrocopyGlobal = z.object({
   featured: s(30),
   featuredLabel: s(40),
   readArticle: s(40),
+  loadMore: s(40),
   // "{minutes}" is replaced.
   readTime: s(30),
   allArticles: s(30),
@@ -215,6 +229,10 @@ export const MicrocopyGlobal = z.object({
   directions: s(40),
   contactChannels: z
     .object({ email: s(20), phone: s(20), clinic: s(20), hours: s(20) })
+    .prefault({}),
+  // The phone-only shortcut row at the top of the contact details.
+  quickActions: z
+    .object({ call: s(20), email: s(20), directions: s(20) })
     .prefault({}),
   contactChapter: s(24),
   articleChapters: z

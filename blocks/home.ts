@@ -102,6 +102,25 @@ export const testimonials = defineBlock({
   uses: ["collection:testimonials", "media"],
 })
 
+// Numbered client journey (discovery call → integration), each step with a
+// short tag such as its length or outcome, closed by a booking CTA.
+export const journey = defineBlock({
+  type: "journey",
+  label: "Client journey",
+  icon: "Route",
+  schema: z.object({
+    eyebrow: text(40),
+    title: text(120),
+    steps: z
+      .array(z.object({ title: text(60), body: text(240), tag: text(60) }))
+      .min(2)
+      .max(6),
+    cta: LinkValue,
+  }),
+  allowedOn: "*",
+  uses: [],
+})
+
 export const band = defineBlock({
   type: "band",
   label: "Call-to-action band",

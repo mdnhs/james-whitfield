@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import { ArrowLeft, ArrowRight } from "lucide-react"
 
 import type { TestimonialView } from "@/lib/content/types"
+import { CarouselDots } from "@/components/carousel-dots"
 import { cn } from "@/lib/utils"
 import { TestimonialCard } from "./testimonial-card"
 
@@ -18,14 +19,21 @@ export function TestimonialCarousel({
 }) {
   const track = useRef<HTMLUListElement>(null)
   const [edges, setEdges] = useState({ start: true, end: false })
+  const [active, setActive] = useState(0)
 
   const update = useCallback(() => {
     const el = track.current
     if (!el) return
-    setEdges({
-      start: el.scrollLeft <= 1,
-      end: el.scrollLeft + el.clientWidth >= el.scrollWidth - 1,
-    })
+    const end = el.scrollLeft + el.clientWidth >= el.scrollWidth - 1
+    setEdges({ start: el.scrollLeft <= 1, end })
+    const card = el.firstElementChild as HTMLElement | null
+    if (!card) return
+    const gap = parseFloat(getComputedStyle(el).columnGap) || 0
+    setActive(
+      end
+        ? el.childElementCount - 1
+        : Math.round(el.scrollLeft / (card.offsetWidth + gap))
+    )
   }, [])
 
   useEffect(() => {
@@ -50,21 +58,21 @@ export function TestimonialCarousel({
       role="region"
       aria-roledescription="carousel"
       aria-label={label}
-      className="flex flex-col gap-8"
+      className="flex flex-col sm:gap-8"
     >
       <ul
         ref={track}
         // Focusable so keyboard users can scroll it with the arrow keys.
         tabIndex={0}
         onScroll={update}
-        className="-mx-4 flex rounded-xl outline-none focus-visible:ring-3 focus-visible:ring-pine/30 snap-x snap-mandatory scroll-px-4 [scrollbar-width:none] gap-6 overflow-x-auto px-4 pb-2 lg:gap-8 [&::-webkit-scrollbar]:hidden"
+        className="-mx-5 flex snap-x snap-mandatory scroll-px-5 [scrollbar-width:none] gap-3 overflow-x-auto rounded-xl px-5 pt-2 pb-6 outline-none focus-visible:ring-3 focus-visible:ring-pine/30 sm:-mx-4 sm:scroll-px-4 sm:gap-6 sm:px-4 sm:pt-0 sm:pb-2 lg:gap-8 [&::-webkit-scrollbar]:hidden"
       >
         {items.map((item, i) => (
           <li
             key={item.id}
             aria-roledescription="slide"
             aria-label={`${i + 1} of ${items.length}`}
-            className="flex shrink-0 basis-full snap-start md:basis-[calc((100%-1.5rem)/2)] lg:basis-[calc((100%-4rem)/3)] [&>figure]:flex-1 [&>figure]:justify-between"
+            className="flex shrink-0 basis-75 snap-start sm:basis-full md:basis-[calc((100%-1.5rem)/2)] lg:basis-[calc((100%-4rem)/3)] [&>figure]:flex-1 [&>figure]:justify-between"
           >
             <TestimonialCard item={item} />
           </li>
@@ -73,7 +81,7 @@ export function TestimonialCarousel({
 
       <div
         className={cn(
-          "flex justify-center gap-3",
+          "hidden justify-center gap-3 sm:flex",
           edges.start && edges.end && "hidden"
         )}
       >
@@ -96,6 +104,13 @@ export function TestimonialCarousel({
           <ArrowRight className="size-5" />
         </button>
       </div>
+
+      {/* Mobile: pagination dots instead of arrows. */}
+      <CarouselDots
+        count={items.length}
+        active={active}
+        className="sm:hidden"
+      />
     </div>
   )
 }

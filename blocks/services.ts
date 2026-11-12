@@ -2,7 +2,7 @@
 import * as z from "zod"
 
 import { defineBlock } from "./define-block"
-import { LinkValue, text } from "./fields"
+import { LinkValue, optionalText, text } from "./fields"
 
 export const servicesGrid = defineBlock({
   type: "services.grid",
@@ -42,6 +42,9 @@ export const sessionTimeline = defineBlock({
     eyebrow: text(40),
     title: text(120),
     subtitle: text(240),
+    // Small pill under the subtitle (e.g. "75 minutes per session"); empty
+    // hides it.
+    chip: optionalText(40).default(""),
     beats: z
       .array(z.object({ time: text(20), title: text(60), body: text(200) }))
       .min(3)

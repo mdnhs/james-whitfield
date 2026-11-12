@@ -11,6 +11,8 @@ export const insightsBrowser = defineBlock({
   schema: z.object({
     heading: text(60),
     pageSize: z.number().int().min(3).max(12),
+    // "pages" numbers the pages; "loadMore" appends the next batch below.
+    paging: z.enum(["pages", "loadMore"]).default("pages"),
   }),
   allowedOn: ["insights"],
   max: 1,

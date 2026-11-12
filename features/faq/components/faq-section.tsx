@@ -22,15 +22,15 @@ export function FaqSection({
     <section
       id={id}
       aria-labelledby={`${id}-heading`}
-      className={cn("bg-stone py-20", page ? "lg:py-30" : "lg:py-26")}
+      className={cn("bg-stone py-12 sm:py-20", page ? "lg:py-30" : "lg:py-26")}
     >
-      <Container className="flex flex-col gap-13">
-        <div className="flex max-w-200 flex-col gap-4">
+      <Container className="flex flex-col gap-6 sm:gap-13">
+        <div className="flex max-w-200 flex-col gap-2.5 sm:gap-4">
           <h2
             id={`${id}-heading`}
             data-motion="words"
             className={cn(
-              "font-display text-[30px] leading-[normal] font-bold text-pine [font-variation-settings:'SOFT'_0,'WONK'_1] sm:leading-[normal]",
+              "font-display text-[30px] leading-9 font-bold tracking-[-0.3px] text-pine [font-variation-settings:'SOFT'_0,'WONK'_1] sm:leading-[normal] sm:tracking-normal",
               page ? "sm:text-[52px]" : "sm:text-4xl"
             )}
           >
@@ -38,7 +38,7 @@ export function FaqSection({
           </h2>
           <p
             data-motion="rise"
-            className="max-w-160 text-base leading-[1.65] text-[#686561]"
+            className="max-w-160 text-[15px] leading-5.75 text-[#686561] sm:text-base sm:leading-[1.65]"
           >
             {subtitle}
           </p>

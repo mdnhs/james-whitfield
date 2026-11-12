@@ -1,5 +1,6 @@
 "use client"
 
+import { ChevronLeft } from "lucide-react"
 import Image from "next/image"
 import { Suspense, useEffect, useMemo, useRef, useState } from "react"
 import { useQueryStates } from "nuqs"
@@ -17,6 +18,19 @@ import { fetchStamp, submitLead } from "../lib/submit-lead"
 import { Turnstile } from "./turnstile"
 
 type Field = "name" | "email" | "phone" | "topic" | "message" | "consent"
+
+// Phones walk the form in three steps; sm+ shows it whole. The fields all stay
+// in the one <form> (hidden ones are only display:none), so submitting and
+// validating never change. A field's errors send the visitor to its step.
+const STEPS = 3
+const STEP_OF: Record<Field, number> = {
+  topic: 1,
+  name: 3,
+  email: 3,
+  phone: 3,
+  message: 3,
+  consent: 3,
+}
 type Errors = Partial<Record<Field, string>>
 type Copy = GlobalValue<"contactForm">
 
@@ -53,8 +67,9 @@ function validate(data: FormData, messages: Copy["errors"]) {
   return { errors, input: null }
 }
 
+// Phones: white fields with a hairline on the cream band; sm+: soft fill.
 const control =
-  "w-full rounded-xl border border-transparent bg-surface-soft px-4 text-sm leading-[1.5] text-ink outline-none transition-colors placeholder:text-text-subtle hover:border-line focus:border-pine/40 focus:bg-white aria-invalid:border-clay/60"
+  "w-full rounded-[14px] border border-line bg-white px-4 text-[15px] leading-[1.5] text-ink outline-none transition-colors placeholder:text-text-subtle hover:border-line focus:border-pine/40 focus:bg-white aria-invalid:border-clay/60 sm:rounded-xl sm:border-transparent sm:bg-surface-soft sm:text-sm"
 
 function Label({
   htmlFor,
@@ -118,7 +133,8 @@ export function ContactForm(props: {
   return (
     <div
       data-motion="rise"
-      className="flex min-w-0 flex-1 flex-col gap-6 rounded-[28px] bg-white p-6 sm:p-12"
+      // Phones: a full-bleed cream band; sm+: the white card.
+      className="-mx-5 flex min-w-0 flex-1 flex-col gap-6 bg-cream px-5 py-8 sm:mx-0 sm:rounded-[28px] sm:bg-white sm:p-12"
     >
       <Suspense fallback={<EnquiryForm {...props} prefill={{}} />}>
         <PrefilledForm {...props} />
@@ -180,7 +196,28 @@ function EnquiryForm({
   const [stamp, setStamp] = useState("")
   const [token, setToken] = useState<string | null>(null)
   const [widget, setWidget] = useState(0)
+  const [step, setStep] = useState(1)
+  const [topic, setTopic] = useState(prefill.topic ?? "")
   const form = useRef<HTMLFormElement>(null)
+  const steps = copy.steps
+  const stepCopy = [steps.topic, steps.format, steps.details][step - 1]!
+  // Hidden on phones unless it is the current step.
+  const at = (n: number) => (step === n ? "" : "max-sm:hidden")
+
+  const goTo = (next: number) => {
+    setStep(next)
+    form.current
+      ?.closest("[data-motion]")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" })
+  }
+
+  const next = () => {
+    if (step === 1 && !topic) {
+      setErrors((current) => ({ ...current, topic: copy.errors.topic }))
+      return
+    }
+    goTo(step + 1)
+  }
 
   useEffect(() => {
     void fetchStamp().then(setStamp)
@@ -198,6 +235,7 @@ function EnquiryForm({
     setFormError("")
     const first = Object.keys(next)[0]
     if (first || !input) {
+      if (first) setStep(STEP_OF[first as Field] ?? STEPS)
       if (first) focus(first)
       // Only the choice fields (format, plan) failed: no input to flag, but
       // the visitor must still be told why nothing was sent.
@@ -246,6 +284,7 @@ function EnquiryForm({
       }
       setErrors(mapped)
       const firstKey = Object.keys(mapped)[0]
+      if (firstKey) setStep(STEP_OF[firstKey as Field] ?? STEPS)
       if (firstKey) focus(firstKey)
       else setFormError(copy.errors.generic)
     } else {
@@ -259,6 +298,7 @@ function EnquiryForm({
 
   const sendAnother = () => {
     setSent(false)
+    setStep(1)
     setErrors({})
     setFormError("")
     setToken(null)
@@ -283,7 +323,52 @@ function EnquiryForm({
 
   return (
     <>
-      <div className="flex flex-wrap items-end justify-between gap-2">
+      {!sent && (
+        <div className="flex flex-col gap-5 sm:hidden">
+          <div className="grid grid-cols-[40px_1fr_40px] items-center">
+            <button
+              type="button"
+              onClick={() => goTo(step - 1)}
+              aria-label={steps.back}
+              className={cn(
+                "flex size-10 cursor-pointer items-center justify-center rounded-full bg-white text-pine shadow-[0_1px_2px_rgba(0,0,0,0.06)]",
+                step === 1 && "invisible"
+              )}
+            >
+              <ChevronLeft aria-hidden className="size-5" />
+            </button>
+            <p
+              aria-live="polite"
+              className="text-center font-plex-mono text-xs leading-4 font-medium tracking-[1px] text-pine uppercase"
+            >
+              {fill(steps.progress, { n: step, total: STEPS })}
+            </p>
+          </div>
+          <div aria-hidden className="grid grid-cols-3 gap-1.5">
+            {Array.from({ length: STEPS }, (_, i) => (
+              <span
+                key={i}
+                className={cn(
+                  "h-1 rounded-full transition-colors duration-300",
+                  i < step ? "bg-clay" : "bg-line"
+                )}
+              />
+            ))}
+          </div>
+          <div className="flex flex-col gap-2">
+            <h2 className="font-display text-[28px] leading-8 font-bold tracking-[-0.3px] text-forest [font-variation-settings:'SOFT'_0,'WONK'_1]">
+              {stepCopy.title || title}
+            </h2>
+            {stepCopy.subtitle ? (
+              <p className="text-[15px] leading-5.75 text-[#686561]">
+                {stepCopy.subtitle}
+              </p>
+            ) : null}
+          </div>
+        </div>
+      )}
+
+      <div className="flex flex-wrap items-end justify-between gap-2 max-sm:hidden">
         <h2 className="font-display text-[28px] leading-[1.5] font-bold text-pine [font-variation-settings:'SOFT'_0,'WONK'_1] sm:text-[32px]">
           {title}
         </h2>
@@ -321,7 +406,52 @@ function EnquiryForm({
           onSubmit={onSubmit}
           className="relative flex flex-col gap-6"
         >
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {/* Step 1 on phones: the topics as cards; they drive the select. */}
+          <div className={cn("flex flex-col gap-2 sm:hidden", at(1))}>
+            <div
+              role="radiogroup"
+              aria-label={labels.topic}
+              className="grid grid-cols-2 gap-2.5"
+            >
+              {topics.map((option) => {
+                const checked = topic === option.slug
+                return (
+                  <button
+                    key={option.slug}
+                    type="button"
+                    role="radio"
+                    aria-checked={checked}
+                    onClick={() => {
+                      setTopic(option.slug)
+                      clear("topic")
+                    }}
+                    className={cn(
+                      "flex min-h-21 cursor-pointer flex-col items-start gap-2 rounded-2xl border p-3.5 text-left text-[15px] leading-5 font-semibold transition-colors duration-300",
+                      checked
+                        ? "border-pine bg-pine text-white"
+                        : "border-line bg-white text-pine"
+                    )}
+                  >
+                    <span
+                      aria-hidden
+                      className={cn(
+                        "flex size-4.5 items-center justify-center rounded-full border-2",
+                        checked ? "border-white" : "border-line"
+                      )}
+                    >
+                      {checked && (
+                        <span className="size-2 rounded-full bg-clay" />
+                      )}
+                    </span>
+                    {option.label}
+                  </button>
+                )
+              })}
+            </div>
+            <FieldError id="topic-error" message={errors.topic} />
+          </div>
+
+          <div className={cn("grid grid-cols-1 gap-4 sm:grid-cols-2", at(3))}>
             <div className="flex flex-col gap-2">
               <Label htmlFor="name" required>
                 {labels.name}
@@ -355,7 +485,7 @@ function EnquiryForm({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className={cn("grid grid-cols-1 gap-4 sm:grid-cols-2", at(3))}>
             <div className="flex flex-col gap-2">
               <Label htmlFor="phone">{labels.phone}</Label>
               <input
@@ -370,7 +500,7 @@ function EnquiryForm({
               />
               <FieldError id="phone-error" message={errors.phone} />
             </div>
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 max-sm:hidden">
               <Label htmlFor="topic" required>
                 {labels.topic}
               </Label>
@@ -378,14 +508,22 @@ function EnquiryForm({
                 <select
                   id="topic"
                   name="topic"
-                  defaultValue={prefill.topic ?? ""}
-                  onChange={() => clear("topic")}
+                  value={topic}
+                  onChange={(event) => {
+                    setTopic(event.target.value)
+                    clear("topic")
+                  }}
                   className={cn(
                     control,
                     "h-12 cursor-pointer appearance-none pr-10 invalid:text-text-subtle"
                   )}
                   required
-                  {...invalid("topic")}
+                  {...(errors.topic
+                    ? {
+                        "aria-invalid": true,
+                        "aria-describedby": "topic-error-desktop",
+                      }
+                    : {})}
                 >
                   <option value="" disabled>
                     {placeholders.topic}
@@ -408,17 +546,17 @@ function EnquiryForm({
                   className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2"
                 />
               </div>
-              <FieldError id="topic-error" message={errors.topic} />
+              <FieldError id="topic-error-desktop" message={errors.topic} />
             </div>
           </div>
 
-          <fieldset className="flex flex-col gap-2.5">
-            <legend className="mb-2.5 text-sm leading-[1.5] font-medium text-text-strong">
+          <fieldset className={cn("flex flex-col gap-2.5", at(2))}>
+            <legend className="mb-2.5 text-sm leading-[1.5] font-medium text-text-strong max-sm:sr-only">
               {labels.format}
             </legend>
-            <div className="flex flex-wrap gap-2.5">
+            <div className="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap">
               {formats.map((format, i) => (
-                <label key={format.slug} className="cursor-pointer">
+                <label key={format.slug} className="group cursor-pointer">
                   <input
                     type="radio"
                     name="format"
@@ -428,7 +566,14 @@ function EnquiryForm({
                     }
                     className="peer sr-only"
                   />
-                  <span className="inline-flex rounded-full border border-line bg-white px-4.5 py-2.5 text-[14.5px] leading-[1.5] font-medium text-ink-muted/75 transition-colors duration-300 peer-checked:border-pine peer-checked:bg-pine peer-checked:text-cream peer-focus-visible:ring-3 peer-focus-visible:ring-clay/50 hover:border-pine/40">
+                  {/* Phones: a full-width option card with a radio dot. */}
+                  <span className="flex items-center gap-3 rounded-2xl border border-line bg-white px-4 py-4.5 text-[17px] leading-6 font-semibold text-pine transition-colors duration-300 peer-checked:border-pine peer-checked:bg-pine peer-checked:text-cream peer-focus-visible:ring-3 peer-focus-visible:ring-clay/50 hover:border-pine/40 sm:inline-flex sm:rounded-full sm:px-4.5 sm:py-2.5 sm:text-[14.5px] sm:leading-[1.5] sm:font-medium sm:text-ink-muted/75">
+                    <span
+                      aria-hidden
+                      className="flex size-5 shrink-0 items-center justify-center rounded-full border-2 border-line group-has-checked:border-white sm:hidden"
+                    >
+                      <span className="hidden size-2.5 rounded-full bg-clay group-has-checked:block" />
+                    </span>
                     {format.label}
                   </span>
                 </label>
@@ -436,7 +581,7 @@ function EnquiryForm({
             </div>
           </fieldset>
 
-          <div className="flex flex-col gap-2">
+          <div className={cn("flex flex-col gap-2", at(3))}>
             <Label htmlFor="message">{labels.message}</Label>
             <textarea
               id="message"
@@ -451,7 +596,7 @@ function EnquiryForm({
             <FieldError id="message-error" message={errors.message} />
           </div>
 
-          <div className="flex flex-col gap-2">
+          <div className={cn("flex flex-col gap-2", at(3))}>
             <label className="flex cursor-pointer items-start gap-3">
               <span className="relative mt-0.5 flex size-5 shrink-0">
                 <input
@@ -497,11 +642,13 @@ function EnquiryForm({
           </div>
 
           {turnstileSiteKey && (
-            <Turnstile
-              key={widget}
-              siteKey={turnstileSiteKey}
-              onToken={setToken}
-            />
+            <div className={at(3)}>
+              <Turnstile
+                key={widget}
+                siteKey={turnstileSiteKey}
+                onToken={setToken}
+              />
+            </div>
           )}
 
           {formError && (
@@ -510,14 +657,32 @@ function EnquiryForm({
             </p>
           )}
 
+          {step < STEPS && (
+            <button
+              type="button"
+              onClick={next}
+              className="h-13 w-full cursor-pointer rounded-full bg-clay text-base leading-5 font-semibold text-cream transition-colors hover:bg-clay/90 sm:hidden"
+            >
+              {steps.next}
+            </button>
+          )}
+
           <button
             type="submit"
             disabled={pending}
             aria-busy={pending}
-            className="w-full cursor-pointer rounded-full bg-clay px-7 py-4.5 text-base leading-[1.5] font-semibold whitespace-pre text-cream transition-colors hover:bg-clay/90 focus-visible:ring-3 focus-visible:ring-clay/40 focus-visible:outline-none disabled:opacity-70"
+            className={cn(
+              "w-full cursor-pointer rounded-full bg-clay px-7 py-4.5 text-base leading-[1.5] font-semibold whitespace-pre text-cream transition-colors hover:bg-clay/90 focus-visible:ring-3 focus-visible:ring-clay/40 focus-visible:outline-none disabled:opacity-70 max-sm:h-13 max-sm:py-0 max-sm:leading-5",
+              at(3)
+            )}
           >
             {button}
           </button>
+          {steps.note ? (
+            <p className="-mt-3 text-center text-[13px] leading-4.75 text-[#686561] sm:hidden">
+              {steps.note}
+            </p>
+          ) : null}
         </form>
       )}
     </>

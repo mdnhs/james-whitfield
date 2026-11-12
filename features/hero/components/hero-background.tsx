@@ -33,7 +33,7 @@ export function HeroBackground() {
 
       {/* Shade stays locked to the 1440px content column so it always sits
           behind the copy, whatever the viewport width. */}
-      <div className="absolute inset-y-0 left-1/2 w-full max-w-360 -translate-x-1/2">
+      <div className="absolute inset-y-0 left-1/2 hidden w-full max-w-360 -translate-x-1/2 sm:block">
         <div className="absolute top-[362.8px] left-[362.7px] h-[1151.6px] w-[1140.9px] -translate-x-1/2 -translate-y-1/2 rotate-[19.55deg]">
           <div
             className="absolute inset-y-[-2000px] right-0 left-[-2000px]"
@@ -43,7 +43,16 @@ export function HeroBackground() {
       </div>
 
       {/* Bottom fade keeps the copy legible now that it sits at the bottom. */}
-      <div className="absolute inset-x-0 bottom-0 h-3/5 bg-linear-to-t from-black/60 via-black/25 to-black/0" />
+      <div className="absolute inset-x-0 bottom-0 hidden h-3/5 bg-linear-to-t from-black/60 via-black/25 to-black/0 sm:block" />
+
+      {/* Mobile: the design's single top-to-bottom teal overlay instead. */}
+      <div
+        className="absolute inset-0 sm:hidden"
+        style={{
+          backgroundImage:
+            "linear-gradient(180deg, rgba(5,26,26,0.55) 0%, rgba(5,26,26,0) 22%, rgba(5,31,31,0.1) 42%, rgba(8,38,38,0.88) 78%, rgba(8,38,38,0.96) 100%)",
+        }}
+      />
     </div>
   )
 }

@@ -68,7 +68,10 @@ async function fillAndSend() {
   )
   await user.type(screen.getByLabelText(/Name/), "Ann")
   await user.type(screen.getByLabelText(/Email/), "ann@example.com")
-  await user.selectOptions(screen.getByLabelText(/Topic/), "anxiety")
+  await user.selectOptions(
+    screen.getByLabelText(/Topic/, { selector: "select" }),
+    "anxiety"
+  )
   await user.click(screen.getByRole("checkbox"))
   await user.click(screen.getByRole("button", { name: "Send" }))
 }
@@ -146,7 +149,10 @@ describe("ContactForm", () => {
     )
     await user.type(screen.getByLabelText(/Name/), "Ann")
     await user.type(screen.getByLabelText(/Email/), "ann@example.com")
-    await user.selectOptions(screen.getByLabelText(/Topic/), "anxiety")
+    await user.selectOptions(
+      screen.getByLabelText(/Topic/, { selector: "select" }),
+      "anxiety"
+    )
     await user.click(screen.getByRole("checkbox"))
     await user.click(screen.getByRole("button", { name: "Send" }))
     expect((await screen.findByRole("alert")).textContent).toBe("OOPS")

@@ -12,13 +12,15 @@ const blocksOf = (path: string) =>
     joinPrevious: s.joinPrevious ?? false,
   }))
 
-// The CHAPTERS arrays the pages had before Phase 3, verbatim.
+// The CHAPTERS arrays the pages had before Phase 3, plus later additions.
 const BEFORE: Record<string, [string, string][]> = {
   "/": [
     ["Welcome", "home"],
     ["About", "about"],
     ["Process", "how-it-works"],
     ["Stories", "testimonials"],
+    // Added with the mobile redesign (Client Journey).
+    ["Journey", "journey"],
     ["Organisations", "enterprise"],
     ["Insights", "insights"],
     ["FAQ", "faq"],
@@ -84,6 +86,7 @@ describe("page layout", () => {
       ["credibility", "about"],
       ["how-it-works"],
       ["testimonials"],
+      ["journey"],
       ["enterprise"],
       ["insights"],
       ["faq"],

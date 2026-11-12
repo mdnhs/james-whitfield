@@ -87,6 +87,26 @@ export const CONTACT_FORM: GlobalValue<"contactForm"> = {
     consent: "Please confirm so I can reply to you.",
   },
   planMessage: "I’d like to ask about the {name} ({price} {unit}).",
+  steps: {
+    progress: "Step {n} of {total}",
+    back: "Back",
+    next: "Continue",
+    note: "Confidential · I reply personally",
+    topic: {
+      title: "What would you like help with?",
+      subtitle: "Choose the closest fit — we can refine it together on the call.",
+    },
+    format: {
+      title: "How would you like to meet?",
+      subtitle:
+        "Sessions run at Merrion Square, Dublin, or securely online via Zoom.",
+    },
+    details: {
+      title: "How can I reach you?",
+      subtitle:
+        "Just the essentials — add a note if you’d like to share more.",
+    },
+  },
 }
 
 // The `contact.clinic` block data.

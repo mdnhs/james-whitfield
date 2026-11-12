@@ -32,6 +32,7 @@ import {
   SERVICES,
   SERVICES_HERO,
 } from "@/server/db/seed/fixtures/services-content"
+import { JOURNEY_CONTENT } from "@/server/db/seed/fixtures/journey"
 import { TESTIMONIALS_HEADER } from "@/server/db/seed/fixtures/testimonials"
 import type { Db } from "@/server/db/client"
 import { pages } from "@/server/db/schema"
@@ -140,6 +141,12 @@ export const SYSTEM_PAGES: PageSeed[] = [
         anchor: "testimonials",
         chapter: "Stories",
         data: { variant: "home", ...TESTIMONIALS_HEADER, selection: ALL },
+      },
+      {
+        type: "journey",
+        anchor: "journey",
+        chapter: "Journey",
+        data: JOURNEY_CONTENT,
       },
       band("enterprise", "Organisations", BAND_IDS.enterprise, null),
       {
@@ -259,7 +266,11 @@ export const SYSTEM_PAGES: PageSeed[] = [
         type: "insights.browser",
         anchor: "articles",
         chapter: "Articles",
-        data: { heading: "Latest articles", pageSize: PAGE_SIZE },
+        data: {
+          heading: "Latest articles",
+          pageSize: PAGE_SIZE,
+          paging: "loadMore",
+        },
       },
       {
         type: "newsletter",

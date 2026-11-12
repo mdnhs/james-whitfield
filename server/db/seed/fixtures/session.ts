@@ -11,6 +11,7 @@ export const HOW_IT_WORKS_HERO = {
 export const SESSION = {
   eyebrow: "Inside a Session",
   title: "What actually happens in the room.",
+  chip: "75 minutes per session",
   subtitle:
     "Each 75-minute session follows a calm, predictable rhythm, so you always know what is coming next.",
   beats: [

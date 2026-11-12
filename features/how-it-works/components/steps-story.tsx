@@ -1,25 +1,14 @@
 "use client"
 
 import * as Scrollytelling from "@bsmnt/scrollytelling"
-import { useRef, useSyncExternalStore } from "react"
+import { useRef } from "react"
+
+import { useMedia } from "@/hooks/use-media"
 
 import { stepsTimeline } from "@/lib/layout-math"
 
 const DESKTOP = "(min-width: 1024px) and (pointer: fine)"
 const REDUCED = "(prefers-reduced-motion: reduce)"
-
-// False during SSR; follows the media query on the client.
-function useMedia(media: string) {
-  return useSyncExternalStore(
-    (onChange) => {
-      const query = matchMedia(media)
-      query.addEventListener("change", onChange)
-      return () => query.removeEventListener("change", onChange)
-    },
-    () => matchMedia(media).matches,
-    () => false
-  )
-}
 
 // Desktop scrollytelling for the steps: the section sticks to the viewport
 // while vertical scroll walks the card track sideways. Heights come from CSS vars set on the
@@ -73,7 +62,7 @@ export function StepsStory({
         <Scrollytelling.Pin
           childHeight="var(--steps-child)"
           pinSpacerHeight="var(--steps-spacer)"
-          childClassName="flex flex-col justify-center gap-14 py-16 lg:py-0"
+          childClassName="flex flex-col justify-center gap-6 py-12 sm:gap-14 sm:py-16 lg:py-0"
         >
           {header}
 

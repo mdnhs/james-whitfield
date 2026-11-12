@@ -19,7 +19,13 @@ export function BlockRenderer({
   const { blocks } = page.document
   const cards = groupCards(blocks)
   return (
-    <main key={page.path} data-page-root className="bg-ink">
+    <main
+      key={page.path}
+      data-page-root
+      // Behind the stacked cards: dark where they shrink and dim (sm+), white
+      // on phones, where it only shows through a card's rounded top corners.
+      className="bg-white sm:bg-ink"
+    >
       {cards.map((card, i) => (
         <StackCard
           key={card[0].id}

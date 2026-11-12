@@ -42,13 +42,18 @@ export function HowItWorksSection({
         count={steps.length}
         header={
           <Container className="flex flex-col items-start gap-8 lg:flex-row lg:items-center lg:gap-14">
-            <div className="flex min-w-0 flex-1 flex-col items-start gap-4">
+            <div className="flex min-w-0 flex-1 flex-col items-start gap-3 sm:gap-4">
               {page && tag && (
                 <span
                   data-motion="rise"
-                  className="inline-flex h-8 items-center gap-1.5 rounded-full border-[0.8px] border-line-neutral bg-white px-3.5 text-sm leading-[1.5] font-medium whitespace-nowrap text-brand"
+                  // Mobile: rule + mono caps like every other eyebrow; sm+: pill.
+                  className="inline-flex items-center gap-2 font-plex-mono text-xs leading-4 font-medium tracking-[1px] whitespace-nowrap text-mist uppercase sm:h-8 sm:gap-1.5 sm:rounded-full sm:border-[0.8px] sm:border-line-neutral sm:bg-white sm:px-3.5 sm:font-sans sm:text-sm sm:leading-[1.5] sm:tracking-normal sm:text-brand sm:normal-case"
                 >
-                  <span aria-hidden className="size-1 rounded-full bg-moss" />
+                  <span aria-hidden className="h-0.5 w-4 bg-clay sm:hidden" />
+                  <span
+                    aria-hidden
+                    className="hidden size-1 rounded-full bg-moss sm:block"
+                  />
                   {tag}
                 </span>
               )}
@@ -56,17 +61,18 @@ export function HowItWorksSection({
                 id={`${id}-heading`}
                 data-motion="words"
                 className={cn(
-                  "leading-[1.18] tracking-[-0.8px] text-cream",
+                  // Mobile: the serif display face on both variants.
+                  "font-display text-[30px] leading-9 font-bold tracking-[-0.3px] text-cream [font-variation-settings:'SOFT'_0,'WONK'_1] sm:leading-[1.18] sm:tracking-[-0.8px]",
                   page
-                    ? "font-display text-[38px] font-bold [font-variation-settings:'SOFT'_0,'WONK'_1] sm:text-[52px]"
-                    : "font-geist text-[32px] font-semibold sm:text-[40px]"
+                    ? "sm:text-[52px]"
+                    : "sm:font-geist sm:text-[40px] sm:font-semibold sm:[font-variation-settings:normal]"
                 )}
               >
                 {title}
               </h2>
               <p
                 data-motion="rise"
-                className="max-w-165 text-[17px] leading-[1.65] text-mist"
+                className="max-w-165 text-[15px] leading-5.75 text-mist sm:text-[17px] sm:leading-[1.65]"
               >
                 {subtitle}
               </p>
@@ -79,7 +85,7 @@ export function HowItWorksSection({
               data-magnetic
               className={cn(
                 buttonVariants(),
-                "h-13.5 w-full shrink-0 rounded-full bg-clay px-[31px] py-0 text-[15px] leading-[normal] font-semibold text-white hover:bg-clay/90 sm:w-auto"
+                "hidden h-13.5 w-auto shrink-0 rounded-full bg-clay px-[31px] py-0 text-[15px] leading-[normal] font-semibold text-white hover:bg-clay/90 sm:inline-flex"
               )}
             >
               {cta.label}
@@ -92,6 +98,20 @@ export function HowItWorksSection({
             <StepCard key={step.id} step={step} index={i} />
           ))}
         </StepsCarousel>
+
+        {/* Mobile: the CTA sits under the carousel instead of beside the heading. */}
+        <Container className="mt-5 sm:hidden">
+          <Link
+            href={cta.href}
+            {...ctaTrackAttrs(cta.href, id)}
+            className={cn(
+              buttonVariants(),
+              "h-13 w-full rounded-full bg-clay px-6 py-0 text-base leading-5 font-semibold text-cream hover:bg-clay/90"
+            )}
+          >
+            {cta.label}
+          </Link>
+        </Container>
       </StepsStory>
     </section>
   )

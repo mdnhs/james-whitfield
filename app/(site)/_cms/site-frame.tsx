@@ -9,7 +9,7 @@ import { ClickTracker } from "@/features/tracking/components/click-tracker"
 import { MarketingScripts } from "@/features/tracking/components/marketing-scripts"
 import { RouteTracker } from "@/features/tracking/components/route-tracker"
 import { SiteFooter } from "@/features/footer"
-import { SiteHeader } from "@/features/navbar"
+import { SiteHeader, StickyCta } from "@/features/navbar"
 import { siteThemeCss } from "@/lib/theme/css"
 import { bootstrapScript } from "@/lib/tracking/bootstrap"
 import { trackingFrame } from "@/lib/tracking/frame"
@@ -29,11 +29,12 @@ import { getPublicTracking } from "@/server/modules/tracking/public"
 export async function SiteFrame({ children }: { children: React.ReactNode }) {
   await io()
   const preview = await isPreviewing()
-  const [site, navigation, footer, theme, consent, scripts, tracking] =
+  const [site, navigation, footer, contact, theme, consent, scripts, tracking] =
     await Promise.all([
       getSetting("site"),
       getSetting("navigation"),
       getSetting("footer"),
+      getSetting("contact"),
       getThemeConfig(preview),
       getSetting("consent"),
       getSetting("scripts"),
@@ -72,10 +73,12 @@ export async function SiteFrame({ children }: { children: React.ReactNode }) {
           site={site}
           logo={logo}
           footer={footer}
+          contact={contact}
           navigation={navigation}
           cookieSettings={frame.active ? consent.settingsLink : null}
         />
       </SmoothScroll>
+      <StickyCta cta={navigation.cta} phone={contact.phone} />
       {frame.active ? (
         <ConsentBanner
           policy={frame.policy}

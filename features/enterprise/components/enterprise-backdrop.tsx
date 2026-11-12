@@ -3,6 +3,8 @@
 import * as Scrollytelling from "@bsmnt/scrollytelling"
 import { useRef } from "react"
 
+import { useMedia } from "@/hooks/use-media"
+
 // Immersive band: over the section's whole pass through the viewport, the
 // backdrop opens from an inset rounded window to full bleed while the photo
 // settles from a slight zoom — like stepping up to a window.
@@ -13,12 +15,19 @@ export function EnterpriseBackdrop({
 }) {
   const frame = useRef<HTMLDivElement>(null)
   const media = useRef<HTMLDivElement>(null)
+  // Mobile shows a static inset card (the window is the card itself).
+  const wide = useMedia("(min-width: 640px)")
 
   return (
     // Ends at "bottom bottom", not "bottom top": the section sticks once its
     // bottom reaches the viewport bottom and the next card covers it, so the
     // window must be fully open by then.
-    <Scrollytelling.Root start="top bottom" end="bottom bottom" scrub={1}>
+    <Scrollytelling.Root
+      start="top bottom"
+      end="bottom bottom"
+      scrub={1}
+      disabled={!wide}
+    >
       {/* Solid pine behind the window: the band is a stacked card, and while
           the window is still inset its edges must not show the card beneath. */}
       <div aria-hidden className="absolute inset-0 bg-pine">

@@ -238,6 +238,10 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository }}:latest
             ghcr.io/${{ github.repository }}:${{ github.sha }}
+          # next.config.ts reads this at build to allow the s3 media host in
+          # next/image and the CSP img-src. Without it uploads render broken.
+          build-args: |
+            MEDIA_PUBLIC_URL=${{ vars.MEDIA_PUBLIC_URL }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

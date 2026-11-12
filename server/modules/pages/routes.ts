@@ -8,7 +8,6 @@ import { can } from "@/server/api/middleware/auth"
 import type { AppEnv } from "@/server/api/types"
 
 import {
-  CreatePageInput,
   DraftInput,
   PageIdParam,
   PageMetaPatch,
@@ -24,16 +23,6 @@ const version = zValidator("json", VersionInput, validationHook)
 
 export const pagesRoutes = new Hono<AppEnv>()
   .get("/", read, async (c) => c.json(await pagesService.listPages()))
-  .post(
-    "/",
-    can({ page: ["create"] }),
-    zValidator("json", CreatePageInput, validationHook),
-    async (c) =>
-      c.json(
-        await pagesService.createPage(c.get("actor")!, c.req.valid("json")),
-        201
-      )
-  )
   .get("/:id", read, id, async (c) =>
     c.json(await pagesService.getPage(c.req.valid("param").id))
   )

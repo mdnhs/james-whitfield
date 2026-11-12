@@ -35,6 +35,8 @@ import {
   recordPathChange,
 } from "@/server/modules/redirects/service"
 
+import { assertSameStructure } from "./structure-guard"
+
 const changedSincePublish = sql<boolean>`${pages.draft} is distinct from ${pages.published}`
 // Section ids in the working copy, for the link widget's anchor picker.
 const draftAnchors = sql<
@@ -118,10 +120,15 @@ export async function saveDraft(
   id: string,
   input: { version: number; document: DraftDocument }
 ) {
-  const row = await writeIfVersion(getDb(), id, input.version, {
-    // A draft may be half-finished; publish validates it fully.
-    draft: input.document as unknown as PageDocument,
-    updatedBy: actor.userId,
+  const row = await getDb().transaction(async (tx) => {
+    // Sections are fixed: only block content may change.
+    const current = await findPage(tx, id, true)
+    assertSameStructure(current.draft, input.document)
+    return writeIfVersion(tx, id, input.version, {
+      // A draft may be half-finished; publish validates it fully.
+      draft: input.document as unknown as PageDocument,
+      updatedBy: actor.userId,
+    })
   })
   return { version: row.version, updatedAt: row.updatedAt }
 }
@@ -182,6 +189,7 @@ export async function discardDraft(actor: Actor, id: string, version: number) {
     if (!current.published) {
       throw new ApiError("BAD_REQUEST", "This page has never been published")
     }
+    assertSameStructure(current.draft, current.published)
     const row = await writeIfVersion(tx, id, version, {
       draft: current.published,
       updatedBy: actor.userId,
@@ -209,6 +217,12 @@ export async function restoreRevision(
   return getDb().transaction(async (tx) => {
     const revision = await findRevision(tx, "page", id, revisionId)
     if (!revision) throw new ApiError("NOT_FOUND", "That version doesn't exist")
+    const current = await findPage(tx, id, true)
+    assertSameStructure(
+      current.draft,
+      revision.snapshot as PageDocument,
+      "This version has a different layout and can't be restored"
+    )
     const row = await writeIfVersion(tx, id, version, {
       draft: revision.snapshot as PageDocument,
       updatedBy: actor.userId,
@@ -294,6 +308,53 @@ export async function updateMeta(
   return { title: saved.title, seo: saved.seo, settings: saved.settings }
 }
 
+// Inserts a draft page inside the caller's transaction and audits it. The
+// document is fixed at creation; editors only change its content afterwards.
+export async function insertPage(
+  tx: DbLike,
+  input: {
+    path: string
+    title: string
+    document: PageDocument
+    // The `pages.service_id` column lands in the service-pages task; the
+    // value is accepted here but not written yet.
+    serviceId?: string
+    actor: Actor
+  }
+) {
+  const [created] = await tx
+    .insert(pages)
+    .values({
+      path: input.path,
+      title: input.title,
+      status: "draft",
+      draft: input.document,
+      settings: { showContactChapter: true, needsReview: false },
+      createdBy: input.actor.userId,
+      updatedBy: input.actor.userId,
+    })
+    .onConflictDoNothing({ target: pages.path })
+    .returning()
+  if (!created) {
+    throw new ApiError("CONFLICT", "A page already lives at that address", {
+      path: ["A page already lives at that address"],
+    })
+  }
+  await audit(
+    input.actor,
+    {
+      action: "page.create",
+      entityType: "page",
+      entityId: created.id,
+      summary: `Created ${created.path}`,
+    },
+    tx
+  )
+  return created
+}
+
+// No route reaches this any more (sections are fixed); kept for callers
+// that create a page with the starter richtext block.
 export async function createPage(actor: Actor, input: NewPageInput) {
   const document: PageDocument = {
     blocks: [
@@ -311,37 +372,14 @@ export async function createPage(actor: Actor, input: NewPageInput) {
       },
     ],
   }
-  const row = await getDb().transaction(async (tx) => {
-    const [created] = await tx
-      .insert(pages)
-      .values({
-        path: input.path,
-        title: input.title,
-        status: "draft",
-        draft: document,
-        settings: { showContactChapter: true, needsReview: false },
-        createdBy: actor.userId,
-        updatedBy: actor.userId,
-      })
-      .onConflictDoNothing({ target: pages.path })
-      .returning()
-    if (!created) {
-      throw new ApiError("CONFLICT", "A page already lives at that address", {
-        path: ["A page already lives at that address"],
-      })
-    }
-    await audit(
+  const row = await getDb().transaction((tx) =>
+    insertPage(tx, {
+      path: input.path,
+      title: input.title,
+      document,
       actor,
-      {
-        action: "page.create",
-        entityType: "page",
-        entityId: created.id,
-        summary: `Created ${created.path}`,
-      },
-      tx
-    )
-    return created
-  })
+    })
+  )
   // A visit before creation cached "no page here" under routes.
   invalidate([tags.routes])
   return { id: row.id, path: row.path }

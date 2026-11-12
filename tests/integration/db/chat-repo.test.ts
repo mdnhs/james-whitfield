@@ -269,6 +269,12 @@ describe("chat repository", () => {
     expect(page.items.map((i) => i.id)).toEqual([chat.id])
   })
 
+  it("claimNeedsHumanAlert is true once per chat", async () => {
+    const chat = await start()
+    expect(await repo.claimNeedsHumanAlert(chat.id)).toBe(true)
+    expect(await repo.claimNeedsHumanAlert(chat.id)).toBe(false)
+  })
+
   it("assigneeName returns the user's name, or null", async () => {
     const user = await createUser("admin", "agent@example.com")
     expect(await repo.assigneeName(user.id)).toBe(user.name)

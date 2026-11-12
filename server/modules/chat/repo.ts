@@ -257,6 +257,25 @@ export async function flagNeedsHuman(
   return rows.length > 0
 }
 
+// True for the one caller that stamps the alert time: a conditional UPDATE,
+// so a chat is alerted at most once however many paths flag it.
+export async function claimNeedsHumanAlert(
+  id: string,
+  db: DbLike = getDb()
+): Promise<boolean> {
+  const rows = await db
+    .update(chatConversations)
+    .set({ needsHumanAlertedAt: new Date() })
+    .where(
+      and(
+        eq(chatConversations.id, id),
+        sql`${chatConversations.needsHumanAlertedAt} is null`
+      )
+    )
+    .returning({ id: chatConversations.id })
+  return rows.length > 0
+}
+
 export async function setAi(
   id: string,
   enabled: boolean,

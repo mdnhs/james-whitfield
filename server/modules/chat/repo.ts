@@ -16,6 +16,8 @@ export type Sender = "visitor" | "staff" | "ai" | "system"
 export type NoticeKind = "handoff" | "limit" | "failed" | "crisis"
 
 const MAX_VISITOR_MESSAGES = 300
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 // ---------- conversations ----------
 
@@ -30,7 +32,9 @@ export async function createConversation(
   db: DbLike = getDb()
 ): Promise<ChatRow> {
   return db.transaction(async (tx) => {
-    const now = new Date()
+    // DB clock only: now() is constant inside the transaction, so the
+    // conversation timestamps equal the first message's created_at.
+    const now = sql`now()`
     const [chat] = await tx
       .insert(chatConversations)
       .values({
@@ -191,12 +195,10 @@ export async function recentForModel(
     )
     .orderBy(desc(chatMessages.id))
     .limit(limit)
-  return rows
-    .reverse()
-    .map((r) => ({
-      sender: r.sender as "visitor" | "staff" | "ai",
-      body: r.body,
-    }))
+  return rows.reverse().map((r) => ({
+    sender: r.sender as "visitor" | "staff" | "ai",
+    body: r.body,
+  }))
 }
 
 // ---------- bot lease ----------
@@ -346,7 +348,7 @@ export async function listForStaff(
   const conditions = [eq(chatConversations.status, opts.status)]
   if (opts.cursor) {
     const [at, cid] = opts.cursor.split("|")
-    if (at && cid && !Number.isNaN(Date.parse(at))) {
+    if (at && cid && !Number.isNaN(Date.parse(at)) && UUID_RE.test(cid)) {
       conditions.push(
         sql`(${sortAt}, ${chatConversations.id}) < (${new Date(at)}::timestamptz, ${cid}::uuid)`
       )
@@ -381,7 +383,7 @@ export async function touchPresence(
 ): Promise<void> {
   await db
     .insert(chatPresence)
-    .values({ userId, seenAt: new Date() })
+    .values({ userId, seenAt: sql`now()` })
     .onConflictDoUpdate({
       target: chatPresence.userId,
       set: { seenAt: sql`now()` },

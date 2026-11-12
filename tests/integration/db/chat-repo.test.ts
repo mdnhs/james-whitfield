@@ -240,4 +240,24 @@ describe("chat repository", () => {
     expect(await repo.remove(a.id)).toBe(true)
     expect(await repo.remove(a.id)).toBe(false)
   })
+
+  it("markRead on the first message clears unread right after creation", async () => {
+    const chat = await start()
+    const first = (await repo.messagesAfter(chat.id, 0))[0]!
+    expect(await repo.unreadCount()).toBe(1)
+    await repo.markRead(chat.id, first.id)
+    expect(await repo.unreadCount()).toBe(0)
+    const list = await repo.listForStaff({ status: "open", limit: 10 })
+    expect(list.items[0]!.unread).toBe(false)
+  })
+
+  it("ignores a malformed cursor", async () => {
+    const chat = await start()
+    const page = await repo.listForStaff({
+      status: "open",
+      limit: 10,
+      cursor: "2026-01-01T00:00:00.000Z|not-a-uuid",
+    })
+    expect(page.items.map((i) => i.id)).toEqual([chat.id])
+  })
 })

@@ -1142,8 +1142,12 @@ It ships first as **Report-Only**, then is enforced. A nonce-based CSP was rejec
 
 **Upload pipeline.** Admin → `POST /api/v1/admin/media` (multipart, up to 20 MB) → then:
 
-1. **Type check.** An allowlist (JPEG, PNG, WebP, AVIF, PDF) verified by magic bytes. **SVG is rejected** because of XSS risk; content icons come from the code icon registry.
-2. **Processing with sharp:**
+1. **Type check.** An allowlist (JPEG, PNG, WebP, AVIF, SVG, ICO, PDF, Lottie JSON) verified by the file's bytes, never its name or Content-Type. Content icons still come from the code icon registry.
+   - **SVG** is stored byte for byte and **refused** (not stripped) if it carries anything that could run or load script: `<script>`, `on*` event handlers, `javascript:`/`vbscript:` links, `data:text|application` documents, `foreignObject`, embedded content, animated `href`, entity-encoded links, or entity declarations. As an `<img>` it cannot run script anyway; the check covers the file opened on its own.
+   - **ICO** is stored as is. Its largest image (PNG or 32-bit BMP) gives the size, the blur placeholder and the rasterised favicon.
+   - **Lottie JSON** must have the bodymovin shape (`v`, `fr`, `ip`, `op`, `w`, `h`, `layers`); its size comes from `w`/`h`.
+   - SVG and ICO render through next/image `unoptimized`. A share (OG) image must be raster.
+2. **Processing with sharp** (raster images only):
    - auto-orient;
    - **strip EXIF/GPS**;
    - downscale anything over 4000 px;

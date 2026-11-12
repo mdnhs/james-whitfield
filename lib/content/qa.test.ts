@@ -92,7 +92,7 @@ describe("legalFinding", () => {
     })
     expect(legalFinding("/terms", null)).toMatchObject({
       label: "/terms",
-      href: "/admin/pages",
+      href: "/admin/website/legal",
     })
   })
 })

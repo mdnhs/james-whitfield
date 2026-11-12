@@ -1,6 +1,8 @@
 // docs/brief.md §4.6 and §2.3 Q3: content issues are listed in the admin's
 // Content health panel, never fixed automatically. Isomorphic and pure.
 
+import { adminHrefForPage } from "@/lib/admin/website"
+
 export type QaRuleId =
   | "rebrand"
   | "placeholder-contact"
@@ -101,7 +103,9 @@ export function legalFinding(
   return {
     rule: "legal-unpublished",
     label: page?.title ?? path,
-    href: page ? `/admin/pages/${page.id}` : "/admin/pages",
+    href: page
+      ? adminHrefForPage({ id: page.id, systemKey: null })
+      : "/admin/website/legal",
     message: "Legal page is not published, so the footer link returns 404",
   }
 }

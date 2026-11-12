@@ -3,6 +3,7 @@ import { Suspense } from "react"
 
 import { CardSkeleton } from "@/admin/components/dashboard/skeletons"
 import { TaxonomyView } from "@/admin/modules/insights/taxonomy-view"
+import { InsightsTabs } from "@/admin/modules/insights/insights-tabs"
 import { permissionFor } from "@/lib/admin/nav"
 import { requirePermission } from "@/server/auth/session"
 
@@ -17,6 +18,11 @@ export default function AuthorsPage() {
 }
 
 async function Gate() {
-  await requirePermission(permissionFor("/admin/insights/authors"))
-  return <TaxonomyView name="authors" />
+  await requirePermission(permissionFor("/admin/insights"))
+  return (
+    <div className="flex flex-col gap-6">
+      <InsightsTabs />
+      <TaxonomyView name="authors" />
+    </div>
+  )
 }

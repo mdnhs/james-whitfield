@@ -1,22 +1,20 @@
-import type { Metadata } from "next"
+import { redirect } from "next/navigation"
 import { Suspense } from "react"
 
-import { CardSkeleton } from "@/admin/components/dashboard/skeletons"
-import { PagesView } from "@/admin/modules/pages/pages-view"
 import { permissionFor } from "@/lib/admin/nav"
+import { websiteHref } from "@/lib/admin/website"
 import { requirePermission } from "@/server/auth/session"
 
-export const metadata: Metadata = { title: "Pages" }
-
-export default function PagesPage() {
+export default function PagesIndex() {
   return (
-    <Suspense fallback={<CardSkeleton />}>
-      <Gate />
+    <Suspense>
+      <Go />
     </Suspense>
   )
 }
 
-async function Gate() {
-  await requirePermission(permissionFor("/admin/pages"))
-  return <PagesView />
+// The page list is gone: every public page has its own Website screen.
+async function Go(): Promise<never> {
+  await requirePermission(permissionFor(websiteHref("home")))
+  redirect(websiteHref("home"))
 }

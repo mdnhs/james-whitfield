@@ -3,6 +3,7 @@ import { Suspense } from "react"
 
 import { CardSkeleton } from "@/admin/components/dashboard/skeletons"
 import { ArticlesView } from "@/admin/modules/insights/articles-view"
+import { InsightsTabs } from "@/admin/modules/insights/insights-tabs"
 import { permissionFor } from "@/lib/admin/nav"
 import { requirePermission } from "@/server/auth/session"
 
@@ -18,5 +19,10 @@ export default function InsightsPage() {
 
 async function Gate() {
   await requirePermission(permissionFor("/admin/insights"))
-  return <ArticlesView />
+  return (
+    <div className="flex flex-col gap-6">
+      <InsightsTabs />
+      <ArticlesView />
+    </div>
+  )
 }

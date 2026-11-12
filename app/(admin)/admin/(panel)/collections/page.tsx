@@ -2,6 +2,7 @@ import { redirect } from "next/navigation"
 import { Suspense } from "react"
 
 import { permissionFor } from "@/lib/admin/nav"
+import { websiteHref } from "@/lib/admin/website"
 import { requirePermission } from "@/server/auth/session"
 
 export default function CollectionsIndex() {
@@ -13,6 +14,6 @@ export default function CollectionsIndex() {
 }
 
 async function Go(): Promise<never> {
-  await requirePermission(permissionFor("/admin/collections"))
-  redirect("/admin/collections/services")
+  await requirePermission(permissionFor(websiteHref("home")))
+  redirect(websiteHref("home"))
 }

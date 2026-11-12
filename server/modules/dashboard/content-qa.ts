@@ -3,6 +3,11 @@ import "server-only"
 import { eq, inArray } from "drizzle-orm"
 import { cacheLife, cacheTag } from "next/cache"
 
+import {
+  adminHrefForPage,
+  COLLECTION_HOME,
+  websiteHref,
+} from "@/lib/admin/website"
 import { COLLECTION_LABELS, COLLECTION_NAMES } from "@/lib/content/collections"
 import {
   GLOBAL_LABELS,
@@ -57,8 +62,7 @@ async function loadSources(
   return [
     ...live.map((e) => ({
       label: `${e.kind === "page" ? "Page" : "Article"} “${e.title}”`,
-      href:
-        e.kind === "page" ? `/admin/pages/${e.id}` : `/admin/insights/${e.id}`,
+      href: e.kind === "page" ? adminHrefForPage(e) : `/admin/insights/${e.id}`,
       value: e.kind === "page" ? e.document : e.body,
     })),
     ...globalRows.map((row) => ({
@@ -69,7 +73,7 @@ async function loadSources(
     ...COLLECTION_NAMES.flatMap((name, index) =>
       collectionRows[index]!.map((row) => ({
         label: `${COLLECTION_LABELS[name]}: ${titleOf(name, row as Record<string, unknown>)}`,
-        href: `/admin/collections/${name}`,
+        href: websiteHref(COLLECTION_HOME[name]),
         value: row,
       }))
     ),

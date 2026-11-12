@@ -458,3 +458,15 @@ export async function deletePage(actor: Actor, id: string) {
 }
 
 export const pageRevisions = (id: string) => listRevisions(getDb(), "page", id)
+
+// The id behind a system page's Website screen (/admin/website/<key>).
+export async function findPageIdBySystemKey(
+  systemKey: string
+): Promise<string | null> {
+  const [row] = await getDb()
+    .select({ id: pages.id })
+    .from(pages)
+    .where(eq(pages.systemKey, systemKey))
+    .limit(1)
+  return row?.id ?? null
+}

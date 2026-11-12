@@ -7,7 +7,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { isActivePath, type NavItem } from "@/lib/admin/nav"
+import { isActiveSection, type NavItem } from "@/lib/admin/nav"
 
 import { formatBadge } from "./format-badge"
 import { NAV_ICONS } from "./nav-icons"
@@ -30,7 +30,7 @@ export function NavEntry({
   onNavigate: () => void
 }) {
   const Icon = NAV_ICONS[item.id]
-  const active = isActivePath(pathname, item.href)
+  const active = isActiveSection(pathname, item)
   return (
     <SidebarMenuItem>
       {/* The 4px active bar on the panel's left edge (the group's p-2 away). */}

@@ -34,6 +34,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { adminHrefForPage } from "@/lib/admin/website"
 import { NewPageInput } from "@/lib/content/page-path"
 
 import { pagesListQuery, type PageSummary } from "./queries"
@@ -66,7 +67,7 @@ const columns = helper.columns([
     header: "Title",
     cell: (info) => (
       <Link
-        href={`/admin/pages/${info.row.original.id}`}
+        href={adminHrefForPage(info.row.original)}
         className="font-semibold underline-offset-4 hover:text-primary hover:underline"
       >
         {info.getValue()}
@@ -150,7 +151,7 @@ export function PagesView() {
           renderCard={(row) => (
             <div className="flex flex-col gap-2 text-sm">
               <Link
-                href={`/admin/pages/${row.original.id}`}
+                href={adminHrefForPage(row.original)}
                 className="font-semibold"
               >
                 {row.original.title}
@@ -201,7 +202,7 @@ function NewPageDialog({
               await queryClient.invalidateQueries({
                 queryKey: queryKeys.pages.all,
               })
-              router.push(`/admin/pages/${id}`)
+              router.push(adminHrefForPage({ id, systemKey: null }))
             } catch (error) {
               if (!(error instanceof ApiError)) throw error
               return {

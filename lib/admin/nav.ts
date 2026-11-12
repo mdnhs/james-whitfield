@@ -1,3 +1,4 @@
+import { WEBSITE_PAGES, websiteHref } from "@/lib/admin/website"
 import {
   hasPermission,
   type Permissions,
@@ -15,6 +16,9 @@ export type NavLink = {
   href: string
   permission: Permissions
   keywords?: readonly string[]
+  // Extra path prefixes that keep this link highlighted (a screen that lives
+  // outside its href, e.g. Insights under the Website menu).
+  match?: readonly string[]
 }
 
 export type NavItem = NavLink & {
@@ -33,13 +37,6 @@ export const NAV_GROUPS: readonly { id: NavGroupId; label: string }[] = [
   { id: "growth", label: "Growth" },
   { id: "general", label: "General" },
 ]
-
-const collection = (slug: string, label: string): NavLink => ({
-  id: `collections-${slug}`,
-  label,
-  href: `/admin/collections/${slug}`,
-  permission: { collection: ["read"] },
-})
 
 // docs/brief.md §6.4 and §7.2: the site frame (identity, notifications,
 // privacy) is `settings`, owner and admin only; the content keys (contact,
@@ -66,55 +63,61 @@ export const NAV: readonly NavItem[] = [
     keywords: ["home", "overview"],
   },
   {
-    id: "pages",
+    id: "website",
     group: "menu",
-    label: "Pages",
-    href: "/admin/pages",
+    label: "Website",
+    href: websiteHref("home"),
     permission: { page: ["read"] },
-    keywords: ["home page", "about", "services", "builder"],
-  },
-  {
-    id: "insights",
-    group: "menu",
-    label: "Insights",
-    href: "/admin/insights",
-    permission: { article: ["read"] },
-    keywords: ["blog", "articles", "posts"],
-    children: [
-      {
-        id: "insights-articles",
-        label: "Articles",
-        href: "/admin/insights",
-        permission: { article: ["read"] },
-      },
-      {
-        id: "insights-categories",
-        label: "Categories",
-        href: "/admin/insights/categories",
-        permission: { article: ["read"] },
-      },
-      {
-        id: "insights-authors",
-        label: "Authors",
-        href: "/admin/insights/authors",
-        permission: { article: ["read"] },
-      },
+    keywords: [
+      "pages",
+      "home page",
+      "about",
+      "services",
+      "builder",
+      "collections",
+      "testimonials",
+      "faqs",
+      "plans",
+      "steps",
+      "blog",
+      "articles",
+      "legal",
+      "privacy",
+      "terms",
+      "navigation",
+      "footer",
     ],
-  },
-  {
-    id: "collections",
-    group: "menu",
-    label: "Collections",
-    href: "/admin/collections",
-    permission: { collection: ["read"] },
-    keywords: ["services", "plans", "testimonials", "faqs"],
     children: [
-      collection("services", "Services"),
-      collection("plans", "Plans"),
-      collection("testimonials", "Testimonials"),
-      collection("faqs", "FAQs"),
-      collection("steps", "Steps"),
-      collection("cta-bands", "CTA bands"),
+      ...WEBSITE_PAGES.filter((page) => page.key !== "insights").map(
+        (page): NavLink => ({
+          id: `website-${page.key}`,
+          label: page.label,
+          href: websiteHref(page.key),
+          permission: { page: ["read"] },
+        })
+      ),
+      {
+        id: "website-insights",
+        label: "Insights",
+        href: "/admin/insights",
+        permission: { page: ["read"] },
+        keywords: ["blog", "articles", "posts", "categories", "authors"],
+        match: ["/admin/insights", "/admin/website/insights"],
+      },
+      {
+        id: "website-legal",
+        label: "Legal pages",
+        href: "/admin/website/legal",
+        permission: { page: ["read"] },
+        keywords: ["privacy", "terms", "disclaimer"],
+      },
+      {
+        id: "website-header-footer",
+        label: "Header & footer",
+        href: "/admin/website/header-footer",
+        permission: { globals: ["read"] },
+        keywords: ["navigation", "menu", "footer", "links"],
+      },
     ],
   },
   {
@@ -205,14 +208,6 @@ export const NAV: readonly NavItem[] = [
     ],
   },
   {
-    id: "appearance",
-    group: "general",
-    label: "Appearance",
-    href: "/admin/appearance",
-    permission: { appearance: ["read"] },
-    keywords: ["theme", "colours", "colors", "brand", "logo"],
-  },
-  {
     id: "settings",
     group: "general",
     label: "Site settings",
@@ -221,15 +216,20 @@ export const NAV: readonly NavItem[] = [
     // with settings.read also holds globals.read, so this is the weaker of
     // the two child gates.
     permission: { globals: ["read"] },
-    keywords: ["identity", "contact", "footer", "navigation", "privacy"],
+    keywords: ["identity", "contact", "privacy", "theme", "brand"],
     children: [
       setting("identity", "Identity", "settings"),
       setting("contact", "Contact & clinic", "globals"),
-      setting("navigation", "Navigation", "globals"),
-      setting("footer", "Footer", "globals"),
       setting("forms", "Forms & microcopy", "globals"),
       setting("notifications", "Notifications", "settings"),
       setting("privacy", "Privacy", "settings"),
+      {
+        id: "settings-appearance",
+        label: "Appearance",
+        href: "/admin/appearance",
+        permission: { appearance: ["read"] },
+        keywords: ["theme", "colours", "colors", "brand", "logo"],
+      },
       {
         id: "settings-ai-assistant",
         label: "AI assistant",
@@ -332,9 +332,22 @@ export function linkForPath(pathname: string): NavLink | undefined {
   return [HELP_LINK, ...EXTRA_LINKS].find((link) => link.href === pathname)
 }
 
-export function isActivePath(pathname: string, href: string) {
+const under = (pathname: string, prefix: string) =>
+  pathname === prefix || pathname.startsWith(`${prefix}/`)
+
+export function isActivePath(pathname: string, target: string | NavLink) {
+  const href = typeof target === "string" ? target : target.href
   if (href === "/admin") return pathname === "/admin"
-  return pathname === href || pathname.startsWith(`${href}/`)
+  const prefixes = typeof target === "string" ? [] : (target.match ?? [])
+  return [href, ...prefixes].some((prefix) => under(pathname, prefix))
+}
+
+// A section is current on its own href or on any of its children's.
+export function isActiveSection(pathname: string, item: NavItem) {
+  return (
+    isActivePath(pathname, item) ||
+    (item.children ?? []).some((child) => isActivePath(pathname, child))
+  )
 }
 
 // The gate a built page passes to requirePermission, read from the same entry

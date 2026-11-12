@@ -35,6 +35,7 @@ import { useEditorTab } from "@/admin/modules/seo/use-editor-tab"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { backLinkForPage } from "@/lib/admin/website"
 import { cn } from "@/lib/utils"
 
 import { AddressForm } from "./address-form"
@@ -280,16 +281,18 @@ function Builder({
     ? BLOCK_ICONS[BLOCK_BY_TYPE[selected.type].icon]
     : null
 
+  const back = backLinkForPage(page)
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
         breadcrumbs={
           <Link
-            href="/admin/pages"
+            href={back.href}
             className="inline-flex w-fit items-center gap-1.5 rounded-md text-sm font-medium text-muted-foreground outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
           >
             <ArrowLeftIcon aria-hidden className="size-4" />
-            Pages
+            {back.label}
           </Link>
         }
         title={page.title}

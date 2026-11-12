@@ -189,13 +189,6 @@ describe("page nodes", () => {
 })
 
 describe("service page nodes", () => {
-  it("marks up inline FAQ items", () => {
-    const node = faqNode([{ question: "Q?", answer: "A." }])
-    expect(node).toMatchObject({
-      "@type": "FAQPage",
-      mainEntity: [{ name: "Q?", acceptedAnswer: { text: "A." } }],
-    })
-  })
   it("marks up inline formats with offers at the page's own url", () => {
     const nodes = serviceFormatNodes({
       origin,

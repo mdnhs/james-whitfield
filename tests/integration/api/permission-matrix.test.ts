@@ -296,11 +296,36 @@ describe.each(ROLE_NAMES)("globals read routes for %s", (role) => {
   )
 })
 
-// The chat inbox routes land in a later live-chat task; until then the rows
-// stay pending. Expected: owner/admin/intake past can(), marketer and viewer
-// (and every other role) FORBIDDEN on /api/v1/admin/chat.
-describe("chat inbox routes (pending)", () => {
-  it.todo("GET /chat is forbidden for marketer and viewer")
+// Chat inbox: owner/admin/intake may read and reply; every other role is
+// FORBIDDEN. Assign and delete (chat:manage) are owner/admin only.
+const CHAT_ROUTES: Record<RoleName, [number, number, number]> = {
+  owner: [200, 200, 200],
+  admin: [200, 200, 200],
+  intake: [200, 403, 403],
+  editor: [403, 403, 403],
+  author: [403, 403, 403],
+  marketer: [403, 403, 403],
+  viewer: [403, 403, 403],
+}
+const NO_CHAT = "00000000-0000-4000-8000-000000000000"
+
+describe.each(ROLE_NAMES)("chat inbox routes for %s", (role) => {
+  it("GET /chat, POST assign, DELETE", async () => {
+    const cookie = await cookieFor(role)
+    const got = [
+      (await adminRequest("/chat", cookie)).status,
+      (
+        await adminRequest(`/chat/${NO_CHAT}/assign`, cookie, {
+          method: "POST",
+          body: { userId: null },
+        })
+      ).status,
+      (await adminRequest(`/chat/${NO_CHAT}`, cookie, { method: "DELETE" }))
+        .status,
+    ]
+    // 404 = past can() with no such chat.
+    expect(got.map((s) => (s === 404 ? 200 : s))).toEqual(CHAT_ROUTES[role])
+  })
 })
 
 // docs/brief.md §7.2 collection rows. 404 means "past can(), no such item";

@@ -4,6 +4,7 @@ import { Suspense } from "react"
 
 import { CardSkeleton } from "@/admin/components/dashboard/skeletons"
 import { InsightsTabs } from "@/admin/modules/insights/insights-tabs"
+import { ServicesPanel } from "@/admin/modules/website/services-panel"
 import { PageBuilder } from "@/admin/modules/pages/page-builder"
 import { isWebsiteKey, WEBSITE_PAGES, websiteHref } from "@/lib/admin/website"
 import { requireActor, requirePermission } from "@/server/auth/session"
@@ -42,6 +43,14 @@ async function Gate({
   const id = await findPageIdBySystemKey(systemKey)
   if (!id) notFound()
   const builder = <PageBuilder id={id} />
+  if (key === "services") {
+    return (
+      <div className="flex flex-col gap-8">
+        {builder}
+        <ServicesPanel />
+      </div>
+    )
+  }
   return key === "insights" ? (
     <div className="flex flex-col gap-6">
       <InsightsTabs />

@@ -20,6 +20,7 @@ import type { NotificationsRoutes } from "@/server/modules/notifications/routes"
 import type { PagesRoutes } from "@/server/modules/pages/routes"
 import type { SearchRoutes } from "@/server/modules/search/routes"
 import type { SeoRoutes } from "@/server/modules/seo/routes"
+import type { ServicePagesRoutes } from "@/server/modules/service-pages/routes"
 import type { TaxonomyRoutes } from "@/server/modules/taxonomy/routes"
 import type { ThemeRoutes } from "@/server/modules/theme/routes"
 import type { TrackingRoutes } from "@/server/modules/tracking/routes"
@@ -46,6 +47,9 @@ export const pagesApi = hc<PagesRoutes>("/api/v1/admin/pages")
 export const categoriesApi = hc<TaxonomyRoutes>("/api/v1/admin/categories")
 export const authorsApi = hc<TaxonomyRoutes>("/api/v1/admin/authors")
 export const searchApi = hc<SearchRoutes>("/api/v1/admin/search")
+export const servicePagesApi = hc<ServicePagesRoutes>(
+  "/api/v1/admin/service-pages"
+)
 export const seoApi = hc<SeoRoutes>("/api/v1/admin/seo")
 export const themeApi = hc<ThemeRoutes>("/api/v1/admin/theme")
 export const trackingApi = hc<TrackingRoutes>("/api/v1/admin/tracking")

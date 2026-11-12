@@ -15,6 +15,7 @@ import { globalsRoutes } from "@/server/modules/globals/routes"
 import { pagesRoutes } from "@/server/modules/pages/routes"
 import { previewRoutes } from "@/server/modules/preview/routes"
 import { searchRoutes } from "@/server/modules/search/routes"
+import { servicePagesRoutes } from "@/server/modules/service-pages/routes"
 import { seoRoutes } from "@/server/modules/seo/routes"
 import { meRoutes } from "@/server/modules/session/routes"
 import {
@@ -35,6 +36,7 @@ export const adminRoutes = new Hono<AppEnv>()
   .route("/me", meRoutes)
   .route("/preview", previewRoutes)
   .route("/pages", pagesRoutes)
+  .route("/service-pages", servicePagesRoutes)
   .route("/collections", collectionsRoutes)
   .route("/globals", globalsRoutes)
   .route("/media", mediaRoutes)

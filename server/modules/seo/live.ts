@@ -7,6 +7,7 @@ import type { ArticleBodyDoc } from "@/blocks/rich-text"
 import { categoryHref } from "@/lib/content/category-href"
 import { getDb, type DbLike } from "@/server/db/client"
 import { articleCategories, articles, pages } from "@/server/db/schema"
+import { notHiddenServicePage } from "@/server/modules/service-pages/visible"
 
 export type LiveEntity = {
   kind: "page" | "article"
@@ -40,7 +41,7 @@ export async function listLiveEntities(
         publishedAt: pages.publishedAt,
       })
       .from(pages)
-      .where(eq(pages.status, "published")),
+      .where(and(eq(pages.status, "published"), notHiddenServicePage)),
     db
       .select({
         id: articles.id,

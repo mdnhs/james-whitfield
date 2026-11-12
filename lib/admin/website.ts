@@ -40,14 +40,15 @@ export const COLLECTION_HOME: Record<CollectionSlug, WebsiteKey> = {
 }
 
 // The screen a page's builder returns to: a system page to its own Website
-// screen, a service detail page to Services, anything else to Legal pages.
+// screen, a service's own page to Services, anything else (an unlinked
+// /services/* page included) to Legal pages, the screen that lists it.
 export function backLinkForPage(page: {
-  path: string
   systemKey: string | null
+  serviceId?: string | null
 }): { href: string; label: string } {
   const known = WEBSITE_PAGES.find((p) => p.systemKey === page.systemKey)
   if (known) return { href: websiteHref(known.key), label: known.label }
-  if (page.path.startsWith("/services/"))
+  if (page.serviceId)
     return { href: websiteHref("services"), label: "Services" }
   return { href: "/admin/website/legal", label: "Legal pages" }
 }

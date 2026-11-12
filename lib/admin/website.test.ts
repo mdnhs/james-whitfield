@@ -33,13 +33,14 @@ describe("website registry", () => {
   })
 
   it("picks the back link by page kind", () => {
-    expect(backLinkForPage({ path: "/about", systemKey: "about" }).href).toBe(
+    expect(backLinkForPage({ systemKey: "about" }).href).toBe(
       "/admin/website/about"
     )
-    expect(
-      backLinkForPage({ path: "/services/therapy", systemKey: null }).href
-    ).toBe("/admin/website/services")
-    expect(backLinkForPage({ path: "/privacy", systemKey: null }).href).toBe(
+    expect(backLinkForPage({ systemKey: null, serviceId: "s" }).href).toBe(
+      "/admin/website/services"
+    )
+    // An unlinked /services/* page is listed with the other pages.
+    expect(backLinkForPage({ systemKey: null, serviceId: null }).href).toBe(
       "/admin/website/legal"
     )
   })

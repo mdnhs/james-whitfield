@@ -51,6 +51,7 @@ export async function listPages() {
       title: pages.title,
       status: pages.status,
       systemKey: pages.systemKey,
+      serviceId: pages.serviceId,
       updatedAt: pages.updatedAt,
       publishedAt: pages.publishedAt,
       settings: pages.settings,
@@ -64,6 +65,13 @@ export async function listPages() {
     needsReview: settings.needsReview === true,
   }))
   return { items, page: 1, pageSize: items.length, total: items.length }
+}
+
+// Custom pages no service owns ("Legal & other pages"). Filtered by link,
+// never by path: an unlinked /services/* page must stay reachable.
+export async function listOtherPages() {
+  const { items } = await listPages()
+  return items.filter((page) => page.systemKey === null && !page.serviceId)
 }
 
 async function findPage(db: DbLike, id: string, lock = false) {
@@ -99,6 +107,7 @@ export async function getPage(id: string) {
     title: row.title,
     status: row.status,
     systemKey: row.systemKey,
+    serviceId: row.serviceId,
     kind: kindOf(row.systemKey),
     draft: row.draft,
     seo: row.seo,

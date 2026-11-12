@@ -7,7 +7,7 @@ import { PageHeader } from "@/admin/components/dashboard/page-header"
 import { StatusPill } from "@/admin/components/dashboard/status-pill"
 import { permissionFor } from "@/lib/admin/nav"
 import { requirePermission } from "@/server/auth/session"
-import { listPages } from "@/server/modules/pages/service"
+import { listOtherPages } from "@/server/modules/pages/service"
 
 export const metadata: Metadata = { title: "Legal pages" }
 
@@ -21,11 +21,8 @@ export default function LegalPages() {
 
 async function Gate() {
   await requirePermission(permissionFor("/admin/website/legal"))
-  const { items } = await listPages()
-  // Custom pages that are not a service's own page.
-  const legal = items.filter(
-    (page) => page.systemKey === null && !page.path.startsWith("/services/")
-  )
+  // Every custom page that is not a service's own page.
+  const legal = await listOtherPages()
   return (
     <div className="flex flex-col gap-6">
       <PageHeader

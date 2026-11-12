@@ -9,8 +9,15 @@ vi.mock("next/cache", async (importOriginal) => ({
 
 import { ROLE_NAMES, type RoleName } from "@/lib/auth/permissions"
 import { closeDb, getDb } from "@/server/db/client"
-import { media, pages, redirects, revisions } from "@/server/db/schema"
+import {
+  media,
+  pages,
+  redirects,
+  revisions,
+  services,
+} from "@/server/db/schema"
 import { writeRevision } from "@/server/lib/revisions"
+import { listOtherPages } from "@/server/modules/pages/service"
 
 import { adminRequest, cookieFor } from "../helpers/auth"
 import { heroDocument, insertMedia, insertPage } from "../helpers/content"
@@ -417,5 +424,40 @@ describe("share image validation (Ruling R13)", () => {
       canonical: "/about",
       twitterCard: "summary",
     })
+  })
+})
+
+// The Website menu's "Legal & other pages" list: every custom page that no
+// service owns, wherever it lives, so nothing becomes unreachable.
+describe("other pages list", () => {
+  it("lists every non-system page without a service, /services/* included", async () => {
+    const asset = await insertMedia()
+    const doc = heroDocument(asset.id)
+    await insertPage({
+      path: "/services",
+      systemKey: "services",
+      document: doc,
+    })
+    const privacy = await insertPage({ path: "/privacy", document: doc })
+    const orphan = await insertPage({ path: "/services/old", document: doc })
+    const owned = await insertPage({ path: "/services/a", document: doc })
+    const [service] = await getDb()
+      .insert(services)
+      .values({ slug: "a", title: "A", body: "B", icon: "mind" })
+      .returning()
+    await getDb()
+      .update(pages)
+      .set({ serviceId: service!.id })
+      .where(eq(pages.id, owned.id))
+    const ids = (await listOtherPages()).map((p) => p.id)
+    expect(ids).toEqual([privacy.id, orphan.id])
+  })
+
+  it("GET /pages tells each page its service", async () => {
+    const asset = await insertMedia()
+    await insertPage({ path: "/privacy", document: heroDocument(asset.id) })
+    const res = await adminRequest("/pages", await cookieFor("editor"))
+    const { items } = await json(res)
+    expect(items[0]).toMatchObject({ path: "/privacy", serviceId: null })
   })
 })

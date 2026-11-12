@@ -24,6 +24,8 @@ export const heroPage = defineBlock({
     focal: Focal.nullable(),
     tint: z.number().min(0).max(0.9),
     mirror: z.boolean(),
+    // Optional primary button; pages saved before it existed parse as null.
+    cta: LinkValue.nullable().default(null),
   }),
   allowedOn: "*",
   first: true,

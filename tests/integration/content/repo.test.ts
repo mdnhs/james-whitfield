@@ -48,6 +48,7 @@ const doc = (title: string) => ({
         focal: null,
         tint: 0.32,
         mirror: false,
+        cta: null,
       },
     },
   ],

@@ -26,6 +26,10 @@ import {
   toNewsletterView,
 } from "@/features/insights"
 import { RichTextSection } from "@/features/richtext"
+import {
+  ServiceBenefitsSection,
+  ServiceIntroSection,
+} from "@/features/service-detail"
 import { FormatsSection, ServicesGrid } from "@/features/services"
 import { JourneySection } from "@/features/journey"
 import { TestimonialsSection } from "@/features/testimonials"
@@ -218,6 +222,33 @@ export async function ResolvedBlock({ block }: { block: BlockInstance }) {
     }
     case "richtext":
       return <RichTextSection id={id} content={block.data} />
+    case "service.intro":
+      return <ServiceIntroSection id={id} content={block.data} />
+    case "service.benefits":
+      return <ServiceBenefitsSection id={id} content={block.data} />
+    case "service.formats": {
+      // Plans are the page's own; the contact link carries the plan id.
+      const plans = block.data.plans.map((plan, i) => ({
+        ...plan,
+        id: `${block.id}-${i}`,
+        slug: `${block.id}-${i}`,
+        priceCents: null,
+      }))
+      return <FormatsSection id={id} content={block.data} plans={plans} />
+    }
+    case "service.faq": {
+      const items = block.data.items.map((item, i) => ({
+        ...item,
+        id: `${block.id}-${i}`,
+      }))
+      return (
+        <FaqSection
+          id={id}
+          content={{ ...block.data, variant: "page" }}
+          items={items}
+        />
+      )
+    }
     default: {
       // Compile-time exhaustive; at runtime an unknown type (a row written by
       // a newer or older build) skips its section instead of failing the page.

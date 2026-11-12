@@ -7,6 +7,7 @@ import {
   chatConversations,
   chatMessages,
   chatPresence,
+  users,
 } from "@/server/db/schema"
 
 export type ChatRow = typeof chatConversations.$inferSelect
@@ -230,6 +231,17 @@ export async function releaseLease(
 }
 
 // ---------- flags and assignment ----------
+
+export async function assigneeName(
+  userId: string,
+  db: DbLike = getDb()
+): Promise<string | null> {
+  const [row] = await db
+    .select({ name: users.name })
+    .from(users)
+    .where(eq(users.id, userId))
+  return row?.name ?? null
+}
 
 export async function flagNeedsHuman(
   id: string,

@@ -260,4 +260,12 @@ describe("chat repository", () => {
     })
     expect(page.items.map((i) => i.id)).toEqual([chat.id])
   })
+
+  it("assigneeName returns the user's name, or null", async () => {
+    const user = await createUser("admin", "agent@example.com")
+    expect(await repo.assigneeName(user.id)).toBe(user.name)
+    expect(
+      await repo.assigneeName("00000000-0000-0000-0000-000000000000")
+    ).toBeNull()
+  })
 })

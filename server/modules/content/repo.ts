@@ -33,6 +33,7 @@ import { articleDate } from "@/lib/format-date"
 import type { MediaAsset } from "@/lib/media"
 import { getDb } from "@/server/db/client"
 import * as t from "@/server/db/schema"
+import { notHiddenServicePage } from "@/server/modules/service-pages/visible"
 
 type MediaRow = typeof t.media.$inferSelect
 
@@ -93,7 +94,12 @@ export async function findPageByPath(
   const [row] = await db
     .select()
     .from(t.pages)
-    .where(eq(t.pages.path, path))
+    .where(
+      // Editors still preview a hidden service's page; visitors get a 404.
+      draft
+        ? eq(t.pages.path, path)
+        : and(eq(t.pages.path, path), notHiddenServicePage)
+    )
     .limit(1)
   if (!row) return null
   // Unpublishing keeps the last published JSON; status decides what is live.

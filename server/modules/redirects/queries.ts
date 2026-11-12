@@ -1,6 +1,6 @@
 import "server-only"
 
-import { eq } from "drizzle-orm"
+import { and, eq } from "drizzle-orm"
 import { cacheLife, cacheTag } from "next/cache"
 
 import { categoryHref } from "@/lib/content/category-href"
@@ -13,6 +13,7 @@ import {
   redirects,
 } from "@/server/db/schema"
 import { tags } from "@/server/lib/cache"
+import { notHiddenServicePage } from "@/server/modules/service-pages/visible"
 
 // Ruling R2: one small cached entry answers every proxy lookup until a
 // publish, unpublish, address change or redirect write expires a tag.
@@ -26,7 +27,7 @@ export async function getRouteTable(): Promise<RouteTable> {
       db
         .select({ path: pages.path })
         .from(pages)
-        .where(eq(pages.status, "published")),
+        .where(and(eq(pages.status, "published"), notHiddenServicePage)),
       db
         .select({ slug: articles.slug })
         .from(articles)

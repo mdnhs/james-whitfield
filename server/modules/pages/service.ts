@@ -316,19 +316,21 @@ export async function insertPage(
     path: string
     title: string
     document: PageDocument
-    // The `pages.service_id` column lands in the service-pages task; the
-    // value is accepted here but not written yet.
+    // Set for a service's detail page (/services/<slug>).
     serviceId?: string
     actor: Actor
   }
 ) {
+  const parsed = pageDocumentFor("custom").safeParse(input.document)
+  if (!parsed.success) throw invalid(parsed.error)
   const [created] = await tx
     .insert(pages)
     .values({
       path: input.path,
       title: input.title,
+      serviceId: input.serviceId ?? null,
       status: "draft",
-      draft: input.document,
+      draft: parsed.data,
       settings: { showContactChapter: true, needsReview: false },
       createdBy: input.actor.userId,
       updatedBy: input.actor.userId,
@@ -414,6 +416,11 @@ export async function changePagePath(actor: Actor, id: string, path: string) {
     const row = await findPage(tx, id, true)
     if (row.systemKey)
       throw new ApiError("FORBIDDEN", "System pages keep their address")
+    if (row.serviceId)
+      throw new ApiError(
+        "FORBIDDEN",
+        "A service page's address follows the service's slug"
+      )
     if (row.path === path)
       return { path, redirected: false, warnings: [] as string[] }
     const [taken] = await tx
@@ -460,33 +467,50 @@ export async function changePagePath(actor: Actor, id: string, path: string) {
   return result
 }
 
+// Deletes a page with its revisions and the redirects into it, inside the
+// caller's transaction. Reports whether a redirect was removed.
+export async function removePage(
+  tx: DbLike,
+  actor: Actor,
+  row: { id: string; path: string }
+) {
+  await deleteRevisions(tx, "page", row.id)
+  // Redirects into a deleted page would 301 to a 404.
+  await lockRedirects(tx)
+  const gone = await tx
+    .delete(redirects)
+    .where(eq(redirects.destination, row.path))
+    .returning({ id: redirects.id })
+  await tx.delete(pages).where(eq(pages.id, row.id))
+  await audit(
+    actor,
+    {
+      action: "page.delete",
+      entityType: "page",
+      entityId: row.id,
+      summary: `Deleted ${row.path}`,
+    },
+    tx
+  )
+  return gone.length > 0
+}
+
 export async function deletePage(actor: Actor, id: string) {
   const db = getDb()
   const row = await findPage(db, id)
   if (row.systemKey) {
     throw new ApiError("FORBIDDEN", "System pages can't be deleted")
   }
-  const redirectsChanged = await db.transaction(async (tx) => {
-    await deleteRevisions(tx, "page", id)
-    // Redirects into a deleted page would 301 to a 404.
-    await lockRedirects(tx)
-    const gone = await tx
-      .delete(redirects)
-      .where(eq(redirects.destination, row.path))
-      .returning({ id: redirects.id })
-    await tx.delete(pages).where(eq(pages.id, id))
-    await audit(
-      actor,
-      {
-        action: "page.delete",
-        entityType: "page",
-        entityId: id,
-        summary: `Deleted ${row.path}`,
-      },
-      tx
+  // Its service owns it: turned off there, so the service's link is cleared.
+  if (row.serviceId) {
+    throw new ApiError(
+      "FORBIDDEN",
+      "Turn this page off from its service instead"
     )
-    return gone.length > 0
-  })
+  }
+  const redirectsChanged = await db.transaction((tx) =>
+    removePage(tx, actor, row)
+  )
   invalidate([
     tags.page(id),
     tags.routes,

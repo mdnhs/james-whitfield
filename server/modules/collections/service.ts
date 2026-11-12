@@ -21,6 +21,10 @@ import {
   topLevelDiff,
 } from "@/server/lib/conflict"
 import { assertMediaExists } from "@/server/modules/media/assert-media"
+import {
+  removeServicePage,
+  syncServicePage,
+} from "@/server/modules/service-pages/service"
 
 import {
   entryFor,
@@ -139,6 +143,7 @@ export async function updateItem(
   const before = fromRow(name, current)
   const { row, mediaIds } = parseValues(name, { ...before, ...input.values })
   let updated
+  let expire: string[] = []
   try {
     updated = await getDb().transaction(async (tx) => {
       await assertMediaExists(tx, mediaIds)
@@ -152,6 +157,16 @@ export async function updateItem(
         .where(and(eq(e.table.id, id), eq(e.table.version, input.version)))
         .returning()
       if (!next) return null
+      // A service's detail page follows its slug and visibility.
+      if (name === "services") {
+        type ServiceRow = Parameters<typeof syncServicePage>[2]
+        expire = await syncServicePage(
+          tx,
+          actor,
+          current as unknown as ServiceRow,
+          next as unknown as ServiceRow
+        )
+      }
       await audit(
         actor,
         {
@@ -170,7 +185,7 @@ export async function updateItem(
     throw error
   }
   if (!updated) throw await conflictError(getDb(), await findItem(name, id))
-  invalidate([tags.collection(e.tag)])
+  invalidate([tags.collection(e.tag), ...expire])
   return toItem(name, updated, [])
 }
 
@@ -184,7 +199,7 @@ export async function deleteItem(
   id: string
 ) {
   const e = entryFor(name)
-  await getDb().transaction(async (tx) => {
+  const expire = await getDb().transaction(async (tx) => {
     await tx.execute(sql`lock table pages in share row exclusive mode`)
     const [row] = await tx
       .select()
@@ -211,6 +226,9 @@ export async function deleteItem(
         { usedOn: used }
       )
     }
+    // The service's detail page goes with it.
+    const pageTags =
+      name === "services" ? await removeServicePage(tx, actor, id) : []
     await tx.delete(e.table).where(eq(e.table.id, id))
     await audit(
       actor,
@@ -222,8 +240,9 @@ export async function deleteItem(
       },
       tx
     )
+    return pageTags
   })
-  invalidate([tags.collection(entryFor(name).tag)])
+  invalidate([tags.collection(entryFor(name).tag), ...expire])
   return { ok: true as const }
 }
 

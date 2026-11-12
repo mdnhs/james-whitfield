@@ -19,6 +19,7 @@ describe("buildCsp (brief §12.6, Ruling R1)", () => {
       "https://www.googletagmanager.com",
       "https://connect.facebook.net",
       "https://challenges.cloudflare.com",
+      "https://static.cloudflareinsights.com",
     ])
     for (const host of [
       "https://*.google-analytics.com",
@@ -36,6 +37,15 @@ describe("buildCsp (brief §12.6, Ruling R1)", () => {
       "https://www.googletagmanager.com",
       "https://challenges.cloudflare.com",
     ])
+  })
+
+  it("allows the Cloudflare Web Analytics beacon and its endpoint", () => {
+    expect(directive(csp, "script-src")).toContain(
+      "https://static.cloudflareinsights.com"
+    )
+    expect(directive(csp, "connect-src")).toContain(
+      "https://cloudflareinsights.com"
+    )
   })
 
   it("locks down the rest", () => {

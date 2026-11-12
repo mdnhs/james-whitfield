@@ -37,6 +37,8 @@ export function buildCsp({
       "https://www.googletagmanager.com",
       "https://connect.facebook.net",
       "https://challenges.cloudflare.com",
+      // Cloudflare Web Analytics beacon, injected at the edge.
+      "https://static.cloudflareinsights.com",
       ...custom,
     ],
     "style-src": ["'self'", "'unsafe-inline'"],
@@ -47,6 +49,7 @@ export function buildCsp({
       ...GOOGLE,
       ...META,
       "https://connect.facebook.net",
+      "https://cloudflareinsights.com",
       ...media,
       ...custom,
     ],

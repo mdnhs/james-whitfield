@@ -60,6 +60,9 @@ export function HeroWebGL() {
     const section = container?.closest("section")
     if (!container || !image || !section) return
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) return
+    // Phones and touch devices keep the static photo: no WebGL context,
+    // three.js download or depth/hair textures.
+    if (matchMedia("(max-width: 639px), (pointer: coarse)").matches) return
 
     let cancelled = false
     let idleHandle: number | undefined

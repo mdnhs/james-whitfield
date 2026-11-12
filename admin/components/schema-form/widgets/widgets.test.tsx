@@ -6,8 +6,10 @@ import { useState } from "react"
 import * as z from "zod"
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest"
 
+import { AdminActorProvider } from "@/admin/lib/actor-context"
 import { MediaRef, Selection, StatValue } from "@/blocks/fields"
 import { RichTextDoc } from "@/blocks/rich-text"
+import { permissionMap } from "@/lib/auth/permissions"
 
 import { SchemaForm } from "../schema-form"
 import type { FormField } from "../to-fields"
@@ -36,8 +38,19 @@ afterEach(() => vi.unstubAllGlobals())
 
 const client = () =>
   new QueryClient({ defaultOptions: { queries: { retry: false } } })
+const owner = {
+  user: { id: "u1", email: "o@example.com", name: "O" },
+  roles: ["owner" as const],
+  permissions: permissionMap(["owner"]),
+  twoFactorEnabled: true,
+  impersonatedBy: null,
+}
 const wrap = (node: React.ReactNode) =>
-  render(<QueryClientProvider client={client()}>{node}</QueryClientProvider>)
+  render(
+    <QueryClientProvider client={client()}>
+      <AdminActorProvider value={owner}>{node}</AdminActorProvider>
+    </QueryClientProvider>
+  )
 
 const json = (data: unknown) => Response.json(data)
 const field = (over: Partial<FormField>): FormField => ({
@@ -297,6 +310,61 @@ describe("media widget", () => {
     await user.click(screen.getByRole("button", { name: "Save" }))
     await waitFor(() =>
       expect(onSubmit).toHaveBeenLastCalledWith({ image: null })
+    )
+  })
+})
+
+describe("media picker upload", () => {
+  it("uploads a new image and picks it for the field", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => json({ items: [], page: 1, pageSize: 40, total: 0 }))
+    )
+    const uploaded = {
+      id: "11111111-1111-4111-8111-111111111111",
+      url: "/uploads/new.png",
+      filename: "new.png",
+      mimeType: "image/png",
+      alt: "",
+      width: 10,
+      height: 10,
+      focalX: 0.5,
+      focalY: 0.5,
+    }
+    const sent: string[] = []
+    class FakeXHR {
+      status = 201
+      response: unknown = uploaded
+      responseType = ""
+      upload = { onprogress: null }
+      onload: (() => void) | null = null
+      open(_method: string, url: string) {
+        sent.push(url)
+      }
+      send() {
+        queueMicrotask(() => this.onload?.())
+      }
+    }
+    vi.stubGlobal("XMLHttpRequest", FakeXHR)
+    const onSubmit = vi.fn()
+    const user = userEvent.setup()
+    wrap(
+      <SchemaForm
+        schema={z.object({ image: MediaRef.nullable() })}
+        defaultValues={{ image: null }}
+        onSubmit={onSubmit}
+        submitLabel="Save"
+      />
+    )
+    await user.click(screen.getByRole("button", { name: "Image" }))
+    await user.upload(
+      await screen.findByLabelText("Upload a new image"),
+      new File(["x"], "new.png", { type: "image/png" })
+    )
+    await waitFor(() => expect(sent).toEqual(["/api/v1/admin/media"]))
+    await user.click(screen.getByRole("button", { name: "Save" }))
+    await waitFor(() =>
+      expect(onSubmit).toHaveBeenCalledWith({ image: { mediaId: uploaded.id } })
     )
   })
 })

@@ -10,6 +10,7 @@ describe("searchNavigation", () => {
     expect(hrefs(["intake"], "")).toEqual([
       "/admin",
       "/admin/leads",
+      "/admin/chat",
       "/admin/help",
       "/admin/account",
     ])

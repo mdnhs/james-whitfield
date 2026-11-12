@@ -30,9 +30,11 @@ function loadScript(): Promise<void> {
 export function Turnstile({
   siteKey,
   onToken,
+  action = "lead",
 }: {
   siteKey: string
   onToken(token: string | null): void
+  action?: string
 }) {
   const ref = useRef<HTMLDivElement>(null)
   const callback = useRef(onToken)
@@ -49,7 +51,7 @@ export function Turnstile({
         if (cancelled || !ref.current || !api) return
         id = api.render(ref.current, {
           sitekey: siteKey,
-          action: "lead",
+          action,
           callback: (token: string) => callback.current(token),
           "expired-callback": () => callback.current(null),
           "error-callback": () => callback.current(null),
@@ -60,7 +62,7 @@ export function Turnstile({
       cancelled = true
       if (id) (window as TurnstileWindow).turnstile?.remove(id)
     }
-  }, [siteKey])
+  }, [siteKey, action])
 
   return <div ref={ref} className="min-h-16.25" />
 }

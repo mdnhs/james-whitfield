@@ -17,10 +17,12 @@ export function HowItWorksSection({
   id,
   content,
   steps,
+  stepTag,
 }: {
   id: string
   content: BlockView<"process">
   steps: ProcessStepView[]
+  stepTag: string
 }) {
   const { title, subtitle, cta, tag } = content
   const page = content.variant === "page"
@@ -95,7 +97,7 @@ export function HowItWorksSection({
       >
         <StepsCarousel>
           {steps.map((step, i) => (
-            <StepCard key={step.id} step={step} index={i} />
+            <StepCard key={step.id} step={step} index={i} stepTag={stepTag} />
           ))}
         </StepsCarousel>
 

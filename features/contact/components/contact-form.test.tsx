@@ -35,6 +35,7 @@ const copy = GLOBALS.contactForm.parse({
 })
 const props = {
   copy,
+  requiredNote: "Fields marked * are required.",
   topics: [{ slug: "anxiety", label: "Anxiety" }],
   formats: [{ slug: "online", label: "Online" }],
   plans: [],

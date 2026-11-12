@@ -56,8 +56,18 @@ export async function ResolvedBlock({ block }: { block: BlockInstance }) {
     case "about.intro":
       return <AboutSection id={id} content={block.data} />
     case "process": {
-      const steps = (await q.getProcessSteps()).slice(0, 6)
-      return <HowItWorksSection id={id} content={block.data} steps={steps} />
+      const [all, copy] = await Promise.all([
+        q.getProcessSteps(),
+        q.getSetting("microcopy"),
+      ])
+      return (
+        <HowItWorksSection
+          id={id}
+          content={block.data}
+          steps={all.slice(0, 6)}
+          stepTag={copy.stepTag}
+        />
+      )
     }
     case "testimonials": {
       const items = select(await q.getTestimonials(), block.data.selection)
@@ -167,6 +177,7 @@ export async function ResolvedBlock({ block }: { block: BlockInstance }) {
           quickActions={copy.quickActions}
           form={{
             copy: form,
+            requiredNote: copy.requiredNote,
             topics: [
               ...services.map((s) => ({ slug: s.slug, label: s.title })),
               ...form.extraTopics.map(option),

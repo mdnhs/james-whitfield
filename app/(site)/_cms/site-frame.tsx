@@ -29,17 +29,27 @@ import { getPublicTracking } from "@/server/modules/tracking/public"
 export async function SiteFrame({ children }: { children: React.ReactNode }) {
   await io()
   const preview = await isPreviewing()
-  const [site, navigation, footer, contact, theme, consent, scripts, tracking] =
-    await Promise.all([
-      getSetting("site"),
-      getSetting("navigation"),
-      getSetting("footer"),
-      getSetting("contact"),
-      getThemeConfig(preview),
-      getSetting("consent"),
-      getSetting("scripts"),
-      getPublicTracking(),
-    ])
+  const [
+    site,
+    navigation,
+    footer,
+    contact,
+    microcopy,
+    theme,
+    consent,
+    scripts,
+    tracking,
+  ] = await Promise.all([
+    getSetting("site"),
+    getSetting("navigation"),
+    getSetting("footer"),
+    getSetting("contact"),
+    getSetting("microcopy"),
+    getThemeConfig(preview),
+    getSetting("consent"),
+    getSetting("scripts"),
+    getPublicTracking(),
+  ])
   const logo = site.logo
     ? ((await getMedia([site.logo.mediaId])).get(site.logo.mediaId) ?? null)
     : null
@@ -78,7 +88,11 @@ export async function SiteFrame({ children }: { children: React.ReactNode }) {
           cookieSettings={frame.active ? consent.settingsLink : null}
         />
       </SmoothScroll>
-      <StickyCta cta={navigation.cta} phone={contact.phone} />
+      <StickyCta
+        cta={navigation.cta}
+        phone={contact.phone}
+        callLabel={microcopy.callLabel}
+      />
       {frame.active ? (
         <ConsentBanner
           policy={frame.policy}

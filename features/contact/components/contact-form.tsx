@@ -125,6 +125,7 @@ type Prefill = {
 // the fields prerender blank before picking up the URL on load.
 export function ContactForm(props: {
   copy: Copy
+  requiredNote: string
   topics: ContactOption[]
   formats: ContactOption[]
   plans: PlanOption[]
@@ -143,8 +144,22 @@ export function ContactForm(props: {
   )
 }
 
+// The note's first "*" keeps its accent colour; text without one renders as is.
+function RequiredNote({ text }: { text: string }) {
+  const at = text.indexOf("*")
+  if (at < 0) return text
+  return (
+    <>
+      {text.slice(0, at)}
+      <span className="text-clay">*</span>
+      {text.slice(at + 1)}
+    </>
+  )
+}
+
 type FormProps = {
   copy: Copy
+  requiredNote: string
   topics: ContactOption[]
   formats: ContactOption[]
   plans: PlanOption[]
@@ -183,6 +198,7 @@ function PrefilledForm(props: FormProps) {
 
 function EnquiryForm({
   copy,
+  requiredNote,
   topics,
   formats,
   turnstileSiteKey,
@@ -372,9 +388,9 @@ function EnquiryForm({
         <h2 className="font-display text-[28px] leading-[1.5] font-bold text-pine [font-variation-settings:'SOFT'_0,'WONK'_1] sm:text-[32px]">
           {title}
         </h2>
-        {!sent && (
+        {!sent && requiredNote && (
           <p className="text-sm leading-[1.5] text-text-muted">
-            Fields marked <span className="text-clay">*</span> are required.
+            <RequiredNote text={requiredNote} />
           </p>
         )}
       </div>

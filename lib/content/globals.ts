@@ -211,6 +211,10 @@ export const MicrocopyGlobal = z.object({
   showing: s(60),
   noResults: s(80),
   categoryEmpty: s(120),
+  // "{n}" is replaced with the step number.
+  stepTag: s(30),
+  requiredNote: s(80),
+  callLabel: s(40),
   clearFilters: s(30),
   pagination: s(30),
   previousPage: s(30),

@@ -19,9 +19,11 @@ const PAGE_CTAS =
 export function StickyCta({
   cta,
   phone,
+  callLabel,
 }: {
   cta: { label: string; href: string }
   phone: { display: string; e164: string }
+  callLabel: string
 }) {
   const pathname = usePathname()
   const [covered, setCovered] = useState(true)
@@ -72,7 +74,9 @@ export function StickyCta({
       {phone.e164 ? (
         <a
           href={`tel:${phone.e164}`}
-          aria-label={phone.display ? `Call ${phone.display}` : "Call"}
+          aria-label={
+            [callLabel, phone.display].filter(Boolean).join(" ") || undefined
+          }
           className="flex size-13 shrink-0 items-center justify-center rounded-full border border-brand text-brand transition-colors hover:bg-brand/5"
         >
           <Phone aria-hidden className="size-5" />

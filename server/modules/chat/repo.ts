@@ -471,3 +471,52 @@ export async function userRole(
     .where(eq(users.id, userId))
   return row ?? null
 }
+
+// ---------- privacy (exact visitor_email match only) ----------
+
+const byVisitorEmail = (email: string) =>
+  sql`lower(${chatConversations.visitorEmail}) = lower(${email})`
+
+export async function exportForEmail(email: string, db: DbLike = getDb()) {
+  const chats = await db
+    .select()
+    .from(chatConversations)
+    .where(byVisitorEmail(email))
+    .orderBy(chatConversations.createdAt)
+  return Promise.all(
+    chats.map(async (c) => {
+      const rows = await db
+        .select()
+        .from(chatMessages)
+        .where(eq(chatMessages.conversationId, c.id))
+        .orderBy(chatMessages.id)
+      return {
+        id: c.id,
+        visitorName: c.visitorName,
+        visitorEmail: c.visitorEmail,
+        status: c.status,
+        sourcePath: c.sourcePath,
+        consentAt: c.consentAt.toISOString(),
+        createdAt: c.createdAt.toISOString(),
+        messages: rows.map((m) => ({
+          sender: m.sender,
+          senderName: m.senderName,
+          body: m.body,
+          createdAt: m.createdAt.toISOString(),
+        })),
+      }
+    })
+  )
+}
+
+// Messages go with their conversation (ON DELETE CASCADE).
+export async function eraseForEmail(
+  email: string,
+  db: DbLike = getDb()
+): Promise<number> {
+  const rows = await db
+    .delete(chatConversations)
+    .where(byVisitorEmail(email))
+    .returning({ id: chatConversations.id })
+  return rows.length
+}

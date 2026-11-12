@@ -107,7 +107,6 @@ export function ArticleCard({ article }: { article: ArticleSummary }) {
       <div className="relative size-24 shrink-0 overflow-clip rounded-[14px] bg-mist sm:h-62.5 sm:w-full sm:rounded-2xl">
         <MediaImage
           media={image}
-          alt=""
           fill
           sizes="(min-width: 1024px) 400px, (min-width: 768px) 50vw, 100vw"
           className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"

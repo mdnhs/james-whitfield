@@ -59,7 +59,6 @@ export function ClinicSection({
             >
               <MediaImage
                 media={content.photo}
-                alt=""
                 fill
                 blur
                 sizes="(min-width: 1440px) 1308px, 100vw"

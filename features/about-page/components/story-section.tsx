@@ -32,7 +32,6 @@ export function StorySection({
             >
               <MediaImage
                 media={photo}
-                alt=""
                 fill
                 blur
                 sizes="(min-width: 1024px) 568px, 100vw"

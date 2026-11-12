@@ -34,7 +34,6 @@ export function FeaturedArticle({
         >
           <MediaImage
             media={image}
-            alt=""
             fill
             priority
             sizes="(min-width: 1024px) 680px, 100vw"

@@ -27,7 +27,6 @@ export function PostCard({ article }: { article: ArticleSummary }) {
         >
           <MediaImage
             media={image}
-            alt=""
             fill
             sizes="(min-width: 1024px) 420px, 100vw"
             className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"

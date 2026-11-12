@@ -21,7 +21,6 @@ export function StepCard({
         <div className="absolute" style={frameStyle(frame)}>
           <MediaImage
             media={image}
-            alt=""
             fill
             sizes="520px"
             blur

@@ -16,7 +16,7 @@ import {
 import { contactHref } from "@/lib/contact-href"
 import { ARTICLE_SHELL_SLUG } from "@/lib/content/article-slug"
 import { JsonLd } from "@/components/json-ld"
-import { blogPostingNode, breadcrumbNode, graph } from "@/lib/seo/json-ld"
+import { blogPostingNode, breadcrumbNode, graph, url } from "@/lib/seo/json-ld"
 import { buildMetadata } from "@/lib/seo/metadata"
 import { getEnv } from "@/server/env"
 import {
@@ -98,11 +98,15 @@ export default async function ArticlePage({
     { label: copy.contactChapter, target: "contact" },
   ]
   const origin = getEnv().SITE_URL.replace(/\/$/, "")
+  const logoAsset = site.logo
+    ? (await getMedia([site.logo.mediaId])).get(site.logo.mediaId)
+    : undefined
+  const logo = logoAsset ? url(origin, logoAsset.src) : undefined
   return (
     <>
       <JsonLd
         graph={graph([
-          blogPostingNode({ origin, article, siteName: site.name }),
+          blogPostingNode({ origin, article, siteName: site.name, logo }),
           breadcrumbNode(origin, [
             { name: copy.breadcrumbHome, path: "/" },
             { name: copy.breadcrumbInsights, path: "/insights" },

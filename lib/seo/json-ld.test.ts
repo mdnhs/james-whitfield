@@ -189,6 +189,75 @@ describe("page nodes", () => {
   })
 })
 
+describe("structured data completeness", () => {
+  it("adds logo and image to the business only when given", () => {
+    const bare = businessNode({ origin, site, contact, seo })
+    expect(bare).not.toHaveProperty("logo")
+    expect(bare).not.toHaveProperty("image")
+    const full = businessNode({
+      origin,
+      site,
+      contact,
+      seo,
+      logo: `${origin}/logo.png`,
+      image: [`${origin}/clinic.jpg`],
+    })
+    expect(full).toMatchObject({
+      logo: `${origin}/logo.png`,
+      image: [`${origin}/clinic.jpg`],
+    })
+    expect(
+      businessNode({ origin, site, contact, seo, image: [] })
+    ).not.toHaveProperty("image")
+  })
+
+  it("adds image and knowsAbout to the person only when given", () => {
+    const bare = personNode({ origin, site })
+    expect(bare).not.toHaveProperty("image")
+    expect(bare).not.toHaveProperty("knowsAbout")
+    expect(
+      personNode({
+        origin,
+        site,
+        image: `${origin}/me.jpg`,
+        knowsAbout: ["Anxiety", "Sleep"],
+      })
+    ).toMatchObject({
+      image: `${origin}/me.jpg`,
+      knowsAbout: ["Anxiety", "Sleep"],
+    })
+    expect(personNode({ origin, site, knowsAbout: [] })).not.toHaveProperty(
+      "knowsAbout"
+    )
+  })
+
+  it("gives the BlogPosting publisher an ImageObject logo when given", () => {
+    const article = {
+      slug: "calm",
+      title: "Calm",
+      excerpt: "x",
+      image: { src: "/c.jpg" },
+      author: { name: "M" },
+      category: { name: "A" },
+      date: { iso: "2026-01-02T00:00:00.000Z" },
+      updatedAt: "2026-01-03T00:00:00.000Z",
+    } as never
+    const withLogo = blogPostingNode({
+      origin,
+      siteName: "M",
+      article,
+      logo: `${origin}/logo.png`,
+    })
+    expect(withLogo.publisher).toMatchObject({
+      "@type": "Organization",
+      logo: { "@type": "ImageObject", url: `${origin}/logo.png` },
+    })
+    expect(
+      blogPostingNode({ origin, siteName: "M", article }).publisher
+    ).not.toHaveProperty("logo")
+  })
+})
+
 describe("blogPostingNode", () => {
   it("carries Google's required BlogPosting properties", () => {
     const node = blogPostingNode({

@@ -23,6 +23,7 @@ export const SiteGlobal = z.object({
   legalName: s(120),
   professionalTitle: s(120),
   logo: MediaRef.nullable().default(null),
+  portrait: MediaRef.nullable().default(null),
   icon: MediaRef.nullable().default(null),
   locale: z.literal("en-IE").default("en-IE"),
   timeZone: z.literal("Europe/Dublin").default("Europe/Dublin"),

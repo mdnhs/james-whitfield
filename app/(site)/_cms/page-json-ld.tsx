@@ -12,13 +12,16 @@ import {
   graph,
   personNode,
   planNodes,
+  url,
   websiteNode,
 } from "@/lib/seo/json-ld"
 import { getEnv } from "@/server/env"
 import {
   getFaqs,
+  getMedia,
   getPlans,
   getPublishedPage,
+  getServices,
   getSetting,
 } from "@/server/modules/content/queries"
 
@@ -33,12 +36,35 @@ export async function PageJsonLd({ page }: { page: PublishedPage }) {
   ])
   const visible = page.document.blocks.filter((b) => !b.hidden)
   if (page.systemKey === "home") {
+    const refs = [site.logo, contact.clinic.photo, site.portrait]
+    const ids = refs.flatMap((r) => (r ? [r.mediaId] : []))
+    const [assets, services] = await Promise.all([
+      ids.length ? getMedia(ids) : Promise.resolve(new Map()),
+      getServices(),
+    ])
+    const src = (r: (typeof refs)[number]) => {
+      const asset = r ? assets.get(r.mediaId) : null
+      return asset ? url(origin, asset.src) : undefined
+    }
+    const [logo, clinicPhoto, portrait] = refs.map(src)
     return (
       <JsonLd
         graph={graph([
           websiteNode({ origin, siteName: site.name }),
-          businessNode({ origin, site, contact, seo }),
-          personNode({ origin, site }),
+          businessNode({
+            origin,
+            site,
+            contact,
+            seo,
+            logo,
+            image: clinicPhoto ? [clinicPhoto] : undefined,
+          }),
+          personNode({
+            origin,
+            site,
+            image: portrait,
+            knowsAbout: services.map((s) => s.title),
+          }),
         ])}
       />
     )

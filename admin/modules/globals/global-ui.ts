@@ -6,6 +6,10 @@ export const GLOBAL_FIELD_UI: Partial<
 > = {
   site: {
     logo: { label: "Logo" },
+    portrait: {
+      label: "Portrait",
+      description: "Used for search engines' structured data, not shown.",
+    },
     icon: { label: "Favicon" },
     social: { label: "Social profiles" },
   },
@@ -19,7 +23,8 @@ export const GLOBAL_FIELD_UI: Partial<
     "hours.summary": { description: "How the site prints the hours." },
     // Phase 3 ruling: the Clinic block's own photo is the single source.
     "clinic.photo": {
-      description: "Not shown on the site: the Clinic block's photo is used.",
+      description:
+        "Not shown on the site: the Clinic block's photo is used. Also sent to search engines as the practice image.",
     },
   },
   footer: {

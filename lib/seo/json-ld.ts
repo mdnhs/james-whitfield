@@ -25,7 +25,7 @@ const DAYS = [
 ] as const
 const abs = (origin: string, path: string) =>
   path === "/" ? origin : `${origin}${path}`
-const url = (origin: string, src: string) =>
+export const url = (origin: string, src: string) =>
   /^https?:\/\//.test(src) ? src : abs(origin, src)
 
 // docs/brief.md §11 / §15: < > & and the line separators are escaped, so no
@@ -77,6 +77,8 @@ export function businessNode(i: {
   site: GlobalValue<"site">
   contact: GlobalValue<"contact">
   seo: GlobalValue<"seo">
+  logo?: string
+  image?: string[]
 }): ProfessionalService | LocalBusiness {
   const { address, phone, hours, clinic } = i.contact
   const sameAs = [...i.seo.business.sameAs, ...i.site.social.map((s) => s.url)]
@@ -85,6 +87,8 @@ export function businessNode(i: {
     name: i.site.name,
     ...(i.site.legalName ? { legalName: i.site.legalName } : {}),
     url: i.origin,
+    ...(i.logo ? { logo: i.logo } : {}),
+    ...(i.image?.length ? { image: i.image } : {}),
     ...(phone.e164 ? { telephone: phone.e164 } : {}),
     ...(i.contact.email ? { email: i.contact.email } : {}),
     ...(i.seo.business.priceRange
@@ -130,15 +134,21 @@ export function businessNode(i: {
 export function personNode({
   origin,
   site,
+  image,
+  knowsAbout,
 }: {
   origin: string
   site: GlobalValue<"site">
+  image?: string
+  knowsAbout?: string[]
 }): Person {
   return {
     "@type": "Person",
     name: site.name,
     ...(site.professionalTitle ? { jobTitle: site.professionalTitle } : {}),
     url: `${origin}/about`,
+    ...(image ? { image } : {}),
+    ...(knowsAbout?.length ? { knowsAbout } : {}),
     ...(site.social.length ? { sameAs: site.social.map((s) => s.url) } : {}),
   }
 }
@@ -202,6 +212,7 @@ export function blogPostingNode(i: {
   origin: string
   article: ArticleDetail
   siteName: string
+  logo?: string
 }): BlogPosting {
   const a = i.article
   return {
@@ -216,7 +227,12 @@ export function blogPostingNode(i: {
       name: a.author.name,
       url: `${i.origin}/about`,
     },
-    publisher: { "@type": "Organization", name: i.siteName, url: i.origin },
+    publisher: {
+      "@type": "Organization",
+      name: i.siteName,
+      url: i.origin,
+      ...(i.logo ? { logo: { "@type": "ImageObject", url: i.logo } } : {}),
+    },
     mainEntityOfPage: `${i.origin}/insights/${a.slug}`,
     articleSection: a.category.name,
     inLanguage: "en-IE",

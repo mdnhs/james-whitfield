@@ -17,6 +17,7 @@ export type ServiceView = {
   title: string
   body: string
   icon: IconName
+  pagePath: string
 }
 
 export type PlanView = {

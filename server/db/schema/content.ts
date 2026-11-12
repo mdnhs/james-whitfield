@@ -56,6 +56,7 @@ export const services = pgTable("services", {
   title: text().notNull(),
   body: text().notNull(),
   icon: text().notNull(),
+  pagePath: text().notNull().default(""),
 })
 
 export const plans = pgTable("plans", {

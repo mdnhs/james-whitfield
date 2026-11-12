@@ -1,0 +1,1 @@
+ALTER TABLE "services" ADD COLUMN "page_path" text DEFAULT '' NOT NULL;

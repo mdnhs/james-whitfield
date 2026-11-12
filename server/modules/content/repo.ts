@@ -138,6 +138,7 @@ export async function listServices(db = getDb()): Promise<ServiceView[]> {
     title: r.title,
     body: r.body,
     icon: IconField.parse(r.icon),
+    pagePath: r.pagePath,
   }))
 }
 

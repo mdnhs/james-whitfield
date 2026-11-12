@@ -49,7 +49,7 @@ export function ServicesGrid({
           data-motion="deal-group"
           className="grid grid-cols-1 gap-3 sm:gap-6 md:grid-cols-2 lg:grid-cols-3"
         >
-          {services.map(({ id: serviceId, icon, title, body }) => (
+          {services.map(({ id: serviceId, icon, title, body, pagePath }) => (
             <li
               key={serviceId}
               data-motion="deal tilt"
@@ -71,7 +71,7 @@ export function ServicesGrid({
               </div>
               {/* The link covers the card so the whole tile is clickable. */}
               <Link
-                href={more.href}
+                href={pagePath || more.href}
                 aria-label={`${more.label.replace("→", "").trim()} about ${title}`}
                 className="col-start-2 pt-2.5 text-[13px] leading-4.75 font-semibold whitespace-pre text-clay outline-none after:absolute after:inset-0 after:rounded-[20px] focus-visible:after:ring-3 focus-visible:after:ring-clay/50 sm:pt-0 sm:text-[15px] sm:leading-[1.5]"
               >

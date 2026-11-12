@@ -2,6 +2,7 @@ import * as z from "zod"
 
 import { IconField, LinkValue, MediaRef, Tint, text } from "@/blocks/fields"
 
+import { CustomPagePath } from "./page-path"
 import { Slug } from "./slug"
 
 // The collections the generic API edits (docs/brief.md §6.3, §8.3); slugs
@@ -35,6 +36,7 @@ export const COLLECTION_SCHEMAS = {
     title: text(60),
     body: text(400),
     icon: IconField,
+    pagePath: z.union([z.literal(""), CustomPagePath]).default(""),
     isVisible,
   }),
   plans: z.object({

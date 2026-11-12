@@ -184,9 +184,13 @@ export async function recentForModel(
   id: string,
   limit = 20,
   db: DbLike = getDb()
-): Promise<{ sender: "visitor" | "staff" | "ai"; body: string }[]> {
+): Promise<{ id: number; sender: "visitor" | "staff" | "ai"; body: string }[]> {
   const rows = await db
-    .select({ sender: chatMessages.sender, body: chatMessages.body })
+    .select({
+      id: chatMessages.id,
+      sender: chatMessages.sender,
+      body: chatMessages.body,
+    })
     .from(chatMessages)
     .where(
       and(
@@ -197,6 +201,7 @@ export async function recentForModel(
     .orderBy(desc(chatMessages.id))
     .limit(limit)
   return rows.reverse().map((r) => ({
+    id: r.id,
     sender: r.sender as "visitor" | "staff" | "ai",
     body: r.body,
   }))

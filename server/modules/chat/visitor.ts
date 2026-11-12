@@ -10,6 +10,7 @@ import type {
 } from "@/lib/chat/schema"
 import { ChatGlobal } from "@/lib/content/globals"
 import { ApiError } from "@/server/api/errors"
+import { errorTag } from "@/server/modules/ai/errors"
 import { hashIp } from "@/server/lib/crypto"
 import { defer } from "@/server/lib/defer"
 import { hitLimit } from "@/server/lib/rate-limit-db"
@@ -17,6 +18,7 @@ import { turnstileEnabled, turnstileSiteKey } from "@/server/lib/turnstile"
 import { getGlobal } from "@/server/modules/globals/service"
 
 import * as bot from "./bot"
+import { isCrisis } from "./crisis"
 import * as repo from "./repo"
 
 export const CHAT_COOKIE = "mk_chat"
@@ -133,6 +135,17 @@ export async function siteStartLimit() {
   }
 }
 
+// The fixed crisis notice never depends on the bot: any visitor message that
+// matches gets it (once per chat), flags the chat and alerts the team.
+async function crisisCheck(id: string, body: string) {
+  if (!isCrisis(body)) return
+  try {
+    await bot.handOff(id, "crisis")
+  } catch (error) {
+    console.error("[chat] crisis handling failed", errorTag(error))
+  }
+}
+
 export async function start(input: StartChatInput) {
   const token = newToken()
   const chat = await repo.createConversation({
@@ -142,7 +155,8 @@ export async function start(input: StartChatInput) {
     sourcePath: input.sourcePath ?? null,
     firstMessage: input.message,
   })
-  const v = await view(chat)
+  await crisisCheck(chat.id, input.message)
+  const v = await view((await repo.byId(chat.id)) ?? chat)
   if (v.botActive) defer(() => bot.maybeReply(chat.id), "chat bot reply")
   return { token, view: v }
 }
@@ -158,6 +172,7 @@ export async function send(chat: repo.ChatRow, body: string, ip: string) {
     senderName: chat.visitorName,
     body,
   })
+  if (row) await crisisCheck(chat.id, body)
   const fresh = await repo.byId(chat.id)
   if (!row) {
     // A guard refused: the chat closed meanwhile, or hit the 300 cap.

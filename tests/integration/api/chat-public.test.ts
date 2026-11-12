@@ -168,6 +168,40 @@ describe("chat public api", () => {
     expect(await getDb().select().from(chatConversations)).toHaveLength(1)
   })
 
+  it("a crisis message gets the notice once and flags the chat, with the bot off", async () => {
+    const { cookie, view } = await begin()
+    for (const body of ["I want to end my life", "suicidal again"]) {
+      const res = await chatRequest("/messages", {
+        method: "POST",
+        body: { body },
+        cookie,
+      })
+      expect(res.status).toBe(201)
+    }
+    const notices = (
+      await getDb()
+        .select()
+        .from(chatMessages)
+        .where(eq(chatMessages.conversationId, view.id))
+    ).filter((m) => m.noticeKind === "crisis")
+    expect(notices).toHaveLength(1)
+    expect(notices[0]!.body).toContain("116 123")
+    const [row] = await getDb().select().from(chatConversations)
+    expect(row!.needsHuman).toBe(true)
+  })
+
+  it("a crisis first message flags the chat at start", async () => {
+    const res = await chatRequest("/start", {
+      method: "POST",
+      body: startBody({ message: "I want to die" }),
+    })
+    expect(res.status).toBe(201)
+    const [row] = await getDb().select().from(chatConversations)
+    expect(row!.needsHuman).toBe(true)
+    const msgs = await getDb().select().from(chatMessages)
+    expect(msgs.filter((m) => m.noticeKind === "crisis")).toHaveLength(1)
+  })
+
   it("/conversation?after returns only newer messages", async () => {
     const { cookie, view } = await begin()
     const post = await chatRequest("/messages", {

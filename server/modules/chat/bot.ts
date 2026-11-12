@@ -38,7 +38,16 @@ const NOTICES: Record<AlertReason, string> = {
     "If you are in danger or thinking about harming yourself, please call 112 or 999 now, or Samaritans free on 116 123 (24 hours). This chat is not an emergency service.",
 }
 
-type Hist = { sender: "visitor" | "staff" | "ai"; body: string }[]
+type Hist = {
+  id: number
+  sender: "visitor" | "staff" | "ai"
+  body: string
+}[]
+type Result = { outcome: BotOutcome; handled: number }
+
+// Three rounds of up to 25 s each, plus database and knowledge time.
+const LEASE_MS = MAX_ROUNDS * 25_000 + 15_000
+const MAX_ATTEMPTS = 3
 
 async function readChat() {
   const { value } = await getGlobal("chat")
@@ -62,7 +71,10 @@ export async function isActive(): Promise<boolean> {
 const botOwns = (c: repo.ChatRow) =>
   c.status === "open" && c.aiEnabled && !c.needsHuman && !c.assignedTo
 
-async function handOff(id: string, reason: AlertReason): Promise<"handoff"> {
+export async function handOff(
+  id: string,
+  reason: AlertReason
+): Promise<"handoff"> {
   await repo.addMessage({
     conversationId: id,
     sender: "system",
@@ -76,55 +88,88 @@ async function handOff(id: string, reason: AlertReason): Promise<"handoff"> {
 
 export async function maybeReply(id: string): Promise<BotOutcome> {
   if (!(await isActive())) return "skipped"
-  if (!(await repo.claimLease(id))) return "skipped"
-  try {
-    return await run(id)
-  } finally {
-    await repo.releaseLease(id)
+  let replied = false
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    if (!(await repo.claimLease(id, LEASE_MS)))
+      return replied ? "replied" : "skipped"
+    let r: Result
+    try {
+      r = await run(id)
+    } finally {
+      await repo.releaseLease(id)
+    }
+    if (r.outcome === "handoff" || r.outcome === "failed") return r.outcome
+    if (r.outcome === "skipped") return replied ? "replied" : "skipped"
+    replied = true
+    // A visitor message may have landed after the last read and before the
+    // release: its own deferred run saw the lease held and skipped.
+    const hist = await repo.recentForModel(id, 20)
+    const newest = hist.findLast((m) => m.sender === "visitor")
+    if (!newest || newest.id <= r.handled) return "replied"
   }
+  return "replied"
 }
 
-async function run(id: string): Promise<BotOutcome> {
-  let history: Hist | null = null
+async function run(id: string): Promise<Result> {
+  let handled = 0
   let replied = false
+  const done = (outcome: BotOutcome): Result => ({ outcome, handled })
+  const stop = () => done(replied ? "replied" : "skipped")
 
   for (let round = 0; round < MAX_ROUNDS; round++) {
     const chat = await repo.byId(id)
-    if (!chat || !botOwns(chat)) return replied ? "replied" : "skipped"
+    if (!chat || !botOwns(chat)) return stop()
 
-    const seen: Hist = history ?? (await repo.recentForModel(id, 20))
-    const last = seen.at(-1)
-    if (!last || last.sender !== "visitor")
-      return replied ? "replied" : "skipped"
+    const seen: Hist = await repo.recentForModel(id, 20)
+    const newest = seen.findLast((m) => m.sender === "visitor")
+    if (!newest) return stop()
+    let pending: Hist
+    if (round === 0) {
+      // Only an unanswered visitor turn, nothing after it.
+      if (seen.at(-1)?.sender !== "visitor") return stop()
+      const lastOther = seen.findLastIndex((m) => m.sender !== "visitor")
+      pending = seen.slice(lastOther + 1)
+    } else {
+      // Our own reply sits after any message that arrived while we generated.
+      if (newest.id <= handled) return stop()
+      pending = seen.filter((m) => m.sender === "visitor" && m.id > handled)
+    }
 
-    if (isCrisis(last.body)) return handOff(id, "crisis")
+    if (pending.some((m) => isCrisis(m.body))) {
+      handled = newest.id
+      return done(await handOff(id, "crisis"))
+    }
 
     const settings = await readChat()
-    if (chat.aiReplyCount >= settings.maxAiReplies) return handOff(id, "limit")
+    if (chat.aiReplyCount >= settings.maxAiReplies) {
+      handled = newest.id
+      return done(await handOff(id, "limit"))
+    }
     const site = await hitLimit("chat-bot:global", SITE_REPLIES)
-    if (!site.allowed) return handOff(id, "limit")
+    if (!site.allowed) {
+      handled = newest.id
+      return done(await handOff(id, "limit"))
+    }
+    handled = newest.id
 
     let handoffCalled = false
     let text = ""
     try {
       const { value: ai } = await readAiSettings()
       const model = await getModel({ ...ai, apiKey: decryptApiKey(ai) })
-      const { value: site } = await getGlobal("site")
+      const { value: siteGlobal } = await getGlobal("site")
       const result = await generateText({
         model,
         system: buildBotPrompt({
           botName: settings.botName,
-          siteName: site.name,
+          siteName: siteGlobal.name,
           knowledge: await loadKnowledge(),
           extra: settings.extra,
           firstName: chat.visitorName,
           today: format(new Date(), "EEEE d MMMM yyyy", { in: DUBLIN }),
         }),
         messages: toModelMessages(
-          seen.map((m) => ({
-            role: m.sender,
-            content: m.body,
-          }))
+          seen.map((m) => ({ role: m.sender, content: m.body }))
         ),
         maxOutputTokens: 300,
         abortSignal: AbortSignal.timeout(25_000),
@@ -150,11 +195,13 @@ async function run(id: string): Promise<BotOutcome> {
       ).trim()
     } catch (error) {
       console.error("[chat] bot failed", errorTag(error))
-      return fail(id)
+      return done(await fail(id))
     }
+
     if (!text) {
+      if (handoffCalled) return done(await handOff(id, "handoff"))
       console.error("[chat] bot failed", { name: "EmptyReply" })
-      return fail(id)
+      return done(await fail(id))
     }
 
     const stored = await repo.addMessage({
@@ -164,27 +211,11 @@ async function run(id: string): Promise<BotOutcome> {
       body: text,
       requireBotOwns: true,
     })
-    if (!stored) return "skipped"
+    if (!stored) return stop()
     replied = true
-    if (handoffCalled) return handOff(id, "handoff")
-
-    // A visitor message that landed while we generated sits before our reply.
-    const after = await repo.recentForModel(id, 20)
-    const before = after.slice(0, -1)
-    const newer =
-      before.length > seen.length
-        ? before.slice(seen.length)
-        : seen.length >= 20 &&
-            before.at(-1)?.sender === "visitor" &&
-            before.at(-1)?.body !== last.body
-          ? [before.at(-1) as Hist[number]]
-          : []
-    if (newer.at(-1)?.sender !== "visitor") return "replied"
-    history = [...seen, { sender: "ai" as const, body: text }, ...newer].slice(
-      -20
-    )
+    if (handoffCalled) return done(await handOff(id, "handoff"))
   }
-  return "replied"
+  return done("replied")
 }
 
 async function fail(id: string): Promise<"failed"> {

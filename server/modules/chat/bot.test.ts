@@ -6,7 +6,13 @@ type Notice = { kind: string; body: string }
 
 const state = vi.hoisted(() => ({
   chat: {} as Record<string, unknown>,
-  msgs: [] as { sender: "visitor" | "staff" | "ai"; body: string }[],
+  msgs: [] as {
+    id: number
+    sender: "visitor" | "staff" | "ai"
+    body: string
+  }[],
+  nextId: 1,
+  onRelease: null as null | (() => void),
   notices: [] as { kind: string; body: string }[],
   lease: false,
   notify: [] as string[],
@@ -28,9 +34,12 @@ vi.mock("./repo", () => ({
     return true
   }),
   releaseLease: vi.fn(async () => {
+    state.onRelease?.()
     state.lease = false
   }),
-  recentForModel: vi.fn(async () => state.msgs.map((m) => ({ ...m }))),
+  recentForModel: vi.fn(async () =>
+    state.msgs.slice(-20).map((m) => ({ ...m }))
+  ),
   addMessage: vi.fn(
     async (i: {
       sender: "ai" | "system"
@@ -44,7 +53,7 @@ vi.mock("./repo", () => ({
         state.notices.push({ kind: i.noticeKind, body: i.body })
         return { id: 1 }
       }
-      state.msgs.push({ sender: "ai", body: i.body })
+      push("ai", i.body)
       state.chat.aiReplyCount = (state.chat.aiReplyCount as number) + 1
       return { id: 2 }
     }
@@ -79,6 +88,10 @@ vi.mock("@/server/modules/ai/provider", () => ({
 }))
 
 import { isActive, maybeReply } from "./bot"
+
+function push(sender: "visitor" | "staff" | "ai", body: string) {
+  state.msgs.push({ id: state.nextId++, sender, body })
+}
 import * as notify from "./notify"
 import * as repo from "./repo"
 
@@ -87,7 +100,7 @@ let calls = 0
 
 function model(
   onCall?: (n: number) => void | Promise<void>,
-  tool?: boolean,
+  tool?: boolean | "silent",
   fail?: boolean
 ) {
   return new MockLanguageModelV4({
@@ -101,7 +114,9 @@ function model(
       return {
         content: first
           ? [
-              { type: "text", text: "Let me get the team." },
+              ...(tool === "silent"
+                ? []
+                : [{ type: "text" as const, text: "Let me get the team." }]),
               {
                 type: "tool-call",
                 toolCallId: "t1",
@@ -109,7 +124,9 @@ function model(
                 input: JSON.stringify({ reason: "health" }),
               },
             ]
-          : [{ type: "text", text: `Reply ${calls}` }],
+          : tool === "silent"
+            ? []
+            : [{ type: "text", text: `Reply ${calls}` }],
         finishReason: {
           unified: first ? "tool-calls" : "stop",
           raw: undefined,
@@ -137,7 +154,9 @@ beforeEach(() => {
       visitorName: "Aoife Murphy",
       aiReplyCount: 0,
     },
-    msgs: [{ sender: "visitor", body: "What do you offer?" }],
+    msgs: [],
+    nextId: 1,
+    onRelease: null,
     notices: [],
     lease: false,
     notify: [],
@@ -152,6 +171,7 @@ beforeEach(() => {
     mock: false,
     nullAdd: false,
   })
+  push("visitor", "What do you offer?")
 })
 
 const aiMsgs = () => state.msgs.filter((m: Msg) => m.sender === "ai")
@@ -186,7 +206,7 @@ describe("maybeReply", () => {
     state.model = model(undefined, false, true)
     const spy = vi.spyOn(console, "error").mockImplementation(() => {})
     expect(await maybeReply(ID)).toBe("failed")
-    state.msgs.push({ sender: "visitor", body: "hello?" })
+    push("visitor", "hello?")
     expect(await maybeReply(ID)).toBe("skipped")
     expect(calls).toBe(1)
     expect(state.notices.map((n) => n.kind)).toEqual(["failed"])
@@ -214,7 +234,7 @@ describe("maybeReply", () => {
     let concurrent: string | null = null
     state.model = model(async (n) => {
       if (n === 1) {
-        state.msgs.push({ sender: "visitor", body: "one more thing" })
+        push("visitor", "one more thing")
         concurrent = await maybeReply(ID)
       }
     })
@@ -236,8 +256,62 @@ describe("maybeReply", () => {
     expect(state.notify).toEqual(["handoff"])
   })
 
+  it("a handoff tool call with no text is a handoff, not a failure", async () => {
+    state.model = model(undefined, "silent")
+    expect(await maybeReply(ID)).toBe("handoff")
+    expect(state.notices.map((n) => n.kind)).toEqual(["handoff"])
+  })
+
+  it("answers a message that lands between the last read and the release", async () => {
+    let once = true
+    state.onRelease = () => {
+      if (once) {
+        once = false
+        push("visitor", "late one")
+      }
+    }
+    expect(await maybeReply(ID)).toBe("replied")
+    expect(calls).toBe(2)
+    expect(aiMsgs()).toHaveLength(2)
+    expect(state.msgs.at(-1)?.sender).toBe("ai")
+  })
+
+  it("answers a new message when the history window is 19 long", async () => {
+    state.msgs = []
+    for (let i = 0; i < 9; i++) {
+      push("visitor", `q${i}`)
+      push("ai", `a${i}`)
+    }
+    push("visitor", "q9")
+    state.model = model((n) => {
+      if (n === 1) push("visitor", "new one")
+    })
+    await maybeReply(ID)
+    expect(calls).toBe(2)
+    expect(state.msgs.at(-1)?.sender).toBe("ai")
+    expect(state.msgs.at(-3)?.body).toBe("new one")
+  })
+
+  it("answers repeated identical text", async () => {
+    state.model = model((n) => {
+      if (n === 1) push("visitor", "What do you offer?")
+    })
+    await maybeReply(ID)
+    expect(calls).toBe(2)
+  })
+
+  it("a crisis in an earlier unanswered message is caught", async () => {
+    state.msgs = []
+    push("visitor", "I want to end my life")
+    push("visitor", "sorry, ignore that")
+    expect(await maybeReply(ID)).toBe("handoff")
+    expect(calls).toBe(0)
+    expect(state.notices.map((n) => n.kind)).toEqual(["crisis"])
+  })
+
   it("(g) a crisis message skips the model", async () => {
-    state.msgs = [{ sender: "visitor", body: "I want to end my life" }]
+    state.msgs = []
+    push("visitor", "I want to end my life")
     expect(await maybeReply(ID)).toBe("handoff")
     expect(calls).toBe(0)
     expect(state.notices.map((n) => n.kind)).toEqual(["crisis"])

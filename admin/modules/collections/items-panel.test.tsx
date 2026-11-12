@@ -59,6 +59,15 @@ vi.mock("./queries", () => ({
           title: "Is it free?",
           values: { isVisible: true },
           usedOn: ["Home", "Contact"],
+          ...(name === "services"
+            ? {
+                detailPage: {
+                  id: "p",
+                  path: "/services/free",
+                  status: "published",
+                },
+              }
+            : {}),
         },
         {
           id: "b",
@@ -90,11 +99,15 @@ const actor = (roles: string[]): MePayload =>
     impersonatedBy: null,
   }) as unknown as MePayload
 
-function setup(readOnly: boolean, roles = ["owner"]) {
+function setup(
+  readOnly: boolean,
+  roles = ["owner"],
+  name: "faqs" | "services" = "faqs"
+) {
   render(
     <QueryClientProvider client={new QueryClient()}>
       <AdminActorProvider value={actor(roles)}>
-        <ItemsPanel name="faqs" pageTitle="Home" readOnly={readOnly} />
+        <ItemsPanel name={name} pageTitle="Home" readOnly={readOnly} />
       </AdminActorProvider>
     </QueryClientProvider>
   )
@@ -170,6 +183,45 @@ describe("ItemsPanel", () => {
     await waitFor(() =>
       expect(del).toHaveBeenCalledWith({ param: { name: "faqs", id: "a" } })
     )
+  })
+
+  it("warns that removing a service deletes its details page", async () => {
+    setup(false, ["owner"], "services")
+    await screen.findByText("Is it free?")
+    await userEvent.click(
+      screen.getByRole("button", { name: "Remove Is it free?" })
+    )
+    expect(
+      await screen.findByText(
+        /This also deletes its details page at \/services\/free \(Published\)\./
+      )
+    ).toBeTruthy()
+  })
+
+  it("says nothing about a details page for other collections", async () => {
+    setup(false)
+    await screen.findByText("Is it free?")
+    await userEvent.click(
+      screen.getByRole("button", { name: "Remove Is it free?" })
+    )
+    await screen.findByText("Remove Is it free??")
+    expect(screen.queryByText(/details page/)).toBeNull()
+  })
+
+  it("a double click on Confirm sends one DELETE", async () => {
+    let resolve: (v: unknown) => void = () => {}
+    del.mockReturnValue(new Promise((r) => (resolve = r)))
+    setup(false)
+    await screen.findByText("Is it free?")
+    await userEvent.click(
+      screen.getByRole("button", { name: "Remove Is it free?" })
+    )
+    const confirm = screen.getByRole("button", { name: "Remove" })
+    await userEvent.dblClick(confirm)
+    await userEvent.click(confirm)
+    expect(del).toHaveBeenCalledTimes(1)
+    expect((confirm as HTMLButtonElement).disabled).toBe(true)
+    await act(async () => resolve({}))
   })
 
   it("with collection:update only: Edit shown, Add and Remove hidden", async () => {

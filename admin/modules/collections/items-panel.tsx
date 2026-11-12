@@ -51,6 +51,9 @@ import { collectionListQuery, type CollectionItem as Item } from "./queries"
 
 const NONE: Item[] = []
 const isVisible = (item: Item) => item.values.isVisible !== false
+// Only services carry one: deleting the service deletes the page too.
+const detailPageOf = (item: Item | null) =>
+  item && "detailPage" in item ? item.detailPage : null
 
 // The items a section shows, edited in place. They stay rows in their
 // collection, so a change here is live on every page that shows them.
@@ -71,6 +74,7 @@ export function ItemsPanel({
   const canDelete = usePermission({ collection: ["delete"] }) && !readOnly
   const [editing, setEditing] = useState<EditableItem | "new" | null>(null)
   const [removing, setRemoving] = useState<Item | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const [busy, setBusy] = useState<ReadonlySet<string>>(new Set())
   useResetOnHide(() => {
     setEditing(null)
@@ -152,6 +156,8 @@ export function ItemsPanel({
 
   // A 409 (still named on a page) carries the server's own explanation.
   async function remove(item: Item) {
+    if (deleting) return
+    setDeleting(true)
     try {
       await parseResponse(
         collectionsApi[":name"][":id"].$delete({ param: { name, id: item.id } })
@@ -161,10 +167,16 @@ export function ItemsPanel({
       toast.error(error instanceof Error ? error.message : "Couldn't remove")
     } finally {
       setRemoving(null)
+      setDeleting(false)
       await refresh()
+      // A service takes its details page with it.
+      if (name === "services") {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.pages.all })
+      }
     }
   }
 
+  const removingPage = detailPageOf(removing)
   const alsoOn = (item: Item) => item.usedOn.filter((p) => p !== pageTitle)
 
   return (
@@ -293,6 +305,8 @@ export function ItemsPanel({
                 ? `It is shown on: ${removing.usedOn.join(", ")}.`
                 : "It isn't shown on any page."}{" "}
               This removes it everywhere.
+              {removingPage &&
+                ` This also deletes its details page at ${removingPage.path} (${removingPage.status === "published" ? "Published" : "Draft"}).`}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="-mx-6 -mb-6 rounded-b-xl border-t bg-muted/50 p-4 sm:justify-end">
@@ -301,6 +315,7 @@ export function ItemsPanel({
             </Button>
             <Button
               variant="destructive"
+              disabled={deleting}
               onClick={() => removing && void remove(removing)}
             >
               Remove

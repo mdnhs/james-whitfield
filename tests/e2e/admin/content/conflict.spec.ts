@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test"
 
-import { createPublishedPage } from "../../support/api"
+import { createRichTextPage } from "../../support/api"
 import { STORAGE } from "../../support/storage"
 
 async function type(page: Page, text: string) {
@@ -14,7 +14,7 @@ async function type(page: Page, text: string) {
 test("a second tab gets the conflict dialog", async ({ browser }) => {
   const context = await browser.newContext({ storageState: STORAGE.editor })
   const [a, b] = [await context.newPage(), await context.newPage()]
-  const { id } = await createPublishedPage(a.request, "Shared words")
+  const { id } = await createRichTextPage(a.request, "Shared words")
   for (const tab of [a, b]) await tab.goto(`/admin/pages/${id}`)
 
   await type(a, " from A")

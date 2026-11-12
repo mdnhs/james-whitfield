@@ -42,10 +42,12 @@ test.describe("as intake", () => {
   })
 
   test("is turned away from a section outside the role", async ({ page }) => {
-    await page.goto("/admin/pages")
-    await expect(page).toHaveURL(/\/admin\/no-access\?from=%2Fadmin%2Fpages$/)
+    await page.goto("/admin/website/home")
+    await expect(page).toHaveURL(
+      /\/admin\/no-access\?from=%2Fadmin%2Fwebsite%2Fhome$/
+    )
     await expect(
-      page.getByRole("heading", { name: "You don't have access to Pages" })
+      page.getByRole("heading", { name: "You don't have access to Website" })
     ).toBeVisible()
   })
 })
@@ -61,9 +63,7 @@ test.describe("as a viewer", () => {
     await page.goto("/admin")
     await expectLinks(await mainNav(page), [
       "Dashboard",
-      "Pages",
-      "Insights",
-      "Collections",
+      "Website",
       "SEO",
       "Site settings",
     ])
@@ -88,9 +88,7 @@ test.describe("as an editor", () => {
     await page.goto("/admin")
     await expectLinks(await mainNav(page), [
       "Dashboard",
-      "Pages",
-      "Insights",
-      "Collections",
+      "Website",
       "Media",
       "SEO",
       "Site settings",
@@ -137,14 +135,14 @@ test.describe("as an editor", () => {
 
     await trigger.click()
     await expect(sheet).toBeVisible()
-    await expect(sheet.getByRole("link", { name: "Pages" })).toBeVisible()
+    await expect(sheet.getByRole("link", { name: "Website" })).toBeVisible()
     await page.keyboard.press("Escape")
     await expect(sheet).toBeHidden()
     await expect(trigger).toBeFocused()
 
     await trigger.click()
-    await sheet.getByRole("link", { name: "Pages" }).click()
-    await expect(page).toHaveURL(/\/admin\/pages$/)
+    await sheet.getByRole("link", { name: "Website" }).click()
+    await expect(page).toHaveURL(/\/admin\/website\/home$/)
     await expect(sheet).toBeHidden()
   })
 })
@@ -160,7 +158,7 @@ test.describe("as an owner", () => {
       "Enquiries",
       "Newsletter",
       "Marketing",
-      "Appearance",
+      "Website",
       "Site settings",
     ]) {
       await expect(
@@ -222,10 +220,10 @@ test.describe("as an owner", () => {
 
   // Regression: the placeholder route once served the first placeholder the
   // client router had fetched for every later link (Enquiries opened Media).
-  // Built pages (Enquiries) and placeholders (Newsletter, Appearance) alike.
+  // Built pages (Enquiries, Media) and placeholders (Newsletter) alike.
   test("each sidebar link opens its own page", async ({ page }) => {
     await page.goto("/admin")
-    for (const label of ["Newsletter", "Enquiries", "Appearance"]) {
+    for (const label of ["Newsletter", "Enquiries", "Media"]) {
       const nav = await mainNav(page)
       await nav.getByRole("link", { name: label, exact: true }).click()
       await expect(

@@ -9,7 +9,8 @@ test.beforeEach(({ page }) => recordViolations(page))
 
 const SCREENS = [
   "/admin",
-  "/admin/pages",
+  "/admin/website/home",
+  "/admin/website/services",
   "/admin/insights",
   "/admin/media",
   "/admin/leads",

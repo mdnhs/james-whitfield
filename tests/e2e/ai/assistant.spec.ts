@@ -87,10 +87,10 @@ test("streams the reply word by word, copies it, and keeps it across navigation"
   // A client-side navigation (page.goto would reload and drop the state).
   await page
     .getByRole("navigation")
-    .getByRole("link", { name: "Pages", exact: true })
+    .getByRole("link", { name: "Website", exact: true })
     .first()
     .click()
-  await expect(page).toHaveURL(/\/admin\/pages$/)
+  await expect(page).toHaveURL(/\/admin\/website\/home$/)
   await page.getByRole("button", { name: "AI assistant" }).click()
   await expect(page.getByRole("log")).toContainText(
     "Hello there from the E2E suite"

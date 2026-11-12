@@ -30,7 +30,10 @@ const PANEL = [
   "/admin/account",
   "/admin/account?tab=security",
   "/admin/account?tab=sessions",
-  "/admin/pages",
+  "/admin/website/home",
+  "/admin/website/services",
+  "/admin/website/legal",
+  "/admin/website/header-footer",
   "/admin/insights",
   "/admin/insights/categories",
   "/admin/insights/authors",
@@ -43,7 +46,7 @@ const PANEL = [
   "/admin/marketing/events",
   "/admin/appearance",
   "/admin/settings/ai-assistant",
-  "/admin/no-access?from=%2Fadmin%2Fpages",
+  "/admin/no-access?from=%2Fadmin%2Fwebsite%2Fhome",
 ]
 
 test.describe("signed in as an owner", () => {

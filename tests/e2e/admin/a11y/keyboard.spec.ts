@@ -108,7 +108,7 @@ test("every control in the shell is reachable and shows focus", async ({
       "Skip to content",
       "Magda Kennedy admin home",
       "Dashboard",
-      "Pages",
+      "Website",
       "Log out",
       "Toggle navigation",
       "Search",

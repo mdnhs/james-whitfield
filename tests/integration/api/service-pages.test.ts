@@ -299,21 +299,59 @@ describe("legacy linked services", () => {
     expect(system!.serviceId).toBeNull()
   })
 
-  it("enable 409s and keeps a legacy link, backfilled or not", async () => {
+  it("enable 409s and keeps a backfilled legacy link", async () => {
     const { service, page } = await legacySetup()
+    await getDb().execute(sql.raw(BACKFILL))
     const cookie = await cookieFor("editor")
-    const before = await enable(cookie, service.id)
-    expect(before.status).toBe(409)
-    expect((await before.json()).error.message).toBe(
+    const res = await enable(cookie, service.id)
+    expect(res.status).toBe(409)
+    expect((await res.json()).error.message).toBe(
       "This service already has a details page"
     )
-    await getDb().execute(sql.raw(BACKFILL))
-    expect((await enable(cookie, service.id)).status).toBe(409)
     expect((await findService(service.id)).pagePath).toBe("/team")
     expect((await findPage(page.id))!.path).toBe("/team")
     expect(
       await getDb().select().from(pages).where(eq(pages.path, "/services/a"))
     ).toHaveLength(0)
+  })
+
+  // A page_path that names no page linked to this service is stale: the
+  // switch must still turn on, or the editor is stuck.
+  it.each([
+    ["a system page", "/services"],
+    ["an unlinked page", "/team"],
+    ["nothing", "/nowhere"],
+  ])("enable overwrites a stale page_path naming %s", async (_, stale) => {
+    const { service } = await legacySetup()
+    await getDb()
+      .update(services)
+      .set({ pagePath: stale })
+      .where(eq(services.id, service.id))
+    const res = await enable(await cookieFor("editor"), service.id)
+    expect(res.status).toBe(201)
+    const body = await res.json()
+    expect(body.path).toBe("/services/a")
+    expect((await findPage(body.pageId))!.serviceId).toBe(service.id)
+    expect((await findService(service.id)).pagePath).toBe("/services/a")
+  })
+
+  it("enable overwrites a page_path naming another service's page", async () => {
+    const { service, page } = await legacySetup()
+    await getDb().execute(sql.raw(BACKFILL))
+    const [other] = await getDb()
+      .insert(services)
+      .values({
+        slug: "o",
+        title: "Other",
+        body: "B",
+        icon: "mind",
+        pagePath: "/team",
+      })
+      .returning()
+    const res = await enable(await cookieFor("editor"), other!.id)
+    expect(res.status).toBe(201)
+    expect((await findService(other!.id)).pagePath).toBe("/services/o")
+    expect((await findPage(page.id))!.serviceId).toBe(service.id)
   })
 
   it("disable deletes the linked legacy page", async () => {

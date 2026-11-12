@@ -59,16 +59,10 @@ export async function enableServicePage(actor: Actor, serviceId: string) {
       .for("update")
       .limit(1)
     if (!service) throw new ApiError("NOT_FOUND", "That service doesn't exist")
-    // A legacy hand-typed page_path that still names a page counts as a
-    // link too: it is kept, never overwritten.
-    const [legacy] = service.pagePath
-      ? await tx
-          .select({ id: pages.id })
-          .from(pages)
-          .where(eq(pages.path, service.pagePath))
-          .limit(1)
-      : []
-    if (legacy || (await linkedPage(tx, serviceId))) {
+    // Only a page linked by service_id counts as this service's page. A
+    // page_path naming anything else (a system page, another service's
+    // page, nothing at all) is stale and is overwritten below.
+    if (await linkedPage(tx, serviceId)) {
       throw new ApiError("CONFLICT", "This service already has a details page")
     }
     const [band] = await tx

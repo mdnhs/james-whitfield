@@ -24,7 +24,7 @@ type Contact = {
 // Text from settings and pages: one line and no leading `#`, so none of it
 // can open a new `##` heading.
 const clean = (text: string, max = KNOWLEDGE_MAX) =>
-  oneLine(text, max).replace(/^#+\s*/, "")
+  oneLine(text, max).replace(/^[#\s]+/, "")
 
 export function buildKnowledge(input: {
   siteName: string

@@ -57,11 +57,19 @@ describe("buildKnowledge", () => {
       sections: [
         { title: "A\n## Evil", text: "x\n## Injected\u0000## Also\n## More" },
         { title: "B", text: "## Starts here" },
+        { title: "C", text: "# ## x" },
+        { title: "D", text: "#\u0000## x" },
       ],
       contact,
     })
     const headings = k.split("\n").filter((l) => l.startsWith("##"))
-    expect(headings).toEqual(["## Contact", "## A ## Evil", "## B"])
+    expect(headings).toEqual([
+      "## Contact",
+      "## A ## Evil",
+      "## B",
+      "## C",
+      "## D",
+    ])
   })
 })
 

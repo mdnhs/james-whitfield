@@ -199,6 +199,14 @@ describe("chat repository", () => {
     expect(await repo.setAi(chat.id, false)).toBeNull()
   })
 
+  it("close only transitions: a second close returns null and keeps closed_at", async () => {
+    const chat = await start()
+    const first = await repo.close(chat.id)
+    expect(first?.closedAt).not.toBeNull()
+    expect(await repo.close(chat.id)).toBeNull()
+    expect((await repo.byId(chat.id))?.closedAt).toEqual(first!.closedAt)
+  })
+
   it("(j) staffOnline follows presence", async () => {
     const user = await createUser("admin")
     expect(await repo.staffOnline()).toBe(false)

@@ -180,7 +180,8 @@ export async function setEmail(chat: repo.ChatRow, input: EmailInput) {
 
 export async function end(chat: repo.ChatRow) {
   if (chat.status !== "open") return
-  await repo.close(chat.id)
+  // close() is transition-only: only the request that closed it adds the notice.
+  if (!(await repo.close(chat.id))) return
   await repo.addMessage({
     conversationId: chat.id,
     sender: "system",

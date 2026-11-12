@@ -231,6 +231,20 @@ describe("chat public api", () => {
     expect(msgs.map((m) => m.body)).toContain("This chat has ended.")
   })
 
+  it("two parallel /end requests add exactly one ended notice", async () => {
+    const { cookie } = await begin()
+    const ip = freshIp()
+    const res = await Promise.all([
+      chatRequest("/end", { method: "POST", cookie, ip }),
+      chatRequest("/end", { method: "POST", cookie, ip }),
+    ])
+    expect(res.map((r) => r.status)).toEqual([200, 200])
+    const msgs = await getDb().select().from(chatMessages)
+    expect(msgs.filter((m) => m.body === "This chat has ended.")).toHaveLength(
+      1
+    )
+  })
+
   it("a body of 2001 chars is 400", async () => {
     const { cookie } = await begin()
     const res = await chatRequest("/messages", {

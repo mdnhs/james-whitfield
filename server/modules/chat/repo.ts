@@ -290,7 +290,8 @@ export async function assign(
   return row ?? null
 }
 
-// Idempotent: closing a closed chat returns the row with its original closedAt.
+// Transition-only: returns the row only when this call closed it, null when it
+// was already closed, so callers add the "ended" notice exactly once.
 export async function close(
   id: string,
   db: DbLike = getDb()
@@ -302,7 +303,9 @@ export async function close(
       closedAt: sql`coalesce(${chatConversations.closedAt}, now())`,
       aiLeaseUntil: null,
     })
-    .where(eq(chatConversations.id, id))
+    .where(
+      and(eq(chatConversations.id, id), eq(chatConversations.status, "open"))
+    )
     .returning()
   return row ?? null
 }

@@ -63,10 +63,11 @@ describe("GET /seo/overview", () => {
     expect(aboutIssues).toEqual(
       expect.arrayContaining(["title-length", "description", "alt-text"])
     )
+    // A system page is fixed on its Website screen, not the page builder URL.
     expect(
       health.issues.find((i: { check: string }) => i.check === "alt-text")
         .fixHref
-    ).toBe(`/admin/pages/${about.id}?tab=seo`)
+    ).toBe("/admin/website/about?tab=seo")
     expect(health.issues).toContainEqual(
       expect.objectContaining({
         kind: "media",

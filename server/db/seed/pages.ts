@@ -312,6 +312,33 @@ export const SYSTEM_PAGES: PageSeed[] = [
 
 // Footer links point here; until an editor writes real copy and publishes,
 // they stay drafts and keep answering 404 (as they do today).
+const text = (value: string) => ({
+  type: "paragraph" as const,
+  content: [{ type: "text" as const, text: value }],
+})
+
+// Appended to the privacy page only. The retention period is the
+// `privacy.chatRetentionMonths` setting (12 by default).
+const CHAT_PRIVACY = [
+  {
+    type: "heading" as const,
+    attrs: { level: 2 as const },
+    content: [{ type: "text" as const, text: "Live chat" }],
+  },
+  text(
+    "If you use the chat on this site, we store your name, your email address if you give one, the messages you send and receive, and the time you agreed to the chat notice."
+  ),
+  text(
+    "When the AI assistant is switched on, your messages are sent to our AI provider so it can reply. Magda's team can read every chat and may step in at any point."
+  ),
+  text(
+    "We keep chats for 12 months by default, then delete them. You can ask us to export or erase your chat sooner by contacting us."
+  ),
+  text(
+    "Please don't share health details in the chat. It is not an emergency service. If you are in danger, call 112 or 999, or Samaritans free on 116 123."
+  ),
+]
+
 export const LEGAL_PAGES: PageSeed[] = [
   ["/privacy", "Privacy Policy"],
   ["/terms", "Terms"],
@@ -348,6 +375,7 @@ export const LEGAL_PAGES: PageSeed[] = [
                 },
               ],
             },
+            ...(path === "/privacy" ? CHAT_PRIVACY : []),
           ],
         },
         width: "narrow",

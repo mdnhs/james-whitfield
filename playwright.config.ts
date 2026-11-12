@@ -80,6 +80,7 @@ export default defineConfig({
         "**/tracking/**",
         "**/appearance/**",
         "**/ai/**",
+        "**/chat.spec.ts",
         ...desktopOnly(name),
       ],
     })),

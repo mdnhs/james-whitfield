@@ -169,7 +169,9 @@ export function breadcrumbNode(
 }
 
 // null for no items: a FAQPage with an empty mainEntity is invalid.
-export function faqNode(items: FaqView[]): FAQPage | null {
+export function faqNode(
+  items: Pick<FaqView, "question" | "answer">[]
+): FAQPage | null {
   if (!items.length) return null
   return {
     "@type": "FAQPage",
@@ -206,6 +208,39 @@ export function planNodes(i: {
         }
       : {}),
   }))
+}
+
+// Plans written inline on a service page have no slug, so every offer points
+// at the page that shows it. Only a plain amount ("€90") becomes a price.
+export function serviceFormatNodes(i: {
+  origin: string
+  path: string
+  siteName: string
+  plans: { name: string; summary: string; priceLabel: string }[]
+}): Service[] {
+  return i.plans.map((p) => {
+    const amount = /^\s*€\s*(\d+(?:[.,]\d{1,2})?)\s*$/.exec(p.priceLabel)
+    return {
+      "@type": "Service",
+      name: p.name,
+      description: p.summary,
+      provider: {
+        "@type": "ProfessionalService",
+        name: i.siteName,
+        url: i.origin,
+      },
+      ...(amount
+        ? {
+            offers: {
+              "@type": "Offer",
+              price: Number(amount[1].replace(",", ".")).toFixed(2),
+              priceCurrency: "EUR",
+              url: abs(i.origin, i.path),
+            },
+          }
+        : {}),
+    }
+  })
 }
 
 export function blogPostingNode(i: {

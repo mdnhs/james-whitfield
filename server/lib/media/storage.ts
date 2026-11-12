@@ -9,14 +9,17 @@ import type { S3Client } from "@aws-sdk/client-s3"
 import { getEnv, type Env } from "@/server/env"
 
 export const MEDIA_KEY =
-  /^media\/\d{4}\/\d{2}\/[a-f0-9]{16}-[a-z0-9-]{1,60}\.(jpg|png|webp|avif|pdf)$/
+  /^media\/\d{4}\/\d{2}\/[a-f0-9]{16}-[a-z0-9-]{1,60}\.(jpg|png|webp|avif|svg|ico|pdf|json)$/
 
 const MIME_BY_EXT = {
   jpg: "image/jpeg",
   png: "image/png",
   webp: "image/webp",
   avif: "image/avif",
+  svg: "image/svg+xml",
+  ico: "image/x-icon",
   pdf: "application/pdf",
+  json: "application/json",
 } as const
 
 export type StorageDriver = {

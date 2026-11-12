@@ -1,7 +1,7 @@
 import Image from "next/image"
 import Link from "next/link"
 
-import type { MediaAsset } from "@/lib/media"
+import { servedAsIs, type MediaAsset } from "@/lib/media"
 
 // The library logo (Appearance, Ruling R13) or today's mark. The seeded logo
 // is the same file, so the default draws exactly what it drew before.
@@ -20,6 +20,7 @@ export function Brand({
           alt=""
           width={28}
           height={28}
+          unoptimized={logo ? servedAsIs(logo.src) : undefined}
           className={logo ? "size-7 object-contain" : undefined}
         />
       </span>

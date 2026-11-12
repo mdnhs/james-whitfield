@@ -31,6 +31,8 @@ export async function assertMediaExists(db: DbLike, ids: string[]) {
   }
 }
 
+const RASTER = new Set(["image/jpeg", "image/png", "image/webp", "image/avif"])
+
 // Ruling R13: a custom share image must be at least 1200×630 at 1.91:1.
 export async function assertShareImage(
   db: DbLike,
@@ -47,7 +49,8 @@ export async function assertShareImage(
     .where(eq(media.id, ref.mediaId))
     .limit(1)
   const ok =
-    row?.mimeType.startsWith("image/") &&
+    // Social platforms take raster images only.
+    RASTER.has(row?.mimeType ?? "") &&
     row.width !== null &&
     row.height !== null &&
     isShareImageSize({ width: row.width, height: row.height })

@@ -28,19 +28,18 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { cn } from "@/lib/utils"
+import { servedAsIs } from "@/lib/media"
 
 import { MediaDetails } from "./media-details"
 import { mediaListQuery, type MediaItem } from "./queries"
-import { uploadFile } from "./upload"
+import { ACCEPT_ALL, uploadFile } from "./upload"
 
 const parsers = {
   q: parseAsString.withDefault(""),
-  type: parseAsStringLiteral(["image", "pdf"] as const),
+  type: parseAsStringLiteral(["image", "pdf", "lottie"] as const),
   missingAlt: parseAsBoolean.withDefault(false),
   page: parseAsInteger.withDefault(1),
 }
-
-const ACCEPT = "image/jpeg,image/png,image/webp,image/avif,application/pdf"
 
 type Progress = { id: number; name: string; fraction: number }
 type Failure = { id: number; file: File; message: string }
@@ -118,13 +117,14 @@ export function MediaView() {
         >
           <span className="font-medium">Drop files here or choose them</span>
           <span className="text-muted-foreground">
-            JPEG, PNG, WebP, AVIF or PDF, up to 20 MB each
+            JPEG, PNG, WebP, AVIF, SVG, ICO, PDF or Lottie JSON, up to 20 MB
+            each
           </span>
           <input
             type="file"
             multiple
             aria-label="Upload files"
-            accept={ACCEPT}
+            accept={ACCEPT_ALL}
             className="sr-only"
             onChange={(e) => {
               const files = [...(e.target.files ?? [])]
@@ -179,6 +179,7 @@ export function MediaView() {
               [null, "All"],
               ["image", "Images"],
               ["pdf", "PDFs"],
+              ["lottie", "Lottie"],
             ] as const
           ).map(([value, label]) => (
             <Button
@@ -258,6 +259,7 @@ function MediaCard({ item, onOpen }: { item: MediaItem; onOpen(): void }) {
         {isImage ? (
           <Image
             src={item.url}
+            unoptimized={servedAsIs(item.url)}
             alt=""
             fill
             sizes="(min-width: 1280px) 20vw, (min-width: 640px) 30vw, 50vw"

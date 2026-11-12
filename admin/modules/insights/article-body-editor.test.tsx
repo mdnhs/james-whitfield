@@ -3,7 +3,19 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { act, render, screen, waitFor } from "@testing-library/react"
 import { describe, expect, it, vi } from "vitest"
 
+import { AdminActorProvider } from "@/admin/lib/actor-context"
+import { permissionMap } from "@/lib/auth/permissions"
+
 import { ArticleBodyEditor } from "./article-body-editor"
+
+// The image picker hides Upload for users without media permission.
+const owner = {
+  user: { id: "u1", email: "o@example.com", name: "O" },
+  roles: ["owner" as const],
+  permissions: permissionMap(["owner"]),
+  twoFactorEnabled: true,
+  impersonatedBy: null,
+}
 
 const words = (n: number) =>
   Array.from({ length: n }, (_, i) => `w${i}`).join(" ")
@@ -14,12 +26,14 @@ const doc = (text: string) => ({
 const ui = (props: Partial<Parameters<typeof ArticleBodyEditor>[0]>) =>
   render(
     <QueryClientProvider client={new QueryClient()}>
-      <ArticleBodyEditor
-        value={doc("Hello")}
-        onChange={vi.fn()}
-        readOnly={false}
-        {...props}
-      />
+      <AdminActorProvider value={owner}>
+        <ArticleBodyEditor
+          value={doc("Hello")}
+          onChange={vi.fn()}
+          readOnly={false}
+          {...props}
+        />
+      </AdminActorProvider>
     </QueryClientProvider>
   )
 
@@ -93,11 +107,13 @@ describe("ArticleBodyEditor", () => {
     const client = new QueryClient()
     const tree = (v: unknown) => (
       <QueryClientProvider client={client}>
-        <ArticleBodyEditor
-          value={v as never}
-          onChange={vi.fn()}
-          readOnly={false}
-        />
+        <AdminActorProvider value={owner}>
+          <ArticleBodyEditor
+            value={v as never}
+            onChange={vi.fn()}
+            readOnly={false}
+          />
+        </AdminActorProvider>
       </QueryClientProvider>
     )
     const { rerender } = render(tree(doc("Hello world")))

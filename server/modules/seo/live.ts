@@ -95,6 +95,10 @@ export async function listCategoryHubs(db: DbLike = getDb()) {
   const rows = await db
     .select({
       slug: articleCategories.slug,
+      name: articleCategories.name,
+      description: articleCategories.description,
+      seoTitle: articleCategories.seoTitle,
+      seoDescription: articleCategories.seoDescription,
       updatedAt: max(articles.updatedAt),
     })
     .from(articleCategories)
@@ -105,9 +109,11 @@ export async function listCategoryHubs(db: DbLike = getDb()) {
         eq(articleCategories.isVisible, true)
       )
     )
-    .groupBy(articleCategories.slug)
+    .groupBy(articleCategories.id)
   return rows.map((r) => ({
     path: categoryHref(r.slug),
+    title: r.seoTitle || r.name,
+    description: r.seoDescription || r.description,
     updatedAt: r.updatedAt ?? new Date(0),
   }))
 }

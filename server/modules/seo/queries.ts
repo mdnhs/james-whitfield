@@ -4,6 +4,8 @@ import { cacheLife, cacheTag } from "next/cache"
 
 import { tags } from "@/server/lib/cache"
 
+import type { LlmsEntry } from "@/lib/seo/llms"
+
 import { computeSeoHealth } from "./health"
 import { isIndexable, listCategoryHubs, listLiveEntities } from "./live"
 
@@ -25,6 +27,34 @@ export async function getSitemapEntries() {
     ...hubs.map((h) => ({
       path: h.path,
       lastModified: h.updatedAt.toISOString(),
+    })),
+  ]
+}
+
+// Same entities and tags as the sitemap, with the text llms.txt lists.
+export async function getLlmsEntries(): Promise<LlmsEntry[]> {
+  "use cache"
+  cacheTag(tags.routes, tags.articles, tags.categories)
+  cacheLife("max")
+  const [live, hubs] = await Promise.all([
+    listLiveEntities(),
+    listCategoryHubs(),
+  ])
+  for (const e of live) if (e.kind === "page") cacheTag(tags.page(e.id))
+  return [
+    ...live.map((e) => ({
+      kind: e.kind,
+      path: e.path,
+      title: e.seo.title || e.title,
+      description: e.seo.description || e.summary || "",
+      noindex: !isIndexable(e),
+    })),
+    ...hubs.map((h) => ({
+      kind: "page" as const,
+      path: h.path,
+      title: h.title,
+      description: h.description,
+      noindex: false,
     })),
   ]
 }

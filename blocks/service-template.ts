@@ -107,8 +107,8 @@ export function serviceTemplate(
           steps: [
             {
               title: "Discovery call",
-              body: "A free conversation about what you want to change.",
-              tag: "Free · 20 min",
+              body: "A first conversation about what you want to change.",
+              tag: "Set the length",
             },
             {
               title: "First session",
@@ -136,7 +136,7 @@ export function serviceTemplate(
           plans: [
             {
               name: "Single session",
-              priceLabel: "€120",
+              priceLabel: "Set a price",
               unit: "per session",
               summary: "One focused session to start.",
               features: ["60–90 minutes", "In person or online"],
@@ -145,7 +145,7 @@ export function serviceTemplate(
             },
             {
               name: "Programme",
-              priceLabel: "€450",
+              priceLabel: "Set a price",
               unit: "4 sessions",
               summary: "A structured programme with support in between.",
               features: ["4 sessions", "Recordings to use at home"],

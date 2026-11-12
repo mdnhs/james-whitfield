@@ -1,6 +1,8 @@
 // blocks/service-template.test.ts
 import { describe, expect, it } from "vitest"
 
+import { serviceFormatNodes } from "@/lib/seo/json-ld"
+
 import { pageDocumentFor } from "./page"
 import { BlockInstance } from "./registry"
 import { serviceTemplate } from "./service-template"
@@ -54,6 +56,26 @@ describe("serviceTemplate", () => {
     const band = doc.blocks[6]
     if (band.type !== "band") throw new Error("band last")
     expect(band.data.bandId).toBe(BAND)
+  })
+
+  // Placeholder copy must never read as a real offer: no amount, so no
+  // JSON-LD Offer price, and no "free" promise.
+  it("carries no invented prices", () => {
+    const formats = doc.blocks.find((b) => b.type === "service.formats")
+    if (formats?.type !== "service.formats") throw new Error("formats")
+    expect(formats.data.plans.map((p) => p.priceLabel)).toEqual([
+      "Set a price",
+      "Set a price",
+    ])
+    const nodes = serviceFormatNodes({
+      origin: "https://example.com",
+      path: "/services/anxiety",
+      siteName: "Site",
+      plans: formats.data.plans,
+    })
+    expect(nodes).toHaveLength(2)
+    for (const node of nodes) expect(node).not.toHaveProperty("offers")
+    expect(JSON.stringify(doc)).not.toMatch(/€|\bfree\b/i)
   })
 
   it("keeps long service copy inside the field limits", () => {

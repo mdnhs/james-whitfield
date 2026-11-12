@@ -82,12 +82,8 @@ export function ChatThread({
   const newest = messages?.at(-1)?.id ?? 0
   const closed = chat?.status === "closed"
 
-  // A different chat starts with an empty composer, focused.
-  useEffect(() => {
-    setDraft("")
-    setSendError(null)
-    marked.current = 0
-  }, [id])
+  // The inbox keys this component by chat id, so each chat starts with an
+  // empty composer and a fresh read marker; the composer takes focus.
   const ready = Boolean(chat) && !closed && canReply
   useEffect(() => {
     if (ready) box.current?.focus()

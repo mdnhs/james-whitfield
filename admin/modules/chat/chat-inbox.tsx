@@ -100,6 +100,12 @@ export function ChatInbox() {
     []) as ChatListItem[]
 
   useEffect(() => {
+    const previous = document.title
+    return () => {
+      document.title = previous
+    }
+  }, [])
+  useEffect(() => {
     document.title = unread > 0 ? `(${unread}) Live chat` : "Live chat"
   }, [unread])
 

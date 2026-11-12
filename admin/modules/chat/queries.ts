@@ -35,6 +35,7 @@ export const chatListQuery = (status: ChatStatus, visible = true) =>
     initialPageParam: "",
     getNextPageParam: (last) => last.next ?? undefined,
     refetchInterval: pollInterval(visible),
+    refetchIntervalInBackground: true,
   })
 
 export const chatDetailQuery = (id: string, visible = true) =>
@@ -55,6 +56,7 @@ export const chatDetailQuery = (id: string, visible = true) =>
       }
     },
     refetchInterval: pollInterval(visible),
+    refetchIntervalInBackground: true,
   })
 
 export const chatUnreadQuery = (enabled: boolean) =>
@@ -63,6 +65,7 @@ export const chatUnreadQuery = (enabled: boolean) =>
     queryFn: () => parseResponse(chatApi.unread.$get()),
     enabled,
     refetchInterval: 30_000,
+    refetchIntervalInBackground: true,
     refetchOnWindowFocus: true,
   })
 

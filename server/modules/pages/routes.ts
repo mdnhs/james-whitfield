@@ -79,6 +79,15 @@ export const pagesRoutes = new Hono<AppEnv>()
       )
     )
   )
+  .post("/:id/unpublish", can({ page: ["publish"] }), id, version, async (c) =>
+    c.json(
+      await pagesService.unpublishPage(
+        c.get("actor")!,
+        c.req.valid("param").id,
+        c.req.valid("json").version
+      )
+    )
+  )
   .post("/:id/discard", can({ page: ["update"] }), id, version, async (c) =>
     c.json(
       await pagesService.discardDraft(

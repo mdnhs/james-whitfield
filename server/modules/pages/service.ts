@@ -50,6 +50,8 @@ export async function listPages() {
       path: pages.path,
       title: pages.title,
       status: pages.status,
+      // Row actions (the live switch) send it back as the optimistic lock.
+      version: pages.version,
       systemKey: pages.systemKey,
       serviceId: pages.serviceId,
       updatedAt: pages.updatedAt,
@@ -190,6 +192,48 @@ export async function publishPage(actor: Actor, id: string, version: number) {
   // `routes` too: a visit while unpublished cached a miss under routes only.
   invalidate([tags.page(id), tags.routes])
   return { version: saved.version, publishedAt: saved.publishedAt }
+}
+
+// Takes a page off the site. The last published JSON stays (status decides
+// what is live, see findPageByPath), so publishing again needs no edit.
+// System pages (Home, About…) and a service's own page are switched
+// elsewhere, never here.
+export async function unpublishPage(actor: Actor, id: string, version: number) {
+  const saved = await getDb().transaction(async (tx) => {
+    const row = await findPage(tx, id, true)
+    if (row.systemKey) {
+      throw new ApiError("FORBIDDEN", "System pages can't be unpublished")
+    }
+    if (row.serviceId) {
+      throw new ApiError(
+        "FORBIDDEN",
+        "Turn this page off from its service instead"
+      )
+    }
+    if (row.version !== version) throw await conflictError(tx, row)
+    const [next] = await tx
+      .update(pages)
+      .set({
+        status: "draft",
+        updatedBy: actor.userId,
+        version: sql`${pages.version} + 1`,
+      })
+      .where(eq(pages.id, id))
+      .returning()
+    await audit(
+      actor,
+      {
+        action: "page.unpublish",
+        entityType: "page",
+        entityId: id,
+        summary: `Unpublished ${row.path}`,
+      },
+      tx
+    )
+    return next!
+  })
+  invalidate([tags.page(id), tags.routes])
+  return { version: saved.version, status: saved.status }
 }
 
 export async function discardDraft(actor: Actor, id: string, version: number) {

@@ -353,6 +353,63 @@ describe("pages API", () => {
     expect(expired()).toEqual(expect.arrayContaining([`page:${id}`, "routes"]))
   })
 
+  // The Legal pages row switch.
+  it("unpublishes a custom page (keeping its published copy) but never a system page", async () => {
+    const asset = await insertMedia()
+    const legal = await insertPage({
+      path: "/privacy",
+      document: heroDocument(asset.id, "Privacy"),
+      published: true,
+    })
+    const { page: about } = await aboutPage()
+    const editor = await cookieFor("editor")
+    expect(
+      (
+        await adminRequest(`/pages/${about.id}/unpublish`, editor, {
+          method: "POST",
+          body: { version: about.version },
+        })
+      ).status
+    ).toBe(403)
+    const author = await cookieFor("author")
+    expect(
+      (
+        await adminRequest(`/pages/${legal.id}/unpublish`, author, {
+          method: "POST",
+          body: { version: legal.version },
+        })
+      ).status
+    ).toBe(403)
+    next.revalidateTag.mockReset()
+    const off = await adminRequest(`/pages/${legal.id}/unpublish`, editor, {
+      method: "POST",
+      body: { version: legal.version },
+    })
+    expect(off.status).toBe(200)
+    expect((await json(off)).status).toBe("draft")
+    expect(expired()).toEqual(
+      expect.arrayContaining([`page:${legal.id}`, "routes"])
+    )
+    const [row] = await getDb()
+      .select()
+      .from(pages)
+      .where(eq(pages.id, legal.id))
+    expect(row!.status).toBe("draft")
+    expect(row!.published).not.toBeNull()
+    // A stale version is refused.
+    expect(
+      (
+        await adminRequest(`/pages/${legal.id}/unpublish`, editor, {
+          method: "POST",
+          body: { version: legal.version },
+        })
+      ).status
+    ).toBe(409)
+    // The list carries the version the switch sends back.
+    const listed = (await listOtherPages()).find((p) => p.id === legal.id)
+    expect(listed?.version).toBe(row!.version)
+  })
+
   it("removes redirects into a deleted page", async () => {
     await aboutPage()
     const cookie = await cookieFor("editor")

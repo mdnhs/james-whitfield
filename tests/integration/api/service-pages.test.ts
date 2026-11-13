@@ -521,3 +521,23 @@ describe("automatic service pages", () => {
     expect(page?.status).toBe("published")
   })
 })
+
+describe("every visible service has an address", () => {
+  it("lists /services/<slug> as live even before its page is published", async () => {
+    await getDb()
+      .insert(services)
+      .values([
+        { slug: "shown", title: "Shown", body: "B", icon: "mind" },
+        {
+          slug: "hidden-one",
+          title: "Hidden",
+          body: "B",
+          icon: "mind",
+          isVisible: false,
+        },
+      ])
+    const { live } = await getRouteTable()
+    expect(live).toContain("/services/shown")
+    expect(live).not.toContain("/services/hidden-one")
+  })
+})

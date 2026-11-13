@@ -53,4 +53,7 @@ export const MICROCOPY: GlobalValue<"microcopy"> = {
     keepReading: "Keep reading",
     newsletter: "Newsletter",
   },
+  serviceComingSoon:
+    "The full details for this service are on their way. Book a discovery call and we can talk it through.",
+  serviceComingSoonCta: "Book a discovery call",
 }

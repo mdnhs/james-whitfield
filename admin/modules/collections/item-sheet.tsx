@@ -45,6 +45,7 @@ export function ItemForm({
   readOnly = false,
   onSaved,
   onCreated,
+  onValuesChange,
 }: {
   name: CollectionSlug
   item: EditableItem | "new"
@@ -53,6 +54,8 @@ export function ItemForm({
   onSaved(): Promise<unknown>
   // A new item's id, once created.
   onCreated?(id: string): void
+  // Every edit, for a live preview beside the form.
+  onValuesChange?(values: Record<string, unknown>): void
 }) {
   const schema = COLLECTION_SCHEMAS[name]
   const isNew = item === "new"
@@ -75,6 +78,9 @@ export function ItemForm({
         overrides={COLLECTION_FIELD_UI[name]}
         defaultValues={defaults as never}
         derive={followsTitle ? derive : undefined}
+        onValuesChange={
+          onValuesChange as ((values: unknown) => void) | undefined
+        }
         submitLabel="Save"
         onSubmit={async (values) => {
           try {

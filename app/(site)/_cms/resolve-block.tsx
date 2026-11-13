@@ -114,7 +114,9 @@ export async function ResolvedBlock({ block }: { block: BlockInstance }) {
     case "about.credentials":
       return <CredentialsSection id={id} content={block.data} />
     case "services.grid": {
-      // A service links to its landing page only when that page is live.
+      // Every card links to its service's page: a live landing page it is
+      // linked to, else /services/<slug> (its page, or a "coming soon"
+      // placeholder until that page is published).
       const [services, { live }] = await Promise.all([
         q.getServices(),
         getRouteTable(),
@@ -123,7 +125,10 @@ export async function ResolvedBlock({ block }: { block: BlockInstance }) {
         <ServicesGrid
           id={id}
           content={block.data}
-          services={withLivePagePaths(services, live)}
+          services={withLivePagePaths(services, live).map((service) => ({
+            ...service,
+            pagePath: service.pagePath || `/services/${service.slug}`,
+          }))}
         />
       )
     }

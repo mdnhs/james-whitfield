@@ -250,6 +250,12 @@ export const MicrocopyGlobal = z.object({
       newsletter: s(24),
     })
     .prefault({}),
+  // A service whose details page has nothing published yet (/services/<slug>).
+  serviceComingSoon: s(
+    300,
+    "The full details for this service are on their way. Book a discovery call and we can talk it through."
+  ),
+  serviceComingSoonCta: s(40, "Book a discovery call"),
 })
 
 export const SeoGlobal = z.object({

@@ -11,6 +11,7 @@ import {
   articles,
   pages,
   redirects,
+  services,
 } from "@/server/db/schema"
 import { tags } from "@/server/lib/cache"
 import { notHiddenServicePage } from "@/server/modules/service-pages/visible"
@@ -19,11 +20,17 @@ import { notHiddenServicePage } from "@/server/modules/service-pages/visible"
 // publish, unpublish, address change or redirect write expires a tag.
 export async function getRouteTable(): Promise<RouteTable> {
   "use cache"
-  cacheTag(tags.routes, tags.articles, tags.categories, tags.redirects)
+  cacheTag(
+    tags.routes,
+    tags.articles,
+    tags.categories,
+    tags.redirects,
+    tags.collection("services")
+  )
   cacheLife("max")
   const db = getDb()
-  const [pageRows, articleRows, categoryRows, redirectRows] = await Promise.all(
-    [
+  const [pageRows, articleRows, categoryRows, redirectRows, serviceRows] =
+    await Promise.all([
       db
         .select({ path: pages.path })
         .from(pages)
@@ -44,13 +51,21 @@ export async function getRouteTable(): Promise<RouteTable> {
         })
         .from(redirects)
         .where(eq(redirects.isActive, true)),
-    ]
-  )
+      // Every visible service has /services/<slug>: its page, or a "coming
+      // soon" placeholder until that page is published.
+      db
+        .select({ slug: services.slug })
+        .from(services)
+        .where(eq(services.isVisible, true)),
+    ])
   return {
     live: [
-      ...pageRows.map((r) => r.path),
-      ...articleRows.map((r) => `/insights/${r.slug}`),
-      ...categoryRows.map((r) => categoryHref(r.slug)),
+      ...new Set([
+        ...pageRows.map((r) => r.path),
+        ...articleRows.map((r) => `/insights/${r.slug}`),
+        ...categoryRows.map((r) => categoryHref(r.slug)),
+        ...serviceRows.map((r) => `/services/${r.slug}`),
+      ]),
     ],
     redirects: Object.fromEntries(
       redirectRows.map((r) => [

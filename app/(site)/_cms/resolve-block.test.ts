@@ -11,8 +11,8 @@ vi.mock("@/server/modules/redirects/queries", () => ({
 }))
 vi.mock("@/server/modules/content/queries", () => ({
   getServices: vi.fn(async () => [
-    { id: "1", title: "A", pagePath: "/services/a" },
-    { id: "2", title: "B", pagePath: "/services/b" },
+    { id: "1", slug: "a", title: "A", pagePath: "/services/a" },
+    { id: "2", slug: "b", title: "B", pagePath: "/team" },
   ]),
 }))
 
@@ -33,7 +33,7 @@ describe("ResolvedBlock", () => {
     warn.mockRestore()
   })
 
-  it("links a service's Learn more only to a live page", async () => {
+  it("links every card: a live linked page, else /services/<slug>", async () => {
     vi.mocked(getRouteTable).mockResolvedValue({
       live: ["/services/a"],
     } as never)
@@ -54,9 +54,11 @@ describe("ResolvedBlock", () => {
     const el = (await ResolvedBlock({ block })) as {
       props: { services: { pagePath: string }[] }
     }
+    // B's linked /team is not live: its card still goes to /services/b,
+    // which shows its page or a "coming soon" placeholder.
     expect(el.props.services.map((s) => s.pagePath)).toEqual([
       "/services/a",
-      "",
+      "/services/b",
     ])
   })
 })

@@ -456,11 +456,7 @@ function Builder({
           </TabsTrigger>
         </TabsList>
         {extras.card ? (
-          <TabsContent value="card">
-            <div className="rounded-card max-w-2xl bg-card p-5 sm:p-6">
-              {extras.card.content}
-            </div>
-          </TabsContent>
+          <TabsContent value="card">{extras.card.content}</TabsContent>
         ) : null}
         <TabsContent value="content">
           <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">

@@ -114,3 +114,36 @@ it("shows the server's field error under To", async () => {
     await screen.findByText("That would create a redirect loop")
   ).toBeTruthy()
 })
+
+it("row actions are icons: an on/off switch, Edit and Delete", async () => {
+  renderView(["marketer"])
+  const user = userEvent.setup()
+  const [sw] = await screen.findAllByRole("switch", {
+    name: "Redirect from /old-about on",
+  })
+  expect(sw!.getAttribute("aria-checked")).toBe("true")
+  expect(
+    screen.getAllByRole("button", { name: "Edit the redirect from /old-about" })
+      .length
+  ).toBeGreaterThan(0)
+  expect(
+    screen.getAllByRole("button", {
+      name: "Delete the redirect from /old-about",
+    }).length
+  ).toBeGreaterThan(0)
+  await user.click(sw!)
+  const calls = (fetch as unknown as ReturnType<typeof vi.fn>).mock.calls
+  const patch = calls.find(([input, init]) => {
+    const method =
+      (init as RequestInit | undefined)?.method ??
+      (input instanceof Request ? input.method : "GET")
+    return method === "PATCH"
+  })
+  expect(patch).toBeTruthy()
+})
+
+it("a viewer gets no switch", async () => {
+  renderView(["viewer"])
+  await screen.findAllByText("Automatic")
+  expect(screen.queryAllByRole("switch")).toHaveLength(0)
+})

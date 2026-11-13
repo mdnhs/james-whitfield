@@ -1,13 +1,20 @@
 "use client"
 
 import { useQuery } from "@tanstack/react-query"
-import { CheckCircle2Icon } from "lucide-react"
+import {
+  CheckCircle2Icon,
+  CircleAlertIcon,
+  CircleCheckIcon,
+  ImageIcon,
+  WrenchIcon,
+} from "lucide-react"
 import Link from "next/link"
 
 import { DashboardCard } from "@/admin/components/dashboard/dashboard-card"
 import { EmptyState } from "@/admin/components/dashboard/empty-state"
 import { Gauge } from "@/admin/components/dashboard/gauge"
 import { PageHeader } from "@/admin/components/dashboard/page-header"
+import { subnavIcon } from "@/admin/components/shell/nav-icons"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
@@ -32,7 +39,11 @@ export function SeoOverviewView() {
   const overview = useQuery(seoOverviewQuery())
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title="SEO" description="How search engines see the site." />
+      <PageHeader
+        title="SEO"
+        icon={subnavIcon("seo-overview")}
+        description="How search engines see the site."
+      />
       {overview.isPending ? (
         <div className="grid gap-6 lg:grid-cols-2">
           <FormCardSkeleton fields={2} />
@@ -79,7 +90,12 @@ function Loaded({ data }: { data: SeoOverview }) {
         </DashboardCard>
         <DashboardCard title="Alt text">
           <div className="flex flex-col items-start gap-3">
-            <p className="text-2xl font-semibold tabular-nums">
+            <p className="flex items-center gap-2 text-2xl font-semibold tabular-nums">
+              {data.alt.described === data.alt.images ? (
+                <CircleCheckIcon aria-hidden className="text-success size-6" />
+              ) : (
+                <CircleAlertIcon aria-hidden className="text-warning size-6" />
+              )}
               {data.alt.described} of {data.alt.images} images described
             </p>
             <p className="text-sm text-muted-foreground">
@@ -87,8 +103,9 @@ function Loaded({ data }: { data: SeoOverview }) {
             </p>
             <Link
               href="/admin/media?missingAlt=true"
-              className="text-sm font-semibold text-primary underline-offset-4 hover:underline"
+              className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary underline-offset-4 hover:underline"
             >
+              <ImageIcon aria-hidden className="size-4" />
               Find images without alt text
             </Link>
           </div>
@@ -122,14 +139,25 @@ function Loaded({ data }: { data: SeoOverview }) {
                       key={issue.check}
                       className="flex items-center justify-between gap-3 text-sm"
                     >
-                      <span>{issue.message}</span>
+                      <span className="flex items-start gap-2">
+                        <CircleAlertIcon
+                          aria-hidden
+                          className="text-warning mt-0.5 size-4 shrink-0"
+                        />
+                        <span>
+                          <span className="sr-only">Needs work: </span>
+                          {issue.message}
+                        </span>
+                      </span>
                       <Link
                         href={issue.fixHref}
                         aria-label={`Fix: ${issue.message} (${head.title})`}
                         className={cn(
-                          buttonVariants({ variant: "outline", size: "sm" })
+                          buttonVariants({ variant: "outline", size: "sm" }),
+                          "shrink-0"
                         )}
                       >
+                        <WrenchIcon aria-hidden data-icon="inline-start" />
                         Fix
                       </Link>
                     </li>

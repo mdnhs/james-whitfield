@@ -2,15 +2,30 @@
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import {
+  CheckIcon,
+  FlaskConicalIcon,
+  KeyRoundIcon,
+  RefreshCwIcon,
+  SaveIcon,
+  SendIcon,
+  ShieldCheckIcon,
+  Trash2Icon,
+  Undo2Icon,
+  XIcon,
+  type LucideIcon,
+} from "lucide-react"
 import { useId, useState } from "react"
 import { Controller, useForm, useWatch } from "react-hook-form"
 import { toast } from "sonner"
 import * as z from "zod"
 
+import { IconTip, InfoHint } from "@/admin/components/actions/icon-tip"
 import {
   PageHeader,
   FORM_ACTION,
 } from "@/admin/components/dashboard/page-header"
+import { subnavIcon } from "@/admin/components/shell/nav-icons"
 import { useActor, usePermission } from "@/admin/lib/actor-context"
 import { parseResponse, trackingApi } from "@/admin/lib/api"
 import { ApiError } from "@/admin/lib/api-error"
@@ -30,6 +45,7 @@ import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
 import { Switch } from "@/components/ui/switch"
 import { GA4_ID, GTM_ID, PIXEL_ID } from "@/lib/tracking/ids"
+import { cn } from "@/lib/utils"
 
 import { trackingQuery, type TrackingAdminDoc } from "./queries"
 import { TrackingStatus } from "./tracking-status"
@@ -88,7 +104,8 @@ export function TrackingView() {
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Tracking"
-        description="IDs and switches go live as soon as you save. Nothing loads until a visitor consents."
+        icon={subnavIcon("marketing-tracking")}
+        description="Live on save. Nothing loads before consent."
       />
       {doc.isError ? (
         <div role="alert" className="flex flex-col items-start gap-3">
@@ -138,12 +155,23 @@ function TestEvent() {
     },
   })
   return (
-    <section aria-label="Test event" className="flex flex-col gap-2">
-      <h2 className="text-lg font-semibold">Test the Conversions API</h2>
-      <p className="text-sm text-muted-foreground">
-        Sends one test event with your test event code. Check it in Meta Events
-        Manager under Test events.
-      </p>
+    <section
+      aria-label="Test event"
+      className="rounded-card flex flex-col gap-3 bg-card p-5 sm:p-6"
+    >
+      <div className="flex items-center gap-1">
+        <h2 className="text-card-title flex items-center gap-2">
+          <FlaskConicalIcon
+            aria-hidden
+            className="size-4 text-muted-foreground"
+          />
+          Test the Conversions API
+        </h2>
+        <InfoHint id="tracking-test-event-hint">
+          Sends one test event with your test event code. Check it in Meta
+          Events Manager under Test events.
+        </InfoHint>
+      </div>
       <Button
         type="button"
         variant="outline"
@@ -151,7 +179,11 @@ function TestEvent() {
         disabled={!canUpdate || test.isPending}
         onClick={() => test.mutate()}
       >
-        {test.isPending ? <Spinner data-icon="inline-start" /> : null}
+        {test.isPending ? (
+          <Spinner data-icon="inline-start" />
+        ) : (
+          <SendIcon aria-hidden data-icon="inline-start" />
+        )}
         Send test event
       </Button>
     </section>
@@ -266,15 +298,25 @@ function TrackingForm({
     description?: string
   ) => (
     <Field data-invalid={Boolean(errors[name]) || undefined}>
-      <FieldLabel htmlFor={`${ids}-${name}`}>{label}</FieldLabel>
+      {description ? (
+        <LabelWithHint
+          htmlFor={`${ids}-${name}`}
+          hintId={`${ids}-${name}-hint`}
+          hint={description}
+        >
+          {label}
+        </LabelWithHint>
+      ) : (
+        <FieldLabel htmlFor={`${ids}-${name}`}>{label}</FieldLabel>
+      )}
       <Input
         id={`${ids}-${name}`}
         placeholder={placeholder}
         autoComplete="off"
         aria-invalid={Boolean(errors[name]) || undefined}
+        aria-describedby={description ? `${ids}-${name}-hint` : undefined}
         {...register(name)}
       />
-      {description ? <FieldDescription>{description}</FieldDescription> : null}
       {error(name)}
     </Field>
   )
@@ -297,7 +339,10 @@ function TrackingForm({
 
   return (
     <form onSubmit={onSubmit} noValidate className="flex flex-col gap-6">
-      <fieldset disabled={!canUpdate} className="min-w-0">
+      <fieldset
+        disabled={!canUpdate}
+        className="rounded-card min-w-0 bg-card p-5 sm:p-6"
+      >
         <FieldGroup>
           {/* Each ID beside its own switch once the form is wide enough. */}
           <div className="@container/track">
@@ -312,16 +357,20 @@ function TrackingForm({
                 "testEventCode",
                 "Test event code",
                 "TEST12345",
-                "From Events Manager, Test events. Only used by the test button below."
+                "From Events Manager, Test events. Only used by the test button."
               )}
               {toggle("capi", "Send leads with the Conversions API")}
             </div>
           </div>
 
           <Field data-invalid={Boolean(errors.capiToken) || undefined}>
-            <FieldLabel htmlFor={`${ids}-capiToken`}>
+            <LabelWithHint
+              htmlFor={`${ids}-capiToken`}
+              hintId={`${ids}-capiToken-hint`}
+              hint="Write-only: it is encrypted when saved and never shown again."
+            >
               Conversions API access token
-            </FieldLabel>
+            </LabelWithHint>
             {!doc.keyAvailable ? (
               <FieldDescription role="note">
                 The server has no APP_ENCRYPTION_KEY, so a token can&apos;t be
@@ -329,38 +378,43 @@ function TrackingForm({
               </FieldDescription>
             ) : null}
             {configured && mode !== "replace" ? (
-              <div className="flex flex-wrap items-center gap-3">
-                <span className="text-sm font-medium">
+              <div className="flex flex-wrap items-center gap-2">
+                <span
+                  className={cn(
+                    "inline-flex items-center gap-1.5 text-sm font-medium",
+                    mode === "remove" ? "text-danger" : "text-success"
+                  )}
+                >
+                  {mode === "remove" ? (
+                    <Trash2Icon aria-hidden className="size-4" />
+                  ) : (
+                    <KeyRoundIcon aria-hidden className="size-4" />
+                  )}
                   {mode === "remove"
                     ? "Will be removed when you save"
                     : "Configured ✓"}
                 </span>
                 {mode === "keep" ? (
                   <>
-                    <Button
-                      type="button"
-                      variant="outline"
+                    <TokenAction
+                      label="Replace token"
+                      icon={RefreshCwIcon}
                       disabled={!doc.keyAvailable}
                       onClick={() => setMode("replace")}
-                    >
-                      Replace token
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
+                    />
+                    <TokenAction
+                      label="Remove token"
+                      icon={Trash2Icon}
+                      danger
                       onClick={() => setMode("remove")}
-                    >
-                      Remove token
-                    </Button>
+                    />
                   </>
                 ) : (
-                  <Button
-                    type="button"
-                    variant="outline"
+                  <TokenAction
+                    label="Keep token"
+                    icon={Undo2Icon}
                     onClick={() => setMode("keep")}
-                  >
-                    Keep token
-                  </Button>
+                  />
                 )}
               </div>
             ) : null}
@@ -372,28 +426,24 @@ function TrackingForm({
                   autoComplete="off"
                   spellCheck={false}
                   disabled={!doc.keyAvailable}
-                  className="max-w-md"
+                  className="max-w-md flex-1"
                   aria-invalid={Boolean(errors.capiToken) || undefined}
+                  aria-describedby={`${ids}-capiToken-hint`}
                   {...register("capiToken")}
                 />
                 {configured ? (
-                  <Button
-                    type="button"
-                    variant="outline"
+                  <TokenAction
+                    label="Cancel"
+                    icon={XIcon}
                     onClick={() => {
                       form.setValue("capiToken", "")
                       form.clearErrors("capiToken")
                       setMode("keep")
                     }}
-                  >
-                    Cancel
-                  </Button>
+                  />
                 ) : null}
               </div>
             ) : null}
-            <FieldDescription>
-              Write-only: it is encrypted when saved and never shown again.
-            </FieldDescription>
             {error("capiToken")}
           </Field>
 
@@ -402,15 +452,25 @@ function TrackingForm({
               aria-labelledby={`${ids}-matching`}
               className="flex flex-col gap-3 rounded-xl border p-4"
             >
-              <h2 id={`${ids}-matching`} className="text-lg font-semibold">
-                Enhanced matching
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                Sends a hashed email and phone number with the lead to Meta.
-                Only an owner can change this, and the choice is recorded.
-              </p>
+              <div className="flex items-center gap-1">
+                <h2
+                  id={`${ids}-matching`}
+                  className="text-card-title flex items-center gap-2"
+                >
+                  <ShieldCheckIcon
+                    aria-hidden
+                    className="size-4 text-muted-foreground"
+                  />
+                  Enhanced matching
+                </h2>
+                <InfoHint id={`${ids}-matching-hint`}>
+                  Sends a hashed email and phone number with the lead to Meta.
+                  Only an owner can change this, and the choice is recorded.
+                </InfoHint>
+              </div>
               {saved.enhancedMatching.enabled ? (
-                <p className="text-sm">
+                <p className="flex items-center gap-1.5 text-sm">
+                  <CheckIcon aria-hidden className="text-success size-4" />
                   Approved by {saved.enhancedMatching.acknowledgedBy}
                 </p>
               ) : null}
@@ -463,10 +523,69 @@ function TrackingForm({
           className={`${FORM_ACTION} self-start`}
           disabled={isSubmitting}
         >
-          {isSubmitting ? <Spinner data-icon="inline-start" /> : null}
+          {isSubmitting ? (
+            <Spinner data-icon="inline-start" />
+          ) : (
+            <SaveIcon aria-hidden data-icon="inline-start" />
+          )}
           Save tracking
         </Button>
       ) : null}
     </form>
+  )
+}
+
+// The token's Replace / Remove / Keep / Cancel as icon buttons; the label is
+// the accessible name and the tooltip.
+function TokenAction({
+  label,
+  icon: Icon,
+  danger,
+  disabled,
+  onClick,
+}: {
+  label: string
+  icon: LucideIcon
+  danger?: boolean
+  disabled?: boolean
+  onClick: () => void
+}) {
+  return (
+    <IconTip label={label}>
+      <Button
+        type="button"
+        variant="outline"
+        size="icon"
+        aria-label={label}
+        disabled={disabled}
+        className={cn(
+          danger &&
+            "hover:bg-danger-soft hover:text-danger text-muted-foreground"
+        )}
+        onClick={onClick}
+      >
+        <Icon aria-hidden />
+      </Button>
+    </IconTip>
+  )
+}
+
+// A label with its help behind an info icon (as the schema forms).
+function LabelWithHint({
+  htmlFor,
+  hintId,
+  hint,
+  children,
+}: {
+  htmlFor: string
+  hintId: string
+  hint: string
+  children: React.ReactNode
+}) {
+  return (
+    <div className="flex items-center gap-1">
+      <FieldLabel htmlFor={htmlFor}>{children}</FieldLabel>
+      <InfoHint id={hintId}>{hint}</InfoHint>
+    </div>
   )
 }

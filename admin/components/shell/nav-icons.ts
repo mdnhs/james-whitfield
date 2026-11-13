@@ -1,9 +1,13 @@
 import {
   BellIcon,
   BotIcon,
+  ChartNoAxesColumnIcon,
   CircleHelpIcon,
   ClipboardListIcon,
+  CodeXmlIcon,
+  CookieIcon,
   FingerprintIcon,
+  GaugeIcon,
   GlobeIcon,
   HeartHandshakeIcon,
   HistoryIcon,
@@ -11,6 +15,7 @@ import {
   ImageIcon,
   InboxIcon,
   LayoutDashboardIcon,
+  ListChecksIcon,
   MailIcon,
   MegaphoneIcon,
   MessageCircleIcon,
@@ -24,6 +29,8 @@ import {
   SearchCheckIcon,
   SettingsIcon,
   ShieldCheckIcon,
+  SignpostIcon,
+  SlidersHorizontalIcon,
   UserRoundIcon,
   UsersIcon,
   type LucideIcon,
@@ -46,8 +53,8 @@ export const NAV_ICONS: Record<string, LucideIcon> = {
   help: CircleHelpIcon,
 }
 
-// The Website and Site settings sub-pages, keyed by their nav id. The same
-// icon leads the sub-nav item and the page's own title.
+// The Website, Site settings, SEO and Marketing sub-pages, keyed by their
+// nav id. The same icon leads the sub-nav item and the page's own title.
 export const SUBNAV_ICONS: Record<string, LucideIcon> = {
   "website-home": HouseIcon,
   "website-about": UserRoundIcon,
@@ -65,6 +72,13 @@ export const SUBNAV_ICONS: Record<string, LucideIcon> = {
   "settings-chat": MessageCircleIcon,
   "settings-appearance": PaletteIcon,
   "settings-ai-assistant": BotIcon,
+  "seo-overview": GaugeIcon,
+  "seo-defaults": SlidersHorizontalIcon,
+  "seo-redirects": SignpostIcon,
+  "marketing-tracking": ChartNoAxesColumnIcon,
+  "marketing-consent": CookieIcon,
+  "marketing-events": ListChecksIcon,
+  "marketing-code": CodeXmlIcon,
 }
 
 // A sub-page's icon for its title (PageHeader `icon`), by nav id.

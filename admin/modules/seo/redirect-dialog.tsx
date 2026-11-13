@@ -63,8 +63,7 @@ export function RedirectDialog({
             {editing === "new" ? "New redirect" : "Edit redirect"}
           </DialogTitle>
           <DialogDescription>
-            Visitors and search engines who ask for the From address are sent to
-            the To address.
+            Anyone asking for From is sent to To.
           </DialogDescription>
         </DialogHeader>
         {editing ? (

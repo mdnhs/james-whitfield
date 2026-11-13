@@ -1,6 +1,7 @@
 "use client"
 
 import { useQuery } from "@tanstack/react-query"
+import { BotIcon, ExternalLinkIcon, MapIcon } from "lucide-react"
 
 import { DashboardCard } from "@/admin/components/dashboard/dashboard-card"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -16,7 +17,7 @@ const locs = (xml: string) =>
   [...xml.matchAll(/<loc>([^<]*)<\/loc>/g)].map((m) => m[1]!)
 
 const OPEN =
-  "text-sm font-semibold text-primary underline-offset-4 hover:underline"
+  "inline-flex items-center gap-1.5 text-sm font-semibold text-primary underline-offset-4 hover:underline"
 
 function Pane({
   path,
@@ -36,6 +37,7 @@ function Pane({
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">{label}</p>
         <a href={path} target="_blank" rel="noreferrer" className={OPEN}>
+          <ExternalLinkIcon aria-hidden className="size-4" />
           Open
           <span className="sr-only"> {path} in a new tab</span>
         </a>
@@ -58,8 +60,14 @@ export function CrawlPreview() {
     <DashboardCard title="What crawlers see">
       <Tabs defaultValue="robots">
         <TabsList>
-          <TabsTrigger value="robots">robots.txt</TabsTrigger>
-          <TabsTrigger value="sitemap">Sitemap</TabsTrigger>
+          <TabsTrigger value="robots">
+            <BotIcon aria-hidden />
+            robots.txt
+          </TabsTrigger>
+          <TabsTrigger value="sitemap">
+            <MapIcon aria-hidden />
+            Sitemap
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="robots" className="pt-3">
           <Pane path="/robots.txt" label="What search engines may crawl.">

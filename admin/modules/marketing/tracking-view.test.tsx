@@ -174,3 +174,15 @@ it("sends a test event and toasts the message", async () => {
   )
   expect(mocks.test).toHaveBeenCalledOnce()
 })
+
+it("token actions are named icon buttons: Remove then Keep, Replace then Cancel", async () => {
+  renderView(["marketer"])
+  const user = userEvent.setup()
+  await user.click(await screen.findByRole("button", { name: "Remove token" }))
+  expect(screen.getByText("Will be removed when you save")).toBeTruthy()
+  await user.click(screen.getByRole("button", { name: "Keep token" }))
+  await user.click(screen.getByRole("button", { name: "Replace token" }))
+  expect(screen.getByLabelText("Conversions API access token")).toBeTruthy()
+  await user.click(screen.getByRole("button", { name: "Cancel" }))
+  expect(await screen.findByText("Configured ✓")).toBeTruthy()
+})

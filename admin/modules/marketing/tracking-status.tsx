@@ -1,6 +1,14 @@
 "use client"
 
 import { formatDistanceToNow } from "date-fns"
+import {
+  ActivityIcon,
+  CircleAlertIcon,
+  CircleCheckIcon,
+  CircleMinusIcon,
+  CircleXIcon,
+  type LucideIcon,
+} from "lucide-react"
 import { useId } from "react"
 
 import {
@@ -36,6 +44,13 @@ const TONES: Record<Status, StatusTone> = {
   "unreadable-token": "danger",
 }
 
+const TONE_ICONS: Partial<Record<StatusTone, LucideIcon>> = {
+  success: CircleCheckIcon,
+  warning: CircleAlertIcon,
+  danger: CircleXIcon,
+  neutral: CircleMinusIcon,
+}
+
 const CHANNELS = [
   ["gtm", "Google Tag Manager"],
   ["ga4", "GA4"],
@@ -46,22 +61,35 @@ const CHANNELS = [
 export function TrackingStatus({ doc }: { doc: TrackingAdminDoc }) {
   const headingId = useId()
   return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-3">
-      <h2 id={headingId} className="text-lg font-semibold">
+    <section
+      aria-labelledby={headingId}
+      className="rounded-card flex flex-col gap-3 bg-card p-5 sm:p-6"
+    >
+      <h2 id={headingId} className="text-card-title flex items-center gap-2">
+        <ActivityIcon aria-hidden className="size-4 text-muted-foreground" />
         Status
       </h2>
-      <ul className="flex flex-col divide-y rounded-xl border">
-        {CHANNELS.map(([key, name]) => (
-          <li
-            key={key}
-            className="flex flex-wrap items-center justify-between gap-2 px-4 py-3"
-          >
-            <span className="font-medium">{name}</span>
-            <StatusPill tone={TONES[doc.status[key]]}>
-              {STATUS_LABELS[doc.status[key]]}
-            </StatusPill>
-          </li>
-        ))}
+      {/* One compact row per provider: name, then a pill with its state. */}
+      <ul className="flex flex-col gap-2">
+        {CHANNELS.map(([key, name]) => {
+          const tone = TONES[doc.status[key]]
+          const Icon = TONE_ICONS[tone] ?? CircleMinusIcon
+          return (
+            <li
+              key={key}
+              className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm"
+            >
+              <span className="font-medium">{name}</span>
+              <StatusPill
+                tone={tone}
+                className="inline-flex items-center gap-1"
+              >
+                <Icon aria-hidden className="size-3.5 shrink-0" />
+                <span>{STATUS_LABELS[doc.status[key]]}</span>
+              </StatusPill>
+            </li>
+          )
+        })}
       </ul>
       {doc.lastCapiFailure ? (
         <p className="text-sm text-muted-foreground">

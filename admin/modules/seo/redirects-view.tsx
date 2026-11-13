@@ -12,7 +12,12 @@ import {
   tableFeatures,
   useTable,
 } from "@tanstack/react-table"
-import { ArrowRightLeftIcon, PlusIcon, Trash2Icon } from "lucide-react"
+import {
+  ArrowRightLeftIcon,
+  PlusIcon,
+  SearchIcon,
+  Trash2Icon,
+} from "lucide-react"
 import { parseAsInteger, parseAsString, useQueryStates } from "nuqs"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
@@ -29,6 +34,7 @@ import {
 import { StatusPill } from "@/admin/components/dashboard/status-pill"
 import { DataTable } from "@/admin/components/data-table/data-table"
 import { DataTablePagination } from "@/admin/components/data-table/data-table-pagination"
+import { subnavIcon } from "@/admin/components/shell/nav-icons"
 import { usePermission } from "@/admin/lib/actor-context"
 import { parseResponse, seoApi } from "@/admin/lib/api"
 import { queryKeys } from "@/admin/lib/query-keys"
@@ -45,6 +51,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { Switch } from "@/components/ui/switch"
 import { cn } from "@/lib/utils"
 
 import { RedirectDialog, STATUS_LABELS, type Editing } from "./redirect-dialog"
@@ -121,20 +128,20 @@ export function RedirectsView() {
     onError: (error) => toast.error(error.message),
   })
 
+  // The Services row actions: an on/off switch, then Edit and Delete icons.
   const actions = (row: RedirectRow) => (
-    <div className="flex flex-wrap items-center gap-1">
+    <div className="flex items-center gap-1">
+      <Switch
+        aria-label={`Redirect from ${row.sourcePath} on`}
+        checked={row.isActive}
+        disabled={toggle.isPending}
+        onCheckedChange={() => toggle.mutate(row)}
+        className="mr-1"
+      />
       <EditIconButton
         label={`Edit the redirect from ${row.sourcePath}`}
         onClick={() => setEditing(row)}
       />
-      <Button
-        variant="ghost"
-        size="sm"
-        disabled={toggle.isPending}
-        onClick={() => toggle.mutate(row)}
-      >
-        {row.isActive ? "Turn off" : "Turn on"}
-      </Button>
       <DeleteIconButton
         label={`Delete the redirect from ${row.sourcePath}`}
         onClick={() => setRemoving(row)}
@@ -217,7 +224,8 @@ export function RedirectsView() {
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Redirects"
-        description="Send old addresses to the right page. Renamed articles and moved pages add theirs automatically."
+        icon={subnavIcon("seo-redirects")}
+        description="Old addresses, sent to the right page."
         actions={
           canManage ? (
             <Button
@@ -230,14 +238,20 @@ export function RedirectsView() {
           ) : null
         }
       />
-      <Input
-        type="search"
-        aria-label="Search redirects"
-        placeholder="Search addresses"
-        className="w-full sm:w-72"
-        value={search}
-        onChange={(event) => setSearch(event.target.value)}
-      />
+      <div className="relative w-full sm:w-72">
+        <SearchIcon
+          aria-hidden
+          className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+        />
+        <Input
+          type="search"
+          aria-label="Search redirects"
+          placeholder="Search addresses"
+          className="pl-9"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+        />
+      </div>
       {list.isPending ? (
         <TableSkeleton columns={3} />
       ) : list.isError ? (

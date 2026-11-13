@@ -103,7 +103,13 @@ export const ActivityPageSkeleton = () => (
 )
 
 export const RedirectsPageSkeleton = () => (
-  <TableScreenSkeleton icon actions={1} controls={1} columns={3} />
+  <TableScreenSkeleton
+    icon
+    actions={1}
+    controls={1}
+    columns={3}
+    rowActions={3}
+  />
 )
 
 export const EventsPageSkeleton = () => (
@@ -156,8 +162,12 @@ export const FormPageSkeleton = ({
   </PageSkeleton>
 )
 
+// The SEO defaults card, then What crawlers see.
 export const SeoDefaultsSkeleton = () => (
-  <FormPageSkeleton fields={6} icon={false} />
+  <PageSkeleton header={<PageHeaderSkeleton icon actions={0} />}>
+    <FormCardSkeleton fields={6} title={false} />
+    <FormCardSkeleton fields={2} />
+  </PageSkeleton>
 )
 
 export const GlobalEditorPageSkeleton = () => <FormPageSkeleton fields={6} />
@@ -202,8 +212,11 @@ export const ServiceEditorSkeleton = () => (
 export const TrackingPageSkeleton = () => (
   <PageSkeleton header={<PageHeaderSkeleton icon actions={0} />}>
     <div className="grid items-start gap-8 xl:grid-cols-[minmax(0,1fr)_22rem]">
-      <FormCardSkeleton fields={5} />
-      <FormCardSkeleton fields={2} />
+      <FormCardSkeleton fields={5} title={false} />
+      <div className="flex flex-col gap-6">
+        <FormCardSkeleton fields={4} />
+        <FormCardSkeleton fields={1} />
+      </div>
     </div>
   </PageSkeleton>
 )
@@ -224,7 +237,7 @@ export const CodePageSkeleton = () => (
 )
 
 export const SeoOverviewSkeleton = () => (
-  <PageSkeleton header={<PageHeaderSkeleton icon={false} actions={0} />}>
+  <PageSkeleton header={<PageHeaderSkeleton icon actions={0} />}>
     <div className="grid gap-6 lg:grid-cols-2">
       <FormCardSkeleton fields={2} />
       <FormCardSkeleton fields={2} />

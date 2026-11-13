@@ -1,6 +1,10 @@
 "use client"
 
+import { FileJsonIcon } from "lucide-react"
+
+import { InfoHint } from "@/admin/components/actions/icon-tip"
 import { PageHeader } from "@/admin/components/dashboard/page-header"
+import { subnavIcon } from "@/admin/components/shell/nav-icons"
 import {
   Table,
   TableBody,
@@ -16,9 +20,17 @@ export function EventsView() {
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Event catalogue"
-        description="What the site sends to the dataLayer. GTM decides what reaches GA4 and Meta, and only after consent."
+        icon={subnavIcon("marketing-events")}
+        description={
+          <span className="inline-flex items-center gap-1">
+            What the site sends to the dataLayer.
+            <InfoHint id="events-catalogue-hint">
+              GTM decides what reaches GA4 and Meta, and only after consent.
+            </InfoHint>
+          </span>
+        }
       />
-      <div className="rounded-xl border">
+      <div className="rounded-card bg-card p-2 sm:p-3">
         <Table scrollLabel="Event catalogue">
           <TableHeader>
             <TableRow>
@@ -46,8 +58,12 @@ export function EventsView() {
           </TableBody>
         </Table>
       </div>
-      <p className="text-sm text-muted-foreground">
-        Import docs/gtm-container.json into GTM to get these tags and triggers.
+      <p className="flex items-start gap-2 text-sm text-muted-foreground">
+        <FileJsonIcon aria-hidden className="mt-0.5 size-4 shrink-0" />
+        <span>
+          Import docs/gtm-container.json into GTM to get these tags and
+          triggers.
+        </span>
       </p>
     </div>
   )

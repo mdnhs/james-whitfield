@@ -25,11 +25,12 @@ test("turn on a service's details page, edit its hero, publish", async ({
   // The page was made with the service: the list links to it, nothing to create.
   await page.goto("/admin/website/service-pages")
   const row = page.getByRole("row").filter({ hasText: service.title })
-  await expect(row.getByText("Draft", { exact: true })).toBeVisible()
+  // Live at once, with placeholder copy to rewrite.
+  await expect(row.getByText("Published", { exact: true })).toBeVisible()
   await expect(
     page.getByRole("button", { name: /create|delete/i })
   ).toHaveCount(0)
-  await row.getByRole("link", { name: service.title }).click()
+  await row.getByRole("link", { name: `Edit ${service.title}` }).click()
   await expect(page).toHaveURL(/\/admin\/pages\/[0-9a-f-]{36}$/)
 
   // Seven fixed sections and nothing that adds, removes, hides or moves one.

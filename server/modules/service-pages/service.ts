@@ -79,9 +79,10 @@ export async function enableServicePage(actor: Actor, serviceId: string) {
     const page = await insertPage(tx, {
       path,
       title: service.title,
-      // Placeholder copy: created as a draft for the editor to rewrite.
+      // Live at once with placeholder copy for the editor to rewrite.
       document: serviceTemplate(service, band.id, heroImageId),
       serviceId,
+      publish: true,
       actor,
     })
     await tx
@@ -93,6 +94,7 @@ export async function enableServicePage(actor: Actor, serviceId: string) {
     return { pageId: page.id, path, released }
   })
   invalidate([
+    tags.page(result.pageId),
     tags.routes,
     tags.collection("services"),
     ...(result.released ? REDIRECT_TAGS : []),

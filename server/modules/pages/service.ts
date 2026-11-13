@@ -327,6 +327,8 @@ export async function insertPage(
     document: PageDocument
     // Set for a service's detail page (/services/<slug>).
     serviceId?: string
+    // Live at once (a service's page): published = draft, first revision.
+    publish?: boolean
     actor: Actor
   }
 ) {
@@ -338,8 +340,15 @@ export async function insertPage(
       path: input.path,
       title: input.title,
       serviceId: input.serviceId ?? null,
-      status: "draft",
+      status: input.publish ? "published" : "draft",
       draft: parsed.data,
+      ...(input.publish
+        ? {
+            published: parsed.data,
+            publishedAt: new Date(),
+            publishedBy: input.actor.userId,
+          }
+        : {}),
       settings: { showContactChapter: true, needsReview: false },
       createdBy: input.actor.userId,
       updatedBy: input.actor.userId,
@@ -361,6 +370,25 @@ export async function insertPage(
     },
     tx
   )
+  if (input.publish) {
+    await writeRevision(tx, {
+      entityType: "page",
+      entityId: created.id,
+      version: created.version,
+      snapshot: parsed.data,
+      createdBy: input.actor.userId,
+    })
+    await audit(
+      input.actor,
+      {
+        action: "page.publish",
+        entityType: "page",
+        entityId: created.id,
+        summary: `Published ${created.path}`,
+      },
+      tx
+    )
+  }
   return created
 }
 

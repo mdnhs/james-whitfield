@@ -108,4 +108,31 @@ describe("ServicePagesView", () => {
     await screen.findAllByText("Websites")
     expect(ensure).not.toHaveBeenCalled()
   })
+
+  it("puts edit, preview and view on site straight in the row", async () => {
+    state.detailPage = { ...draft, status: "published" }
+    setup()
+    const edit = await screen.findAllByRole("link", { name: "Edit Websites" })
+    expect(edit[0]!.getAttribute("href")).toBe("/admin/pages/p1")
+    expect(
+      screen
+        .getAllByRole("link", { name: "Preview Websites" })[0]!
+        .getAttribute("href")
+    ).toContain("/api/v1/admin/preview?path=%2Fservices%2Fwebsites")
+    expect(
+      screen
+        .getAllByRole("link", { name: "View Websites on the site" })[0]!
+        .getAttribute("href")
+    ).toBe("/services/websites")
+    expect(screen.queryByRole("button", { name: /^Actions for/ })).toBeNull()
+  })
+
+  it("offers no View on site for a draft", async () => {
+    state.detailPage = draft
+    setup()
+    await screen.findAllByRole("link", { name: "Edit Websites" })
+    expect(
+      screen.queryByRole("link", { name: "View Websites on the site" })
+    ).toBeNull()
+  })
 })

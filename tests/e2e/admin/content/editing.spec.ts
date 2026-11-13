@@ -160,7 +160,7 @@ test("reopening a page after editing it saves without a conflict", async ({
     await page
       .getByRole("row")
       .filter({ hasText: title })
-      .getByRole("link", { name: title })
+      .getByRole("link", { name: title, exact: true })
       .click()
     await expect(page).toHaveURL(new RegExp(`/admin/pages/${id}$`))
     await openHero()

@@ -6,7 +6,13 @@ import {
   tableFeatures,
   useTable,
 } from "@tanstack/react-table"
-import { FileTextIcon, TriangleAlertIcon } from "lucide-react"
+import {
+  ExternalLinkIcon,
+  EyeIcon,
+  FileTextIcon,
+  PencilIcon,
+  TriangleAlertIcon,
+} from "lucide-react"
 import Link from "next/link"
 import { useEffect, useMemo, useRef, useState } from "react"
 
@@ -20,7 +26,8 @@ import { parseResponse, servicePagesApi } from "@/admin/lib/api"
 import { queryKeys } from "@/admin/lib/query-keys"
 import { collectionListQuery } from "@/admin/modules/collections/queries"
 import { formatDublin } from "@/admin/modules/insights/schedule-time"
-import { Button } from "@/components/ui/button"
+import { previewSrc } from "@/admin/modules/pages/preview-pane"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
@@ -30,6 +37,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { cn } from "@/lib/utils"
 
 type DetailPage = {
   id: string
@@ -80,24 +88,68 @@ function Title({ row }: { row: ServicePageRow }) {
   )
 }
 
+// Edit, preview the draft, or (once published) open the live page: plain
+// buttons in the row, no menu to open first.
+function RowActions({ row }: { row: ServicePageRow }) {
+  const page = row.page
+  if (!page) return null
+  const icon = buttonVariants({ variant: "ghost", size: "icon-sm" })
+  return (
+    <div className="flex flex-nowrap items-center justify-end gap-1">
+      <Link
+        href={`/admin/pages/${page.id}`}
+        className={cn(
+          buttonVariants({ variant: "outline", size: "sm" }),
+          "mr-1 whitespace-nowrap"
+        )}
+        aria-label={`Edit ${row.title}`}
+      >
+        <PencilIcon aria-hidden data-icon="inline-start" />
+        Edit
+      </Link>
+      <a
+        href={previewSrc(page.path)}
+        target="_blank"
+        rel="noopener"
+        className={icon}
+        title="Preview the draft"
+        aria-label={`Preview ${row.title}`}
+      >
+        <EyeIcon aria-hidden />
+      </a>
+      {page.status === "published" ? (
+        <a
+          href={page.path}
+          target="_blank"
+          rel="noopener"
+          className={icon}
+          title="View on the site"
+          aria-label={`View ${row.title} on the site`}
+        >
+          <ExternalLinkIcon aria-hidden />
+        </a>
+      ) : null}
+    </div>
+  )
+}
+
 const columns = helper.columns([
   helper.accessor("title", {
     header: "Service",
-    cell: (info) => <Title row={info.row.original} />,
+    cell: (info) => (
+      <div className="flex flex-col gap-0.5">
+        <Title row={info.row.original} />
+        <span className="font-mono text-xs text-muted-foreground">
+          {info.row.original.page?.path ??
+            `/services/${info.row.original.slug}`}
+        </span>
+      </div>
+    ),
   }),
   helper.display({
     id: "status",
     header: "Status",
     cell: (info) => <PageStatus page={info.row.original.page} />,
-  }),
-  helper.display({
-    id: "address",
-    header: "Address",
-    cell: (info) => (
-      <span className="font-mono text-xs text-muted-foreground">
-        {info.row.original.page?.path ?? `/services/${info.row.original.slug}`}
-      </span>
-    ),
   }),
   helper.display({
     id: "updated",
@@ -115,6 +167,11 @@ const columns = helper.columns([
         <span className="text-muted-foreground">—</span>
       )
     },
+  }),
+  helper.display({
+    id: "actions",
+    header: () => <span className="sr-only">Actions</span>,
+    cell: (info) => <RowActions row={info.row.original} />,
   }),
 ])
 
@@ -267,6 +324,7 @@ export function ServicePagesView() {
             <div className="flex flex-col gap-2 text-sm">
               <Title row={row.original} />
               <PageStatus page={row.original.page} />
+              <RowActions row={row.original} />
             </div>
           )}
         />

@@ -107,7 +107,11 @@ describe("service detail pages", () => {
     expect(body.path).toBe("/services/a")
     const page = (await findPage(body.pageId))!
     expect(page.serviceId).toBe(service.id)
-    expect(page.status).toBe("draft")
+    // Live straight away with the template's placeholder copy; the first
+    // revision is that publish.
+    expect(page.status).toBe("published")
+    expect(page.published?.blocks).toHaveLength(7)
+    expect(await getPublishedPage("/services/a")).not.toBeNull()
     expect(page.draft.blocks).toHaveLength(7)
     expect((await findService(service.id)).pagePath).toBe("/services/a")
     expect(expired()).toEqual(
@@ -417,7 +421,7 @@ describe("admin services list", () => {
       list.items.map((i: { id: string }) => [i.id, i] as const)
     )
     expect(byId.get(service.id)).toMatchObject({
-      detailPage: { id: pageId, path: "/services/a", status: "draft" },
+      detailPage: { id: pageId, path: "/services/a", status: "published" },
     })
     expect(byId.get(other!.id)).toMatchObject({ detailPage: null })
     const faqList = await (
@@ -447,7 +451,7 @@ describe("automatic service pages", () => {
     expect(first.status).toBe(200)
     expect(await first.json()).toEqual({ created: 2, failed: [] })
     expect((await linked(service.id))?.path).toBe("/services/a")
-    expect((await linked(second!.id))?.status).toBe("draft")
+    expect((await linked(second!.id))?.status).toBe("published")
     // Idempotent: a second call creates nothing.
     expect(await (await ensure(cookie)).json()).toEqual({
       created: 0,
@@ -493,6 +497,6 @@ describe("automatic service pages", () => {
     const { id } = await res.json()
     const page = await linked(id)
     expect(page?.path).toBe("/services/new-one")
-    expect(page?.status).toBe("draft")
+    expect(page?.status).toBe("published")
   })
 })

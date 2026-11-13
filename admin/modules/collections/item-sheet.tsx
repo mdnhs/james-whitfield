@@ -1,5 +1,6 @@
 "use client"
 
+import { useMemo } from "react"
 import { toast } from "sonner"
 
 import { SchemaForm } from "@/admin/components/schema-form/schema-form"
@@ -17,6 +18,7 @@ import {
   COLLECTION_SCHEMAS,
   type CollectionSlug,
 } from "@/lib/content/collections"
+import { slugify } from "@/lib/utils"
 
 import { COLLECTION_FIELD_UI, ITEM_NOUN } from "./collection-ui"
 
@@ -29,6 +31,14 @@ export type EditableItem = {
 // Create (item = "new") or edit, from the collection's own schema. Saves go
 // live (docs/brief.md §6.3); a stale version reloads the list. Without
 // update rights the form is read-only.
+// A new item's slug follows its title (or name) until edited by hand.
+function slugFromTitle(schema: (typeof COLLECTION_SCHEMAS)[CollectionSlug]) {
+  const shape = (schema as unknown as { shape?: Record<string, unknown> }).shape
+  if (!shape || !("slug" in shape)) return undefined
+  const from = "title" in shape ? "title" : "name" in shape ? "name" : null
+  return from ? { from, to: "slug", transform: slugify } : undefined
+}
+
 export function ItemSheet({
   name,
   item,
@@ -44,6 +54,7 @@ export function ItemSheet({
 }) {
   const schema = COLLECTION_SCHEMAS[name]
   const isNew = item === "new"
+  const derive = useMemo(() => slugFromTitle(schema), [schema])
   const defaults = isNew
     ? { ...(emptyValueFor(schema) as Record<string, unknown>), isVisible: true }
     : item?.values
@@ -64,6 +75,7 @@ export function ItemSheet({
               schema={schema}
               overrides={COLLECTION_FIELD_UI[name]}
               defaultValues={defaults as never}
+              derive={isNew ? derive : undefined}
               submitLabel="Save"
               onSubmit={async (values) => {
                 try {

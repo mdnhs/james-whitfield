@@ -34,6 +34,7 @@ export function SchemaForm<S extends z.ZodObject>({
   resetOnSuccess = false,
   overrides,
   onValuesChange,
+  derive,
 }: {
   schema: S
   defaultValues: z.input<S>
@@ -43,6 +44,9 @@ export function SchemaForm<S extends z.ZodObject>({
   overrides?: FieldOverrides
   // Called on every change, for live previews next to the form.
   onValuesChange?: (values: z.input<S>) => void
+  // Fills one field from another as it is typed (a slug from the title)
+  // until the person edits the target themselves.
+  derive?: { from: string; to: string; transform: (value: string) => string }
 }) {
   const fields = useMemo(() => toFields(schema, overrides), [schema, overrides])
   const form = useForm<FieldValues, unknown, FieldValues>({
@@ -59,6 +63,19 @@ export function SchemaForm<S extends z.ZodObject>({
     const sub = form.watch((values) => onValuesChange(values as z.input<S>))
     return () => sub.unsubscribe()
   }, [form, onValuesChange])
+
+  useEffect(() => {
+    if (!derive) return
+    const sub = form.watch((values, { name }) => {
+      if (name !== derive.from) return
+      if (form.getFieldState(derive.to).isDirty) return
+      form.setValue(
+        derive.to,
+        derive.transform(String(values[derive.from] ?? ""))
+      )
+    })
+    return () => sub.unsubscribe()
+  }, [form, derive])
 
   const submit = form.handleSubmit(async (values) => {
     let result: SubmitResult

@@ -50,11 +50,16 @@ export function SaveIndicator({
     const timer = setInterval(() => setNow(Date.now()), 5000)
     return () => clearInterval(timer)
   }, [])
+  const text = label(state, now)
+  // Nothing to save: just the dot, its words for screen readers and on hover.
+  const quiet = state.status === "idle"
   return (
     <p
       aria-live="polite"
+      title={quiet ? text : undefined}
       className={cn(
         "inline-flex h-9 max-w-full items-center gap-2 rounded-full bg-card px-3.5 text-[13px] font-medium text-muted-foreground",
+        quiet && "px-3",
         (state.status === "error" || state.status === "conflict") &&
           "text-danger"
       )}
@@ -63,7 +68,7 @@ export function SaveIndicator({
         aria-hidden
         className={cn("size-2 shrink-0 rounded-full", DOT[state.status])}
       />
-      <span className="truncate">{label(state, now)}</span>
+      <span className={quiet ? "sr-only" : "truncate"}>{text}</span>
       {onResolve ? (
         <button
           type="button"

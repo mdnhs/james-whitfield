@@ -3,11 +3,17 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   ArrowLeftIcon,
+  CircleCheckIcon,
+  CircleDashedIcon,
   EyeIcon,
   HistoryIcon,
+  LayoutTemplateIcon,
   LockIcon,
   RotateCwIcon,
+  SearchIcon,
+  SendIcon,
   TriangleAlertIcon,
+  Undo2Icon,
   XIcon,
 } from "lucide-react"
 import Link from "next/link"
@@ -15,6 +21,7 @@ import { useParams } from "next/navigation"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { toast } from "sonner"
 
+import { IconTip } from "@/admin/components/actions/icon-tip"
 import {
   FORM_ACTION,
   PageHeader,
@@ -23,6 +30,7 @@ import {
 } from "@/admin/components/dashboard/page-header"
 import { CardSkeleton } from "@/admin/components/dashboard/skeletons"
 import { StatusPill } from "@/admin/components/dashboard/status-pill"
+import { websiteIcon } from "@/admin/components/shell/nav-icons"
 import { usePermission } from "@/admin/lib/actor-context"
 import { pagesApi, parseResponse } from "@/admin/lib/api"
 import { ApiError } from "@/admin/lib/api-error"
@@ -69,6 +77,10 @@ export type BuilderExtras = {
   // The sections tab's name ("Details" on a service's editor).
   contentLabel?: string
 }
+
+// History, Preview and Discard: a square icon button below xl (the words
+// stay as the accessible name and show in a tooltip), icon and words above.
+const ICON_UNTIL_XL = "max-xl:w-12 max-xl:gap-0 max-xl:px-0"
 
 export function PageBuilder({ id, ...extras }: { id: string } & BuilderExtras) {
   const params = useParams<{ id?: string | string[] }>()
@@ -318,16 +330,31 @@ function Builder({
           </Link>
         }
         title={page.title}
+        icon={websiteIcon(back.href)}
         description={
           <span className="flex flex-wrap items-center gap-2">
             <code className="rounded-md bg-card px-2 py-1 font-mono text-xs text-foreground">
               {page.path}
             </code>
-            <StatusPill tone={published ? "success" : "neutral"}>
+            <StatusPill
+              tone={published ? "success" : "neutral"}
+              className="h-6 gap-1.5 px-2.5"
+            >
+              {published ? (
+                <CircleCheckIcon aria-hidden className="size-3.5" />
+              ) : (
+                <CircleDashedIcon aria-hidden className="size-3.5" />
+              )}
               {published ? "Published" : "Draft"}
             </StatusPill>
             {published && unpublished ? (
-              <StatusPill tone="warning">Unpublished changes</StatusPill>
+              <StatusPill tone="warning" className="h-6 gap-1.5 px-2.5">
+                <span
+                  aria-hidden
+                  className="size-1.5 rounded-full bg-current"
+                />
+                Unpublished<span className="sr-only"> changes</span>
+              </StatusPill>
             ) : null}
           </span>
         }
@@ -343,37 +370,45 @@ function Builder({
                 }
               />
             )}
-            <Button
-              variant="outline"
-              className={cn(FORM_ACTION, "h-12 bg-card")}
-              onClick={() => setHistoryOpen(true)}
-            >
-              <HistoryIcon data-icon="inline-start" />
-              History
-            </Button>
-            <a
-              href={previewSrc(page.path)}
-              target="_blank"
-              rel="noopener"
-              className={cn(
-                "inline-flex h-12 items-center gap-2 rounded-xl border bg-card px-5 text-[15px] font-semibold transition-colors outline-none hover:bg-muted focus-visible:ring-[3px] focus-visible:ring-ring/50"
-              )}
-            >
-              <EyeIcon aria-hidden className="size-4" />
-              Preview
-            </a>
-            {canEdit && published ? (
+            <IconTip label="History" hideAt="xl">
               <Button
                 variant="outline"
-                className={SECONDARY_ACTION}
-                disabled={discard.isPending || !unpublished}
-                onClick={() =>
-                  window.confirm("Throw away every unpublished change?") &&
-                  discard.mutate()
-                }
+                className={cn(FORM_ACTION, "h-12 bg-card", ICON_UNTIL_XL)}
+                onClick={() => setHistoryOpen(true)}
               >
-                Discard
+                <HistoryIcon data-icon="inline-start" />
+                <span className="max-xl:sr-only">History</span>
               </Button>
+            </IconTip>
+            <IconTip label="Preview" hideAt="xl">
+              <a
+                href={previewSrc(page.path)}
+                target="_blank"
+                rel="noopener"
+                className={cn(
+                  "inline-flex h-12 items-center justify-center gap-2 rounded-xl border bg-card px-5 text-[15px] font-semibold transition-colors outline-none hover:bg-muted focus-visible:ring-[3px] focus-visible:ring-ring/50",
+                  ICON_UNTIL_XL
+                )}
+              >
+                <EyeIcon aria-hidden className="size-4" />
+                <span className="max-xl:sr-only">Preview</span>
+              </a>
+            </IconTip>
+            {canEdit && published ? (
+              <IconTip label="Discard" hideAt="xl">
+                <Button
+                  variant="outline"
+                  className={cn(SECONDARY_ACTION, ICON_UNTIL_XL)}
+                  disabled={discard.isPending || !unpublished}
+                  onClick={() =>
+                    window.confirm("Throw away every unpublished change?") &&
+                    discard.mutate()
+                  }
+                >
+                  <Undo2Icon data-icon="inline-start" />
+                  <span className="max-xl:sr-only">Discard</span>
+                </Button>
+              </IconTip>
             ) : null}
             {canPublish ? (
               <Button
@@ -383,7 +418,9 @@ function Builder({
               >
                 {publish.isPending ? (
                   <Spinner data-icon="inline-start" />
-                ) : null}
+                ) : (
+                  <SendIcon data-icon="inline-start" />
+                )}
                 Publish
               </Button>
             ) : null}
@@ -448,10 +485,12 @@ function Builder({
               {extras.card.label}
             </TabsTrigger>
           ) : null}
-          <TabsTrigger value="content" className="rounded-lg px-5">
+          <TabsTrigger value="content" className="gap-2 rounded-lg px-5">
+            <LayoutTemplateIcon aria-hidden />
             {extras.contentLabel ?? "Content"}
           </TabsTrigger>
-          <TabsTrigger value="seo" className="rounded-lg px-5">
+          <TabsTrigger value="seo" className="gap-2 rounded-lg px-5">
+            <SearchIcon aria-hidden />
             SEO
           </TabsTrigger>
         </TabsList>

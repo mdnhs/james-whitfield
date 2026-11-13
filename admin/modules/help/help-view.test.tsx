@@ -64,7 +64,11 @@ describe("help article page", () => {
     const headings = screen
       .getAllByRole("heading", { level: 2 })
       .map((heading) => heading.textContent)
-    expect(headings).toEqual(article.sections.map((section) => section.title))
+    expect(headings).toEqual(
+      article.sections
+        .filter((section) => (section.level ?? 2) === 2)
+        .map((section) => section.title)
+    )
 
     // The TOC is built from the headings and points at their anchors.
     const toc = within(screen.getByRole("navigation", { name: "On this page" }))

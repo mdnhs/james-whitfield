@@ -43,7 +43,7 @@ export function currentHeading(
 // The rail's x for each level, and how far a bend reaches into the items on
 // either side of it (so the jog is a visible diagonal, not a hairline).
 export const RAIL_X = { 2: 1, 3: 13 } as const
-const JOG = 6
+const JOG = 9
 
 export type RailItem = { top: number; height: number; level: 2 | 3 }
 export type Rail = {

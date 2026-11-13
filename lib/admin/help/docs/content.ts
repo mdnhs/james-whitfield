@@ -19,7 +19,13 @@ export const CONTENT_DOCS: readonly HelpArticle[] = [
     ],
     sections: [
       {
+        title: "Writing an article",
+        blocks: [
+        ],
+      },
+      {
         title: "Starting an article",
+        level: 3,
         blocks: [
           {
             type: "steps",
@@ -42,6 +48,7 @@ export const CONTENT_DOCS: readonly HelpArticle[] = [
       },
       {
         title: "Cover image, excerpt and details",
+        level: 3,
         blocks: [
           {
             type: "p",
@@ -62,24 +69,54 @@ export const CONTENT_DOCS: readonly HelpArticle[] = [
       {
         title: "Publishing, scheduling and unpublishing",
         blocks: [
+        ],
+      },
+      {
+        title: "Publish and schedule",
+        level: 3,
+        blocks: [
           {
             type: "list",
             items: [
               "**Publish** puts it live now.",
               "**Schedule** picks a date and time (Dublin time) for it to go live on its own.",
-              "**Unpublish** takes it down. You choose what the old address does: show not found, redirect to Insights, or redirect to another article. You can also tick **Archive instead**.",
-              "**History** lists earlier versions you can load back into the draft.",
             ],
-          },
-          {
-            type: "callout",
-            tone: "note",
-            text: "Authors cannot publish. They see **Submit for review** instead, and an editor publishes for them. The **Review requested** filter on the list shows these.",
           },
           {
             type: "callout",
             tone: "warning",
             text: "Editing a scheduled article moves it back to draft, so it needs to be scheduled again.",
+          },
+        ],
+      },
+      {
+        title: "Unpublish",
+        level: 3,
+        blocks: [
+          {
+            type: "p",
+            text: "**Unpublish** takes it down. You choose what the old address does: show not found, redirect to Insights, or redirect to another article. You can also tick **Archive instead**.",
+          },
+        ],
+      },
+      {
+        title: "History",
+        level: 3,
+        blocks: [
+          {
+            type: "p",
+            text: "**History** lists earlier versions you can load back into the draft.",
+          },
+        ],
+      },
+      {
+        title: "Review for authors",
+        level: 3,
+        blocks: [
+          {
+            type: "callout",
+            tone: "note",
+            text: "Authors cannot publish. They see **Submit for review** instead, and an editor publishes for them. The **Review requested** filter on the list shows these.",
           },
         ],
       },
@@ -172,7 +209,13 @@ export const CONTENT_DOCS: readonly HelpArticle[] = [
         ],
       },
       {
+        title: "Describing and cropping images",
+        blocks: [
+        ],
+      },
+      {
         title: "Alt text",
+        level: 3,
         blocks: [
           {
             type: "p",
@@ -195,6 +238,7 @@ export const CONTENT_DOCS: readonly HelpArticle[] = [
       },
       {
         title: "Focal point",
+        level: 3,
         blocks: [
           {
             type: "p",
@@ -213,13 +257,35 @@ export const CONTENT_DOCS: readonly HelpArticle[] = [
       {
         title: "Replacing and deleting",
         blocks: [
+        ],
+      },
+      {
+        title: "Replace a file",
+        level: 3,
+        blocks: [
           {
-            type: "list",
-            items: [
-              "**Replace file (keeps every reference)** swaps in a new file of the same type. Every page using it updates.",
-              "**Used on** lists where the file appears.",
-              "**Delete file** removes it for good. A file that is still in use cannot be deleted; remove it from those pages first.",
-            ],
+            type: "p",
+            text: "**Replace file (keeps every reference)** swaps in a new file of the same type. Every page using it updates.",
+          },
+        ],
+      },
+      {
+        title: "See where a file is used",
+        level: 3,
+        blocks: [
+          {
+            type: "p",
+            text: "**Used on** lists where the file appears.",
+          },
+        ],
+      },
+      {
+        title: "Delete a file",
+        level: 3,
+        blocks: [
+          {
+            type: "p",
+            text: "**Delete file** removes it for good. A file that is still in use cannot be deleted; remove it from those pages first.",
           },
         ],
       },

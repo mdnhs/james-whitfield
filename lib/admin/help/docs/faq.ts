@@ -10,7 +10,13 @@ export const FAQ_DOCS: readonly HelpArticle[] = [
     keywords: ["faq", "problem", "not working", "help", "cropped", "missing"],
     sections: [
       {
+        title: "Saving and publishing",
+        blocks: [
+        ],
+      },
+      {
         title: "I saved but the site didn't change",
+        level: 3,
         blocks: [
           {
             type: "p",
@@ -23,16 +29,33 @@ export const FAQ_DOCS: readonly HelpArticle[] = [
         ],
       },
       {
-        title: "I can't see a menu item",
+        title: "The page says someone else changed it",
+        level: 3,
         blocks: [
           {
             type: "p",
-            text: "The admin only shows screens your role can open. Ask an owner or admin to check your role in Users & roles. See [Roles and permissions](/admin/help/roles).",
+            text: "Two people edited the same page. Choose **Review changes** to load theirs, or **Overwrite** to keep yours. If you see **This page changed**, press **Reload latest**.",
           },
         ],
       },
       {
+        title: "My article won't publish",
+        level: 3,
+        blocks: [
+          {
+            type: "p",
+            text: "Check it has a cover image and a category. If you are an author, you cannot publish; press **Submit for review** and an editor will publish it.",
+          },
+        ],
+      },
+      {
+        title: "Images and links",
+        blocks: [
+        ],
+      },
+      {
         title: "An image looks cropped in the wrong place",
+        level: 3,
         blocks: [
           {
             type: "p",
@@ -42,6 +65,7 @@ export const FAQ_DOCS: readonly HelpArticle[] = [
       },
       {
         title: "I can't delete an image",
+        level: 3,
         blocks: [
           {
             type: "p",
@@ -51,6 +75,7 @@ export const FAQ_DOCS: readonly HelpArticle[] = [
       },
       {
         title: "An old link shows a 'page not found' error",
+        level: 3,
         blocks: [
           {
             type: "p",
@@ -59,7 +84,23 @@ export const FAQ_DOCS: readonly HelpArticle[] = [
         ],
       },
       {
+        title: "Sign-in, access and email",
+        blocks: [
+        ],
+      },
+      {
+        title: "I can't see a menu item",
+        level: 3,
+        blocks: [
+          {
+            type: "p",
+            text: "The admin only shows screens your role can open. Ask an owner or admin to check your role in Users & roles. See [Roles and permissions](/admin/help/roles).",
+          },
+        ],
+      },
+      {
         title: "I lost my phone with the authenticator app",
+        level: 3,
         blocks: [
           {
             type: "p",
@@ -73,25 +114,8 @@ export const FAQ_DOCS: readonly HelpArticle[] = [
         ],
       },
       {
-        title: "The page says someone else changed it",
-        blocks: [
-          {
-            type: "p",
-            text: "Two people edited the same page. Choose **Review changes** to load theirs, or **Overwrite** to keep yours. If you see **This page changed**, press **Reload latest**.",
-          },
-        ],
-      },
-      {
-        title: "My article won't publish",
-        blocks: [
-          {
-            type: "p",
-            text: "Check it has a cover image and a category. If you are an author, you cannot publish; press **Submit for review** and an editor will publish it.",
-          },
-        ],
-      },
-      {
         title: "Enquiry emails aren't arriving",
+        level: 3,
         blocks: [
           {
             type: "p",

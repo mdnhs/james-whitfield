@@ -13,6 +13,12 @@ export const TEAM_DOCS: readonly HelpArticle[] = [
       {
         title: "Inviting someone",
         blocks: [
+        ],
+      },
+      {
+        title: "Sending an invite",
+        level: 3,
+        blocks: [
           {
             type: "steps",
             items: [
@@ -22,6 +28,12 @@ export const TEAM_DOCS: readonly HelpArticle[] = [
               "They get an email with a link to set their password. It lasts seven days; use **Resend invite** if it runs out.",
             ],
           },
+        ],
+      },
+      {
+        title: "Choosing a role",
+        level: 3,
+        blocks: [
           {
             type: "p",
             text: "Not sure which role? See [Roles and permissions](/admin/help/roles). The **Roles** tab shows every permission side by side.",
@@ -31,13 +43,35 @@ export const TEAM_DOCS: readonly HelpArticle[] = [
       {
         title: "Changing what someone can do",
         blocks: [
+        ],
+      },
+      {
+        title: "Change roles",
+        level: 3,
+        blocks: [
           {
-            type: "list",
-            items: [
-              "**Change roles** gives someone more or less access.",
-              "**View as this person** shows the admin exactly as they see it, for up to an hour. You cannot change anything while viewing; press **Stop viewing** to return.",
-              "**Sign out everywhere** ends all their sessions, for example after a lost laptop.",
-            ],
+            type: "p",
+            text: "**Change roles** gives someone more or less access.",
+          },
+        ],
+      },
+      {
+        title: "View as this person",
+        level: 3,
+        blocks: [
+          {
+            type: "p",
+            text: "**View as this person** shows the admin exactly as they see it, for up to an hour. You cannot change anything while viewing; press **Stop viewing** to return.",
+          },
+        ],
+      },
+      {
+        title: "Sign out everywhere",
+        level: 3,
+        blocks: [
+          {
+            type: "p",
+            text: "**Sign out everywhere** ends all their sessions, for example after a lost laptop.",
           },
         ],
       },
@@ -45,16 +79,29 @@ export const TEAM_DOCS: readonly HelpArticle[] = [
         title: "Removing access",
         blocks: [
           {
-            type: "list",
-            items: [
-              "**Ban** blocks someone from signing in, for a set time or until you lift it with **Unban**.",
-              "**Delete** removes the person for good.",
-            ],
-          },
-          {
             type: "callout",
             tone: "note",
             text: "There must always be at least one owner. Only an owner can manage another owner, and nobody can change their own access.",
+          },
+        ],
+      },
+      {
+        title: "Ban and unban",
+        level: 3,
+        blocks: [
+          {
+            type: "p",
+            text: "**Ban** blocks someone from signing in, for a set time or until you lift it with **Unban**.",
+          },
+        ],
+      },
+      {
+        title: "Delete",
+        level: 3,
+        blocks: [
+          {
+            type: "p",
+            text: "**Delete** removes the person for good.",
           },
         ],
       },
@@ -108,20 +155,51 @@ export const TEAM_DOCS: readonly HelpArticle[] = [
       {
         title: "Profile and theme",
         blocks: [
+          { type: "open", href: "/admin/account", label: "Open your account" },
+        ],
+      },
+      {
+        title: "Profile",
+        level: 3,
+        blocks: [
           {
             type: "p",
-            text: "On the **Profile** tab, change your **Full name** and press **Save profile**. The **Appearance** card switches the admin between **Light**, **Dark** and **System**.",
+            text: "On the **Profile** tab, change your **Full name** and press **Save profile**.",
           },
-          { type: "open", href: "/admin/account", label: "Open your account" },
+        ],
+      },
+      {
+        title: "Theme",
+        level: 3,
+        blocks: [
+          {
+            type: "p",
+            text: "The **Appearance** card switches the admin between **Light**, **Dark** and **System**.",
+          },
         ],
       },
       {
         title: "Password and two-factor",
         blocks: [
+        ],
+      },
+      {
+        title: "Change password",
+        level: 3,
+        blocks: [
+          {
+            type: "p",
+            text: "**Change password:** type your **Current password** and a **New password**. This signs you out on your other devices.",
+          },
+        ],
+      },
+      {
+        title: "Two-factor and backup codes",
+        level: 3,
+        blocks: [
           {
             type: "list",
             items: [
-              "**Change password:** type your **Current password** and a **New password**. This signs you out on your other devices.",
               "**Set up two-factor:** see [Getting started](/admin/help/getting-started#two-factor-authentication).",
               "**New backup codes** replaces your old codes if you have used or lost them.",
               "**Turn off** removes two-factor after you type your password.",

@@ -34,13 +34,35 @@ export const INBOX_DOCS: readonly HelpArticle[] = [
       {
         title: "Keeping track",
         blocks: [
+        ],
+      },
+      {
+        title: "Board",
+        level: 3,
+        blocks: [
           {
-            type: "list",
-            items: [
-              "**Board** shows four columns: **New**, **Contacted**, **Booked** and **Closed**. Drag a card to move it on.",
-              "**Table** lists every enquiry with a status filter.",
-              "Inside an enquiry, set the **Status** and an **Assignee**, and use **Add note** to leave notes for the team.",
-            ],
+            type: "p",
+            text: "**Board** shows four columns: **New**, **Contacted**, **Booked** and **Closed**. Drag a card to move it on.",
+          },
+        ],
+      },
+      {
+        title: "Table",
+        level: 3,
+        blocks: [
+          {
+            type: "p",
+            text: "**Table** lists every enquiry with a status filter.",
+          },
+        ],
+      },
+      {
+        title: "Status, assignee and notes",
+        level: 3,
+        blocks: [
+          {
+            type: "p",
+            text: "Inside an enquiry, set the **Status** and an **Assignee**, and use **Add note** to leave notes for the team.",
           },
         ],
       },
@@ -57,21 +79,43 @@ export const INBOX_DOCS: readonly HelpArticle[] = [
         title: "Exports and privacy requests",
         blocks: [
           {
-            type: "list",
-            items: [
-              "**Export CSV** downloads the enquiries you are looking at.",
-              "**Privacy request** finds everything held for one email address. **Download data** gives a copy; **Erase all data** deletes it after you type the email to confirm.",
-              "**Erase** inside one enquiry deletes just that one, permanently.",
-            ],
+            type: "p",
+            text: "Old enquiries are deleted automatically after the time set in [Privacy](/admin/settings/privacy).",
+          },
+        ],
+      },
+      {
+        title: "Export CSV",
+        level: 3,
+        blocks: [
+          {
+            type: "p",
+            text: "**Export CSV** downloads the enquiries you are looking at.",
+          },
+        ],
+      },
+      {
+        title: "Privacy request",
+        level: 3,
+        blocks: [
+          {
+            type: "p",
+            text: "**Privacy request** finds everything held for one email address. **Download data** gives a copy; **Erase all data** deletes it after you type the email to confirm.",
+          },
+        ],
+      },
+      {
+        title: "Erase one enquiry",
+        level: 3,
+        blocks: [
+          {
+            type: "p",
+            text: "**Erase** inside one enquiry deletes just that one, permanently.",
           },
           {
             type: "callout",
             tone: "warning",
             text: "Erasing cannot be undone. Only do it when someone asks for their data to be deleted.",
-          },
-          {
-            type: "p",
-            text: "Old enquiries are deleted automatically after the time set in [Privacy](/admin/settings/privacy).",
           },
         ],
       },
@@ -122,12 +166,28 @@ export const INBOX_DOCS: readonly HelpArticle[] = [
         title: "Working with the AI assistant",
         blocks: [
           {
-            type: "list",
-            items: [
-              "When the assistant is on, it answers first using what is on your website.",
-              "It hands over to a person when a visitor shares health details or asks for a human. The chat is marked **Needs a person** and the team gets an email.",
-              "Press **Take over** to answer yourself. Sending a reply also takes over. **Hand back to AI** lets it carry on.",
-            ],
+            type: "p",
+            text: "When the assistant is on, it answers first using what is on your website.",
+          },
+        ],
+      },
+      {
+        title: "Handing over to a person",
+        level: 3,
+        blocks: [
+          {
+            type: "p",
+            text: "It hands over to a person when a visitor shares health details or asks for a human. The chat is marked **Needs a person** and the team gets an email.",
+          },
+        ],
+      },
+      {
+        title: "Taking over and handing back",
+        level: 3,
+        blocks: [
+          {
+            type: "p",
+            text: "Press **Take over** to answer yourself. Sending a reply also takes over. **Hand back to AI** lets it carry on.",
           },
         ],
       },
@@ -153,17 +213,34 @@ export const INBOX_DOCS: readonly HelpArticle[] = [
             text: "Owners and admins set up the chat in [Site settings › Live chat](/admin/settings/chat):",
           },
           {
+            type: "p",
+            text: "Press the save button at the bottom to make changes live. Old chats are deleted after the time set in Privacy.",
+          },
+        ],
+      },
+      {
+        title: "Showing the chat",
+        level: 3,
+        blocks: [
+          {
             type: "list",
             items: [
               "**Show the chat on the site** turns the bubble on or off.",
               "The welcome message and the offline note visitors see.",
+            ],
+          },
+        ],
+      },
+      {
+        title: "The AI assistant",
+        level: 3,
+        blocks: [
+          {
+            type: "list",
+            items: [
               "**AI assistant answers first** lets the assistant reply before a person. It needs an AI provider set up in [AI assistant](/admin/settings/ai-assistant).",
               "**Assistant replies per chat** limits how long the assistant keeps going before passing to the team.",
             ],
-          },
-          {
-            type: "p",
-            text: "Press the save button at the bottom to make changes live. Old chats are deleted after the time set in Privacy.",
           },
         ],
       },
@@ -192,19 +269,49 @@ export const INBOX_DOCS: readonly HelpArticle[] = [
             items: [
               "Open [Newsletter](/admin/newsletter). The tabs show **Confirmed**, **Pending**, **Unsubscribed** and **All**.",
               "**Pending** people signed up but have not clicked the link in their confirmation email yet.",
-              "**Export CSV** downloads confirmed subscribers (or everyone, on the **All** tab) to import into your email tool.",
-              "The bin icon removes a subscriber for good.",
             ],
+          },
+        ],
+      },
+      {
+        title: "Exporting the list",
+        level: 3,
+        blocks: [
+          {
+            type: "p",
+            text: "**Export CSV** downloads confirmed subscribers (or everyone, on the **All** tab) to import into your email tool.",
+          },
+        ],
+      },
+      {
+        title: "Removing a subscriber",
+        level: 3,
+        blocks: [
+          {
+            type: "p",
+            text: "The bin icon removes a subscriber for good.",
           },
         ],
       },
       {
         title: "Confirmation and unsubscribing",
         blocks: [
+        ],
+      },
+      {
+        title: "Confirming a subscription",
+        level: 3,
+        blocks: [
           {
             type: "p",
             text: "With double opt-in on (the default, in [Privacy](/admin/settings/privacy)), each new subscriber gets an email with a link to confirm. The link works once and lasts seven days. The site then shows a confirmation page.",
           },
+        ],
+      },
+      {
+        title: "Unsubscribing",
+        level: 3,
+        blocks: [
           {
             type: "p",
             text: "The unsubscribe link in emails opens a page where the person confirms they want to leave. They then move to **Unsubscribed**.",

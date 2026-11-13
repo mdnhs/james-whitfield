@@ -20,10 +20,22 @@ export const START_DOCS: readonly HelpArticle[] = [
               "If you have two-factor turned on, type the 6-digit code from your authenticator app and press **Verify**.",
             ],
           },
+        ],
+      },
+      {
+        title: "Forgotten your password?",
+        level: 3,
+        blocks: [
           {
             type: "p",
             text: "Forgotten your password? Click **Forgot password?**, type your email and press **Send reset link**. The link in the email works for 24 hours. Choose a new password of at least 12 characters.",
           },
+        ],
+      },
+      {
+        title: "No sign-up page",
+        level: 3,
+        blocks: [
           {
             type: "callout",
             tone: "note",
@@ -38,6 +50,12 @@ export const START_DOCS: readonly HelpArticle[] = [
             type: "p",
             text: "Two-factor asks for a code from an app on your phone as well as your password, so a stolen password alone is not enough. It is optional, but strongly recommended for owners and admins.",
           },
+        ],
+      },
+      {
+        title: "Setting it up",
+        level: 3,
+        blocks: [
           {
             type: "steps",
             items: [
@@ -47,11 +65,23 @@ export const START_DOCS: readonly HelpArticle[] = [
               "Save your backup codes somewhere safe with **Copy codes**, then press **I've saved them**.",
             ],
           },
+        ],
+      },
+      {
+        title: "Backup codes",
+        level: 3,
+        blocks: [
           {
             type: "callout",
             tone: "warning",
             text: "Each backup code works once and is shown only once. If you lose your phone, a backup code is how you get back in. At sign-in, choose **Use a backup code**.",
           },
+        ],
+      },
+      {
+        title: "Trusting a device",
+        level: 3,
+        blocks: [
           {
             type: "p",
             text: "On your own computer you can tick **Trust this device for 30 days** so it does not ask for a code every time.",
@@ -61,15 +91,30 @@ export const START_DOCS: readonly HelpArticle[] = [
       {
         title: "Finding your way around",
         blocks: [
+        ],
+      },
+      {
+        title: "Sidebar and dock",
+        level: 3,
+        blocks: [
           {
             type: "list",
             items: [
               "**The sidebar** on the left lists the screens your role can open, in three groups: **Menu**, **Growth** and **General**. Sections with sub-pages, like **Website** and **Site settings**, open out when you click them.",
               "**The website card** under the menu has an **Open site** button that opens your live website in a new tab.",
               "**The dock** at the bottom of the sidebar holds **Users & roles**, **Activity log**, **Help** (this guide) and **Log out**.",
-              "**The top bar** has the **Search** pill, the **Enquiries** shortcut, the notifications bell and your name. Your name opens **Account**, **Security**, the **Theme** choice and **Sign out**.",
               "On a phone, the sidebar hides. Tap the menu button in the top bar to open it.",
             ],
+          },
+        ],
+      },
+      {
+        title: "Top bar",
+        level: 3,
+        blocks: [
+          {
+            type: "p",
+            text: "**The top bar** has the **Search** pill, the **Enquiries** shortcut, the notifications bell and your name. Your name opens **Account**, **Security**, the **Theme** choice and **Sign out**.",
           },
         ],
       },
@@ -80,6 +125,12 @@ export const START_DOCS: readonly HelpArticle[] = [
             type: "p",
             text: "Press `⌘K` on a Mac or `Ctrl K` on Windows, or click **Search** in the top bar. Start typing to jump to any screen, an article or a help page.",
           },
+        ],
+      },
+      {
+        title: "What you can search",
+        level: 3,
+        blocks: [
           {
             type: "list",
             items: [
@@ -88,6 +139,12 @@ export const START_DOCS: readonly HelpArticle[] = [
               "**Actions** switches the theme, opens the live site or signs you out.",
             ],
           },
+        ],
+      },
+      {
+        title: "Keyboard shortcuts",
+        level: 3,
+        blocks: [
           {
             type: "callout",
             tone: "tip",
@@ -126,17 +183,32 @@ export const START_DOCS: readonly HelpArticle[] = [
             text: "The website pages, service details pages and Insights articles save as you type. That save only updates the **draft**. Visitors keep seeing the last published version until you press **Publish**.",
           },
           {
+            type: "callout",
+            tone: "warning",
+            text: "**Saved** does not mean live. If the site has not changed, press **Publish**.",
+          },
+        ],
+      },
+      {
+        title: "Status and save indicator",
+        level: 3,
+        blocks: [
+          {
             type: "list",
             items: [
               "The status pill next to the page title says **Published** or **Draft**. **Unpublished** means there are draft changes that are not live yet.",
               "The save indicator shows **Saving…**, then **Saved**. **Unsaved changes** means it is about to save.",
-              "Press `⌘S` (or `Ctrl S`) to save straight away.",
             ],
           },
+        ],
+      },
+      {
+        title: "Saving straight away",
+        level: 3,
+        blocks: [
           {
-            type: "callout",
-            tone: "warning",
-            text: "**Saved** does not mean live. If the site has not changed, press **Publish**.",
+            type: "p",
+            text: "Press `⌘S` (or `Ctrl S`) to save straight away.",
           },
         ],
       },
@@ -171,17 +243,39 @@ export const START_DOCS: readonly HelpArticle[] = [
         title: "History and restoring",
         blocks: [
           {
-            type: "list",
-            items: [
-              "**Pages and articles:** press **History** to see every published version. **Load into draft** brings an old version back into the draft. Check it, then press **Publish** again.",
-              "**Settings, header and footer:** the history icon on each card lists the latest 20 saves. **Restore** puts one back and makes it live.",
-              "**Throwing away a draft:** on a published page, **Discard** removes every unpublished change and goes back to the live version.",
-            ],
-          },
-          {
             type: "callout",
             tone: "note",
             text: "If someone else changed the same page while you were editing, you will see **Changed by someone else**. Choose **Review changes** to see theirs, or **Overwrite** to keep yours.",
+          },
+        ],
+      },
+      {
+        title: "Pages and articles",
+        level: 3,
+        blocks: [
+          {
+            type: "p",
+            text: "**Pages and articles:** press **History** to see every published version. **Load into draft** brings an old version back into the draft. Check it, then press **Publish** again.",
+          },
+        ],
+      },
+      {
+        title: "Settings, header and footer",
+        level: 3,
+        blocks: [
+          {
+            type: "p",
+            text: "**Settings, header and footer:** the history icon on each card lists the latest 20 saves. **Restore** puts one back and makes it live.",
+          },
+        ],
+      },
+      {
+        title: "Throwing away a draft",
+        level: 3,
+        blocks: [
+          {
+            type: "p",
+            text: "**Throwing away a draft:** on a published page, **Discard** removes every unpublished change and goes back to the live version.",
           },
         ],
       },

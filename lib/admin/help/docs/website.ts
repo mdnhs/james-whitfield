@@ -42,6 +42,12 @@ export const WEBSITE_DOCS: readonly HelpArticle[] = [
             type: "p",
             text: "A page is made of sections, such as the hero, the about intro or the testimonials. They are shown top to bottom in the same order as on the site. Their order is fixed, so you cannot lose or misplace one.",
           },
+        ],
+      },
+      {
+        title: "Text and images",
+        level: 3,
+        blocks: [
           {
             type: "steps",
             items: [
@@ -51,6 +57,12 @@ export const WEBSITE_DOCS: readonly HelpArticle[] = [
               "When you are happy, press **Publish**. The toast **Published** confirms it is live.",
             ],
           },
+        ],
+      },
+      {
+        title: "Section settings",
+        level: 3,
+        blocks: [
           {
             type: "callout",
             tone: "tip",
@@ -63,22 +75,55 @@ export const WEBSITE_DOCS: readonly HelpArticle[] = [
         blocks: [
           {
             type: "p",
-            text: "Some sections hold a list: testimonials, FAQs, plans, steps or services. Each row has its own controls:",
-          },
-          {
-            type: "list",
-            items: [
-              "**Drag handle:** drag a row to reorder it. With the keyboard, press `Space`, use the arrow keys, then `Space` again.",
-              "**Show switch:** hides or shows that item on the site without deleting it.",
-              "**Edit:** opens a side panel. Change the fields and press **Save**.",
-              "**Remove:** asks first, then deletes the item everywhere it is shown.",
-              "**Add** (for example **Add FAQ**) creates a new item.",
-            ],
+            text: "Some sections hold a list: testimonials, FAQs, plans, steps or services. Each row has its own controls.",
           },
           {
             type: "callout",
             tone: "warning",
             text: "List items are shared and go live as soon as you save. They do not wait for **Publish**.",
+          },
+        ],
+      },
+      {
+        title: "Reorder",
+        level: 3,
+        blocks: [
+          {
+            type: "p",
+            text: "**Drag handle:** drag a row to reorder it. With the keyboard, press `Space`, use the arrow keys, then `Space` again.",
+          },
+        ],
+      },
+      {
+        title: "Show or hide",
+        level: 3,
+        blocks: [
+          {
+            type: "p",
+            text: "**Show switch:** hides or shows that item on the site without deleting it.",
+          },
+        ],
+      },
+      {
+        title: "Edit and remove",
+        level: 3,
+        blocks: [
+          {
+            type: "list",
+            items: [
+              "**Edit:** opens a side panel. Change the fields and press **Save**.",
+              "**Remove:** asks first, then deletes the item everywhere it is shown.",
+            ],
+          },
+        ],
+      },
+      {
+        title: "Add an item",
+        level: 3,
+        blocks: [
+          {
+            type: "p",
+            text: "**Add** (for example **Add FAQ**) creates a new item.",
           },
         ],
       },
@@ -104,17 +149,41 @@ export const WEBSITE_DOCS: readonly HelpArticle[] = [
         title: "Publishing, preview and history",
         blocks: [
           {
+            type: "p",
+            text: "See [Saving and publishing](/admin/help/saving-and-publishing) for the full picture.",
+          },
+        ],
+      },
+      {
+        title: "Preview",
+        level: 3,
+        blocks: [
+          {
+            type: "p",
+            text: "**Preview** opens the draft version of the page in a new tab.",
+          },
+        ],
+      },
+      {
+        title: "Publish",
+        level: 3,
+        blocks: [
+          {
             type: "list",
             items: [
               "**Publish** makes the draft live. If something is missing, the problems are listed and the section is outlined so you can fix it.",
-              "**Preview** opens the draft version of the page in a new tab.",
               "**Discard** (on a published page) throws away every unpublished change.",
-              "**History** lists each published version. **Load into draft** brings one back; publish again to make it live.",
             ],
           },
+        ],
+      },
+      {
+        title: "History and restore",
+        level: 3,
+        blocks: [
           {
             type: "p",
-            text: "See [Saving and publishing](/admin/help/saving-and-publishing) for the full picture.",
+            text: "**History** lists each published version. **Load into draft** brings one back; publish again to make it live.",
           },
         ],
       },
@@ -152,15 +221,11 @@ export const WEBSITE_DOCS: readonly HelpArticle[] = [
             type: "p",
             text: "Open [Services](/admin/website/services) and find the **Services grid** section. Each service is a row with a drag handle to reorder it, a switch to show or hide it, **Edit** and **Remove**.",
           },
-          {
-            type: "callout",
-            tone: "warning",
-            text: "Removing a service also deletes its details page. If you only want to take it off the site for a while, use the show switch instead.",
-          },
         ],
       },
       {
         title: "Adding a service",
+        level: 3,
         blocks: [
           {
             type: "steps",
@@ -180,15 +245,48 @@ export const WEBSITE_DOCS: readonly HelpArticle[] = [
         ],
       },
       {
-        title: "Editing a service",
+        title: "Removing a service",
+        level: 3,
         blocks: [
           {
-            type: "list",
-            items: [
-              "**Card:** changes go live as soon as you press **Save**. Changing the slug changes the service's address; the old address redirects automatically.",
-              "**Details:** the page builder for the service's own page, with sections such as **Benefits** and **FAQ (this service)**. These are drafts until you press **Publish**.",
-              "**SEO:** the search title and description for the details page.",
-            ],
+            type: "callout",
+            tone: "warning",
+            text: "Removing a service also deletes its details page. If you only want to take it off the site for a while, use the show switch instead.",
+          },
+        ],
+      },
+      {
+        title: "Editing a service",
+        blocks: [
+        ],
+      },
+      {
+        title: "Card",
+        level: 3,
+        blocks: [
+          {
+            type: "p",
+            text: "**Card:** changes go live as soon as you press **Save**. Changing the slug changes the service's address; the old address redirects automatically.",
+          },
+        ],
+      },
+      {
+        title: "Details",
+        level: 3,
+        blocks: [
+          {
+            type: "p",
+            text: "**Details:** the page builder for the service's own page, with sections such as **Benefits** and **FAQ (this service)**. These are drafts until you press **Publish**.",
+          },
+        ],
+      },
+      {
+        title: "SEO",
+        level: 3,
+        blocks: [
+          {
+            type: "p",
+            text: "**SEO:** the search title and description for the details page.",
           },
         ],
       },
@@ -235,18 +333,33 @@ export const WEBSITE_DOCS: readonly HelpArticle[] = [
             text: "Google reviews are typed in by hand; the site does not fetch them from Google. In the section's own fields:",
           },
           {
+            type: "callout",
+            tone: "note",
+            text: "These section fields are part of the page draft, so press **Publish** after changing them.",
+          },
+        ],
+      },
+      {
+        title: "Summary and links",
+        level: 3,
+        blocks: [
+          {
             type: "list",
             items: [
               "**Google rating** and **Number of Google reviews** show the summary. Leave the rating empty to hide it.",
               "**Google profile link** powers the **See all on Google** button.",
               "**Write-a-review link** powers the **Write a review** button.",
-              "**Show** chooses **All**, **Website testimonials only** or **Google reviews only**.",
             ],
           },
+        ],
+      },
+      {
+        title: "Which reviews show",
+        level: 3,
+        blocks: [
           {
-            type: "callout",
-            tone: "note",
-            text: "These section fields are part of the page draft, so press **Publish** after changing them.",
+            type: "p",
+            text: "**Show** chooses **All**, **Website testimonials only** or **Google reviews only**.",
           },
         ],
       },
@@ -289,7 +402,13 @@ export const WEBSITE_DOCS: readonly HelpArticle[] = [
         ],
       },
       {
+        title: "The depth map",
+        blocks: [
+        ],
+      },
+      {
         title: "What the depth map is",
+        level: 3,
         blocks: [
           {
             type: "p",
@@ -307,6 +426,7 @@ export const WEBSITE_DOCS: readonly HelpArticle[] = [
       },
       {
         title: "If the depth map fails",
+        level: 3,
         blocks: [
           {
             type: "p",

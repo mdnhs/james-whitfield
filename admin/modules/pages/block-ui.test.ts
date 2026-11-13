@@ -28,7 +28,7 @@ describe("block widgets (the checklist in the plan)", () => {
     ["hero.page", "image", "media"],
     ["hero.page", "focal", "focal"],
     ["hero.page", "cta", "link"],
-    ["service.intro", "body", "textarea"],
+    ["service.intro", "body", "richtext"],
     ["service.benefits", "items.$.icon", "icon"],
     ["credibility", "badges.$.icon", "icon"],
     ["about.intro", "paragraphs.$", "textarea"],

@@ -15,11 +15,6 @@ export const COLLECTION_FIELD_UI: Record<CollectionSlug, FieldOverrides> = {
       description:
         "Used in contact links (?topic=); changing it breaks old links.",
     },
-    pagePath: {
-      label: "Landing page",
-      description:
-        "Optional. A /services/... page this service's Learn more links to.",
-    },
   },
   plans: {
     ...visible,

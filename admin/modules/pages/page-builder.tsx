@@ -5,9 +5,7 @@ import {
   ArrowLeftIcon,
   EyeIcon,
   HistoryIcon,
-  LayersIcon,
   LockIcon,
-  PlusIcon,
   RotateCwIcon,
   TriangleAlertIcon,
   XIcon,
@@ -29,24 +27,31 @@ import { usePermission } from "@/admin/lib/actor-context"
 import { pagesApi, parseResponse } from "@/admin/lib/api"
 import { ApiError } from "@/admin/lib/api-error"
 import { queryKeys } from "@/admin/lib/query-keys"
-import { DraftDocument, type DraftBlock } from "@/blocks/page"
+import { DraftDocument } from "@/blocks/page"
 import { BLOCK_BY_TYPE } from "@/blocks/registry"
 import { useEditorTab } from "@/admin/modules/seo/use-editor-tab"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { backLinkForPage } from "@/lib/admin/website"
 import { cn } from "@/lib/utils"
 
 import { AddressForm } from "./address-form"
 import { BlockForm } from "./block-form"
 import { BLOCK_ICONS } from "./block-icons"
-import { BlockLibrary } from "./block-library"
 import { BlockMeta } from "./block-meta"
-import { BlockOutline } from "./block-outline"
-import { docReducer, errorsByBlock, type DocAction } from "./builder-state"
+import {
+  docReducer,
+  errorsByBlock,
+  firstVisibleErrorBlock,
+  publishProblems,
+  type DocAction,
+  type PublishProblem,
+} from "./builder-state"
 import { ConflictDialog } from "./conflict-dialog"
 import { HistorySheet } from "./history-sheet"
 import { PreviewPane, previewSrc } from "./preview-pane"
+import { PublishProblems } from "./publish-problems"
 import { pageDetailQuery, pageRevisionsQuery, type PageDetail } from "./queries"
 import { SaveIndicator } from "./save-indicator"
 import { SeoForm } from "./seo-form"
@@ -116,19 +121,17 @@ function Builder({
   const readOnly = !canEdit
   const [doc, setDoc] = useState(() => toDraft(page.draft))
   const docRef = useRef(doc)
-  const [selectedId, setSelectedId] = useState<string | null>(
-    doc.blocks[0]?.id ?? null
-  )
   // Keyed by block id when publish fails, so a later reorder cannot move
   // the markers; a block's own edit clears them.
   const [blockErrors, setBlockErrors] = useState<
     ReadonlyMap<string, Record<string, string[]>>
   >(() => new Map())
+  // Every error the last failed publish reported, shown above the editor.
+  const [problems, setProblems] = useState<PublishProblem[]>([])
   // A publish, discard or restore found a newer version on the server.
   const [stale, setStale] = useState<Conflict | null>(null)
   const [dismissed, setDismissed] = useState<Conflict | null>(null)
   const [unpublished, setUnpublished] = useState(page.hasUnpublishedChanges)
-  const [libraryOpen, setLibraryOpen] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
 
   const { state, schedule, flush, exclusive, overwrite, reset, getVersion } =
@@ -190,13 +193,10 @@ function Builder({
     void reload()
   }, [getVersion, reload, reset])
 
-  const selected = doc.blocks.find((block) => block.id === selectedId) ?? null
-  const invalidIds = useMemo(() => new Set(blockErrors.keys()), [blockErrors])
-  const onData = useCallback(
-    (data: Record<string, unknown>) => {
-      if (selectedId) apply({ type: "data", id: selectedId, data })
-    },
-    [apply, selectedId]
+  // Sections are fixed: every visible one is edited in place, top to bottom.
+  const visibleBlocks = useMemo(
+    () => doc.blocks.filter((block) => !block.hidden),
+    [doc.blocks]
   )
 
   // ⌘S / Ctrl+S saves now (a modifier shortcut, not a single-key hotkey).
@@ -219,8 +219,12 @@ function Builder({
     if (error instanceof ApiError && error.code === "VALIDATION_FAILED") {
       const errors = errorsByBlock(error.fieldErrors, docRef.current)
       setBlockErrors(errors)
-      const [first] = errors.keys()
-      if (first) setSelectedId(first)
+      setProblems(publishProblems(error.fieldErrors, docRef.current))
+      const first = firstVisibleErrorBlock(errors, docRef.current)
+      if (first)
+        document
+          .getElementById(`block-${first}`)
+          ?.scrollIntoView({ behavior: "smooth", block: "start" })
     }
     toast.error(error.message)
   }
@@ -245,6 +249,7 @@ function Builder({
         hasUnpublishedChanges: false,
       })
       setBlockErrors(new Map())
+      setProblems([])
       setUnpublished(false)
       toast.success("Published")
       void queryClient.invalidateQueries({ queryKey: queryKeys.pages.all })
@@ -276,20 +281,19 @@ function Builder({
     state.status === "conflict" &&
     state.conflict !== null &&
     state.conflict !== dismissed
-  const SelectedIcon = selected
-    ? BLOCK_ICONS[BLOCK_BY_TYPE[selected.type].icon]
-    : null
+
+  const back = backLinkForPage(page)
 
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
         breadcrumbs={
           <Link
-            href="/admin/pages"
+            href={back.href}
             className="inline-flex w-fit items-center gap-1.5 rounded-md text-sm font-medium text-muted-foreground outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
           >
             <ArrowLeftIcon aria-hidden className="size-4" />
-            Pages
+            {back.label}
           </Link>
         }
         title={page.title}
@@ -393,6 +397,7 @@ function Builder({
           </Button>
         </div>
       ) : null}
+      <PublishProblems problems={problems} />
       {readOnly ? (
         <p
           role="note"
@@ -425,129 +430,64 @@ function Builder({
           </TabsTrigger>
         </TabsList>
         <TabsContent value="content">
-          <div className="grid items-start gap-5 xl:grid-cols-[272px_minmax(0,1fr)_minmax(0,1.1fr)]">
-            <nav
-              aria-label="Page outline"
-              className="rounded-card flex flex-col gap-4 bg-card p-4 xl:sticky xl:top-4 xl:max-h-[calc(var(--content-h)-2rem)] xl:overflow-y-auto"
-            >
-              <div className="flex items-center justify-between gap-2 px-1">
-                <h2 className="text-card-title">Blocks</h2>
-                <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-semibold text-muted-foreground tabular-nums">
-                  {doc.blocks.length}
-                </span>
-              </div>
-              {doc.blocks.length === 0 ? (
-                <p className="rounded-xl border border-dashed p-4 text-center text-sm text-muted-foreground">
-                  No blocks yet.
-                </p>
-              ) : (
-                <BlockOutline
-                  doc={doc}
-                  selectedId={selectedId}
-                  invalidIds={invalidIds}
-                  readOnly={readOnly}
-                  onSelect={setSelectedId}
-                  onMove={(from, to) => apply({ type: "move", from, to })}
-                  onToggleHidden={(block: DraftBlock) =>
-                    apply({
-                      type: "meta",
-                      id: block.id,
-                      patch: { hidden: !block.hidden },
-                    })
-                  }
-                  onRemove={(id) => {
-                    if (window.confirm("Remove this block?"))
-                      apply({ type: "remove", id })
-                  }}
-                />
-              )}
-              {canEdit ? (
-                <Button
-                  variant="outline"
-                  className="h-11 rounded-xl border-dashed font-semibold text-primary hover:border-primary hover:bg-accent hover:text-accent-foreground"
-                  onClick={() => setLibraryOpen(true)}
-                >
-                  <PlusIcon data-icon="inline-start" />
-                  Add block
-                </Button>
-              ) : null}
-            </nav>
-            <section
-              aria-label="Block settings"
-              className="rounded-card flex min-w-0 flex-col gap-6 bg-card p-5 sm:p-6"
-            >
-              {selected ? (
-                <>
-                  <div className="flex items-center gap-3">
-                    <span
-                      aria-hidden
-                      className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground"
-                    >
-                      {SelectedIcon ? (
-                        <SelectedIcon className="size-5" />
-                      ) : null}
-                    </span>
-                    <div className="min-w-0">
-                      <h2 className="text-card-title truncate">
-                        {BLOCK_BY_TYPE[selected.type].label}
-                      </h2>
-                      <p className="truncate font-mono text-xs text-muted-foreground">
-                        #{selected.anchor}
-                      </p>
+          <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
+            <div className="flex min-w-0 flex-col gap-5">
+              {visibleBlocks.map((block) => {
+                const Icon = BLOCK_ICONS[BLOCK_BY_TYPE[block.type].icon]
+                const label = BLOCK_BY_TYPE[block.type].label
+                return (
+                  <section
+                    key={block.id}
+                    id={`block-${block.id}`}
+                    aria-labelledby={`block-${block.id}-title`}
+                    data-block-card
+                    data-invalid={blockErrors.has(block.id) || undefined}
+                    className="rounded-card flex min-w-0 scroll-mt-4 flex-col gap-6 bg-card p-5 data-invalid:ring-2 data-invalid:ring-destructive/60 sm:p-6"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span
+                        aria-hidden
+                        className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground"
+                      >
+                        {Icon ? <Icon className="size-5" /> : null}
+                      </span>
+                      <div className="min-w-0">
+                        <h2
+                          id={`block-${block.id}-title`}
+                          className="text-card-title truncate"
+                        >
+                          {label}
+                        </h2>
+                        <p className="truncate font-mono text-xs text-muted-foreground">
+                          #{block.anchor}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                  <BlockForm
-                    key={selected.id}
-                    block={selected}
-                    errors={blockErrors.get(selected.id)}
-                    readOnly={readOnly}
-                    onChange={onData}
-                  />
-                  <div className="flex flex-col gap-4 border-t pt-6">
-                    <h3 className="text-[15px] font-semibold">
-                      Section settings
-                    </h3>
-                    <BlockMeta
-                      block={selected}
-                      first={doc.blocks[0]?.id === selected.id}
-                      errors={blockErrors.get(selected.id)}
+                    <BlockForm
+                      block={block}
+                      errors={blockErrors.get(block.id)}
                       readOnly={readOnly}
-                      onChange={(patch) =>
-                        apply({ type: "meta", id: selected.id, patch })
+                      pageTitle={page.title}
+                      onChange={(data) =>
+                        apply({ type: "data", id: block.id, data })
                       }
                     />
-                  </div>
-                </>
-              ) : (
-                <div className="flex flex-col items-center gap-3 py-16 text-center">
-                  <span
-                    aria-hidden
-                    className="flex size-12 items-center justify-center rounded-2xl bg-accent text-accent-foreground"
-                  >
-                    <LayersIcon className="size-6" />
-                  </span>
-                  <p className="font-semibold">
-                    {doc.blocks.length === 0
-                      ? "Start with a block"
-                      : "Choose a block to edit it"}
-                  </p>
-                  <p className="max-w-xs text-sm text-muted-foreground">
-                    {doc.blocks.length === 0
-                      ? "Pages are built from blocks: a hero, text, FAQs and more."
-                      : "Pick one from the outline to change its content."}
-                  </p>
-                  {canEdit && doc.blocks.length === 0 ? (
-                    <Button
-                      className={FORM_ACTION}
-                      onClick={() => setLibraryOpen(true)}
-                    >
-                      <PlusIcon data-icon="inline-start" />
-                      Add block
-                    </Button>
-                  ) : null}
-                </div>
-              )}
-            </section>
+                    <div className="flex flex-col gap-4 border-t pt-6">
+                      <h3 className="text-[15px] font-semibold">
+                        Section settings
+                      </h3>
+                      <BlockMeta
+                        block={block}
+                        readOnly={readOnly}
+                        onChange={(patch) =>
+                          apply({ type: "meta", id: block.id, patch })
+                        }
+                      />
+                    </div>
+                  </section>
+                )
+              })}
+            </div>
             <PreviewPane
               path={page.path}
               refreshKey={state.savedAt}
@@ -567,17 +507,6 @@ function Builder({
           />
         </TabsContent>
       </Tabs>
-      <BlockLibrary
-        open={libraryOpen}
-        onOpenChange={setLibraryOpen}
-        kind={page.kind}
-        doc={doc}
-        onAdd={(type) => {
-          const before = new Set(docRef.current.blocks.map((b) => b.id))
-          const next = apply({ type: "add", blockType: type })
-          setSelectedId(next.blocks.find((b) => !before.has(b.id))?.id ?? null)
-        }}
-      />
       <HistorySheet
         open={historyOpen}
         onOpenChange={setHistoryOpen}

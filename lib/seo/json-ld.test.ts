@@ -11,6 +11,7 @@ import {
   jsonLd,
   personNode,
   planNodes,
+  serviceFormatNodes,
   websiteNode,
 } from "./json-ld"
 
@@ -140,9 +141,7 @@ describe("page nodes", () => {
   })
 
   it("marks up FAQs and plans", () => {
-    expect(
-      faqNode([{ id: "1", question: "Does it work?", answer: "Often." }])
-    ).toEqual({
+    expect(faqNode([{ question: "Does it work?", answer: "Often." }])).toEqual({
       "@type": "FAQPage",
       mainEntity: [
         {
@@ -186,6 +185,32 @@ describe("page nodes", () => {
         url: `${origin}/contact?plan=programme`,
       },
     })
+  })
+})
+
+describe("service page nodes", () => {
+  it("marks up inline formats with offers at the page's own url", () => {
+    const nodes = serviceFormatNodes({
+      origin,
+      path: "/services/anxiety",
+      siteName: "Magda Kennedy",
+      plans: [
+        { name: "Single", summary: "One.", priceLabel: "€90" },
+        { name: "Custom", summary: "Ask.", priceLabel: "On request" },
+      ],
+    })
+    expect(nodes).toHaveLength(2)
+    expect(nodes[0]).toMatchObject({
+      "@type": "Service",
+      name: "Single",
+      offers: {
+        "@type": "Offer",
+        price: "90.00",
+        priceCurrency: "EUR",
+        url: `${origin}/services/anxiety`,
+      },
+    })
+    expect(JSON.stringify(nodes[1])).not.toContain('price"')
   })
 })
 

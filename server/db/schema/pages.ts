@@ -11,6 +11,7 @@ import {
 import type { PageDocument, PageSeo, PageSettings } from "@/blocks/page"
 
 import { users } from "./auth"
+import { services } from "./content"
 
 // A URL whose document is an ordered list of blocks (docs/brief.md §6.1).
 // `draft` is always the working copy; `published` is what the site serves.
@@ -18,6 +19,10 @@ export const pages = pgTable("pages", {
   id: uuid().primaryKey().defaultRandom(),
   // Fixed keys for system pages (cannot be deleted); null for custom pages.
   systemKey: text().unique(),
+  // The service whose detail page this is (/services/<slug>); null otherwise.
+  serviceId: uuid()
+    .unique()
+    .references(() => services.id, { onDelete: "set null" }),
   path: text().notNull().unique(),
   title: text().notNull(),
   status: text({ enum: ["draft", "published"] })

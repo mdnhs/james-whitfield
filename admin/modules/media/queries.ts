@@ -9,7 +9,7 @@ export type MediaItem = MediaPage["items"][number]
 export type MediaListParams = {
   page?: number
   q?: string
-  type?: "image" | "pdf"
+  type?: "image" | "pdf" | "lottie"
   missingAlt?: boolean
   ids?: string[]
 }

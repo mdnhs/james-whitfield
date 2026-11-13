@@ -79,8 +79,7 @@ test("the SEO center shows a health score and Fix links into the editor", async 
 test("the SERP preview follows the SEO title as it is typed", async ({
   page,
 }) => {
-  await page.goto("/admin/pages")
-  await page.getByRole("link", { name: /About/ }).first().click()
+  await page.goto("/admin/website/about")
   await page.getByRole("tab", { name: "SEO" }).click()
   await page.getByLabel("SEO title").fill("Meet Magda")
   await expect(

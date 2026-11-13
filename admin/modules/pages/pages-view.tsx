@@ -1,40 +1,22 @@
 "use client"
 
-import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { useQuery } from "@tanstack/react-query"
 import {
   createColumnHelper,
   tableFeatures,
   useTable,
 } from "@tanstack/react-table"
 import { formatDistanceToNow } from "date-fns"
-import { FileTextIcon, PlusIcon } from "lucide-react"
+import { FileTextIcon } from "lucide-react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { useState } from "react"
 
 import { EmptyState } from "@/admin/components/dashboard/empty-state"
-import {
-  PageHeader,
-  PRIMARY_ACTION,
-} from "@/admin/components/dashboard/page-header"
+import { PageHeader } from "@/admin/components/dashboard/page-header"
 import { CardSkeleton } from "@/admin/components/dashboard/skeletons"
 import { StatusPill } from "@/admin/components/dashboard/status-pill"
 import { DataTable } from "@/admin/components/data-table/data-table"
-import { SchemaForm } from "@/admin/components/schema-form/schema-form"
-import { usePermission } from "@/admin/lib/actor-context"
-import { pagesApi, parseResponse } from "@/admin/lib/api"
-import { ApiError } from "@/admin/lib/api-error"
-import { queryKeys } from "@/admin/lib/query-keys"
-import { useResetOnHide } from "@/admin/lib/use-reset-on-hide"
 import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { NewPageInput } from "@/lib/content/page-path"
+import { adminHrefForPage } from "@/lib/admin/website"
 
 import { pagesListQuery, type PageSummary } from "./queries"
 
@@ -66,7 +48,7 @@ const columns = helper.columns([
     header: "Title",
     cell: (info) => (
       <Link
-        href={`/admin/pages/${info.row.original.id}`}
+        href={adminHrefForPage(info.row.original)}
         className="font-semibold underline-offset-4 hover:text-primary hover:underline"
       >
         {info.getValue()}
@@ -101,9 +83,6 @@ const columns = helper.columns([
 
 export function PagesView() {
   const list = useQuery(pagesListQuery())
-  const canCreate = usePermission({ page: ["create"] })
-  const [creating, setCreating] = useState(false)
-  useResetOnHide(() => setCreating(false))
   const table = useTable({
     features,
     columns,
@@ -116,17 +95,6 @@ export function PagesView() {
       <PageHeader
         title="Pages"
         description="Every page of the site. Changes stay in a draft until you publish."
-        actions={
-          canCreate ? (
-            <Button
-              className={PRIMARY_ACTION}
-              onClick={() => setCreating(true)}
-            >
-              <PlusIcon data-icon="inline-start" />
-              New page
-            </Button>
-          ) : null
-        }
       />
       {list.isPending ? (
         <CardSkeleton />
@@ -150,7 +118,7 @@ export function PagesView() {
           renderCard={(row) => (
             <div className="flex flex-col gap-2 text-sm">
               <Link
-                href={`/admin/pages/${row.original.id}`}
+                href={adminHrefForPage(row.original)}
                 className="font-semibold"
               >
                 {row.original.title}
@@ -166,52 +134,6 @@ export function PagesView() {
           )}
         />
       )}
-      <NewPageDialog open={creating} onOpenChange={setCreating} />
     </div>
-  )
-}
-
-function NewPageDialog({
-  open,
-  onOpenChange,
-}: {
-  open: boolean
-  onOpenChange(open: boolean): void
-}) {
-  const queryClient = useQueryClient()
-  const router = useRouter()
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>New page</DialogTitle>
-          <DialogDescription>
-            It starts as an empty draft; nobody sees it until you publish.
-          </DialogDescription>
-        </DialogHeader>
-        <SchemaForm
-          schema={NewPageInput}
-          defaultValues={{ path: "/", title: "" }}
-          submitLabel="Create page"
-          onSubmit={async (values) => {
-            try {
-              const { id } = await parseResponse(
-                pagesApi.index.$post({ json: values })
-              )
-              await queryClient.invalidateQueries({
-                queryKey: queryKeys.pages.all,
-              })
-              router.push(`/admin/pages/${id}`)
-            } catch (error) {
-              if (!(error instanceof ApiError)) throw error
-              return {
-                formError: error.message,
-                fieldErrors: error.fieldErrors,
-              }
-            }
-          }}
-        />
-      </DialogContent>
-    </Dialog>
   )
 }

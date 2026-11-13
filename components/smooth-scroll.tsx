@@ -4,10 +4,27 @@ import "lenis/dist/lenis.css"
 
 import { useEffect } from "react"
 import { usePathname } from "next/navigation"
+import type Lenis from "lenis"
 import { ReactLenis, useLenis } from "lenis/react"
 
 import { gsap, ScrollTrigger } from "@/lib/gsap"
-import { findTarget } from "@/lib/page-root"
+import { findTarget, flowTop } from "@/lib/page-root"
+
+// Eases in and out, so a button-led glide neither jerks off the mark nor
+// brakes hard at the end (expo-out starts at full speed, which reads as a
+// shove). Longer trips take a little longer, within bounds.
+const glideEase = (t: number) =>
+  t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
+
+export function glideTo(lenis: Lenis, target: HTMLElement | 0, offset = 0) {
+  const top = target === 0 ? 0 : Math.max(0, flowTop(target) + offset)
+  const distance = Math.abs(top - lenis.animatedScroll)
+  lenis.scrollTo(top, {
+    duration: Math.min(2.2, Math.max(0.9, 0.7 + distance / 3000)),
+    easing: glideEase,
+    force: true,
+  })
+}
 
 // Same-page "#hash" links scroll through Lenis. Runs in the capture phase so it
 // cancels the click before next/link performs its instant jump.
@@ -35,11 +52,7 @@ function AnchorScroll() {
       if (!target) return
 
       event.preventDefault()
-      lenis.scrollTo(target, {
-        offset: -20,
-        duration: 1.2,
-        easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      })
+      glideTo(lenis, target, -20)
       history.pushState(null, "", url.hash)
     }
 
@@ -51,15 +64,24 @@ function AnchorScroll() {
 }
 
 // A new page starts at the top. Lenis keeps its own scroll target, so without
-// this it would glide back to the previous page's position. Hash links are left
-// for the browser to resolve.
+// this it would glide back to the previous page's position. A page opened at a
+// #hash (a button on another page) starts at the top too, then glides down to
+// its section, measured in the flow so a stuck card is not mistaken for it.
 function RouteReset() {
   const lenis = useLenis()
   const pathname = usePathname()
 
   useEffect(() => {
-    if (!lenis || location.hash) return
+    if (!lenis) return
     lenis.scrollTo(0, { immediate: true, force: true })
+    const id = decodeURIComponent(location.hash.slice(1))
+    if (!id) return
+    // Wait a frame so the new page is laid out and its sticky cards placed.
+    const frame = requestAnimationFrame(() => {
+      const target = findTarget(id)
+      if (target) glideTo(lenis, target, -20)
+    })
+    return () => cancelAnimationFrame(frame)
   }, [lenis, pathname])
 
   return null
@@ -94,8 +116,10 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
       root
       options={{
         autoRaf: false,
-        duration: 1.15,
-        easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+        // Lerp, not duration: a duration restarts its easing curve on every
+        // wheel event, so a trackpad's stream of small deltas lurches. Lerp
+        // eases continuously toward the latest target.
+        lerp: 0.085,
         wheelMultiplier: 1.0,
         touchMultiplier: 1.5,
         smoothWheel: true,

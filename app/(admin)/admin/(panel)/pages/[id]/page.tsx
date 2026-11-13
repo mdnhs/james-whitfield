@@ -5,7 +5,6 @@ import * as z from "zod"
 
 import { CardSkeleton } from "@/admin/components/dashboard/skeletons"
 import { PageBuilder } from "@/admin/modules/pages/page-builder"
-import { permissionFor } from "@/lib/admin/nav"
 import { requirePermission } from "@/server/auth/session"
 
 export const metadata: Metadata = { title: "Edit page" }
@@ -32,7 +31,7 @@ async function Gate({
   // saw read, and the auth check below is a dynamic boundary that would end
   // the render before `id` was recorded (the segment then matched any id).
   const { id } = await params
-  await requirePermission(permissionFor("/admin/pages"))
+  await requirePermission({ page: ["read"] })
   if (!z.uuid().safeParse(id).success) notFound()
   return <PageBuilder id={id} />
 }

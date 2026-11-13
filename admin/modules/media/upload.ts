@@ -4,7 +4,8 @@ import { ApiError } from "@/admin/lib/api-error"
 import type { MediaItem } from "./queries"
 
 const TOO_LARGE = "That file is over 20 MB. Choose a smaller one."
-const WRONG_TYPE = "Upload a JPEG, PNG, WebP, AVIF or PDF file."
+const WRONG_TYPE =
+  "Upload a JPEG, PNG, WebP, AVIF, SVG, ICO, PDF or Lottie JSON file."
 const BUSY = "The server is busy processing other uploads. Try again shortly."
 
 // Mirrors server/lib/media (MAX_UPLOAD_BYTES, sniff.ts); that code is
@@ -15,7 +16,11 @@ export const ACCEPTED_TYPES = [
   "image/png",
   "image/webp",
   "image/avif",
+  "image/svg+xml",
+  "image/x-icon",
+  "image/vnd.microsoft.icon",
   "application/pdf",
+  "application/json",
 ] as const
 const EXTENSION_TYPES: Record<string, string> = {
   jpg: "image/jpeg",
@@ -23,14 +28,19 @@ const EXTENSION_TYPES: Record<string, string> = {
   png: "image/png",
   webp: "image/webp",
   avif: "image/avif",
+  svg: "image/svg+xml",
+  ico: "image/x-icon",
   pdf: "application/pdf",
+  json: "application/json",
 }
 
 // A message when the server would refuse the file anyway, else null.
 export function checkFile(file: File): string | null {
+  // The extension wins: browsers label .ico and .json inconsistently. The
+  // server checks the bytes either way.
   const type =
-    file.type ||
     EXTENSION_TYPES[file.name.split(".").pop()?.toLowerCase() ?? ""] ||
+    file.type ||
     ""
   if (!(ACCEPTED_TYPES as readonly string[]).includes(type)) return WRONG_TYPE
   if (file.size > MAX_UPLOAD_BYTES) return TOO_LARGE
@@ -104,3 +114,9 @@ export function uploadFile(
     xhr.send(form)
   })
 }
+
+// For <input accept>: types and extensions, since .ico and .json types vary.
+export const ACCEPT_ALL =
+  "image/jpeg,image/png,image/webp,image/avif,image/svg+xml,.svg,image/x-icon,.ico,application/pdf,application/json,.json"
+export const ACCEPT_IMAGES =
+  "image/jpeg,image/png,image/webp,image/avif,image/svg+xml,.svg,image/x-icon,.ico"

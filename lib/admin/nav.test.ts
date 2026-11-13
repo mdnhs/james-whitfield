@@ -26,12 +26,7 @@ const childIds = (role: RoleName, section: string) =>
 
 // The content globals (docs/brief.md §6.4, §7.2): globals.read, not
 // settings.read, so editors, marketers and viewers reach them.
-const GLOBALS_PAGES = [
-  "settings-contact",
-  "settings-navigation",
-  "settings-footer",
-  "settings-forms",
-]
+const GLOBALS_PAGES = ["settings-contact", "settings-forms"]
 
 describe("visibleNav (docs/brief.md §7.2, §9.1)", () => {
   it("shows intake only the dashboard, enquiries and live chat", () => {
@@ -39,14 +34,7 @@ describe("visibleNav (docs/brief.md §7.2, §9.1)", () => {
   })
 
   it("shows a viewer read-only content sections and only the globals", () => {
-    expect(ids("viewer")).toEqual([
-      "dashboard",
-      "pages",
-      "insights",
-      "collections",
-      "seo",
-      "settings",
-    ])
+    expect(ids("viewer")).toEqual(["dashboard", "website", "seo", "settings"])
     expect(childIds("viewer", "settings")).toEqual(GLOBALS_PAGES)
     const seo = visibleNav(["viewer"]).find((item) => item.id === "seo")
     expect(seo?.children?.map((child) => child.id)).toEqual([
@@ -55,12 +43,26 @@ describe("visibleNav (docs/brief.md §7.2, §9.1)", () => {
     ])
   })
 
+  it("lists the Website children for an owner", () => {
+    const website = visibleNav(["owner"]).find((item) => item.id === "website")
+    expect(website?.children?.map((child) => child.label)).toEqual([
+      "Home",
+      "About",
+      "Services",
+      "Service pages",
+      "How it works",
+      "Contact",
+      "Insights",
+      "Legal pages",
+      "Header & footer",
+    ])
+    expect(ids("owner")).not.toContain("appearance")
+  })
+
   it("keeps enquiries away from a marketer", () => {
     expect(ids("marketer")).toEqual([
       "dashboard",
-      "pages",
-      "insights",
-      "collections",
+      "website",
       "media",
       "newsletter",
       "seo",
@@ -168,6 +170,16 @@ describe("isActivePath", () => {
     expect(isActivePath("/admin/seo/defaults", "/admin/seo")).toBe(true)
     expect(isActivePath("/admin/seo-tools", "/admin/seo")).toBe(false)
   })
+
+  it("treats a link's match prefixes as active too", () => {
+    const insights = NAV.find((i) => i.id === "website")?.children?.find(
+      (c) => c.label === "Insights"
+    )
+    expect(insights).toBeDefined()
+    expect(isActivePath("/admin/insights/categories", insights!)).toBe(true)
+    expect(isActivePath("/admin/website/insights", insights!)).toBe(true)
+    expect(isActivePath("/admin/website/home", insights!)).toBe(false)
+  })
 })
 
 // Real pages read their gate from here instead of restating it, so a page and
@@ -178,6 +190,7 @@ describe("permissionFor", () => {
       redirect: ["read"],
     })
     expect(permissionFor("/admin/design")).toEqual({ code: ["update"] })
+    expect(permissionFor("/admin/website/legal")).toEqual({ page: ["read"] })
   })
 
   it("throws for a path the registry does not know", () => {

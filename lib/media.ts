@@ -10,3 +10,6 @@ export type MediaAsset = {
   alt: string
   focal: { x: number; y: number } | null
 }
+
+// SVG and ICO are served as uploaded: next/image cannot resize them.
+export const servedAsIs = (src: string) => /\.(?:svg|ico)(?:[?#]|$)/i.test(src)

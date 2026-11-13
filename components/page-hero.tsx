@@ -3,6 +3,13 @@ import Link from "next/link"
 import type { BlockView } from "@/blocks/media-refs"
 import { Container } from "@/components/layout/container"
 import { MediaImage } from "@/components/media-image"
+import { buttonVariants } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
+
+// The home hero's primary pill (features/hero/components/hero-content.tsx):
+// 52px full-width on phones, 50px auto-width from sm.
+const ctaClass =
+  "h-13 w-full sm:h-12.5 sm:w-auto rounded-full px-6 sm:px-[27px] py-0 text-base sm:text-[15px] font-semibold leading-5 sm:leading-[normal] bg-white text-brand hover:bg-white/90"
 
 // Title band for inner pages: photo under a dark gradient, breadcrumb, large
 // serif title and a short line of context. The fixed site header overlays its
@@ -14,7 +21,7 @@ export function PageHero({
   content: BlockView<"hero.page">
   homeLabel: string
 }) {
-  const { title, subtitle, image, focal, tint, mirror } = content
+  const { title, subtitle, image, focal, tint, mirror, cta } = content
   return (
     <section
       aria-labelledby="page-hero-heading"
@@ -85,14 +92,32 @@ export function PageHero({
           >
             {title}
           </h1>
-          <p
-            data-motion="rise"
-            data-reveal
-            data-delay="0.15"
-            className="max-w-90 text-[17px] leading-6.5 text-mist sm:text-xl sm:leading-[1.55] sm:text-white/84"
-          >
-            {subtitle}
-          </p>
+          <div className="flex flex-col items-start gap-5 sm:gap-6">
+            <p
+              data-motion="rise"
+              data-reveal
+              data-delay="0.15"
+              className="max-w-90 text-[17px] leading-6.5 text-mist sm:text-xl sm:leading-[1.55] sm:text-white/84"
+            >
+              {subtitle}
+            </p>
+            {cta && (
+              <div
+                data-motion="rise"
+                data-reveal
+                data-delay="0.25"
+                className="w-full sm:w-auto"
+              >
+                <Link
+                  href={cta.href}
+                  data-magnetic
+                  className={cn(buttonVariants(), ctaClass)}
+                >
+                  {cta.label}
+                </Link>
+              </div>
+            )}
+          </div>
         </div>
       </Container>
     </section>

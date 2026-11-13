@@ -65,7 +65,7 @@ const hero = (h: HeroFixture): Spec => ({
   type: "hero.page",
   anchor: "home",
   chapter: "Welcome",
-  data: { ...h, image: mediaRef(h.image) },
+  data: { ...h, image: mediaRef(h.image), cta: null },
 })
 const faq = (variant: "home" | "page"): Spec => ({
   type: "faq",

@@ -31,14 +31,14 @@ export const DASHBOARD_FIXTURE = {
       {
         rule: "rebrand",
         label: "Page \u201cAbout\u201d",
-        href: "/admin/pages/p-about",
+        href: "/admin/website/about",
         message:
           "Mentions the previous practitioner (\u201cJames\u201d or jameswhitfield.ie)",
       },
       {
         rule: "placeholder-contact",
         label: "Footer",
-        href: "/admin/settings/footer",
+        href: "/admin/website/header-footer",
         message: "Has placeholder contact details such as [email] or [phone]",
       },
       {

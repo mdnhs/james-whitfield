@@ -7,9 +7,11 @@ import type * as z from "zod"
 
 import { toFields } from "@/admin/components/schema-form/to-fields"
 import { FieldWidget } from "@/admin/components/schema-form/widgets"
+import { ItemsPanel } from "@/admin/modules/collections/items-panel"
 import type { DraftBlock } from "@/blocks/page"
 import { BLOCK_BY_TYPE } from "@/blocks/registry"
 import { FieldGroup } from "@/components/ui/field"
+import { collectionsOf } from "@/lib/content/block-collections"
 
 import { BLOCK_FIELD_UI } from "./block-ui"
 
@@ -20,11 +22,13 @@ export function BlockForm({
   block,
   errors,
   readOnly,
+  pageTitle,
   onChange,
 }: {
   block: DraftBlock
   errors?: Record<string, string[]>
   readOnly: boolean
+  pageTitle: string
   onChange(data: Record<string, unknown>): void
 }) {
   const def = BLOCK_BY_TYPE[block.type]
@@ -66,13 +70,27 @@ export function BlockForm({
     }
   }, [errors, form])
   return (
-    <fieldset disabled={readOnly} className="min-w-0">
-      <legend className="sr-only">{def.label}</legend>
-      <FieldGroup>
-        {fields.map((field) => (
-          <FieldWidget key={field.name} field={field} control={form.control} />
-        ))}
-      </FieldGroup>
-    </fieldset>
+    <div className="flex min-w-0 flex-col gap-6">
+      <fieldset disabled={readOnly} className="min-w-0">
+        <legend className="sr-only">{def.label}</legend>
+        <FieldGroup>
+          {fields.map((field) => (
+            <FieldWidget
+              key={field.name}
+              field={field}
+              control={form.control}
+            />
+          ))}
+        </FieldGroup>
+      </fieldset>
+      {collectionsOf(block.type).map((name) => (
+        <ItemsPanel
+          key={name}
+          name={name}
+          pageTitle={pageTitle}
+          readOnly={readOnly}
+        />
+      ))}
+    </div>
   )
 }

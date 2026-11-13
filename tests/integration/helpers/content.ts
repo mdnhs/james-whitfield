@@ -38,6 +38,7 @@ export const heroDocument = (mediaId: string, title = "Hello") => ({
         focal: null,
         tint: 0.3,
         mirror: false,
+        cta: null,
       },
     },
   ],

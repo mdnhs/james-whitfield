@@ -1,6 +1,6 @@
 import Image, { type ImageProps } from "next/image"
 
-import type { MediaAsset } from "@/lib/media"
+import { servedAsIs, type MediaAsset } from "@/lib/media"
 
 type Props = Omit<ImageProps, "src" | "alt" | "placeholder" | "blurDataURL"> & {
   media: MediaAsset
@@ -33,6 +33,7 @@ export function MediaImage({
       src={media.src}
       alt={alt ?? media.alt}
       {...size}
+      unoptimized={servedAsIs(media.src)}
       placeholder={blur && media.blurDataURL ? "blur" : "empty"}
       blurDataURL={media.blurDataURL ?? undefined}
       style={

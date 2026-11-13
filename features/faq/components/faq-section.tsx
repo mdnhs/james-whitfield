@@ -12,7 +12,11 @@ export function FaqSection({
   items,
 }: {
   id: string
-  content: BlockView<"faq">
+  // Also fed by service.faq, which has no selection of its own.
+  content: Pick<
+    BlockView<"faq">,
+    "variant" | "title" | "subtitle" | "initiallyOpen"
+  >
   items: FaqView[]
 }) {
   const { title, subtitle } = content

@@ -40,6 +40,19 @@ export const BLOCK_FIELD_UI: Partial<Record<BlockType, FieldOverrides>> = {
   "hero.page": {
     tint: { step: 0.01 },
     focal: { label: "Focal point override" },
+    cta: { label: "Button", description: "Leave empty for no button." },
+  },
+  "service.intro": {
+    body: { description: "A blank line starts a new paragraph." },
+    forYouHeading: { label: "List heading" },
+    forYou: { label: "This is for you if" },
+  },
+  "service.faq": {
+    initiallyOpen: {
+      label: "Open on load",
+      description:
+        "Position of the question to open (0 = first); empty keeps all closed.",
+    },
   },
   newsletter: { override: { label: "Custom copy for this page" } },
   richtext: { doc: { label: "Text" } },

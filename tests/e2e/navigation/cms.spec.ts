@@ -15,12 +15,12 @@ for (const path of [
     const response = await page.goto(path)
     expect(response?.status()).toBe(404)
     await expect(
-      page.getByRole("heading", { name: "Page not found" })
+      page.getByRole("heading", { level: 1, name: /This path leads nowhere/ })
     ).toBeVisible()
     await expect(
       page.locator('meta[name="robots"][content*="noindex"]').first()
     ).toBeAttached()
-    for (const name of ["Back to home", "Read the insights", "Get in touch"]) {
+    for (const name of ["Back to home", "Book a discovery call", "Insights"]) {
       await expect(page.getByRole("link", { name })).toBeVisible()
     }
   })

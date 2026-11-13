@@ -3,6 +3,8 @@
 import Image from "next/image"
 import { useRef } from "react"
 
+import { servedAsIs } from "@/lib/media"
+
 import type { MediaItem } from "./queries"
 
 type Point = { x: number; y: number }
@@ -57,6 +59,7 @@ export function FocalPicker({
       <span ref={frame} className="relative inline-block max-w-full">
         <Image
           src={item.url}
+          unoptimized={servedAsIs(item.url)}
           alt=""
           width={item.width ?? 800}
           height={item.height ?? 600}

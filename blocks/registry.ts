@@ -23,6 +23,12 @@ import {
 } from "./home"
 import { insightsBrowser, newsletter } from "./insights"
 import { richtext } from "./richtext"
+import {
+  serviceBenefits,
+  serviceFaq,
+  serviceFormats,
+  serviceIntro,
+} from "./service"
 import { fit, servicesGrid, servicesPlans, sessionTimeline } from "./services"
 
 // One entry per existing section design (docs/brief.md §6.2). API validation,
@@ -51,6 +57,10 @@ export const BLOCKS = [
   contactDetails,
   contactClinic,
   richtext,
+  serviceIntro,
+  serviceBenefits,
+  serviceFormats,
+  serviceFaq,
 ] as const
 
 type AnyBlock = (typeof BLOCKS)[number]
@@ -104,6 +114,10 @@ export const BlockInstance = z.discriminatedUnion("type", [
   instance(contactDetails),
   instance(contactClinic),
   instance(richtext),
+  instance(serviceIntro),
+  instance(serviceBenefits),
+  instance(serviceFormats),
+  instance(serviceFaq),
 ])
 
 export type BlockInstance = z.infer<typeof BlockInstance>

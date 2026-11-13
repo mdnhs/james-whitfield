@@ -9,8 +9,15 @@ vi.mock("next/cache", async (importOriginal) => ({
 
 import { ROLE_NAMES, type RoleName } from "@/lib/auth/permissions"
 import { closeDb, getDb } from "@/server/db/client"
-import { media, pages, redirects, revisions } from "@/server/db/schema"
+import {
+  media,
+  pages,
+  redirects,
+  revisions,
+  services,
+} from "@/server/db/schema"
 import { writeRevision } from "@/server/lib/revisions"
+import { listOtherPages } from "@/server/modules/pages/service"
 
 import { adminRequest, cookieFor } from "../helpers/auth"
 import { heroDocument, insertMedia, insertPage } from "../helpers/content"
@@ -186,6 +193,120 @@ describe("pages API", () => {
     expect(detail.hasUnpublishedChanges).toBe(true)
   })
 
+  describe("fixed structure", () => {
+    const patch = (id: string, cookie: string, document: unknown) =>
+      adminRequest(`/pages/${id}/draft`, cookie, {
+        method: "PATCH",
+        body: { version: 1, document },
+      })
+
+    it("refuses an extra or reordered block, accepts content changes", async () => {
+      const asset = await insertMedia()
+      const cookie = await cookieFor("editor")
+      const first = heroDocument(asset.id).blocks[0]!
+      const second = {
+        ...first,
+        id: "block-two",
+        type: "richtext",
+        anchor: "two",
+      }
+      const page = await insertPage({
+        path: "/about",
+        systemKey: "about",
+        document: { blocks: [first, second] },
+      })
+
+      const extra = await patch(page.id, cookie, {
+        blocks: [
+          first,
+          second,
+          { ...second, id: "block-three", anchor: "three" },
+        ],
+      })
+      expect(extra.status).toBe(400)
+      expect((await json(extra)).error.code).toBe("VALIDATION_FAILED")
+
+      expect(
+        (await patch(page.id, cookie, { blocks: [second, first] })).status
+      ).toBe(400)
+
+      const edited = {
+        blocks: [
+          {
+            ...first,
+            id: "other-id-1",
+            chapter: "Renamed",
+            joinPrevious: true,
+          },
+          second,
+        ],
+      }
+      expect((await patch(page.id, cookie, edited)).status).toBe(200)
+    })
+
+    it("refuses to restore a version with a different layout", async () => {
+      const { asset, page } = await aboutPage()
+      const cookie = await cookieFor("editor")
+      const first = heroDocument(asset.id).blocks[0]!
+      await writeRevision(getDb(), {
+        entityType: "page",
+        entityId: page.id,
+        version: 1,
+        snapshot: { blocks: [first, { ...first, id: "block-x", anchor: "x" }] },
+        createdBy: null,
+      })
+      const [old] = await getDb()
+        .select()
+        .from(revisions)
+        .where(eq(revisions.entityId, page.id))
+      const response = await adminRequest(
+        `/pages/${page.id}/revisions/${old!.id}/restore`,
+        cookie,
+        { method: "POST", body: { version: page.version } }
+      )
+      expect(response.status).toBe(400)
+      expect((await json(response)).error.message).toBe(
+        "This version has a different layout and can't be restored"
+      )
+      const [row] = await getDb()
+        .select()
+        .from(pages)
+        .where(eq(pages.id, page.id))
+      expect(row!.draft).toEqual(page.draft)
+      expect(row!.version).toBe(page.version)
+    })
+
+    it("refuses to discard onto a different published layout", async () => {
+      const asset = await insertMedia()
+      const cookie = await cookieFor("editor")
+      const first = heroDocument(asset.id).blocks[0]!
+      const [page] = await getDb()
+        .insert(pages)
+        .values({
+          path: "/about",
+          title: "About",
+          systemKey: "about",
+          status: "published",
+          draft: { blocks: [first] },
+          published: {
+            blocks: [first, { ...first, id: "block-x", anchor: "x" }],
+          },
+        } as typeof pages.$inferInsert)
+        .returning()
+      const response = await adminRequest(
+        `/pages/${page!.id}/discard`,
+        cookie,
+        { method: "POST", body: { version: page!.version } }
+      )
+      expect(response.status).toBe(400)
+      const [row] = await getDb()
+        .select()
+        .from(pages)
+        .where(eq(pages.id, page!.id))
+      expect(row!.draft).toEqual(page!.draft)
+    })
+  })
+
   it("keeps the newest 50 page revisions", async () => {
     const { page } = await aboutPage()
     const { id: userId } = (
@@ -208,21 +329,19 @@ describe("pages API", () => {
     expect(Math.min(...rows.map((r) => r.version))).toBe(3)
   })
 
-  it("creates and deletes custom pages, never system ones", async () => {
+  it("has no create route, and deletes custom pages but never system ones", async () => {
     const { page: about } = await aboutPage()
     const cookie = await cookieFor("editor")
-    const create = (path: string) =>
-      adminRequest("/pages", cookie, {
-        method: "POST",
-        body: { path, title: "Team" },
-      })
-    expect((await create("/admin")).status).toBe(400)
-    const created = await create("/team")
-    expect(created.status).toBe(201)
-    expect(expired()).toContain("routes")
-    expect((await create("/team")).status).toBe(409)
+    const created = await adminRequest("/pages", cookie, {
+      method: "POST",
+      body: { path: "/team", title: "Team" },
+    })
+    expect([404, 405]).toContain(created.status)
 
-    const { id } = await json(created)
+    const { id } = await insertPage({
+      path: "/team",
+      document: { blocks: [] },
+    })
     expect(
       (await adminRequest(`/pages/${about.id}`, cookie, { method: "DELETE" }))
         .status
@@ -234,22 +353,13 @@ describe("pages API", () => {
     expect(expired()).toEqual(expect.arrayContaining([`page:${id}`, "routes"]))
   })
 
-  it("reserves /og and removes redirects into a deleted page", async () => {
+  it("removes redirects into a deleted page", async () => {
     await aboutPage()
     const cookie = await cookieFor("editor")
-    expect(
-      (
-        await adminRequest("/pages", cookie, {
-          method: "POST",
-          body: { path: "/og", title: "Og" },
-        })
-      ).status
-    ).toBe(400)
-    const created = await adminRequest("/pages", cookie, {
-      method: "POST",
-      body: { path: "/team", title: "Team" },
+    const { id } = await insertPage({
+      path: "/team",
+      document: { blocks: [] },
     })
-    const { id } = await json(created)
     await getDb()
       .insert(redirects)
       .values([
@@ -314,5 +424,40 @@ describe("share image validation (Ruling R13)", () => {
       canonical: "/about",
       twitterCard: "summary",
     })
+  })
+})
+
+// The Website menu's "Legal & other pages" list: every custom page that no
+// service owns, wherever it lives, so nothing becomes unreachable.
+describe("other pages list", () => {
+  it("lists every non-system page without a service, /services/* included", async () => {
+    const asset = await insertMedia()
+    const doc = heroDocument(asset.id)
+    await insertPage({
+      path: "/services",
+      systemKey: "services",
+      document: doc,
+    })
+    const privacy = await insertPage({ path: "/privacy", document: doc })
+    const orphan = await insertPage({ path: "/services/old", document: doc })
+    const owned = await insertPage({ path: "/services/a", document: doc })
+    const [service] = await getDb()
+      .insert(services)
+      .values({ slug: "a", title: "A", body: "B", icon: "mind" })
+      .returning()
+    await getDb()
+      .update(pages)
+      .set({ serviceId: service!.id })
+      .where(eq(pages.id, owned.id))
+    const ids = (await listOtherPages()).map((p) => p.id)
+    expect(ids).toEqual([privacy.id, orphan.id])
+  })
+
+  it("GET /pages tells each page its service", async () => {
+    const asset = await insertMedia()
+    await insertPage({ path: "/privacy", document: heroDocument(asset.id) })
+    const res = await adminRequest("/pages", await cookieFor("editor"))
+    const { items } = await json(res)
+    expect(items[0]).toMatchObject({ path: "/privacy", serviceId: null })
   })
 })

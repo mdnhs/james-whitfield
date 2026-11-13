@@ -20,20 +20,13 @@ import {
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { GripVerticalIcon, LayersIcon, PlusIcon } from "lucide-react"
+import { GripVerticalIcon, PlusIcon } from "lucide-react"
 import { useId, useState } from "react"
 import { toast } from "sonner"
 
-import { EmptyState } from "@/admin/components/dashboard/empty-state"
-import {
-  PageHeader,
-  PRIMARY_ACTION,
-} from "@/admin/components/dashboard/page-header"
-import { CardSkeleton } from "@/admin/components/dashboard/skeletons"
 import { StatusPill } from "@/admin/components/dashboard/status-pill"
 import { usePermission } from "@/admin/lib/actor-context"
 import { collectionsApi, parseResponse } from "@/admin/lib/api"
-import { ApiError } from "@/admin/lib/api-error"
 import { queryKeys } from "@/admin/lib/query-keys"
 import { useResetOnHide } from "@/admin/lib/use-reset-on-hide"
 import { Button } from "@/components/ui/button"
@@ -47,15 +40,6 @@ import {
 } from "@/components/ui/dialog"
 import { Switch } from "@/components/ui/switch"
 import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import {
   COLLECTION_LABELS,
   type CollectionSlug,
 } from "@/lib/content/collections"
@@ -66,21 +50,35 @@ import { ItemSheet, type EditableItem } from "./item-sheet"
 import { collectionListQuery, type CollectionItem as Item } from "./queries"
 
 const NONE: Item[] = []
-const usedOn = (item: Item) => item.usedOn.join(", ") || "Not used"
 const isVisible = (item: Item) => item.values.isVisible !== false
+// Only services carry one: deleting the service deletes the page too.
+const detailPageOf = (item: Item | null) =>
+  item && "detailPage" in item ? item.detailPage : null
 
-export function CollectionView({ name }: { name: CollectionSlug }) {
+// The items a section shows, edited in place. They stay rows in their
+// collection, so a change here is live on every page that shows them.
+// `readOnly` is the page's own rights; the collection's rights apply too.
+export function ItemsPanel({
+  name,
+  pageTitle,
+  readOnly,
+}: {
+  name: CollectionSlug
+  pageTitle: string
+  readOnly: boolean
+}) {
   const queryClient = useQueryClient()
   const list = useQuery(collectionListQuery(name))
-  const canCreate = usePermission({ collection: ["create"] })
-  const canUpdate = usePermission({ collection: ["update"] })
-  const canDelete = usePermission({ collection: ["delete"] })
+  const canCreate = usePermission({ collection: ["create"] }) && !readOnly
+  const canUpdate = usePermission({ collection: ["update"] }) && !readOnly
+  const canDelete = usePermission({ collection: ["delete"] }) && !readOnly
   const [editing, setEditing] = useState<EditableItem | "new" | null>(null)
-  const [deleting, setDeleting] = useState<Item | null>(null)
+  const [removing, setRemoving] = useState<Item | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const [busy, setBusy] = useState<ReadonlySet<string>>(new Set())
   useResetOnHide(() => {
     setEditing(null)
-    setDeleting(null)
+    setRemoving(null)
   })
   const noun = ITEM_NOUN[name]
   const key = queryKeys.collections.list(name)
@@ -156,234 +154,182 @@ export function CollectionView({ name }: { name: CollectionSlug }) {
     }
   }
 
+  // A 409 (still named on a page) carries the server's own explanation.
   async function remove(item: Item) {
+    if (deleting) return
+    setDeleting(true)
     try {
       await parseResponse(
         collectionsApi[":name"][":id"].$delete({ param: { name, id: item.id } })
       )
-      toast.success("Deleted")
-      setDeleting(null)
+      toast.success("Removed")
     } catch (error) {
-      toast.error(
-        error instanceof ApiError || error instanceof Error
-          ? error.message
-          : "Couldn't delete"
-      )
-      setDeleting(null)
+      toast.error(error instanceof Error ? error.message : "Couldn't remove")
     } finally {
+      setRemoving(null)
+      setDeleting(false)
       await refresh()
+      // A service takes its details page with it.
+      if (name === "services") {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.pages.all })
+      }
     }
   }
 
-  const open = (item: Item) =>
-    setEditing({ id: item.id, version: item.version, values: item.values })
-
-  const actions = (item: Item) => (
-    <span className="flex items-center gap-1">
-      <Button variant="outline" size="sm" onClick={() => open(item)}>
-        {canUpdate ? "Edit" : "View"}
-      </Button>
-      {canDelete ? (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="hover:bg-danger-soft hover:text-danger text-muted-foreground"
-          aria-label={`Delete ${item.title}`}
-          onClick={() => setDeleting(item)}
-        >
-          Delete
-        </Button>
-      ) : null}
-    </span>
-  )
-
-  const visibility = (item: Item) => (
-    <span className="flex items-center gap-2">
-      <Switch
-        aria-label={`Show ${item.title}`}
-        checked={isVisible(item)}
-        disabled={!canUpdate || busy.has(item.id)}
-        onCheckedChange={(next) => void toggleVisible(item, next)}
-      />
-      {isVisible(item) ? null : <StatusPill tone="neutral">Hidden</StatusPill>}
-    </span>
-  )
+  const removingPage = detailPageOf(removing)
+  const alsoOn = (item: Item) => item.usedOn.filter((p) => p !== pageTitle)
 
   return (
-    <div className="flex flex-col gap-6">
-      <PageHeader
-        title={COLLECTION_LABELS[name]}
-        description="Saved changes are live straight away. Drag rows to change the order on the site."
-        actions={
-          canCreate ? (
-            <Button
-              className={PRIMARY_ACTION}
-              onClick={() => setEditing("new")}
-            >
-              <PlusIcon data-icon="inline-start" />
-              {`Add ${noun}`}
-            </Button>
-          ) : null
-        }
-      />
+    <section
+      aria-label={COLLECTION_LABELS[name]}
+      className="flex flex-col gap-3 border-t pt-6"
+    >
+      <div className="flex items-center justify-between gap-2">
+        <div>
+          <h3 className="text-[15px] font-semibold">
+            {COLLECTION_LABELS[name]}
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            Shared: a saved change is live everywhere these are shown.
+          </p>
+        </div>
+        {canCreate ? (
+          <Button variant="outline" size="sm" onClick={() => setEditing("new")}>
+            <PlusIcon data-icon="inline-start" />
+            {`Add ${noun}`}
+          </Button>
+        ) : null}
+      </div>
       {list.isPending ? (
-        <CardSkeleton />
+        <p className="text-sm text-muted-foreground">Loading…</p>
       ) : list.isError ? (
-        <EmptyState
-          title="This list didn't load"
-          description={list.error.message}
-          action={<Button onClick={() => list.refetch()}>Try again</Button>}
-        />
+        <div className="flex items-center gap-2 text-sm">
+          <span className="text-danger">{list.error.message}</span>
+          <Button variant="outline" size="sm" onClick={() => list.refetch()}>
+            Try again
+          </Button>
+        </div>
       ) : items.length === 0 ? (
-        <EmptyState
-          icon={LayersIcon}
-          title={`No ${COLLECTION_LABELS[name].toLowerCase()} yet`}
-          description={
-            canCreate
-              ? `Add the first ${noun} to see it here.`
-              : "Nothing has been added yet."
-          }
-        />
+        <p className="text-sm text-muted-foreground">
+          {`No ${COLLECTION_LABELS[name].toLowerCase()} yet.`}
+        </p>
       ) : (
-        <>
-          <SortableRoot
-            items={items}
-            onMove={(from, to) => void reorder(from, to)}
-            disabled={!canUpdate}
-          >
-            <ul
-              role="list"
-              aria-label={COLLECTION_LABELS[name]}
-              className="flex flex-col gap-3 sm:hidden"
-            >
-              {items.map((item) => (
+        <SortableRoot
+          items={items}
+          onMove={(from, to) => void reorder(from, to)}
+          disabled={!canUpdate}
+        >
+          <ul role="list" className="flex flex-col gap-2">
+            {items.map((item) => {
+              const others = alsoOn(item)
+              return (
                 <SortableRow
                   key={item.id}
-                  as="li"
                   id={item.id}
                   title={item.title}
                   disabled={!canUpdate}
-                  className="rounded-card flex flex-col gap-3 bg-card p-4"
+                  className="rounded-card flex flex-wrap items-center gap-2 bg-card p-3"
                 >
                   {(handle) => (
                     <>
-                      <div className="flex items-start gap-2">
-                        {handle}
-                        <p className="min-w-0 flex-1 font-semibold break-words">
+                      {handle}
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold break-words">
                           {item.title}
                         </p>
+                        {others.length > 0 ? (
+                          <p className="text-xs text-muted-foreground">
+                            {`Also shown on: ${others.join(", ")}`}
+                          </p>
+                        ) : null}
                       </div>
-                      <p className="text-sm text-muted-foreground">
-                        Used on: {usedOn(item)}
-                      </p>
-                      <div className="flex items-center justify-between gap-2">
-                        {visibility(item)}
-                        {actions(item)}
-                      </div>
+                      <span className="flex items-center gap-2">
+                        <Switch
+                          aria-label={`Show ${item.title}`}
+                          checked={isVisible(item)}
+                          disabled={!canUpdate || busy.has(item.id)}
+                          onCheckedChange={(next) =>
+                            void toggleVisible(item, next)
+                          }
+                        />
+                        {isVisible(item) ? null : (
+                          <StatusPill tone="neutral">Hidden</StatusPill>
+                        )}
+                      </span>
+                      {canUpdate ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          aria-label={`Edit ${item.title}`}
+                          onClick={() =>
+                            setEditing({
+                              id: item.id,
+                              version: item.version,
+                              values: item.values,
+                            })
+                          }
+                        >
+                          Edit
+                        </Button>
+                      ) : null}
+                      {canDelete ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="hover:bg-danger-soft hover:text-danger text-muted-foreground"
+                          aria-label={`Remove ${item.title}`}
+                          onClick={() => setRemoving(item)}
+                        >
+                          Remove
+                        </Button>
+                      ) : null}
                     </>
                   )}
                 </SortableRow>
-              ))}
-            </ul>
-          </SortableRoot>
-          <div className="rounded-card hidden overflow-hidden bg-card sm:block">
-            <SortableRoot
-              items={items}
-              onMove={(from, to) => void reorder(from, to)}
-              disabled={!canUpdate}
-            >
-              <Table>
-                <TableCaption className="sr-only">
-                  {COLLECTION_LABELS[name]}
-                </TableCaption>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead scope="col" className="h-12 w-12 px-4">
-                      <span className="sr-only">Order</span>
-                    </TableHead>
-                    <TableHead scope="col" className="h-12 px-4">
-                      Title
-                    </TableHead>
-                    <TableHead scope="col" className="h-12 px-4">
-                      Used on
-                    </TableHead>
-                    <TableHead scope="col" className="h-12 px-4">
-                      Visible
-                    </TableHead>
-                    <TableHead scope="col" className="h-12 px-4">
-                      <span className="sr-only">Actions</span>
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {items.map((item) => (
-                    <SortableRow
-                      key={item.id}
-                      as="tr"
-                      id={item.id}
-                      title={item.title}
-                      disabled={!canUpdate}
-                    >
-                      {(handle) => (
-                        <>
-                          <TableCell className="px-4 py-3">{handle}</TableCell>
-                          <TableCell className="max-w-72 px-4 py-3 font-semibold break-words whitespace-normal">
-                            {item.title}
-                          </TableCell>
-                          <TableCell className="max-w-64 px-4 py-3 whitespace-normal text-muted-foreground">
-                            {usedOn(item)}
-                          </TableCell>
-                          <TableCell className="px-4 py-3">
-                            {visibility(item)}
-                          </TableCell>
-                          <TableCell className="px-4 py-3 text-right">
-                            {actions(item)}
-                          </TableCell>
-                        </>
-                      )}
-                    </SortableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </SortableRoot>
-          </div>
-        </>
+              )
+            })}
+          </ul>
+        </SortableRoot>
       )}
-      <ItemSheet
-        name={name}
-        item={editing}
-        readOnly={editing !== "new" && !canUpdate}
-        onClose={() => setEditing(null)}
-        onSaved={refresh}
-      />
       <Dialog
-        open={deleting !== null}
-        onOpenChange={(next) => !next && setDeleting(null)}
+        open={removing !== null}
+        onOpenChange={(next) => !next && setRemoving(null)}
       >
         <DialogContent className="gap-5 p-6 sm:max-w-md">
           <DialogHeader className="gap-3">
             <DialogTitle className="text-lg font-semibold">
-              {`Delete “${deleting?.title ?? ""}”?`}
+              {`Remove ${removing?.title ?? ""}?`}
             </DialogTitle>
             <DialogDescription>
-              Items a page names (chosen FAQs, a band) can&apos;t be deleted
-              until the page stops using them.
+              {removing && removing.usedOn.length > 0
+                ? `It is shown on: ${removing.usedOn.join(", ")}.`
+                : "It isn't shown on any page."}{" "}
+              This removes it everywhere.
+              {removingPage &&
+                ` This also deletes its details page at ${removingPage.path} (${removingPage.status === "published" ? "Published" : "Draft"}).`}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="-mx-6 -mb-6 rounded-b-xl border-t bg-muted/50 p-4 sm:justify-end">
-            <Button variant="outline" onClick={() => setDeleting(null)}>
+            <Button variant="outline" onClick={() => setRemoving(null)}>
               Cancel
             </Button>
             <Button
               variant="destructive"
-              onClick={() => deleting && void remove(deleting)}
+              disabled={deleting}
+              onClick={() => removing && void remove(removing)}
             >
-              Delete for good
+              Remove
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+      <ItemSheet
+        name={name}
+        item={editing}
+        onClose={() => setEditing(null)}
+        onSaved={refresh}
+      />
+    </section>
   )
 }
 
@@ -450,14 +396,12 @@ function SortableRoot({
 }
 
 function SortableRow({
-  as: Tag,
   id,
   title,
   disabled,
   className,
   children,
 }: {
-  as: "tr" | "li"
   id: string
   title: string
   disabled: boolean
@@ -486,16 +430,12 @@ function SortableRow({
     </button>
   )
   return (
-    <Tag
-      ref={setNodeRef as never}
+    <li
+      ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={cn(
-        Tag === "tr" && "border-b transition-colors hover:bg-muted/50",
-        isDragging && "relative z-10 bg-card shadow-lg",
-        className
-      )}
+      className={cn(isDragging && "relative z-10 bg-card shadow-lg", className)}
     >
       {children(handle)}
-    </Tag>
+    </li>
   )
 }

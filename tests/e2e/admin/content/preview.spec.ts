@@ -1,6 +1,11 @@
 import { expect, test } from "@playwright/test"
 
-import { api, createPublishedPage, richTextDocument } from "../../support/api"
+import {
+  api,
+  createPublishedPage,
+  withHeroSubtitle,
+  type PageDocument,
+} from "../../support/api"
 import { STORAGE } from "../../support/storage"
 
 test.use({ storageState: STORAGE.editor })
@@ -10,13 +15,17 @@ test("drafts show in preview only, never to the public", async ({
   page,
   browser,
 }) => {
-  const { id, path, version } = await createPublishedPage(
+  const { id, path } = await createPublishedPage(
     page.request,
     "Published words"
   )
+  const { version, draft } = await api<{
+    version: number
+    draft: PageDocument
+  }>(page.request, "GET", `/pages/${id}`)
   await api(page.request, "PATCH", `/pages/${id}/draft`, {
     version,
-    document: richTextDocument("Draft words"),
+    document: withHeroSubtitle(draft, "Draft words"),
   })
 
   const anonymous = await (await browser.newContext()).newPage()

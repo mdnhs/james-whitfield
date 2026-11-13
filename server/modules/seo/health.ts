@@ -4,6 +4,7 @@ import { eq, inArray } from "drizzle-orm"
 
 import { collectMediaIds } from "@/blocks/media-refs"
 import type { PageDocument } from "@/blocks/page"
+import { adminHrefForPage } from "@/lib/admin/website"
 import { parseGlobal } from "@/lib/content/globals"
 import { runChecks, type CheckId } from "@/lib/seo/checks"
 import { blank } from "@/lib/seo/metadata"
@@ -60,7 +61,7 @@ function internalLinks(e: LiveEntity, origin: string) {
 
 const fixHref = (e: LiveEntity) =>
   e.kind === "page"
-    ? `/admin/pages/${e.id}?tab=seo`
+    ? `${adminHrefForPage(e)}?tab=seo`
     : `/admin/insights/${e.id}?tab=seo`
 
 export type SeoIssue = {

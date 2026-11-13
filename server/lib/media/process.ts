@@ -7,6 +7,7 @@ import sharp from "sharp"
 import { slugify } from "@/lib/utils"
 import { ApiError } from "@/server/api/errors"
 
+import { icoSize, icoToPng, lottieSize, svgProblem } from "./formats"
 import { probeImage } from "./probe"
 import { sniff, type Sniffed } from "./sniff"
 
@@ -69,6 +70,12 @@ export type ProcessedUpload = {
   dominantColor: string | null
 }
 
+const UNSUPPORTED =
+  "Upload a JPEG, PNG, WebP, AVIF, SVG, ICO, PDF or Lottie JSON file"
+
+const refused = (message: string) =>
+  new ApiError("VALIDATION_FAILED", message, { file: [message] })
+
 const unreadable = () =>
   new ApiError("VALIDATION_FAILED", "That image could not be read", {
     file: ["That image could not be read"],
@@ -82,16 +89,18 @@ async function normalise(input: Buffer, type: Sniffed) {
     failOn: "error",
     limitInputPixels: MAX_INPUT_PIXELS,
   } as const
-  if (type.ext === "pdf") throw new Error("normalise: pdf is not an image")
+  if (!(type.ext in SHARP_FORMAT))
+    throw new Error(`normalise: ${type.ext} is not a raster image`)
+  const ext = type.ext as keyof typeof SHARP_FORMAT
   const { format } = await sharp(input, options).metadata()
-  if (format !== SHARP_FORMAT[type.ext]) throw unreadable()
+  if (format !== SHARP_FORMAT[ext]) throw unreadable()
   const image = sharp(input, options).autoOrient().resize({
     width: MAX_EDGE,
     height: MAX_EDGE,
     fit: "inside",
     withoutEnlargement: true,
   })
-  switch (type.ext) {
+  switch (ext) {
     case "jpg":
       return image.jpeg({ quality: 88, mozjpeg: true }).toBuffer()
     case "png":
@@ -125,13 +134,9 @@ export async function processUpload(
   }
   const type = sniff(input)
   if (!type) {
-    throw new ApiError(
-      "VALIDATION_FAILED",
-      "Upload a JPEG, PNG, WebP, AVIF or PDF",
-      {
-        file: ["Upload a JPEG, PNG, WebP, AVIF or PDF"],
-      }
-    )
+    throw new ApiError("VALIDATION_FAILED", UNSUPPORTED, {
+      file: [UNSUPPORTED],
+    })
   }
   let body = input
   let probe = {
@@ -140,7 +145,33 @@ export async function processUpload(
     blurDataUrl: null as string | null,
     dominantColor: null as string | null,
   }
-  if (type.ext !== "pdf") {
+  if (type.ext === "json") {
+    const size = lottieSize(input.toString("utf8"))
+    if (!size) throw refused("That JSON file is not a Lottie animation")
+    probe = { ...probe, ...size }
+  } else if (type.ext === "svg") {
+    // Kept byte for byte (re-encoding would rasterise it); checked instead.
+    const problem = svgProblem(input.toString("utf8"))
+    if (problem) throw refused(problem)
+    try {
+      probe = await withProcessingSlot(() => probeImage(input))
+    } catch (error) {
+      if (error instanceof ApiError) throw error
+      throw unreadable()
+    }
+  } else if (type.ext === "ico") {
+    // Kept as is: browsers want the original sizes. Measured and blurred
+    // from its largest image.
+    const size = icoSize(input)
+    if (!size) throw unreadable()
+    probe = { ...probe, ...size }
+    try {
+      const png = await withProcessingSlot(() => icoToPng(input))
+      if (png) probe = { ...(await probeImage(png)), ...size }
+    } catch {
+      // Still a usable icon; it just has no blur placeholder.
+    }
+  } else if (type.ext !== "pdf") {
     try {
       ;({ body, probe } = await withProcessingSlot(async () => {
         const normalised = await normalise(input, type)

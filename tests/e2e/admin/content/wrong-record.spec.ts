@@ -1,6 +1,10 @@
 import { expect, test } from "@playwright/test"
 
-import { createPublishedArticle, createPublishedPage } from "../../support/api"
+import {
+  createPublishedArticle,
+  createPublishedPage,
+  createService,
+} from "../../support/api"
 import { STORAGE } from "../../support/storage"
 
 // Regression: the client segment cache must never serve one record's editor
@@ -70,23 +74,28 @@ test("command palette opens the article it names, not the one on screen", async 
   ).toBeVisible()
 })
 
-test("a new page opens its own builder after another was visited", async ({
+test("a new service page opens its own builder after another was visited", async ({
   page,
   request,
 }) => {
-  const stamp = Date.now()
   const a = await createPublishedPage(request, "Visited page")
+  const fresh = await createService(request)
   await page.goto(`/admin/pages/${a.id}`)
   await expect(
-    page.getByRole("heading", { name: "E2E page", level: 1 })
+    page.getByRole("heading", { name: a.title, level: 1 })
   ).toBeVisible()
-  await page.getByRole("link", { name: "Pages", exact: true }).first().click()
-  await page.getByRole("button", { name: "New page" }).click()
-  const dialog = page.getByRole("dialog", { name: "New page" })
-  await dialog.getByLabel("Path").fill(`/e2e-wr-${stamp}`)
-  await dialog.getByLabel("Title").fill(`Fresh page ${stamp}`)
-  await dialog.getByRole("button", { name: "Create page" }).click()
+  await page
+    .getByRole("link", { name: "Service pages", exact: true })
+    .first()
+    .click()
+  await expect(page).toHaveURL(/\/admin\/website\/service-pages$/)
+  await page
+    .getByRole("row")
+    .filter({ hasText: fresh.title })
+    .getByRole("button", { name: "Create page" })
+    .click()
+  await expect(page).toHaveURL(/\/admin\/pages\/[0-9a-f-]{36}$/)
   await expect(
-    page.getByRole("heading", { name: `Fresh page ${stamp}`, level: 1 })
+    page.getByRole("heading", { name: fresh.title, level: 1 })
   ).toBeVisible()
 })

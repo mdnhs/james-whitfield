@@ -134,7 +134,7 @@ export default async function CategoryPage({
         </section>
 
         <section
-          aria-labelledby="category-heading"
+          aria-label={category.name}
           className="bg-cream pt-8 pb-12 sm:bg-stone sm:py-20 lg:py-30"
         >
           <Container>

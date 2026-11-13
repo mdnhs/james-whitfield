@@ -4,10 +4,15 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 
 import { useActor } from "@/admin/lib/actor-context"
-import { isActivePath, visibleNav, type NavLink } from "@/lib/admin/nav"
+import {
+  isActivePath,
+  isActiveSection,
+  visibleNav,
+  type NavLink,
+} from "@/lib/admin/nav"
 import { cn } from "@/lib/utils"
 
-// A section's sub-pages (Insights, Collections, SEO, Marketing, Site
+// A section's sub-pages (Website, SEO, Marketing, Site
 // settings) as vertical tabs inside the content panel, so the sidebar lists
 // sections only. Below 1024px the tabs become a scrolling row above the page.
 export function SectionTabs({ children }: { children: React.ReactNode }) {
@@ -15,7 +20,7 @@ export function SectionTabs({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const section = visibleNav(roles).find(
     (item) =>
-      (item.children?.length ?? 0) > 1 && isActivePath(pathname, item.href)
+      (item.children?.length ?? 0) > 1 && isActiveSection(pathname, item)
   )
   if (!section?.children) return children
 
@@ -24,7 +29,7 @@ export function SectionTabs({ children }: { children: React.ReactNode }) {
     <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
       <nav
         aria-label={section.label}
-        className="-mx-1 shrink-0 overflow-x-auto lg:mx-0 lg:w-52 lg:overflow-visible"
+        className="-mx-1 shrink-0 overflow-x-auto lg:sticky lg:top-0 lg:mx-0 lg:max-h-[var(--content-h)] lg:w-52 lg:self-start lg:overflow-y-auto"
       >
         <p className="mb-2 hidden px-3 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase lg:block">
           {section.label}
@@ -63,7 +68,13 @@ export function SectionTabs({ children }: { children: React.ReactNode }) {
 // The deepest tab whose href covers the path: /admin/insights/categories is
 // Categories, while an article's /admin/insights/<id> falls back to Articles.
 function currentTab(tabs: readonly NavLink[], pathname: string) {
+  const reach = (tab: NavLink) =>
+    Math.max(
+      ...[tab.href, ...(tab.match ?? [])]
+        .filter((p) => pathname === p || pathname.startsWith(`${p}/`))
+        .map((prefix) => prefix.length)
+    )
   return tabs
-    .filter((tab) => isActivePath(pathname, tab.href))
-    .sort((a, b) => b.href.length - a.href.length)[0]
+    .filter((tab) => isActivePath(pathname, tab))
+    .sort((a, b) => reach(b) - reach(a))[0]
 }

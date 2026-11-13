@@ -3,6 +3,7 @@ import "server-only"
 import { cacheLife, cacheTag } from "next/cache"
 import sharp from "sharp"
 
+import { icoToPng } from "@/server/lib/media/formats"
 import { readMediaBytes } from "@/server/lib/media/read"
 import { MISS_LIFE, tags } from "@/server/lib/cache"
 import { getSetting } from "@/server/modules/content/queries"
@@ -23,7 +24,11 @@ export async function brandIcon(
     return null
   }
   try {
-    const png = await sharp(bytes, { limitInputPixels: 40_000_000 })
+    // sharp reads SVG but not ICO: start from the icon's largest image.
+    const isIco = bytes[0] === 0 && bytes[1] === 0 && bytes[2] === 1
+    const source = isIco ? await icoToPng(Buffer.from(bytes)) : bytes
+    if (!source) throw new Error("ico without a readable image")
+    const png = await sharp(source, { limitInputPixels: 40_000_000 })
       .resize(size, size, {
         fit: "contain",
         background: { r: 0, g: 0, b: 0, alpha: 0 },

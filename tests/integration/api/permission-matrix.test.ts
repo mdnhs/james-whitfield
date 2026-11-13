@@ -106,7 +106,7 @@ describe.each(ROLE_NAMES)("can() for %s", (role) => {
 
 // docs/brief.md §7.2 page rows. 404 means "past can(), no such page"; the
 // bodies are valid so validation never hides the permission check.
-const WRITER = { read: 200, write: 404, create: 201, seo: 404 }
+const WRITER = { read: 200, write: 404, create: 404, seo: 404 }
 const PAGES: Record<
   RoleName,
   { read: number; write: number; create: number; seo: number }
@@ -129,11 +129,24 @@ describe.each(ROLE_NAMES)("pages routes for %s", (role) => {
     expect(response.status).toBe(expected.read)
   })
 
-  it(`POST /pages → ${expected.create}`, async () => {
-    const response = await adminRequest("/pages", await cookieFor(role), {
-      method: "POST",
-      body: { path: "/team", title: "Team" },
-    })
+  // Pages are no longer created freely: the only new pages are service
+  // detail pages, turned on from the service under collection:create and off
+  // under collection:delete. 404 means "past can(), no such service".
+  it(`POST /service-pages/:serviceId → ${expected.create}`, async () => {
+    const response = await adminRequest(
+      `/service-pages/${missing}`,
+      await cookieFor(role),
+      { method: "POST" }
+    )
+    expect(response.status).toBe(expected.create)
+  })
+
+  it(`DELETE /service-pages/:serviceId → ${expected.create}`, async () => {
+    const response = await adminRequest(
+      `/service-pages/${missing}`,
+      await cookieFor(role),
+      { method: "DELETE" }
+    )
     expect(response.status).toBe(expected.create)
   })
 

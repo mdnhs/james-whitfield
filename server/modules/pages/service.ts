@@ -35,6 +35,8 @@ import {
   recordPathChange,
 } from "@/server/modules/redirects/service"
 
+import { assertSameStructure } from "./structure-guard"
+
 const changedSincePublish = sql<boolean>`${pages.draft} is distinct from ${pages.published}`
 // Section ids in the working copy, for the link widget's anchor picker.
 const draftAnchors = sql<
@@ -49,6 +51,7 @@ export async function listPages() {
       title: pages.title,
       status: pages.status,
       systemKey: pages.systemKey,
+      serviceId: pages.serviceId,
       updatedAt: pages.updatedAt,
       publishedAt: pages.publishedAt,
       settings: pages.settings,
@@ -62,6 +65,13 @@ export async function listPages() {
     needsReview: settings.needsReview === true,
   }))
   return { items, page: 1, pageSize: items.length, total: items.length }
+}
+
+// Custom pages no service owns ("Legal & other pages"). Filtered by link,
+// never by path: an unlinked /services/* page must stay reachable.
+export async function listOtherPages() {
+  const { items } = await listPages()
+  return items.filter((page) => page.systemKey === null && !page.serviceId)
 }
 
 async function findPage(db: DbLike, id: string, lock = false) {
@@ -97,6 +107,7 @@ export async function getPage(id: string) {
     title: row.title,
     status: row.status,
     systemKey: row.systemKey,
+    serviceId: row.serviceId,
     kind: kindOf(row.systemKey),
     draft: row.draft,
     seo: row.seo,
@@ -118,10 +129,15 @@ export async function saveDraft(
   id: string,
   input: { version: number; document: DraftDocument }
 ) {
-  const row = await writeIfVersion(getDb(), id, input.version, {
-    // A draft may be half-finished; publish validates it fully.
-    draft: input.document as unknown as PageDocument,
-    updatedBy: actor.userId,
+  const row = await getDb().transaction(async (tx) => {
+    // Sections are fixed: only block content may change.
+    const current = await findPage(tx, id, true)
+    assertSameStructure(current.draft, input.document)
+    return writeIfVersion(tx, id, input.version, {
+      // A draft may be half-finished; publish validates it fully.
+      draft: input.document as unknown as PageDocument,
+      updatedBy: actor.userId,
+    })
   })
   return { version: row.version, updatedAt: row.updatedAt }
 }
@@ -182,6 +198,7 @@ export async function discardDraft(actor: Actor, id: string, version: number) {
     if (!current.published) {
       throw new ApiError("BAD_REQUEST", "This page has never been published")
     }
+    assertSameStructure(current.draft, current.published)
     const row = await writeIfVersion(tx, id, version, {
       draft: current.published,
       updatedBy: actor.userId,
@@ -209,6 +226,12 @@ export async function restoreRevision(
   return getDb().transaction(async (tx) => {
     const revision = await findRevision(tx, "page", id, revisionId)
     if (!revision) throw new ApiError("NOT_FOUND", "That version doesn't exist")
+    const current = await findPage(tx, id, true)
+    assertSameStructure(
+      current.draft,
+      revision.snapshot as PageDocument,
+      "This version has a different layout and can't be restored"
+    )
     const row = await writeIfVersion(tx, id, version, {
       draft: revision.snapshot as PageDocument,
       updatedBy: actor.userId,
@@ -294,6 +317,55 @@ export async function updateMeta(
   return { title: saved.title, seo: saved.seo, settings: saved.settings }
 }
 
+// Inserts a draft page inside the caller's transaction and audits it. The
+// document is fixed at creation; editors only change its content afterwards.
+export async function insertPage(
+  tx: DbLike,
+  input: {
+    path: string
+    title: string
+    document: PageDocument
+    // Set for a service's detail page (/services/<slug>).
+    serviceId?: string
+    actor: Actor
+  }
+) {
+  const parsed = pageDocumentFor("custom").safeParse(input.document)
+  if (!parsed.success) throw invalid(parsed.error)
+  const [created] = await tx
+    .insert(pages)
+    .values({
+      path: input.path,
+      title: input.title,
+      serviceId: input.serviceId ?? null,
+      status: "draft",
+      draft: parsed.data,
+      settings: { showContactChapter: true, needsReview: false },
+      createdBy: input.actor.userId,
+      updatedBy: input.actor.userId,
+    })
+    .onConflictDoNothing({ target: pages.path })
+    .returning()
+  if (!created) {
+    throw new ApiError("CONFLICT", "A page already lives at that address", {
+      path: ["A page already lives at that address"],
+    })
+  }
+  await audit(
+    input.actor,
+    {
+      action: "page.create",
+      entityType: "page",
+      entityId: created.id,
+      summary: `Created ${created.path}`,
+    },
+    tx
+  )
+  return created
+}
+
+// No route reaches this any more (sections are fixed); kept for callers
+// that create a page with the starter richtext block.
 export async function createPage(actor: Actor, input: NewPageInput) {
   const document: PageDocument = {
     blocks: [
@@ -311,37 +383,14 @@ export async function createPage(actor: Actor, input: NewPageInput) {
       },
     ],
   }
-  const row = await getDb().transaction(async (tx) => {
-    const [created] = await tx
-      .insert(pages)
-      .values({
-        path: input.path,
-        title: input.title,
-        status: "draft",
-        draft: document,
-        settings: { showContactChapter: true, needsReview: false },
-        createdBy: actor.userId,
-        updatedBy: actor.userId,
-      })
-      .onConflictDoNothing({ target: pages.path })
-      .returning()
-    if (!created) {
-      throw new ApiError("CONFLICT", "A page already lives at that address", {
-        path: ["A page already lives at that address"],
-      })
-    }
-    await audit(
+  const row = await getDb().transaction((tx) =>
+    insertPage(tx, {
+      path: input.path,
+      title: input.title,
+      document,
       actor,
-      {
-        action: "page.create",
-        entityType: "page",
-        entityId: created.id,
-        summary: `Created ${created.path}`,
-      },
-      tx
-    )
-    return created
-  })
+    })
+  )
   // A visit before creation cached "no page here" under routes.
   invalidate([tags.routes])
   return { id: row.id, path: row.path }
@@ -376,6 +425,11 @@ export async function changePagePath(actor: Actor, id: string, path: string) {
     const row = await findPage(tx, id, true)
     if (row.systemKey)
       throw new ApiError("FORBIDDEN", "System pages keep their address")
+    if (row.serviceId)
+      throw new ApiError(
+        "FORBIDDEN",
+        "A service page's address follows the service's slug"
+      )
     if (row.path === path)
       return { path, redirected: false, warnings: [] as string[] }
     const [taken] = await tx
@@ -422,33 +476,50 @@ export async function changePagePath(actor: Actor, id: string, path: string) {
   return result
 }
 
+// Deletes a page with its revisions and the redirects into it, inside the
+// caller's transaction. Reports whether a redirect was removed.
+export async function removePage(
+  tx: DbLike,
+  actor: Actor,
+  row: { id: string; path: string }
+) {
+  await deleteRevisions(tx, "page", row.id)
+  // Redirects into a deleted page would 301 to a 404.
+  await lockRedirects(tx)
+  const gone = await tx
+    .delete(redirects)
+    .where(eq(redirects.destination, row.path))
+    .returning({ id: redirects.id })
+  await tx.delete(pages).where(eq(pages.id, row.id))
+  await audit(
+    actor,
+    {
+      action: "page.delete",
+      entityType: "page",
+      entityId: row.id,
+      summary: `Deleted ${row.path}`,
+    },
+    tx
+  )
+  return gone.length > 0
+}
+
 export async function deletePage(actor: Actor, id: string) {
   const db = getDb()
   const row = await findPage(db, id)
   if (row.systemKey) {
     throw new ApiError("FORBIDDEN", "System pages can't be deleted")
   }
-  const redirectsChanged = await db.transaction(async (tx) => {
-    await deleteRevisions(tx, "page", id)
-    // Redirects into a deleted page would 301 to a 404.
-    await lockRedirects(tx)
-    const gone = await tx
-      .delete(redirects)
-      .where(eq(redirects.destination, row.path))
-      .returning({ id: redirects.id })
-    await tx.delete(pages).where(eq(pages.id, id))
-    await audit(
-      actor,
-      {
-        action: "page.delete",
-        entityType: "page",
-        entityId: id,
-        summary: `Deleted ${row.path}`,
-      },
-      tx
+  // Its service owns it: turned off there, so the service's link is cleared.
+  if (row.serviceId) {
+    throw new ApiError(
+      "FORBIDDEN",
+      "Turn this page off from its service instead"
     )
-    return gone.length > 0
-  })
+  }
+  const redirectsChanged = await db.transaction((tx) =>
+    removePage(tx, actor, row)
+  )
   invalidate([
     tags.page(id),
     tags.routes,
@@ -458,3 +529,15 @@ export async function deletePage(actor: Actor, id: string) {
 }
 
 export const pageRevisions = (id: string) => listRevisions(getDb(), "page", id)
+
+// The id behind a system page's Website screen (/admin/website/<key>).
+export async function findPageIdBySystemKey(
+  systemKey: string
+): Promise<string | null> {
+  const [row] = await getDb()
+    .select({ id: pages.id })
+    .from(pages)
+    .where(eq(pages.systemKey, systemKey))
+    .limit(1)
+  return row?.id ?? null
+}

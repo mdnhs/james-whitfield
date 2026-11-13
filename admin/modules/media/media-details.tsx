@@ -24,7 +24,7 @@ import { hasPermission } from "@/lib/auth/permissions"
 
 import { FocalPicker } from "./focal-picker"
 import type { MediaItem } from "./queries"
-import { uploadFile } from "./upload"
+import { ACCEPT_IMAGES, uploadFile } from "./upload"
 
 // docs/brief.md §7.2: authors edit only the files they uploaded. The server
 // enforces it; this only hides controls that would be refused.
@@ -236,8 +236,10 @@ function DetailsBody({ item, onClose }: { item: MediaItem; onClose(): void }) {
             type="file"
             accept={
               isImage
-                ? "image/jpeg,image/png,image/webp,image/avif"
-                : "application/pdf"
+                ? ACCEPT_IMAGES
+                : item.mimeType === "application/json"
+                  ? "application/json,.json"
+                  : "application/pdf"
             }
             onChange={(e) => {
               const file = e.target.files?.[0]

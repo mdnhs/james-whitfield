@@ -38,7 +38,7 @@ export const MediaListQuery = z.object({
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(40),
   q: z.string().trim().max(80).optional(),
-  type: z.enum(["image", "pdf"]).optional(),
+  type: z.enum(["image", "pdf", "lottie"]).optional(),
   missingAlt: z.literal("1").optional(),
   // The picker resolves its current value(s) by id.
   ids: z
@@ -91,6 +91,8 @@ export async function listMedia(query: z.output<typeof MediaListQuery>) {
     )
   if (query.type === "image") filters.push(like(media.mimeType, "image/%"))
   if (query.type === "pdf") filters.push(eq(media.mimeType, "application/pdf"))
+  if (query.type === "lottie")
+    filters.push(eq(media.mimeType, "application/json"))
   if (query.missingAlt)
     filters.push(
       and(
@@ -261,6 +263,13 @@ export async function updateMedia(
   return toItem(row)
 }
 
+const mediaKind = (mimeType: string) =>
+  mimeType === "application/pdf"
+    ? "pdf"
+    : mimeType === "application/json"
+      ? "lottie"
+      : "image"
+
 // docs/brief.md §14: replace keeps the id (and so every reference) and
 // uploads under a new immutable key.
 export async function replaceMedia(actor: Actor, id: string, file: File) {
@@ -268,17 +277,10 @@ export async function replaceMedia(actor: Actor, id: string, file: File) {
   const current = await findLive(id)
   assertMayEdit(actor, current)
   const { filename, processed } = await readUpload(file)
-  if (
-    (current.mimeType === "application/pdf") !==
-    (processed.mimeType === "application/pdf")
-  ) {
-    throw new ApiError(
-      "VALIDATION_FAILED",
-      "Replace an image with an image, a PDF with a PDF",
-      {
-        file: ["Replace an image with an image, a PDF with a PDF"],
-      }
-    )
+  if (mediaKind(current.mimeType) !== mediaKind(processed.mimeType)) {
+    const message =
+      "Replace an image with an image, a PDF with a PDF, a Lottie with a Lottie"
+    throw new ApiError("VALIDATION_FAILED", message, { file: [message] })
   }
   // Another row (often a soft-deleted one) may already hold this key: take
   // a variant rather than refusing a file the library does not show.

@@ -7,12 +7,14 @@ import type { ArticleBodyDoc } from "@/blocks/rich-text"
 import { categoryHref } from "@/lib/content/category-href"
 import { getDb, type DbLike } from "@/server/db/client"
 import { articleCategories, articles, pages } from "@/server/db/schema"
+import { notHiddenServicePage } from "@/server/modules/service-pages/visible"
 
 export type LiveEntity = {
   kind: "page" | "article"
   id: string
   path: string
   home: boolean
+  systemKey: string | null
   title: string
   summary: string | null
   seo: PageSeo
@@ -39,7 +41,7 @@ export async function listLiveEntities(
         publishedAt: pages.publishedAt,
       })
       .from(pages)
-      .where(eq(pages.status, "published")),
+      .where(and(eq(pages.status, "published"), notHiddenServicePage)),
     db
       .select({
         id: articles.id,
@@ -61,6 +63,7 @@ export async function listLiveEntities(
       id: p.id,
       path: p.path,
       home: p.systemKey === "home",
+      systemKey: p.systemKey,
       title: p.title,
       summary: null,
       seo: PageSeo.parse(p.seo),
@@ -74,6 +77,7 @@ export async function listLiveEntities(
       id: a.id,
       path: `/insights/${a.slug}`,
       home: false,
+      systemKey: null,
       title: a.title,
       summary: a.excerpt,
       seo: PageSeo.parse(a.seo),

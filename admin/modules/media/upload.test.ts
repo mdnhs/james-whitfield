@@ -75,7 +75,7 @@ describe("uploadFile", () => {
     vi.stubGlobal("XMLHttpRequest", FakeXhr)
     for (const [status, text, code] of [
       [413, "20 MB", "PAYLOAD_TOO_LARGE"],
-      [415, "JPEG, PNG, WebP, AVIF or PDF", "BAD_REQUEST"],
+      [415, "SVG, ICO, PDF or Lottie JSON", "BAD_REQUEST"],
       [503, "try again", "UNAVAILABLE"],
     ] as const) {
       const done = uploadFile("/x", new File(["x"], "a.png"), () => {})
@@ -95,7 +95,7 @@ describe("uploadFile", () => {
     await expect(
       uploadFile(
         "/x",
-        new File(["x"], "a.svg", { type: "image/svg+xml" }),
+        new File(["x"], "a.gif", { type: "image/gif" }),
         () => {}
       )
     ).rejects.toThrow(/JPEG, PNG/)

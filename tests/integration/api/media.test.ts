@@ -95,14 +95,59 @@ describe("media API", () => {
     expect(next.revalidateTag.mock.calls.map(([t]) => t)).toContain("media")
   })
 
-  it("refuses SVG and oversize files", async () => {
+  it("keeps a safe SVG and a Lottie as uploaded, measured", async () => {
+    const cookie = await cookieFor("editor")
+    const drawing = Buffer.from(
+      "<svg xmlns='http://www.w3.org/2000/svg' width='40' height='20'><rect width='40' height='20' fill='#3366aa'/></svg>"
+    )
+    const svg = await upload(cookie, drawing, "Mark.svg")
+    expect(svg.status).toBe(201)
+    const svgItem = await svg.json()
+    expect(svgItem).toMatchObject({
+      mimeType: "image/svg+xml",
+      width: 40,
+      height: 20,
+    })
+    expect(svgItem.url).toMatch(/-mark\.svg$/)
+    const stored = await readFile(
+      join(dir, svgItem.url.replace("/uploads/", ""))
+    )
+    expect(stored.equals(drawing)).toBe(true)
+
+    const anim = {
+      v: "5.7.4",
+      fr: 30,
+      ip: 0,
+      op: 60,
+      w: 300,
+      h: 200,
+      layers: [],
+    }
+    const lottie = await upload(
+      cookie,
+      Buffer.from(JSON.stringify(anim)),
+      "wave.json"
+    )
+    expect(lottie.status).toBe(201)
+    expect(await lottie.json()).toMatchObject({
+      mimeType: "application/json",
+      width: 300,
+      height: 200,
+    })
+  })
+
+  it("refuses scripted SVG, non-Lottie JSON and oversize files", async () => {
     const cookie = await cookieFor("editor")
     const svg = await upload(
       cookie,
-      Buffer.from("<svg xmlns='http://www.w3.org/2000/svg'/>"),
-      "x.jpg"
+      Buffer.from(
+        "<svg xmlns='http://www.w3.org/2000/svg'><script>alert(1)</script></svg>"
+      ),
+      "x.svg"
     )
     expect(svg.status).toBe(400)
+    const json = await upload(cookie, Buffer.from('{"a":1}'), "x.json")
+    expect(json.status).toBe(400)
     const huge = Buffer.concat([
       Buffer.from([0xff, 0xd8, 0xff]),
       Buffer.alloc(22 * 1024 * 1024),

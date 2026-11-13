@@ -3,6 +3,7 @@ import { afterAll, beforeEach, describe, expect, it, vi } from "vitest"
 
 import { closeDb, getDb } from "@/server/db/client"
 import {
+  articleCategories,
   articles,
   authors,
   ctaBands,
@@ -47,6 +48,7 @@ const doc = (title: string) => ({
         focal: null,
         tint: 0.32,
         mirror: false,
+        cta: null,
       },
     },
   ],
@@ -236,6 +238,21 @@ describe("articles without an author photo (Ruling R2)", () => {
     const [summary] = await listArticleSummaries()
     expect(summary?.slug).toBe("no-photo")
     expect(summary?.author.avatar).toBeNull()
+  })
+  it("carries the category's visibility onto the summary", async () => {
+    const { category, author, media: cover } = await insertTaxonomy()
+    await insertArticle({
+      slug: "cat-visibility",
+      categoryId: category.id,
+      authorId: author.id,
+      coverId: cover.id,
+    })
+    expect((await listArticleSummaries())[0]?.category.isVisible).toBe(true)
+    await getDb()
+      .update(articleCategories)
+      .set({ isVisible: false })
+      .where(eq(articleCategories.id, category.id))
+    expect((await listArticleSummaries())[0]?.category.isVisible).toBe(false)
   })
   it("resolves body images into detail.media", async () => {
     const { category, author, media: cover } = await insertTaxonomy()

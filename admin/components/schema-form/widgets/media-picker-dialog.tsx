@@ -10,7 +10,7 @@ import { usePermission } from "@/admin/lib/actor-context"
 import { ApiError } from "@/admin/lib/api-error"
 import { queryKeys } from "@/admin/lib/query-keys"
 import { mediaListQuery, type MediaItem } from "@/admin/modules/media/queries"
-import { uploadFile } from "@/admin/modules/media/upload"
+import { ACCEPT_IMAGES, uploadFile } from "@/admin/modules/media/upload"
 import { buttonVariants } from "@/components/ui/button"
 import {
   Dialog,
@@ -20,13 +20,13 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
-
-const ACCEPT_IMAGES = "image/jpeg,image/png,image/webp,image/avif"
+import { servedAsIs } from "@/lib/media"
 
 export function Thumb({ item }: { item: MediaItem }) {
   return item.mimeType.startsWith("image/") ? (
     <Image
       src={item.url}
+      unoptimized={servedAsIs(item.url)}
       alt={item.alt}
       width={item.width ?? 160}
       height={item.height ?? 120}

@@ -5,55 +5,52 @@ import { BLOCKS } from "@/blocks/registry"
 
 import { BLOCK_ICONS } from "./block-icons"
 import {
-  addableTypes,
   docReducer,
   errorsByBlock,
-  newBlock,
+  firstVisibleErrorBlock,
+  publishProblems,
 } from "./builder-state"
 
-const empty: DraftDocument = { blocks: [] }
-
 describe("builder state", () => {
-  it("adds heroes first, others last, with unique anchors and fresh ids", () => {
-    let doc = docReducer(empty, { type: "add", blockType: "faq" })
-    doc = docReducer(doc, { type: "add", blockType: "faq" })
-    doc = docReducer(doc, { type: "add", blockType: "hero.page" })
-    expect(doc.blocks.map((b) => [b.type, b.anchor])).toEqual([
-      ["hero.page", "home"],
-      ["faq", "faq"],
-      ["faq", "faq-2"],
-    ])
-    expect(new Set(doc.blocks.map((b) => b.id)).size).toBe(3)
-    expect(doc.blocks[1]!.data).toMatchObject({ selection: { mode: "all" } })
-  })
-  it("offers only blocks that can publish on this page", () => {
-    const home = addableTypes("home", empty)
-    expect(home).toContain("hero.home")
-    expect(home).not.toContain("richtext")
-    expect(home).not.toContain("services.grid")
-    const withHero = { blocks: [newBlock("hero.page", empty)] }
-    expect(addableTypes("custom", withHero)).not.toContain("hero.page")
-    expect(addableTypes("custom", withHero)).toContain("richtext")
-  })
-  it("moves, edits and removes", () => {
-    let doc = docReducer(empty, { type: "add", blockType: "faq" })
-    doc = docReducer(doc, { type: "add", blockType: "fit" })
-    doc = docReducer(doc, { type: "move", from: 1, to: 0 })
-    expect(doc.blocks.map((b) => b.type)).toEqual(["fit", "faq"])
-    const id = doc.blocks[0]!.id
-    doc = docReducer(doc, { type: "meta", id, patch: { hidden: true } })
-    doc = docReducer(doc, { type: "data", id, data: { title: "T" } })
-    expect(doc.blocks[0]).toMatchObject({ hidden: true, data: { title: "T" } })
-    expect(docReducer(doc, { type: "remove", id }).blocks).toHaveLength(1)
+  it("applies data and chapter edits only", () => {
+    const doc: DraftDocument = {
+      blocks: [
+        {
+          id: "a",
+          type: "faq",
+          anchor: "faq",
+          chapter: null,
+          hidden: false,
+          joinPrevious: false,
+          data: {},
+        },
+      ],
+    }
+    let next = docReducer(doc, { type: "data", id: "a", data: { title: "T" } })
+    next = docReducer(next, {
+      type: "meta",
+      id: "a",
+      patch: { chapter: "Faq" },
+    })
+    expect(next.blocks).toHaveLength(1)
+    expect(next.blocks[0]).toMatchObject({
+      anchor: "faq",
+      hidden: false,
+      chapter: "Faq",
+      data: { title: "T" },
+    })
   })
   it("maps publish errors onto blocks", () => {
-    const doc = docReducer(
-      docReducer(empty, { type: "add", blockType: "faq" }),
-      {
-        type: "add",
-        blockType: "fit",
-      }
-    )
+    const mk = (id: string, type: "faq" | "fit") => ({
+      id,
+      type,
+      anchor: id,
+      chapter: null,
+      hidden: false,
+      joinPrevious: false,
+      data: {},
+    })
+    const doc: DraftDocument = { blocks: [mk("a", "faq"), mk("b", "fit")] }
     const map = errorsByBlock(
       {
         "blocks.1.data.title": ["Required"],
@@ -64,6 +61,57 @@ describe("builder state", () => {
     )
     expect(map.get(doc.blocks[1]!.id)).toEqual({ title: ["Required"] })
     expect(map.get(doc.blocks[0]!.id)).toEqual({ $anchor: ["Taken"] })
+  })
+  it("words every publish error for the page banner", () => {
+    const mk = (id: string, hidden: boolean) => ({
+      id,
+      type: "faq" as const,
+      anchor: id,
+      chapter: null,
+      hidden,
+      joinPrevious: false,
+      data: {},
+    })
+    const doc: DraftDocument = { blocks: [mk("a", false), mk("b", true)] }
+    const problems = publishProblems(
+      {
+        "blocks.0.data.title": ["Required"],
+        "blocks.0.anchor": ['Anchor "a" is already used on this page'],
+        "blocks.1.data.title": ["Required"],
+        _: ["Broken"],
+      },
+      doc
+    )
+    expect(problems).toEqual([
+      { text: "FAQ: Required", developer: false },
+      {
+        text: 'FAQ: Anchor "a" is already used on this page',
+        developer: true,
+      },
+      { text: "FAQ (hidden section): Required", developer: true },
+      { text: "Broken", developer: true },
+    ])
+  })
+  it("auto-selects only a visible block with an error", () => {
+    const mk = (id: string, hidden: boolean) => ({
+      id,
+      type: "faq" as const,
+      anchor: id,
+      chapter: null,
+      hidden,
+      joinPrevious: false,
+      data: {},
+    })
+    const doc: DraftDocument = {
+      blocks: [mk("a", true), mk("b", false), mk("c", false)],
+    }
+    const errors = errorsByBlock(
+      { "blocks.0.data.x": ["e"], "blocks.2.data.x": ["e"] },
+      doc
+    )
+    expect(firstVisibleErrorBlock(errors, doc)).toBe("c")
+    const hiddenOnly = errorsByBlock({ "blocks.0.data.x": ["e"] }, doc)
+    expect(firstVisibleErrorBlock(hiddenOnly, doc)).toBeNull()
   })
   it("has an icon for every block", () => {
     for (const b of BLOCKS) expect(BLOCK_ICONS[b.icon], b.type).toBeDefined()

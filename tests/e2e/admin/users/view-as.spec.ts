@@ -39,7 +39,7 @@ test("View as an editor hides admin-only navigation, and Stop viewing restores i
     ).toHaveCount(0)
   }
   await expect(
-    page.getByRole("link", { name: "Pages", exact: true }).first()
+    page.getByRole("link", { name: "Website", exact: true }).first()
   ).toBeVisible()
   // The API agrees with the navigation.
   expect((await page.request.get("/api/v1/admin/users")).status()).toBe(403)

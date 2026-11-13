@@ -55,4 +55,13 @@ describe("ChatLauncher", () => {
     expect(screen.queryByRole("dialog")).toBeNull()
     expect(document.activeElement).toBe(launcher)
   })
+
+  it("rides above the sticky CTA bar through its CSS variable", () => {
+    render(<ChatLauncher botName="Aoife" welcome="Hi" />)
+    const style = screen
+      .getByRole("button", { name: /chat/i })
+      .getAttribute("style")
+    expect(style).toContain("var(--sticky-cta-h, 0px)")
+    expect(style).toContain("safe-area-inset-bottom")
+  })
 })

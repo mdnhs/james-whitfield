@@ -43,9 +43,12 @@ export function ChatLauncher({
           setEverOpened(true)
           setOpen(true)
         }}
-        style={{ bottom: "max(1rem, env(safe-area-inset-bottom))" }}
+        style={{
+          bottom:
+            "calc(max(1rem, env(safe-area-inset-bottom)) + var(--sticky-cta-h, 0px))",
+        }}
         className={cn(
-          "fixed right-4 z-40 grid size-14 place-items-center rounded-full bg-brand text-cream shadow-lg transition-[transform,background-color] hover:scale-105 hover:bg-brand-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand",
+          "fixed right-4 z-40 grid size-14 place-items-center rounded-full bg-brand text-cream shadow-lg transition-[transform,background-color,bottom] duration-300 ease-out hover:scale-105 hover:bg-brand-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand motion-reduce:transition-none",
           open && "invisible"
         )}
       >

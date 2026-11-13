@@ -433,7 +433,7 @@ export function ChatPanel({
       aria-labelledby={titleId}
       tabIndex={-1}
       onKeyDown={onKeyDown}
-      className="fixed inset-0 z-50 flex h-svh w-full flex-col overflow-hidden bg-cream text-ink shadow-2xl outline-none sm:inset-auto sm:right-4 sm:bottom-4 sm:h-140 sm:w-95 sm:rounded-3xl sm:border sm:border-brand/20"
+      className="fixed inset-0 z-60 flex h-svh w-full flex-col overflow-hidden bg-cream text-ink shadow-2xl outline-none sm:inset-auto sm:right-4 sm:bottom-4 sm:h-140 sm:w-95 sm:rounded-3xl sm:border sm:border-brand/20"
     >
       <header className="flex items-start justify-between gap-3 bg-brand px-5 py-4 text-cream">
         <div className="min-w-0">

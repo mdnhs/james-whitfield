@@ -265,3 +265,15 @@ describe("email ask", () => {
     expect(screen.queryByRole("button", { name: "Save email" })).toBeNull()
   })
 })
+
+describe("layering", () => {
+  it("sits above the mobile sticky bar (z-50)", async () => {
+    queue = [{ status: 404, body: {} }]
+    render(<Harness />)
+    await flush()
+    const z = /(?:^|\s)z-(\d+)(?:\s|$)/.exec(
+      screen.getByRole("dialog").className
+    )
+    expect(Number(z?.[1])).toBeGreaterThan(50)
+  })
+})

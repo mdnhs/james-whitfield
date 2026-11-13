@@ -1,11 +1,12 @@
 "use client"
 
 import { useMutation, useQueryClient } from "@tanstack/react-query"
+import Link from "next/link"
 import { useState } from "react"
 import { toast } from "sonner"
 
 import { usePermission } from "@/admin/lib/actor-context"
-import { pagesApi, parseResponse, servicePagesApi } from "@/admin/lib/api"
+import { pagesApi, parseResponse } from "@/admin/lib/api"
 import { ApiError } from "@/admin/lib/api-error"
 import { queryKeys } from "@/admin/lib/query-keys"
 import { Button } from "@/components/ui/button"
@@ -28,119 +29,6 @@ export function AddressForm({
   page: Pick<PageDetail, "id" | "path" | "systemKey"> & {
     serviceId?: string | null
   }
-  onChanged(path: string): void
-}) {
-  if (page.serviceId)
-    return (
-      <ServiceSlugForm
-        serviceId={page.serviceId}
-        path={page.path}
-        onChanged={onChanged}
-      />
-    )
-  return <CustomAddressForm page={page} onChanged={onChanged} />
-}
-
-const SERVICES_PREFIX = "/services/"
-
-// A service's page lives at /services/<slug>: editing the slug here renames
-// the service too, and a live page keeps a redirect from its old address.
-function ServiceSlugForm({
-  serviceId,
-  path,
-  onChanged,
-}: {
-  serviceId: string
-  path: string
-  onChanged(path: string): void
-}) {
-  const canUpdate = usePermission({ collection: ["update"] })
-  const queryClient = useQueryClient()
-  const current = path.startsWith(SERVICES_PREFIX)
-    ? path.slice(SERVICES_PREFIX.length)
-    : ""
-  const [slug, setSlug] = useState(current)
-  const [error, setError] = useState<string | null>(null)
-  const change = useMutation({
-    mutationFn: () =>
-      parseResponse(
-        servicePagesApi[":serviceId"].slug.$patch({
-          param: { serviceId },
-          json: { slug },
-        })
-      ),
-    onSuccess: (result) => {
-      setError(null)
-      toast.success("Slug changed. The old address now redirects here.")
-      onChanged(result.path)
-      void queryClient.invalidateQueries({ queryKey: queryKeys.pages.all })
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.collections.list("services"),
-      })
-    },
-    onError: (e) => {
-      if (!(e instanceof ApiError)) throw e
-      setError(e.fieldErrors.slug?.[0] ?? e.message)
-    },
-  })
-
-  return (
-    <section
-      aria-labelledby="address-heading"
-      className="rounded-card flex flex-col gap-4 bg-card p-5 sm:p-6"
-    >
-      <h2 id="address-heading" className="text-card-title">
-        Page address
-      </h2>
-      <form
-        noValidate
-        className="flex flex-col gap-3"
-        onSubmit={(event) => {
-          event.preventDefault()
-          change.mutate()
-        }}
-      >
-        <Field data-invalid={error ? true : undefined}>
-          <FieldLabel htmlFor="service-slug">Slug</FieldLabel>
-          <div className="flex items-center gap-2">
-            <span className="font-mono text-sm text-muted-foreground">
-              {SERVICES_PREFIX}
-            </span>
-            <Input
-              id="service-slug"
-              value={slug}
-              disabled={!canUpdate}
-              aria-invalid={error ? true : undefined}
-              onChange={(event) => setSlug(event.target.value.trim())}
-            />
-          </div>
-          <FieldDescription>
-            Lower-case words joined by hyphens. Changing it renames the
-            service&apos;s slug too; the old address redirects here.
-          </FieldDescription>
-          {error ? <FieldError>{error}</FieldError> : null}
-        </Field>
-        <div>
-          <Button
-            type="submit"
-            disabled={
-              !canUpdate || change.isPending || !slug || slug === current
-            }
-          >
-            {change.isPending ? <Spinner data-icon="inline-start" /> : null}
-            Change slug
-          </Button>
-        </div>
-      </form>
-    </section>
-  )
-}
-
-function CustomAddressForm({
-  page,
-  onChanged,
-}: {
-  page: Pick<PageDetail, "id" | "path" | "systemKey">
   onChanged(path: string): void
 }) {
   const canUpdate = usePermission({ page: ["update"] })
@@ -176,6 +64,29 @@ function CustomAddressForm({
   })
 
   const system = page.systemKey !== null
+  // A service's page follows the service's slug, edited with the service.
+  if (page.serviceId)
+    return (
+      <section
+        aria-labelledby="address-heading"
+        className="rounded-card flex flex-col gap-4 bg-card p-5 sm:p-6"
+      >
+        <h2 id="address-heading" className="text-card-title">
+          Page address
+        </h2>
+        <p className="font-mono text-sm">{page.path}</p>
+        <p className="text-sm text-muted-foreground">
+          This page follows its service&apos;s slug. Change the slug from{" "}
+          <Link
+            href="/admin/website/services"
+            className="font-medium text-foreground underline underline-offset-4"
+          >
+            Website → Services
+          </Link>{" "}
+          (Edit service); the page moves and the old address redirects here.
+        </p>
+      </section>
+    )
   return (
     <section
       aria-labelledby="address-heading"

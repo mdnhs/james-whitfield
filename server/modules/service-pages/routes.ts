@@ -8,8 +8,6 @@ import { validationHook } from "@/server/api/errors"
 import { can } from "@/server/api/middleware/auth"
 import type { AppEnv } from "@/server/api/types"
 
-import { Slug } from "@/lib/content/slug"
-
 import * as servicePages from "./service"
 
 const serviceId = zValidator(
@@ -34,21 +32,6 @@ export const servicePagesRoutes = new Hono<AppEnv>()
       ),
       201
     )
-  )
-  // The slug, edited from the service's page: renames the service.
-  .patch(
-    "/:serviceId/slug",
-    can({ collection: ["update"] }),
-    serviceId,
-    zValidator("json", z.object({ slug: Slug }), validationHook),
-    async (c) =>
-      c.json(
-        await servicePages.changeServiceSlug(
-          c.get("actor")!,
-          c.req.valid("param").serviceId,
-          c.req.valid("json").slug
-        )
-      )
   )
   .delete(
     "/:serviceId",

@@ -12,6 +12,9 @@ export const reducedMotion = () => prefers("(prefers-reduced-motion: reduce)")
 export const finePointer = () => prefers("(hover: hover) and (pointer: fine)")
 export const touchOnly = () => prefers("(hover: none)")
 
+// About eight frames: a healthy opening has moved well before this.
+const SAFETY_MS = 140
+
 // Opening plays this forwards and closing plays it backwards, so a visitor who
 // changes their mind halfway sees the panel turn around from where it is.
 function buildPanelTimeline(panel: HTMLElement, onClosed: () => void) {
@@ -54,14 +57,31 @@ export function usePanelMotion(open: boolean, onClosed: () => void) {
       closed.current()
     }
     timeline.current ??= buildPanelTimeline(el, finish)
-    if (open) timeline.current.timeScale(1).play()
+    if (open) {
+      const opening = timeline.current.timeScale(1).play()
+      // Safety net: if the opening has not moved shortly after (a stalled
+      // ticker, a throttled tab), show the finished panel instead.
+      const check = setTimeout(() => {
+        if (timeline.current === opening && opening.progress() === 0)
+          opening.progress(1)
+      }, SAFETY_MS)
+      return () => clearTimeout(check)
+    }
     // Reversing from the very start never completes: that would strand an
     // invisible panel.
     else if (timeline.current.time() === 0) finish()
     else timeline.current.timeScale(2.2).reverse()
   }, [open])
 
-  useEffect(() => () => void timeline.current?.kill(), [])
+  // Drop the killed timeline too: React's dev StrictMode remounts effects,
+  // and a kept dead timeline would leave the panel at its hidden from-state.
+  useEffect(
+    () => () => {
+      timeline.current?.kill()
+      timeline.current = null
+    },
+    []
+  )
 
   return panel
 }

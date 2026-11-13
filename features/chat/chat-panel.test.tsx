@@ -1,6 +1,12 @@
 // @vitest-environment jsdom
-import { act, fireEvent, render, screen } from "@testing-library/react"
-import { useEffect } from "react"
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react"
+import { StrictMode, useEffect } from "react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import type { ChatStatus, VisitorView } from "@/lib/chat/schema"
@@ -425,5 +431,23 @@ describe("motion", () => {
     rerender(<Harness open={false} />)
     const dialog = document.querySelector('[role="dialog"]')
     expect(dialog?.hasAttribute("inert")).toBe(true)
+  })
+
+  // Dev React (StrictMode) mounts, unmounts and remounts effects. The
+  // unmount cleanup used to kill the timeline but keep it in the ref, so the
+  // remount played a dead timeline and the panel stayed at its from-state.
+  it("plays the open animation to the end under StrictMode", async () => {
+    vi.useRealTimers()
+    stubMedia(false)
+    render(
+      <StrictMode>
+        <Harness />
+      </StrictMode>
+    )
+    const dialog = screen.getByRole("dialog")
+    await waitFor(() => expect(dialog.style.opacity).toBe("1"), {
+      timeout: 2000,
+    })
+    expect(dialog.style.transform).not.toContain("0.72")
   })
 })

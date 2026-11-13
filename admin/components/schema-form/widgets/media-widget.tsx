@@ -1,10 +1,11 @@
 "use client"
 
 import { useQuery } from "@tanstack/react-query"
-import { ImageIcon } from "lucide-react"
+import { ImageIcon, ImagePlusIcon } from "lucide-react"
 import { useId, useState } from "react"
 
 import { DeleteIconButton } from "@/admin/components/actions/icon-actions"
+import { IconTip } from "@/admin/components/actions/icon-tip"
 import { mediaListQuery } from "@/admin/modules/media/queries"
 import { Button } from "@/components/ui/button"
 
@@ -37,17 +38,26 @@ export function MediaWidget({
             <ImageIcon aria-hidden className="size-6 text-muted-foreground" />
           )}
         </div>
-        <div className="flex flex-col gap-2">
-          <Button
-            id={id}
-            aria-invalid={error ? true : undefined}
-            aria-describedby={describedBy(id, field, error)}
-            type="button"
-            variant="outline"
-            onClick={() => setOpen(true)}
-          >
-            {current ? "Change image" : "Choose image"}
-          </Button>
+        {/* Icons beside the thumbnail. The pick button is named by the
+            field's label (htmlFor); the tooltip says what it does. */}
+        <div className="flex flex-col gap-1.5">
+          <IconTip label={current ? "Change image" : "Choose image"}>
+            <Button
+              id={id}
+              aria-invalid={error ? true : undefined}
+              aria-describedby={describedBy(id, field, error)}
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={() => setOpen(true)}
+            >
+              {current ? (
+                <ImageIcon aria-hidden />
+              ) : (
+                <ImagePlusIcon aria-hidden />
+              )}
+            </Button>
+          </IconTip>
           {field.nullable && current ? (
             <DeleteIconButton
               label="Remove image"

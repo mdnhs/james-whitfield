@@ -28,6 +28,9 @@ export type UiMeta = {
   // Optional: shared field schemas (field-ui.ts) take the field's own name.
   label?: string
   description?: string
+  // The description warns (privacy, a moved address): it stays on screen
+  // under the field instead of behind the info icon.
+  warning?: boolean
   placeholder?: string
   widget?: Widget
   options?: readonly { value: string; label: string }[]

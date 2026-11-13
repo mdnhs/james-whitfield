@@ -18,6 +18,7 @@ import { MediaRef, Selection, StatValue } from "@/blocks/fields"
 import { RichTextDoc } from "@/blocks/rich-text"
 import { permissionMap } from "@/lib/auth/permissions"
 
+import { ui } from "../registry"
 import { SchemaForm } from "../schema-form"
 import type { FormField } from "../to-fields"
 import { CollectionWidget } from "./collection-widget"
@@ -415,5 +416,124 @@ describe("compact list rows", () => {
     )
     // No per-item heading text on screen.
     expect(screen.queryByText("Links 1")).toBeNull()
+  })
+})
+
+describe("field help behind an info icon", () => {
+  it("keeps the text as the control's and the icon's description, and opens on focus", async () => {
+    const user = userEvent.setup()
+    wrap(
+      <SchemaForm
+        schema={z.object({ url: z.string().max(100) })}
+        overrides={{
+          url: {
+            label: "Profile address",
+            description: "Starts with https://",
+          },
+        }}
+        defaultValues={{ url: "" }}
+        onSubmit={vi.fn()}
+        submitLabel="Save"
+      />
+    )
+    const input = screen.getByRole("textbox", { name: "Profile address" })
+    const describedById = input.getAttribute("aria-describedby")!.split(" ")[0]!
+    expect(document.getElementById(describedById)?.textContent).toBe(
+      "Starts with https://"
+    )
+    const info = screen.getByRole("button", { name: "More info" })
+    expect(info.getAttribute("aria-describedby")).toBe(describedById)
+    // Not on screen until asked for.
+    expect(screen.queryByRole("tooltip")).toBeNull()
+    await user.tab()
+    expect(document.activeElement).toBe(info)
+    await waitFor(() =>
+      expect(screen.getAllByText("Starts with https://")).toHaveLength(2)
+    )
+  })
+
+  it("keeps a warning on screen under the field", () => {
+    wrap(
+      <SchemaForm
+        schema={z.object({ include: z.boolean() })}
+        overrides={{
+          include: { description: "Emails leave the admin.", warning: true },
+        }}
+        defaultValues={{ include: false }}
+        onSubmit={vi.fn()}
+        submitLabel="Save"
+      />
+    )
+    expect(screen.queryByRole("button", { name: "More info" })).toBeNull()
+    expect(screen.getByText("Emails leave the admin.")).toBeTruthy()
+  })
+})
+
+describe("list item headers", () => {
+  it("names an item by its own first words, else by number", () => {
+    wrap(
+      <SchemaForm
+        schema={z.object({
+          social: z.array(
+            z.object({
+              platform: z.enum(["instagram", "facebook"]),
+              url: z.string().max(200),
+              note: z.string().max(200),
+              extra: z.string().max(200),
+            })
+          ),
+        })}
+        overrides={{
+          "social.$.platform": {
+            options: [
+              { value: "instagram", label: "Instagram" },
+              { value: "facebook", label: "Facebook" },
+            ],
+          },
+        }}
+        defaultValues={{
+          social: [
+            { platform: "instagram", url: "", note: "", extra: "" },
+            // Nothing picked yet: no words to show.
+            { platform: "" as "instagram", url: "", note: "", extra: "" },
+          ],
+        }}
+        onSubmit={vi.fn()}
+        submitLabel="Save"
+      />
+    )
+    const first = screen.getByRole("group", { name: "Social 1" })
+    expect(
+      within(first).getByText("Instagram", { selector: "[data-item-title]" })
+    ).toBeTruthy()
+    const second = screen.getByRole("group", { name: "Social 2" })
+    expect(
+      within(second).getByText("Item 2", { selector: "[data-item-title]" })
+    ).toBeTruthy()
+    // The buttons keep their numbered names.
+    expect(screen.getByRole("button", { name: "Remove Social 1" })).toBeTruthy()
+  })
+
+  it("drops the repeated label of a one-field item from view", () => {
+    wrap(
+      <SchemaForm
+        schema={z.object({
+          notes: z.array(
+            z.string().max(400).register(ui, { widget: "textarea" })
+          ),
+        })}
+        defaultValues={{ notes: ["Hello there"] }}
+        onSubmit={vi.fn()}
+        submitLabel="Save"
+      />
+    )
+    const item = screen.getByRole("group", { name: "Notes 1" })
+    expect(
+      within(item).getByText("Hello there", { selector: "[data-item-title]" })
+    ).toBeTruthy()
+    // Still the textarea's name, but visually hidden.
+    const label = within(item).getByText("Notes 1", { selector: "label" })
+    expect(label.className).toContain("sr-only")
+    expect(within(item).getByRole("textbox", { name: "Notes 1" })).toBeTruthy()
   })
 })

@@ -2,17 +2,16 @@
 
 import { useId } from "react"
 
-import {
-  Field,
-  FieldDescription,
-  FieldError,
-  FieldLabel,
-  FieldLegend,
-  FieldSet,
-} from "@/components/ui/field"
+import { Field, FieldError, FieldLabel, FieldSet } from "@/components/ui/field"
 
 import { DraftNumber } from "./draft-number"
-import { describedBy, type WidgetProps } from "./shell"
+import {
+  describedBy,
+  FieldNote,
+  HintedLegend,
+  legendName,
+  type WidgetProps,
+} from "./shell"
 
 type Focal = { x: number; y: number }
 
@@ -49,17 +48,14 @@ export function FocalWidget({
     <FieldSet
       data-invalid={error ? true : undefined}
       aria-describedby={described}
+      {...legendName(id, field)}
     >
-      <FieldLegend variant="label">{field.label}</FieldLegend>
+      <HintedLegend id={id} field={field} variant="label" />
       <div className="grid gap-3 sm:grid-cols-2">
         {axis("x", "Across (0–1)")}
         {axis("y", "Down (0–1)")}
       </div>
-      {field.description ? (
-        <FieldDescription id={`${id}-description`}>
-          {field.description}
-        </FieldDescription>
-      ) : null}
+      <FieldNote id={id} field={field} />
       {error ? <FieldError id={`${id}-error`}>{error}</FieldError> : null}
     </FieldSet>
   )

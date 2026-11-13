@@ -35,6 +35,11 @@ export type FormField = {
   required: boolean
   nullable?: boolean
   description?: string
+  // Description shown inline (a warning), not behind the info icon.
+  warning?: boolean
+  // Label visually hidden (still the control's name): a list item of one
+  // field, whose header already says what it is.
+  hideLabel?: boolean
   placeholder?: string
   inputType?: UiMeta["inputType"]
   autoComplete?: string
@@ -137,6 +142,7 @@ function toField(
     nullable,
     label: meta.label ?? humanise(name),
     description: meta.description,
+    warning: meta.warning,
     placeholder: meta.placeholder,
     inputType: meta.inputType,
     autoComplete: meta.autoComplete,

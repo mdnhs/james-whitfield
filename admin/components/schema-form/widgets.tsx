@@ -6,7 +6,7 @@ import {
   PlusIcon,
   TrashIcon,
 } from "lucide-react"
-import { useId } from "react"
+import { useId, useState } from "react"
 import {
   Controller,
   get,
@@ -24,7 +24,6 @@ import {
   FieldError,
   FieldGroup,
   FieldLabel,
-  FieldLegend,
   FieldSet,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
@@ -38,8 +37,16 @@ import {
 } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
+import { cn } from "@/lib/utils"
 
 import { emptyValue, rebase, type FormField } from "./to-fields"
+import {
+  FieldHint,
+  FieldNote,
+  HintedLegend,
+  LabelRow,
+  legendName,
+} from "./widgets/shell"
 import { CollectionWidget } from "./widgets/collection-widget"
 import { ColourWidget } from "./widgets/colour-widget"
 import { FocalWidget } from "./widgets/focal-widget"
@@ -83,12 +90,11 @@ export function FieldWidget({ field, control }: Props) {
 }
 
 function GroupWidget({ field, control }: Props) {
+  const id = useId()
   return (
-    <FieldSet>
-      <FieldLegend>{field.label}</FieldLegend>
-      {field.description ? (
-        <FieldDescription>{field.description}</FieldDescription>
-      ) : null}
+    <FieldSet {...legendName(id, field)}>
+      <HintedLegend id={id} field={field} />
+      <FieldNote id={id} field={field} />
       {compactColumns(field) ? (
         // A few short text fields (a button's label and link) side by side.
         <div className="grid gap-4 sm:grid-cols-2">
@@ -251,8 +257,12 @@ function ListWidget({ field, control }: Props) {
   // is one row: its inputs side by side, column names once above the list.
   const columns = compactColumns(item)
   return (
-    <FieldSet data-invalid={error ? true : undefined}>
-      <FieldLegend variant="label">{field.label}</FieldLegend>
+    <FieldSet
+      data-invalid={error ? true : undefined}
+      {...legendName(id, field)}
+    >
+      <HintedLegend id={id} field={field} variant="label" />
+      <FieldNote id={id} field={field} />
       {columns && items.length > 0 ? (
         <div
           aria-hidden
@@ -267,11 +277,18 @@ function ListWidget({ field, control }: Props) {
         </div>
       ) : null}
       <ol className={columns ? "flex flex-col gap-2" : "flex flex-col gap-3"}>
-        {items.map((_, index) => {
+        {items.map((value, index) => {
           const child = {
             ...rebase(item, `${field.name}.$`, `${field.name}.${index}`),
             label: `${field.label} ${index + 1}`,
           }
+          // One field in the item: the header names it, so its own label
+          // only stays for screen readers.
+          const single =
+            child.widget !== "group" || (child.fields ?? []).length === 1
+          const inner = (child.fields ?? []).map((f) =>
+            single ? { ...f, hideLabel: true } : f
+          )
           return (
             <li key={index}>
               {columns ? (
@@ -294,23 +311,31 @@ function ListWidget({ field, control }: Props) {
                   aria-label={child.label}
                   className="flex flex-col gap-3 rounded-xl border p-3"
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">{child.label}</span>
+                  <div className="flex items-center justify-between gap-2">
+                    <span
+                      data-item-title
+                      className="min-w-0 truncate text-sm font-medium"
+                    >
+                      {itemTitle(item, value, index)}
+                    </span>
                     {controls(index)}
                   </div>
                   {child.widget === "group" ? (
                     // The item's own fieldset already names the group.
                     <FieldGroup>
-                      {(child.fields ?? []).map((inner) => (
+                      {inner.map((innerField) => (
                         <FieldWidget
-                          key={inner.name}
-                          field={inner}
+                          key={innerField.name}
+                          field={innerField}
                           control={control}
                         />
                       ))}
                     </FieldGroup>
                   ) : (
-                    <FieldWidget field={child} control={control} />
+                    <FieldWidget
+                      field={{ ...child, hideLabel: true }}
+                      control={control}
+                    />
                   )}
                 </fieldset>
               )}
@@ -338,6 +363,32 @@ function ListWidget({ field, control }: Props) {
     </FieldSet>
   )
 }
+
+// A list item's header: its own first words (a link's label, a social
+// profile's platform), else "Item 2".
+export function itemTitle(
+  item: FormField,
+  value: unknown,
+  index: number
+): string {
+  const fallback = `Item ${index + 1}`
+  if (typeof value === "string") return value.trim() || fallback
+  if (item.widget !== "group" || !value || typeof value !== "object")
+    return fallback
+  const record = value as Record<string, unknown>
+  for (const f of item.fields ?? []) {
+    const key = f.name.split(".").at(-1) ?? ""
+    const raw = record[key]
+    if (typeof raw !== "string" || !raw.trim()) continue
+    if (f.widget === "text" || f.widget === "textarea") return raw.trim()
+    if (f.widget === "select" || f.widget === "radio")
+      return f.options?.find((o) => o.value === raw)?.label ?? raw
+  }
+  return fallback
+}
+
+// 90% of a limit: from here the counter stays on screen.
+export const nearLimit = (max: number) => Math.ceil(max * 0.9)
 
 // An item that fits on one row: a group of at most three short text fields.
 function compactColumns(item: FormField): FormField[] | null {
@@ -465,15 +516,20 @@ function ScalarWidget({
   error?: string
 }) {
   const id = useId()
+  const [focused, setFocused] = useState(false)
   const invalid = Boolean(error)
   const counted =
     field.maxLength !== undefined &&
     (field.widget === "textarea" ||
       (field.widget === "text" && field.inputType !== "password"))
+  const length = String(input.value ?? "").length
+  // The counter shows while typing here, or once the text is near its limit.
+  const showCount =
+    counted && (focused || length >= nearLimit(field.maxLength!))
   const describedBy =
     [
       field.description && `${id}-description`,
-      counted && `${id}-count`,
+      showCount && `${id}-count`,
       error && `${id}-error`,
     ]
       .filter(Boolean)
@@ -483,11 +539,15 @@ function ScalarWidget({
     "aria-describedby": describedBy,
     "aria-required": field.required || undefined,
   }
-  const description = field.description ? (
-    <FieldDescription id={`${id}-description`}>
-      {field.description}
-    </FieldDescription>
-  ) : null
+  const description = <FieldNote id={id} field={field} />
+  const hint = <FieldHint id={id} field={field} />
+  const track = {
+    onFocus: () => setFocused(true),
+    onBlur: () => {
+      setFocused(false)
+      input.onBlur()
+    },
+  }
   const errorText = error ? (
     <FieldError id={`${id}-error`}>{error}</FieldError>
   ) : null
@@ -503,7 +563,10 @@ function ScalarWidget({
           {...aria}
         />
         <FieldContent>
-          <FieldLabel htmlFor={id}>{field.label}</FieldLabel>
+          <div className="flex items-center gap-1.5">
+            <FieldLabel htmlFor={id}>{field.label}</FieldLabel>
+            {hint}
+          </div>
           {description}
           {errorText}
         </FieldContent>
@@ -513,8 +576,8 @@ function ScalarWidget({
 
   if (field.widget === "radio") {
     return (
-      <FieldSet data-invalid={invalid || undefined}>
-        <FieldLegend variant="label">{field.label}</FieldLegend>
+      <FieldSet data-invalid={invalid || undefined} {...legendName(id, field)}>
+        <HintedLegend id={id} field={field} variant="label" />
         {description}
         <RadioGroup
           value={input.value ?? ""}
@@ -551,7 +614,7 @@ function ScalarWidget({
         rows={4}
         placeholder={field.placeholder}
         value={input.value ?? ""}
-        onBlur={input.onBlur}
+        {...track}
         onChange={(event) => input.onChange(event.target.value)}
         {...aria}
       />
@@ -618,7 +681,7 @@ function ScalarWidget({
         autoComplete={field.autoComplete}
         placeholder={field.placeholder}
         value={input.value ?? ""}
-        onBlur={input.onBlur}
+        {...track}
         onChange={(event) =>
           input.onChange(
             event.target.value === "" && field.nullable
@@ -633,14 +696,17 @@ function ScalarWidget({
 
   return (
     <Field data-invalid={invalid || undefined}>
-      <div className="flex items-baseline justify-between gap-3">
-        <FieldLabel htmlFor={id}>{field.label}</FieldLabel>
-        {counted ? (
+      <div className="flex min-h-5 items-center justify-between gap-3">
+        <LabelRow id={id} field={field} />
+        {showCount ? (
           <span
             id={`${id}-count`}
-            className="text-xs text-muted-foreground tabular-nums"
+            className={cn(
+              "text-xs text-muted-foreground tabular-nums",
+              length >= field.maxLength! && "text-warning"
+            )}
           >
-            {String(input.value ?? "").length}/{field.maxLength}
+            {length}/{field.maxLength}
           </span>
         ) : null}
       </div>

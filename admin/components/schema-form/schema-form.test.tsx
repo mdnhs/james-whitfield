@@ -47,13 +47,40 @@ describe("SchemaForm", () => {
         onSubmit={vi.fn()}
       />
     )
-    expect(screen.getByText("0/20")).toBeTruthy()
+    // The counter waits for focus: no noise on a resting form.
+    expect(screen.queryByText("0/20")).toBeNull()
     await userEvent.type(screen.getByLabelText("Full name"), "Magda")
     expect(screen.getByText("5/20")).toBeTruthy()
     expect(screen.getByRole("switch", { name: "Newsletter" })).toBeTruthy()
     expect(screen.getByLabelText("Password").getAttribute("type")).toBe(
       "password"
     )
+  })
+
+  it("shows the counter only while focused or near the limit", async () => {
+    const user = userEvent.setup()
+    render(
+      <SchemaForm
+        schema={Schema}
+        defaultValues={defaults}
+        submitLabel="Save"
+        onSubmit={vi.fn()}
+      />
+    )
+    const name = screen.getByLabelText("Full name")
+    expect(screen.queryByText("0/20")).toBeNull()
+    await user.click(name)
+    expect(screen.getByText("0/20")).toBeTruthy()
+    expect(name.getAttribute("aria-describedby")).toContain("-count")
+    await user.type(name, "Magda")
+    await user.tab()
+    // Away from the field and far from 20: hidden again.
+    expect(screen.queryByText("5/20")).toBeNull()
+    expect(name.getAttribute("aria-describedby") ?? "").not.toContain("-count")
+    // 18 of 20 is 90%: it stays after blur.
+    await user.type(name, "abcdefghijklm")
+    await user.tab()
+    expect(screen.getByText("18/20")).toBeTruthy()
   })
 
   // toJSONSchema drops refinements; validation must still use them.

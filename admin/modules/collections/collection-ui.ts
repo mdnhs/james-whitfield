@@ -14,6 +14,7 @@ export const COLLECTION_FIELD_UI: Record<CollectionSlug, FieldOverrides> = {
     slug: {
       description:
         "Made from the title; edit it if you like. The service's page lives at /services/<slug> and its card's link goes there. Changing it moves the page; the old address redirects.",
+      warning: true,
     },
   },
   plans: {

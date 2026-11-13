@@ -5,17 +5,11 @@ import { useId, useMemo } from "react"
 import { Controller, type Control, type FieldValues } from "react-hook-form"
 
 import { pagesListQuery } from "@/admin/modules/pages/queries"
-import {
-  Field,
-  FieldDescription,
-  FieldError,
-  FieldLabel,
-  FieldLegend,
-  FieldSet,
-} from "@/components/ui/field"
+import { Field, FieldError, FieldLabel, FieldSet } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 
 import type { FormField } from "../to-fields"
+import { FieldNote, HintedLegend, legendName } from "./shell"
 
 // docs/brief.md §9.4: internal pages and their section anchors are offered,
 // any /path, #anchor, https:, mailto: or tel: is accepted (Href).
@@ -71,8 +65,8 @@ export function LinkWidget({
     />
   )
   return (
-    <FieldSet>
-      <FieldLegend variant="label">{field.label}</FieldLegend>
+    <FieldSet {...legendName(id, field)}>
+      <HintedLegend id={id} field={field} variant="label" />
       <div className="grid gap-3 sm:grid-cols-2">
         {part("label", "Link text")}
         {part("href", "Link target")}
@@ -82,9 +76,7 @@ export function LinkWidget({
           <option key={value} value={value} />
         ))}
       </datalist>
-      {field.description ? (
-        <FieldDescription>{field.description}</FieldDescription>
-      ) : null}
+      <FieldNote id={id} field={field} />
     </FieldSet>
   )
 }

@@ -2,20 +2,19 @@
 
 import { useId } from "react"
 
-import {
-  Field,
-  FieldDescription,
-  FieldError,
-  FieldLabel,
-  FieldLegend,
-  FieldSet,
-} from "@/components/ui/field"
+import { Field, FieldError, FieldLabel, FieldSet } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import type { StatValue } from "@/lib/count"
 
 import { DraftNumber } from "./draft-number"
-import { describedBy, type WidgetProps } from "./shell"
+import {
+  describedBy,
+  FieldNote,
+  HintedLegend,
+  legendName,
+  type WidgetProps,
+} from "./shell"
 
 type Count = Extract<StatValue, { kind: "count" }>
 
@@ -84,8 +83,9 @@ export function StatWidget({
     <FieldSet
       data-invalid={error ? true : undefined}
       aria-describedby={described}
+      {...legendName(id, field)}
     >
-      <FieldLegend variant="label">{field.label}</FieldLegend>
+      <HintedLegend id={id} field={field} variant="label" />
       <RadioGroup
         value={stat.kind}
         className="flex gap-4"
@@ -120,11 +120,7 @@ export function StatWidget({
           />
         </Field>
       )}
-      {field.description ? (
-        <FieldDescription id={`${id}-description`}>
-          {field.description}
-        </FieldDescription>
-      ) : null}
+      <FieldNote id={id} field={field} />
       {error ? <FieldError id={`${id}-error`}>{error}</FieldError> : null}
     </FieldSet>
   )

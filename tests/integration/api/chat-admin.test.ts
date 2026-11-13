@@ -3,6 +3,7 @@ import { afterAll, beforeEach, describe, expect, it, vi } from "vitest"
 
 const mocks = vi.hoisted(() => ({
   maybeReply: vi.fn(async () => "skipped"),
+  active: true,
   tasks: [] as Promise<unknown>[],
 }))
 vi.mock("next/server", async (importOriginal) => ({
@@ -14,6 +15,7 @@ vi.mock("next/server", async (importOriginal) => ({
 vi.mock("@/server/modules/chat/bot", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/server/modules/chat/bot")>()),
   maybeReply: mocks.maybeReply,
+  isActive: async () => mocks.active,
 }))
 
 import { ROLE_NAMES, type RoleName } from "@/lib/auth/permissions"
@@ -22,8 +24,11 @@ import {
   auditLogs,
   chatMessages,
   chatPresence,
+  settings,
   users,
 } from "@/server/db/schema"
+import { clearOutbox, readOutbox } from "@/server/lib/email"
+import * as bot from "@/server/modules/chat/bot"
 import * as repo from "@/server/modules/chat/repo"
 
 import {
@@ -38,7 +43,9 @@ import { resetDb } from "../helpers/db"
 beforeEach(async () => {
   await resetDb()
   mocks.maybeReply.mockClear()
+  mocks.active = true
   mocks.tasks.length = 0
+  clearOutbox()
 })
 afterAll(closeDb)
 
@@ -152,6 +159,78 @@ describe("chat admin API", () => {
     const cookie = await cookieFor("intake")
     await adminRequest("/chat", cookie)
     expect(await getDb().select().from(chatPresence)).toHaveLength(1)
+  })
+
+  it("does not count the background /unread poll as presence", async () => {
+    const cookie = await cookieFor("intake")
+    expect((await adminRequest("/chat/unread", cookie)).status).toBe(200)
+    expect(await getDb().select().from(chatPresence)).toHaveLength(0)
+    await adminRequest("/chat", cookie)
+    expect(await getDb().select().from(chatPresence)).toHaveLength(1)
+  })
+
+  it("handback resets the alert guard so a later failure alerts again", async () => {
+    await getDb()
+      .insert(settings)
+      .values({
+        key: "notifications",
+        value: { recipients: ["team@example.com"], includeMessage: false },
+      })
+    const cookie = await cookieFor("intake")
+    const chat = await newChat()
+    await bot.handOff(chat.id, "handoff")
+    expect(readOutbox()).toHaveLength(1)
+    expect(
+      (
+        await adminRequest(`/chat/${chat.id}/handback`, cookie, {
+          method: "POST",
+        })
+      ).status
+    ).toBe(200)
+    expect((await row(chat.id)).needsHumanAlertedAt).toBeNull()
+    await bot.handOff(chat.id, "failed")
+    expect(readOutbox()).toHaveLength(2)
+    expect(readOutbox()[1]!.subject).toBe(
+      "A visitor on the chat needs a person"
+    )
+  })
+
+  it("handback is 409 and changes nothing when the assistant is off", async () => {
+    mocks.active = false
+    const cookie = await cookieFor("intake")
+    const chat = await newChat()
+    await repo.flagNeedsHuman(chat.id)
+    const res = await adminRequest(`/chat/${chat.id}/handback`, cookie, {
+      method: "POST",
+    })
+    expect(res.status).toBe(409)
+    expect((await res.json()).error.message).toBe(
+      "The assistant is switched off or not set up"
+    )
+    expect((await row(chat.id)).needsHuman).toBe(true)
+    expect(
+      (await messages(chat.id)).some(
+        (m) => m.body === "The assistant is back on this chat."
+      )
+    ).toBe(false)
+    expect(mocks.maybeReply).not.toHaveBeenCalled()
+  })
+
+  it("handback is 409 when the chat already has a limit or failed notice", async () => {
+    const cookie = await cookieFor("intake")
+    for (const kind of ["limit", "failed"] as const) {
+      const chat = await newChat()
+      await bot.handOff(chat.id, kind)
+      const res = await adminRequest(`/chat/${chat.id}/handback`, cookie, {
+        method: "POST",
+      })
+      expect(res.status).toBe(409)
+      expect((await res.json()).error.message).toBe(
+        "The assistant can't take this chat back"
+      )
+      expect((await row(chat.id)).needsHuman).toBe(true)
+    }
+    expect(mocks.maybeReply).not.toHaveBeenCalled()
   })
 
   it("a staff reply disables the AI, assigns the actor and adds the join notice once", async () => {

@@ -29,9 +29,9 @@ vi.mock("server-only", () => ({}))
 vi.mock("./repo", () => ({
   byId: vi.fn(async () => ({ ...state.chat })),
   claimLease: vi.fn(async () => {
-    if (state.lease) return false
+    if (state.lease) return null
     state.lease = true
-    return true
+    return "lease-1"
   }),
   releaseLease: vi.fn(async () => {
     state.onRelease?.()
@@ -66,6 +66,9 @@ vi.mock("./repo", () => ({
 vi.mock("./notify", () => ({
   notifyNeedsHuman: vi.fn(async (_id: string, reason: string) => {
     state.notify.push(reason)
+  }),
+  notifyCrisis: vi.fn(async () => {
+    state.notify.push("crisis")
   }),
 }))
 vi.mock("./knowledge", () => ({ loadKnowledge: async () => "KNOW" }))
@@ -335,6 +338,16 @@ describe("maybeReply", () => {
     expect(state.notify).toEqual(["crisis"])
   })
 
+  it("(g2) a repeated crisis notice does not email again", async () => {
+    state.msgs = []
+    push("visitor", "I want to end my life")
+    await maybeReply(ID)
+    push("visitor", "suicidal again")
+    await maybeReply(ID)
+    expect(state.notices.map((n) => n.kind)).toEqual(["crisis"])
+    expect(state.notify).toEqual(["crisis"])
+  })
+
   it("(h) the prompt has no email and has the no-reveal rule", async () => {
     state.chat.visitorEmail = "secret@visitor.ie"
     await maybeReply(ID)
@@ -347,7 +360,7 @@ describe("maybeReply", () => {
     state.model = model(undefined, false, true)
     vi.spyOn(console, "error").mockImplementation(() => {})
     await maybeReply(ID)
-    expect(repo.releaseLease).toHaveBeenCalledWith(ID)
+    expect(repo.releaseLease).toHaveBeenCalledWith(ID, "lease-1")
     expect(state.lease).toBe(false)
   })
 

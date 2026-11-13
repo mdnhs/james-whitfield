@@ -220,6 +220,12 @@ describe("dialog", () => {
     expect(onClose).toHaveBeenCalled()
   })
 
+  it("focuses the name field on open, before the cookie lookup lands", () => {
+    queue = [{ status: 404, body: {} }]
+    render(<Harness />)
+    expect(document.activeElement).toBe(screen.getByLabelText(/^name/i))
+  })
+
   it("moves focus to the composer after start and back to the form after Start a new chat", async () => {
     queue = [
       { status: 404, body: {} },

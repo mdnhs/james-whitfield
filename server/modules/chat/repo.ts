@@ -210,29 +210,49 @@ export async function recentForModel(
 // ---------- bot lease ----------
 
 // A single conditional UPDATE: concurrent claims serialise on the row lock and
-// the loser re-checks the predicate against the winner's new lease.
+// the loser re-checks the predicate against the winner's new lease. Returns the
+// expiry it set as text (full microsecond precision, so it compares exactly in
+// releaseLease), or null when someone else holds the lease.
 export async function claimLease(
   id: string,
   ms = 60_000,
   db: DbLike = getDb()
-): Promise<boolean> {
-  const { rows } = await db.execute(sql`
+): Promise<string | null> {
+  const { rows } = await db.execute<{ until: string }>(sql`
     update chat_conversations
     set ai_lease_until = now() + (${ms}::numeric * interval '1 millisecond')
     where id = ${id}
       and (ai_lease_until is null or ai_lease_until < now())
-    returning id`)
-  return rows.length > 0
+    returning ai_lease_until::text as until`)
+  return rows[0]?.until ?? null
 }
 
+// Owner-scoped: clears only the lease this run set, so a run whose lease
+// expired cannot free a newer run's lease.
 export async function releaseLease(
   id: string,
+  until: string,
   db: DbLike = getDb()
 ): Promise<void> {
-  await db
-    .update(chatConversations)
-    .set({ aiLeaseUntil: null })
-    .where(eq(chatConversations.id, id))
+  await db.execute(sql`
+    update chat_conversations set ai_lease_until = null
+    where id = ${id} and ai_lease_until = ${until}::timestamptz`)
+}
+
+export async function hasNotice(
+  id: string,
+  kinds: NoticeKind[],
+  db: DbLike = getDb()
+): Promise<boolean> {
+  const { rows } = await db.execute(sql`
+    select 1 from chat_messages
+    where conversation_id = ${id}
+      and notice_kind in (${sql.join(
+        kinds.map((k) => sql`${k}`),
+        sql`, `
+      )})
+    limit 1`)
+  return rows.length > 0
 }
 
 // ---------- flags and assignment ----------
@@ -289,7 +309,9 @@ export async function setAi(
   const [row] = await db
     .update(chatConversations)
     .set(
-      enabled ? { aiEnabled: true, needsHuman: false } : { aiEnabled: false }
+      enabled
+        ? { aiEnabled: true, needsHuman: false, needsHumanAlertedAt: null }
+        : { aiEnabled: false }
     )
     .where(
       and(eq(chatConversations.id, id), eq(chatConversations.status, "open"))

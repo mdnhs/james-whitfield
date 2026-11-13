@@ -141,13 +141,14 @@ describe("chat repository", () => {
       repo.claimLease(chat.id),
     ])
     expect(results.filter(Boolean)).toHaveLength(1)
-    await repo.releaseLease(chat.id)
-    expect(await repo.claimLease(chat.id)).toBe(true)
+    await repo.releaseLease(chat.id, results.find(Boolean)!)
+    const second = await repo.claimLease(chat.id)
+    expect(second).toBeTruthy()
     await getDb()
       .update(chatConversations)
       .set({ aiLeaseUntil: new Date(Date.now() - 1000) })
       .where(eq(chatConversations.id, chat.id))
-    expect(await repo.claimLease(chat.id)).toBe(true)
+    expect(await repo.claimLease(chat.id)).toBeTruthy()
   })
 
   it("(g) addMessage on a closed chat returns null", async () => {

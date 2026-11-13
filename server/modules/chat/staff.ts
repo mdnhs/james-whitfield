@@ -6,7 +6,7 @@ import type { Actor } from "@/server/auth/actor"
 import { audit } from "@/server/lib/audit"
 import { defer } from "@/server/lib/defer"
 
-import { maybeReply } from "./bot"
+import { isActive, maybeReply } from "./bot"
 import * as repo from "./repo"
 
 const PAGE = 30
@@ -116,9 +116,20 @@ export async function handback(actor: Actor, id: string) {
   if (before.assignedTo !== null && before.assignedTo !== actor.userId) {
     throw new ApiError("CONFLICT", "Another team member is on this chat")
   }
+  if (!(await isActive())) {
+    throw new ApiError(
+      "CONFLICT",
+      "The assistant is switched off or not set up"
+    )
+  }
   // Nothing to hand back: no notice, no bot run, so repeated clicks are inert.
   if (before.assignedTo === null && before.aiEnabled && !before.needsHuman) {
     return { chat: toStaff(before) }
+  }
+  // A limit or failed notice is once per chat: the bot would hit it again and
+  // stay silent, so it cannot take this chat back.
+  if (await repo.hasNotice(id, ["limit", "failed"])) {
+    throw new ApiError("CONFLICT", "The assistant can't take this chat back")
   }
   if (before.assignedTo !== null && !(await repo.assign(id, null))) {
     throw closedError()

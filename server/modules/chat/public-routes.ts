@@ -47,7 +47,22 @@ export const chatPublicRoutes = new Hono<AppEnv>()
     // An open chat for this cookie is returned as is: no second chat.
     const existing = await findByToken(getCookie(c, CHAT_COOKIE))
     if (existing && existing.status === "open") {
-      return c.json(await view(existing), 201)
+      // The typed message is appended through the normal send path (limits,
+      // crisis check, bot reply); a missing or invalid one just shows the chat.
+      const typed = SendInput.safeParse({
+        body: (raw as { message?: unknown }).message,
+      })
+      if (typed.success) {
+        await send(
+          existing,
+          typed.data.body,
+          clientIp(c.req.raw.headers) ?? "unknown"
+        )
+      }
+      return c.json(
+        await view((await findByToken(getCookie(c, CHAT_COOKIE))) ?? existing),
+        201
+      )
     }
     const parsed = StartChatInput.safeParse(raw)
     if (!parsed.success) throw invalid(parsed.error)
@@ -74,8 +89,11 @@ export const chatPublicRoutes = new Hono<AppEnv>()
   })
   .get("/conversation", async (c) => {
     await requireEnabled()
+    // No cookie: 404 before any database write (the rate limit stores a row).
+    const token = getCookie(c, CHAT_COOKIE)
+    if (!token) throw new ApiError("NOT_FOUND", "Chat not found")
     await pollLimit(clientIp(c.req.raw.headers) ?? "unknown")
-    const chat = await requireChat(getCookie(c, CHAT_COOKIE))
+    const chat = await requireChat(token)
     const after = Number.parseInt(c.req.query("after") ?? "", 10)
     return c.json(await view(chat, after > 0 ? after : 0))
   })

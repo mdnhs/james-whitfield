@@ -18,7 +18,7 @@ import { getGlobal } from "@/server/modules/globals/service"
 
 import { loadKnowledge } from "./knowledge"
 import { isCrisis } from "./crisis"
-import { notifyNeedsHuman, type AlertReason } from "./notify"
+import { notifyCrisis, notifyNeedsHuman, type AlertReason } from "./notify"
 import { buildBotPrompt, endWithUnanswered, toModelMessages } from "./prompt"
 import * as repo from "./repo"
 
@@ -84,7 +84,12 @@ export async function handOff(
   // A refused notice on a closed chat means: no flag, no alert.
   if (!stored && (await repo.byId(id))?.status !== "open") return "handoff"
   await repo.flagNeedsHuman(id)
-  await notifyNeedsHuman(id, reason)
+  if (reason === "crisis") {
+    // Once per chat: only the call whose notice insert succeeded emails.
+    if (stored) await notifyCrisis(id)
+  } else {
+    await notifyNeedsHuman(id, reason)
+  }
   return "handoff"
 }
 
@@ -93,13 +98,13 @@ export async function maybeReply(id: string): Promise<BotOutcome> {
   let replied = false
   let handled = 0
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-    if (!(await repo.claimLease(id, LEASE_MS)))
-      return replied ? "replied" : "skipped"
+    const lease = await repo.claimLease(id, LEASE_MS)
+    if (!lease) return replied ? "replied" : "skipped"
     let r: Result
     try {
       r = await run(id, handled)
     } finally {
-      await repo.releaseLease(id)
+      await repo.releaseLease(id, lease)
     }
     if (r.outcome === "handoff" || r.outcome === "failed") return r.outcome
     if (r.outcome === "skipped") return replied ? "replied" : "skipped"

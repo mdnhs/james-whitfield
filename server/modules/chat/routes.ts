@@ -28,11 +28,14 @@ const ReadBody = z.object({
   upTo: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
 })
 
-// Staff who can reply count as online while they use the inbox.
+// Staff who can reply count as online while they use the inbox. The unread
+// count is polled by the admin shell from background tabs, so it does not count.
 const presence = createMiddleware<AppEnv>(async (c, next) => {
   const actor = c.get("actor")
+  const background = c.req.method === "GET" && c.req.path.endsWith("/unread")
   if (
     actor &&
+    !background &&
     !actor.impersonatedBy &&
     hasPermission(actor.roles, { chat: ["reply"] })
   ) {

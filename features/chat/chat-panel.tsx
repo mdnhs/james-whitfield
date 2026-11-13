@@ -310,7 +310,9 @@ export function ChatPanel({
   const offlineNote = status?.offlineNote || DEFAULT_OFFLINE
 
   useEffect(() => {
-    dialog.current?.focus()
+    // The start form is already on screen (no chat until the cookie lookup
+    // says otherwise): focus its first field now, the dialog as a fallback.
+    ;(nameField.current ?? dialog.current)?.focus()
     let alive = true
     void getStatus().then((r) => {
       if (alive && r.ok) setStatus(r.data)
@@ -327,6 +329,14 @@ export function ChatPanel({
   useEffect(() => {
     if (!loaded || focusedFor.current === exists) return
     focusedFor.current = exists
+    // Keep focus where the visitor already is inside the form.
+    const active = document.activeElement
+    if (
+      !exists &&
+      active !== dialog.current &&
+      dialog.current?.contains(active)
+    )
+      return
     ;(exists ? composer.current : nameField.current)?.focus()
   }, [loaded, exists])
 

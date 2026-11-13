@@ -9,7 +9,7 @@ import { invalidate, REDIRECT_TAGS } from "@/server/lib/cache"
 import { publishLocked } from "@/server/modules/articles/publish"
 import { articleTags } from "@/server/modules/articles/service"
 import { defer } from "@/server/lib/defer"
-import { maybeReply } from "@/server/modules/chat/bot"
+import { isActive, maybeReply } from "@/server/modules/chat/bot"
 import { notifyNoReply } from "@/server/modules/chat/notify"
 import { chatSweep } from "@/server/modules/chat/sweep"
 import { purgeExpired } from "@/server/modules/leads/retention"
@@ -119,7 +119,10 @@ export async function runTick(now = new Date()) {
       console.error("[scheduler] no-reply alert failed", error)
     )
   }
-  for (const id of resumeIds) {
+  // With the assistant off there is nothing to resume: skip the deferred work
+  // instead of re-deferring (and re-skipping) every tick.
+  const resume = resumeIds.length ? await isActive().catch(() => false) : false
+  for (const id of resume ? resumeIds : []) {
     try {
       defer(() => maybeReply(id), "chat recovery")
     } catch {

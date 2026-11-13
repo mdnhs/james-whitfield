@@ -68,7 +68,9 @@ async function send(id: string, subject: string, why: string) {
   }
 }
 
-// Once per chat: the conditional UPDATE decides who sends.
+// Once per episode: the conditional UPDATE decides who sends. The alert is
+// stamped before sending, so a transient SMTP failure loses it; the no-reply
+// sweep is the backstop. A real handback clears the stamp.
 export async function notifyNeedsHuman(id: string, reason: AlertReason) {
   try {
     if (!(await repo.claimNeedsHumanAlert(id))) return
@@ -77,6 +79,19 @@ export async function notifyNeedsHuman(id: string, reason: AlertReason) {
     return
   }
   await send(id, "A visitor on the chat needs a person", WHY[reason])
+}
+
+// The crisis email does not depend on the shared once-guard (an earlier
+// hand-off alert must not suppress it). The caller sends it once per chat,
+// gated on the crisis notice insert. It still stamps the guard, so a later
+// hand-off does not email again for the same episode.
+export async function notifyCrisis(id: string) {
+  try {
+    await repo.claimNeedsHumanAlert(id)
+  } catch (error) {
+    console.error("[chat] alert guard failed", errorTag(error))
+  }
+  await send(id, "A chat visitor may be in distress", WHY.crisis)
 }
 
 // The no-reply sweep owns its own once-only guard.

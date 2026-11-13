@@ -33,8 +33,7 @@ export const INBOX_DOCS: readonly HelpArticle[] = [
       },
       {
         title: "Keeping track",
-        blocks: [
-        ],
+        blocks: [],
       },
       {
         title: "Board",
@@ -295,8 +294,7 @@ export const INBOX_DOCS: readonly HelpArticle[] = [
       },
       {
         title: "Confirmation and unsubscribing",
-        blocks: [
-        ],
+        blocks: [],
       },
       {
         title: "Confirming a subscription",

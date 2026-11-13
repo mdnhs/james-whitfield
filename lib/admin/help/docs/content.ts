@@ -20,8 +20,7 @@ export const CONTENT_DOCS: readonly HelpArticle[] = [
     sections: [
       {
         title: "Writing an article",
-        blocks: [
-        ],
+        blocks: [],
       },
       {
         title: "Starting an article",
@@ -68,8 +67,7 @@ export const CONTENT_DOCS: readonly HelpArticle[] = [
       },
       {
         title: "Publishing, scheduling and unpublishing",
-        blocks: [
-        ],
+        blocks: [],
       },
       {
         title: "Publish and schedule",
@@ -210,8 +208,7 @@ export const CONTENT_DOCS: readonly HelpArticle[] = [
       },
       {
         title: "Describing and cropping images",
-        blocks: [
-        ],
+        blocks: [],
       },
       {
         title: "Alt text",
@@ -256,8 +253,7 @@ export const CONTENT_DOCS: readonly HelpArticle[] = [
       },
       {
         title: "Replacing and deleting",
-        blocks: [
-        ],
+        blocks: [],
       },
       {
         title: "Replace a file",

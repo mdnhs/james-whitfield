@@ -90,8 +90,7 @@ export const START_DOCS: readonly HelpArticle[] = [
       },
       {
         title: "Finding your way around",
-        blocks: [
-        ],
+        blocks: [],
       },
       {
         title: "Sidebar and dock",

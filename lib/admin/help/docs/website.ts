@@ -257,8 +257,7 @@ export const WEBSITE_DOCS: readonly HelpArticle[] = [
       },
       {
         title: "Editing a service",
-        blocks: [
-        ],
+        blocks: [],
       },
       {
         title: "Card",
@@ -403,8 +402,7 @@ export const WEBSITE_DOCS: readonly HelpArticle[] = [
       },
       {
         title: "The depth map",
-        blocks: [
-        ],
+        blocks: [],
       },
       {
         title: "What the depth map is",

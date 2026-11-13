@@ -11,8 +11,7 @@ export const FAQ_DOCS: readonly HelpArticle[] = [
     sections: [
       {
         title: "Saving and publishing",
-        blocks: [
-        ],
+        blocks: [],
       },
       {
         title: "I saved but the site didn't change",
@@ -50,8 +49,7 @@ export const FAQ_DOCS: readonly HelpArticle[] = [
       },
       {
         title: "Images and links",
-        blocks: [
-        ],
+        blocks: [],
       },
       {
         title: "An image looks cropped in the wrong place",
@@ -85,8 +83,7 @@ export const FAQ_DOCS: readonly HelpArticle[] = [
       },
       {
         title: "Sign-in, access and email",
-        blocks: [
-        ],
+        blocks: [],
       },
       {
         title: "I can't see a menu item",

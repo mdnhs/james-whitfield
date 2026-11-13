@@ -12,8 +12,7 @@ export const TEAM_DOCS: readonly HelpArticle[] = [
     sections: [
       {
         title: "Inviting someone",
-        blocks: [
-        ],
+        blocks: [],
       },
       {
         title: "Sending an invite",
@@ -42,8 +41,7 @@ export const TEAM_DOCS: readonly HelpArticle[] = [
       },
       {
         title: "Changing what someone can do",
-        blocks: [
-        ],
+        blocks: [],
       },
       {
         title: "Change roles",
@@ -180,8 +178,7 @@ export const TEAM_DOCS: readonly HelpArticle[] = [
       },
       {
         title: "Password and two-factor",
-        blocks: [
-        ],
+        blocks: [],
       },
       {
         title: "Change password",

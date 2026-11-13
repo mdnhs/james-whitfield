@@ -173,8 +173,7 @@ export const GROWTH_DOCS: readonly HelpArticle[] = [
       },
       {
         title: "Events and custom code",
-        blocks: [
-        ],
+        blocks: [],
       },
       {
         title: "Event catalogue",

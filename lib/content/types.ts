@@ -38,7 +38,10 @@ export type TestimonialView = {
   quote: string
   name: string
   role: string
-  avatar: MediaAsset
+  avatar: MediaAsset | null
+  source: "site" | "google"
+  rating: number
+  reviewUrl: string
 }
 
 export type FaqView = { id: string; question: string; answer: string }

@@ -54,7 +54,10 @@ export function toRow(name: CollectionSlug, values: Row): Row {
   const { image } = REGISTRY[name]
   if (!image) return values
   const { [image.field]: ref, ...rest } = values
-  return { ...rest, [image.column]: (ref as { mediaId: string }).mediaId }
+  return {
+    ...rest,
+    [image.column]: (ref as { mediaId: string } | null)?.mediaId ?? null,
+  }
 }
 
 export function fromRow(name: CollectionSlug, row: Row): Row {
@@ -62,7 +65,11 @@ export function fromRow(name: CollectionSlug, row: Row): Row {
   return Object.fromEntries(
     Object.keys(COLLECTION_SCHEMAS[name].shape).map((key) => [
       key,
-      key === image?.field ? { mediaId: row[image.column] } : row[key],
+      key === image?.field
+        ? row[image.column]
+          ? { mediaId: row[image.column] }
+          : null
+        : row[key],
     ])
   )
 }

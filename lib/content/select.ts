@@ -11,6 +11,12 @@ export const select = <T extends { id: string }>(
     ? items
     : selection.ids.flatMap((id) => items.filter((item) => item.id === id))
 
+// The testimonials block's "Show" choice.
+export const bySource = <T extends { source: "site" | "google" }>(
+  items: T[],
+  show: "all" | "site" | "google"
+) => (show === "all" ? items : items.filter((i) => i.source === show))
+
 // The services.plans block has no selection: it shows the first four plans.
 // Markup and rendering share this, so structured data never lists a plan the
 // visitor cannot see.

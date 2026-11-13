@@ -24,7 +24,22 @@ export const COLLECTION_FIELD_UI: Record<CollectionSlug, FieldOverrides> = {
       description: "For search engines only; the label is what visitors see.",
     },
   },
-  testimonials: { ...visible, avatar: { label: "Photo" } },
+  testimonials: {
+    ...visible,
+    avatar: { label: "Photo" },
+    source: {
+      label: "Source",
+      options: [
+        { value: "site", label: "Website testimonial" },
+        { value: "google", label: "Google review" },
+      ],
+    },
+    rating: {
+      label: "Stars",
+      description: "Shown on the card for Google reviews.",
+    },
+    reviewUrl: { label: "Link to the review on Google" },
+  },
   faqs: { ...visible, answer: { widget: "textarea" } },
   steps: { ...visible, frame: { widget: "frame", label: "Image crop" } },
   "cta-bands": { ...visible, cta: { label: "Button" } },

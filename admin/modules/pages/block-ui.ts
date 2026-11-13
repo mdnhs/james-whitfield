@@ -10,6 +10,28 @@ export const BLOCK_FIELD_UI: Partial<Record<BlockType, FieldOverrides>> = {
       collection: "testimonials",
       label: "Testimonials to show",
     },
+    show: {
+      label: "Show",
+      options: [
+        { value: "all", label: "All" },
+        { value: "site", label: "Website testimonials only" },
+        { value: "google", label: "Google reviews only" },
+      ],
+    },
+    "google.rating": {
+      label: "Google rating",
+      description: "e.g. 4.9. Leave empty to hide the Google summary.",
+      step: 0.1,
+    },
+    "google.count": { label: "Number of Google reviews" },
+    "google.profileUrl": {
+      label: "Google profile link",
+      description: 'Powers the "See all on Google" button.',
+    },
+    "google.writeUrl": {
+      label: "Write-a-review link",
+      description: 'Powers the "Write a review" button.',
+    },
   },
   faq: {
     selection: {

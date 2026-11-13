@@ -60,6 +60,11 @@ type HeroFixture = {
   mirror: boolean
 }
 
+const GOOGLE_OFF = {
+  show: "all",
+  google: { rating: null, count: null, profileUrl: "", writeUrl: "" },
+} as const
+
 const ALL = { mode: "all" } as const
 const hero = (h: HeroFixture): Spec => ({
   type: "hero.page",
@@ -140,7 +145,12 @@ export const SYSTEM_PAGES: PageSeed[] = [
         type: "testimonials",
         anchor: "testimonials",
         chapter: "Stories",
-        data: { variant: "home", ...TESTIMONIALS_HEADER, selection: ALL },
+        data: {
+          variant: "home",
+          ...TESTIMONIALS_HEADER,
+          selection: ALL,
+          ...GOOGLE_OFF,
+        },
       },
       {
         type: "journey",
@@ -195,7 +205,12 @@ export const SYSTEM_PAGES: PageSeed[] = [
         type: "testimonials",
         anchor: "testimonials",
         chapter: "Stories",
-        data: { variant: "page", ...TESTIMONIALS_HEADER, selection: ALL },
+        data: {
+          variant: "page",
+          ...TESTIMONIALS_HEADER,
+          selection: ALL,
+          ...GOOGLE_OFF,
+        },
       },
       band("next-step", "Next step", BAND_IDS.about, 0.7),
     ],

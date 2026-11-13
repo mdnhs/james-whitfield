@@ -78,7 +78,11 @@ export const testimonials = pgTable("testimonials", {
   quote: text().notNull(),
   authorName: text().notNull(),
   authorRole: text().notNull(),
-  avatarId: image(),
+  // Optional: a Google reviewer may have no photo.
+  avatarId: uuid().references(() => media.id, { onDelete: "restrict" }),
+  source: text().notNull().default("site"),
+  rating: integer().notNull().default(5),
+  reviewUrl: text().notNull().default(""),
 })
 
 export const faqs = pgTable("faqs", {

@@ -33,7 +33,12 @@ import {
 import { FormatsSection, ServicesGrid } from "@/features/services"
 import { JourneySection } from "@/features/journey"
 import { TestimonialsSection } from "@/features/testimonials"
-import { select, visiblePlans, withLivePagePaths } from "@/lib/content/select"
+import {
+  bySource,
+  select,
+  visiblePlans,
+  withLivePagePaths,
+} from "@/lib/content/select"
 import { slugify } from "@/lib/utils"
 import { turnstileSiteKey } from "@/server/lib/turnstile"
 import { getRouteTable } from "@/server/modules/redirects/queries"
@@ -75,7 +80,10 @@ export async function ResolvedBlock({ block }: { block: BlockInstance }) {
       )
     }
     case "testimonials": {
-      const items = select(await q.getTestimonials(), block.data.selection)
+      const items = bySource(
+        select(await q.getTestimonials(), block.data.selection),
+        block.data.show
+      )
       return <TestimonialsSection id={id} content={block.data} items={items} />
     }
     case "journey":

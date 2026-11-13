@@ -3,6 +3,7 @@ import * as z from "zod"
 
 import { defineBlock } from "./define-block"
 import {
+  HttpsUrl,
   IconField,
   LinkValue,
   MediaRef,
@@ -97,6 +98,16 @@ export const testimonials = defineBlock({
     eyebrow: text(40),
     title: text(80),
     selection: Selection,
+    show: z.enum(["all", "site", "google"]).default("all"),
+    // Entered by hand: the Google rating summary above the cards.
+    google: z
+      .object({
+        rating: z.number().min(0).max(5).nullable().default(null),
+        count: z.number().int().min(0).nullable().default(null),
+        profileUrl: z.union([z.literal(""), HttpsUrl]).default(""),
+        writeUrl: z.union([z.literal(""), HttpsUrl]).default(""),
+      })
+      .default({ rating: null, count: null, profileUrl: "", writeUrl: "" }),
   }),
   allowedOn: "*",
   uses: ["collection:testimonials", "media"],

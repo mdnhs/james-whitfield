@@ -1,6 +1,13 @@
 import * as z from "zod"
 
-import { IconField, LinkValue, MediaRef, Tint, text } from "@/blocks/fields"
+import {
+  HttpsUrl,
+  IconField,
+  LinkValue,
+  MediaRef,
+  Tint,
+  text,
+} from "@/blocks/fields"
 
 import { Slug } from "./slug"
 
@@ -56,7 +63,11 @@ export const COLLECTION_SCHEMAS = {
     quote: text(600),
     authorName: text(60),
     authorRole: text(80),
-    avatar: MediaRef,
+    // A Google reviewer often has no photo; the card shows initials.
+    avatar: MediaRef.nullable().default(null),
+    source: z.enum(["site", "google"]).default("site"),
+    rating: z.number().int().min(1).max(5).default(5),
+    reviewUrl: z.union([z.literal(""), HttpsUrl]).default(""),
     isVisible,
   }),
   faqs: z.object({ question: text(200), answer: text(1500), isVisible }),

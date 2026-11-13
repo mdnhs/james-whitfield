@@ -3,6 +3,7 @@ import { Eyebrow } from "@/components/eyebrow"
 import { Container } from "@/components/layout/container"
 import type { TestimonialView } from "@/lib/content/types"
 import { cn } from "@/lib/utils"
+import { GoogleSummary } from "./google-summary"
 import { TestimonialCarousel } from "./testimonial-carousel"
 
 // "page" (inner pages) uses the pill eyebrow and the pine heading.
@@ -58,6 +59,7 @@ export function TestimonialsSection({
           >
             {title}
           </h2>
+          <GoogleSummary show={content.show} google={content.google} />
         </header>
 
         <TestimonialCarousel items={items} label={title} />

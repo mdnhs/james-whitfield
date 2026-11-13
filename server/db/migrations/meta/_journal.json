@@ -127,6 +127,13 @@
       "when": 1794532004854,
       "tag": "0017_heavy_manta",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1794539185103,
+      "tag": "0018_google_reviews",
+      "breakpoints": true
     }
   ]
 }

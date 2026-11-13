@@ -191,14 +191,23 @@ export async function listTestimonials(
     .where(visible(t.testimonials))
     .orderBy(asc(t.testimonials.sort))
   const assets = await findMedia(
-    rows.map((r) => r.avatarId),
+    rows.flatMap((r) => (r.avatarId ? [r.avatarId] : [])),
     db
   )
   return rows.flatMap((r) => {
-    const avatar = need(assets, r.avatarId)
-    if (!avatar) return []
-    const { id, quote, authorName: name, authorRole: role } = r
-    return [{ id, quote, name, role, avatar }]
+    // A photo is optional, but one that was set and is now gone drops the row.
+    const avatar = r.avatarId ? need(assets, r.avatarId) : null
+    if (r.avatarId && !avatar) return []
+    const {
+      id,
+      quote,
+      authorName: name,
+      authorRole: role,
+      rating,
+      reviewUrl,
+    } = r
+    const source = r.source === "google" ? "google" : "site"
+    return [{ id, quote, name, role, avatar, source, rating, reviewUrl }]
   })
 }
 

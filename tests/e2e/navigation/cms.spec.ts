@@ -20,7 +20,7 @@ for (const path of [
     await expect(
       page.locator('meta[name="robots"][content*="noindex"]').first()
     ).toBeAttached()
-    for (const name of ["Back to home", "Book a discovery call", "Insights"]) {
+    for (const name of ["Back to home", "Book a free discovery call", "Insights"]) {
       await expect(page.getByRole("link", { name })).toBeVisible()
     }
   })

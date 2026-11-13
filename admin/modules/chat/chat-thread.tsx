@@ -14,7 +14,13 @@ import { Textarea } from "@/components/ui/textarea"
 import { type ChatMessage, chatDetailQuery, useChatActions } from "./queries"
 import { formatMessageTime, useTabVisible } from "./present"
 
-function Bubble({ message, visitor }: { message: ChatMessage; visitor: string }) {
+function Bubble({
+  message,
+  visitor,
+}: {
+  message: ChatMessage
+  visitor: string
+}) {
   if (message.sender === "system") {
     return (
       <p className="py-1 text-center text-xs text-muted-foreground">
@@ -30,7 +36,9 @@ function Bubble({ message, visitor }: { message: ChatMessage; visitor: string })
         ? (message.senderName ?? "Assistant")
         : (message.senderName ?? "Team")
   return (
-    <div className={mine ? "flex flex-col items-end" : "flex flex-col items-start"}>
+    <div
+      className={mine ? "flex flex-col items-end" : "flex flex-col items-start"}
+    >
       <div className="mb-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
         <span>{who}</span>
         {message.sender === "ai" ? (

@@ -93,9 +93,7 @@ export function useChatActions(id: string) {
     }),
     assign: useMutation({
       mutationFn: (userId: string | null) =>
-        parseResponse(
-          chatApi[":id"].assign.$post({ param, json: { userId } })
-        ),
+        parseResponse(chatApi[":id"].assign.$post({ param, json: { userId } })),
       ...opts,
     }),
     close: useMutation({
@@ -117,9 +115,7 @@ export function useChatActions(id: string) {
     // the error inline and keeps the draft, so there is no toast here.
     reply: useMutation({
       mutationFn: (body: string) =>
-        parseResponse(
-          chatApi[":id"].messages.$post({ param, json: { body } })
-        ),
+        parseResponse(chatApi[":id"].messages.$post({ param, json: { body } })),
       onSuccess: refresh,
     }),
     // Only called while the tab is visible; failures are silent and retried

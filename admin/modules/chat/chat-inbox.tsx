@@ -110,7 +110,7 @@ export function ChatInbox() {
   }, [unread])
 
   return (
-    <div className="grid h-[calc(var(--content-h)-4rem)] min-h-96 overflow-hidden rounded-card border bg-card lg:grid-cols-[22rem_1fr]">
+    <div className="rounded-card grid h-[calc(var(--content-h)-4rem)] min-h-96 overflow-hidden border bg-card lg:grid-cols-[22rem_1fr]">
       <section
         aria-label="Chats"
         className={cn(

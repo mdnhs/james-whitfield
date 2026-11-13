@@ -39,7 +39,10 @@ export function AdminShell({
           >
             Skip to content
           </a>
-          <AppSidebar siteUrl={siteUrl} badges={{ "new-leads": newLeads, "chat-unread": chatUnread }} />
+          <AppSidebar
+            siteUrl={siteUrl}
+            badges={{ "new-leads": newLeads, "chat-unread": chatUnread }}
+          />
           {/* The content panel scrolls inside its own rounded corners, below a
               still topbar. --content-h is its visible height (the svh less the
               gutters, the 72px topbar and the gap) for sticky panes inside.

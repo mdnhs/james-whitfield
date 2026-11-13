@@ -80,6 +80,52 @@ const TOGGLED: ReadonlySet<FormField["widget"]> = new Set([
   "focal",
 ])
 
+// Short controls (a name, an email, a select, an image) take half a row once
+// the form is wide enough; anything long or nested keeps the full width.
+const HALF: ReadonlySet<FormField["widget"]> = new Set([
+  "text",
+  "number",
+  "select",
+  "colour",
+  "icon",
+  "media",
+  "toggle",
+])
+
+export function isHalfWidth(field: FormField): boolean {
+  // A nullable field behind an on/off switch can grow into a full form.
+  if (field.nullable && TOGGLED.has(field.widget)) return false
+  if (!HALF.has(field.widget)) return false
+  // A long single-line value (a meta description) reads better full width.
+  return field.widget !== "text" || (field.maxLength ?? 0) <= 160
+}
+
+// Two columns by the form's own width (a container query), not the
+// viewport: the page builder's narrow panel stays one column.
+export function FieldGrid({
+  fields,
+  control,
+}: {
+  fields: readonly FormField[]
+  control: Props["control"]
+}) {
+  return (
+    <div className="@container/fields w-full min-w-0">
+      <div className="grid grid-cols-1 items-start gap-x-6 gap-y-5 @2xl/fields:grid-cols-2">
+        {fields.map((child) => (
+          <div
+            key={child.name}
+            data-width={isHalfWidth(child) ? "half" : "full"}
+            className={cn("min-w-0", !isHalfWidth(child) && "col-span-full")}
+          >
+            <FieldWidget field={child} control={control} />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export function FieldWidget({ field, control }: Props) {
   if (field.nullable && TOGGLED.has(field.widget))
     return <NullableField field={field} control={control} />
@@ -113,11 +159,7 @@ function GroupWidget({ field, control }: Props) {
           ))}
         </div>
       ) : (
-        <FieldGroup>
-          {(field.fields ?? []).map((child) => (
-            <FieldWidget key={child.name} field={child} control={control} />
-          ))}
-        </FieldGroup>
+        <FieldGrid fields={field.fields ?? []} control={control} />
       )}
     </FieldSet>
   )

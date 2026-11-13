@@ -12,11 +12,10 @@ import type * as z from "zod"
 
 import { FORM_ACTION } from "@/admin/components/dashboard/page-header"
 import { Button } from "@/components/ui/button"
-import { FieldGroup } from "@/components/ui/field"
 import { Spinner } from "@/components/ui/spinner"
 
 import { toFields, type FieldOverrides } from "./to-fields"
-import { FieldWidget } from "./widgets"
+import { FieldGrid } from "./widgets"
 
 export type SubmitResult = void | {
   formError?: string
@@ -102,11 +101,7 @@ export function SchemaForm<S extends z.ZodObject>({
 
   return (
     <form onSubmit={submit} noValidate className="flex flex-col gap-6">
-      <FieldGroup>
-        {fields.map((field) => (
-          <FieldWidget key={field.name} field={field} control={form.control} />
-        ))}
-      </FieldGroup>
+      <FieldGrid fields={fields} control={form.control} />
       {rootError ? (
         <p role="alert" className="text-sm text-destructive">
           {rootError}

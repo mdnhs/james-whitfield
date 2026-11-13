@@ -299,19 +299,24 @@ function TrackingForm({
     <form onSubmit={onSubmit} noValidate className="flex flex-col gap-6">
       <fieldset disabled={!canUpdate} className="min-w-0">
         <FieldGroup>
-          {text("gtmId", "GTM container ID", "GTM-XXXXXXX")}
-          {toggle("gtm", "Load Google Tag Manager")}
-          {text("ga4Id", "GA4 measurement ID", "G-XXXXXXXXXX")}
-          {toggle("ga4", "Send GA4 through GTM")}
-          {text("metaPixelId", "Meta Pixel ID", "1234567890")}
-          {toggle("meta", "Load the Meta Pixel")}
-          {toggle("capi", "Send leads with the Conversions API")}
-          {text(
-            "testEventCode",
-            "Test event code",
-            "TEST12345",
-            "From Events Manager, Test events. Only used by the test button below."
-          )}
+          {/* Each ID beside its own switch once the form is wide enough. */}
+          <div className="@container/track">
+            <div className="grid grid-cols-1 gap-x-6 gap-y-5 @xl/track:grid-cols-2 @xl/track:items-end">
+              {text("gtmId", "GTM container ID", "GTM-XXXXXXX")}
+              {toggle("gtm", "Load Google Tag Manager")}
+              {text("ga4Id", "GA4 measurement ID", "G-XXXXXXXXXX")}
+              {toggle("ga4", "Send GA4 through GTM")}
+              {text("metaPixelId", "Meta Pixel ID", "1234567890")}
+              {toggle("meta", "Load the Meta Pixel")}
+              {text(
+                "testEventCode",
+                "Test event code",
+                "TEST12345",
+                "From Events Manager, Test events. Only used by the test button below."
+              )}
+              {toggle("capi", "Send leads with the Conversions API")}
+            </div>
+          </div>
 
           <Field data-invalid={Boolean(errors.capiToken) || undefined}>
             <FieldLabel htmlFor={`${ids}-capiToken`}>

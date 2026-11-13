@@ -18,6 +18,8 @@ vi.mock("@/admin/lib/actor-context", () => ({
       acts.every((a) => !perms.denied.has(`${r}:${a}`))
     ),
 }))
+const push = vi.fn()
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }))
 vi.mock("sonner", () => ({
   toast: { error: (m: string) => toastError(m), success: vi.fn() },
 }))
@@ -40,7 +42,7 @@ vi.mock("@/admin/modules/collections/queries", () => ({
           sort: 0,
           version: 1,
           title: "Websites",
-          values: {},
+          values: { slug: "websites" },
           usedOn: [],
           detailPage: state.detailPage,
         },
@@ -49,12 +51,12 @@ vi.mock("@/admin/modules/collections/queries", () => ({
   }),
 }))
 
-import { ServicesPanel } from "./services-panel"
+import { ServicePagesView } from "./service-pages-view"
 
 function setup() {
   render(
     <QueryClientProvider client={new QueryClient()}>
-      <ServicesPanel />
+      <ServicePagesView />
     </QueryClientProvider>
   )
 }
@@ -65,35 +67,39 @@ beforeEach(() => {
   state.detailPage = null
 })
 
-describe("ServicesPanel", () => {
-  it("turns a details page on and then offers Edit page", async () => {
-    post.mockImplementation(async () => {
-      state.detailPage = {
-        id: "p1",
-        path: "/services/websites",
-        status: "draft",
-      }
-      return { pageId: "p1", path: "/services/websites" }
-    })
+const published = {
+  id: "p1",
+  path: "/services/websites",
+  status: "published",
+  updatedAt: "2026-11-13T10:00:00.000Z",
+}
+
+describe("ServicePagesView", () => {
+  it("lists a service without a page and creates one, then opens the editor", async () => {
+    post.mockResolvedValue({ pageId: "p1", path: "/services/websites" })
     setup()
+    expect(await screen.findAllByText("No page yet")).not.toHaveLength(0)
     await userEvent.click(
-      await screen.findByRole("switch", { name: "Details page for Websites" })
+      screen.getAllByRole("button", { name: "Create page" })[0]!
     )
     expect(post).toHaveBeenCalledWith({ param: { serviceId: "s1" } })
-    const link = await screen.findByRole("link", { name: "Edit page" })
-    expect(link.getAttribute("href")).toBe("/admin/pages/p1")
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/admin/pages/p1"))
   })
 
-  it("asks before deleting, then calls DELETE", async () => {
-    state.detailPage = {
-      id: "p1",
-      path: "/services/websites",
-      status: "published",
-    }
+  it("links the title to the editor and shows the status", async () => {
+    state.detailPage = published
+    setup()
+    const links = await screen.findAllByRole("link", { name: "Websites" })
+    expect(links[0]!.getAttribute("href")).toBe("/admin/pages/p1")
+    expect(screen.getAllByText("Published").length).toBeGreaterThan(0)
+  })
+
+  it("asks before deleting, then calls DELETE once", async () => {
+    state.detailPage = published
     del.mockResolvedValue(undefined)
     setup()
     await userEvent.click(
-      await screen.findByRole("switch", { name: "Details page for Websites" })
+      (await screen.findAllByRole("button", { name: "Delete" }))[0]!
     )
     expect(del).not.toHaveBeenCalled()
     expect(
@@ -101,19 +107,22 @@ describe("ServicesPanel", () => {
         "Delete the details page for Websites? Its content can't be recovered."
       )
     ).toBeTruthy()
-    await userEvent.click(screen.getByRole("button", { name: "Delete page" }))
+    const confirm = screen.getByRole("button", { name: "Delete page" })
+    await userEvent.dblClick(confirm)
     await waitFor(() =>
       expect(del).toHaveBeenCalledWith({ param: { serviceId: "s1" } })
     )
+    expect(del).toHaveBeenCalledTimes(1)
   })
 
-  it("disables the switch without collection:create", async () => {
+  it("hides Create page without collection:create", async () => {
     perms.denied.add("collection:create")
     setup()
-    const sw = await screen.findByRole("switch", {
-      name: "Details page for Websites",
-    })
-    expect(sw.hasAttribute("data-disabled")).toBe(true)
+    await screen.findAllByText("No page yet")
+    expect(screen.queryByRole("button", { name: "Create page" })).toBeNull()
+    expect(
+      screen.queryByRole("button", { name: "New service page" })
+    ).toBeNull()
   })
 
   it("shows the server's message on a 409", async () => {
@@ -129,10 +138,11 @@ describe("ServicesPanel", () => {
     )
     setup()
     await userEvent.click(
-      await screen.findByRole("switch", { name: "Details page for Websites" })
+      (await screen.findAllByRole("button", { name: "Create page" }))[0]!
     )
     await waitFor(() =>
       expect(toastError).toHaveBeenCalledWith("Add a call-to-action band first")
     )
+    expect(push).not.toHaveBeenCalled()
   })
 })

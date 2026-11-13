@@ -85,15 +85,16 @@ test("a new service page opens its own builder after another was visited", async
     page.getByRole("heading", { name: a.title, level: 1 })
   ).toBeVisible()
   await page
-    .getByRole("link", { name: "Services", exact: true })
+    .getByRole("link", { name: "Service pages", exact: true })
     .first()
     .click()
-  await expect(page).toHaveURL(/\/admin\/website\/services$/)
-  const row = page.getByRole("listitem").filter({ hasText: fresh.title })
-  await row
-    .getByRole("switch", { name: `Details page for ${fresh.title}` })
+  await expect(page).toHaveURL(/\/admin\/website\/service-pages$/)
+  await page
+    .getByRole("row")
+    .filter({ hasText: fresh.title })
+    .getByRole("button", { name: "Create page" })
     .click()
-  await row.getByRole("link", { name: "Edit page" }).click()
+  await expect(page).toHaveURL(/\/admin\/pages\/[0-9a-f-]{36}$/)
   await expect(
     page.getByRole("heading", { name: fresh.title, level: 1 })
   ).toBeVisible()

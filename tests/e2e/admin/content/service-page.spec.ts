@@ -22,13 +22,12 @@ test("turn on a service's details page, edit its hero, publish", async ({
   )
   const band = bands.find((b) => b.values.isVisible)!
 
-  await page.goto("/admin/website/services")
-  const row = page.getByRole("listitem").filter({ hasText: service.title })
-  await row
-    .getByRole("switch", { name: `Details page for ${service.title}` })
-    .click()
-  await expect(row.getByText("Draft", { exact: true })).toBeVisible()
-  await row.getByRole("link", { name: "Edit page" }).click()
+  await page.goto("/admin/website/service-pages")
+  await page.getByRole("button", { name: "New service page" }).click()
+  const dialog = page.getByRole("dialog", { name: "New service page" })
+  await dialog.getByLabel("Service").click()
+  await page.getByRole("option", { name: service.title }).click()
+  await dialog.getByRole("button", { name: "Create page" }).click()
   await expect(page).toHaveURL(/\/admin\/pages\/[0-9a-f-]{36}$/)
 
   // Seven fixed sections and nothing that adds, removes, hides or moves one.

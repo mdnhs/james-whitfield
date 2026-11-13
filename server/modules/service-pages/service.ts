@@ -139,6 +139,7 @@ export type DetailPage = {
   id: string
   path: string
   status: "draft" | "published"
+  updatedAt: Date
 }
 
 // Each service's linked detail page, for the admin list's switch.
@@ -149,6 +150,7 @@ export async function detailPagesByService(db: DbLike = getDb()) {
       id: pages.id,
       path: pages.path,
       status: pages.status,
+      updatedAt: pages.updatedAt,
     })
     .from(pages)
     .where(isNotNull(pages.serviceId))

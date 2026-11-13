@@ -88,13 +88,28 @@ export const NAV: readonly NavItem[] = [
       "footer",
     ],
     children: [
-      ...WEBSITE_PAGES.filter((page) => page.key !== "insights").map(
-        (page): NavLink => ({
-          id: `website-${page.key}`,
-          label: page.label,
-          href: websiteHref(page.key),
-          permission: { page: ["read"] },
-        })
+      ...WEBSITE_PAGES.filter((page) => page.key !== "insights").flatMap(
+        (page): NavLink[] => {
+          const link: NavLink = {
+            id: `website-${page.key}`,
+            label: page.label,
+            href: websiteHref(page.key),
+            permission: { page: ["read"] },
+          }
+          // Each service's own details page, listed like articles.
+          return page.key === "services"
+            ? [
+                link,
+                {
+                  id: "website-service-pages",
+                  label: "Service pages",
+                  href: "/admin/website/service-pages",
+                  permission: { page: ["read"] },
+                  keywords: ["service details", "details page"],
+                },
+              ]
+            : [link]
+        }
       ),
       {
         id: "website-insights",

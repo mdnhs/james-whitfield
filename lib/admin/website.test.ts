@@ -37,7 +37,7 @@ describe("website registry", () => {
       "/admin/website/about"
     )
     expect(backLinkForPage({ systemKey: null, serviceId: "s" }).href).toBe(
-      "/admin/website/services"
+      "/admin/website/service-pages"
     )
     // An unlinked /services/* page is listed with the other pages.
     expect(backLinkForPage({ systemKey: null, serviceId: null }).href).toBe(

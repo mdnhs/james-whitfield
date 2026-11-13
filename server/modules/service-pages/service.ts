@@ -1,6 +1,6 @@
 import "server-only"
 
-import { and, asc, eq, isNotNull, isNull, ne } from "drizzle-orm"
+import { and, asc, eq, isNotNull, isNull, ne, sql } from "drizzle-orm"
 
 import type { PageDocument } from "@/blocks/page"
 import { serviceTemplate } from "@/blocks/service-template"
@@ -11,7 +11,9 @@ import { ctaBands, pages, services } from "@/server/db/schema"
 import { audit } from "@/server/lib/audit"
 import { invalidate, REDIRECT_TAGS, tags } from "@/server/lib/cache"
 import { insertPage, removePage } from "@/server/modules/pages/service"
+import { isUniqueViolation } from "@/server/lib/conflict"
 import {
+  lockRedirects,
   recordPathChange,
   releasePath,
 } from "@/server/modules/redirects/service"
@@ -264,4 +266,61 @@ export async function removeServicePage(
     tags.routes,
     ...(redirectsChanged ? REDIRECT_TAGS : []),
   ]
+}
+
+// The slug edited from the service's own page: renames the service, so the
+// page moves to /services/<slug> (a live one leaves a redirect behind).
+export async function changeServiceSlug(
+  actor: Actor,
+  serviceId: string,
+  slug: string
+): Promise<{ path: string }> {
+  try {
+    const expire = await getDb().transaction(async (tx) => {
+      await lockRedirects(tx)
+      const [before] = await tx
+        .select()
+        .from(services)
+        .where(eq(services.id, serviceId))
+        .for("update")
+        .limit(1)
+      if (!before) throw new ApiError("NOT_FOUND", "That service doesn't exist")
+      if (before.slug === slug) return []
+      await tx
+        .update(services)
+        .set({
+          slug,
+          version: sql`${services.version} + 1`,
+          updatedBy: actor.userId,
+        })
+        .where(eq(services.id, serviceId))
+      const moved = await syncServicePage(
+        tx,
+        actor,
+        serviceRow(before),
+        serviceRow({ ...before, slug })
+      )
+      await audit(
+        actor,
+        {
+          action: "collection.update",
+          entityType: "services",
+          entityId: serviceId,
+          summary: `Changed the slug of "${before.title}" to ${slug}`,
+          diff: { slug: { from: before.slug, to: slug } },
+        },
+        tx
+      )
+      return moved
+    })
+    invalidate([tags.collection("services"), ...expire])
+  } catch (error) {
+    if (isUniqueViolation(error)) {
+      throw new ApiError("CONFLICT", "Another service already uses that slug", {
+        slug: ["Another service already uses that slug"],
+      })
+    }
+    throw error
+  }
+  return { path: servicePagePath(slug) }
 }

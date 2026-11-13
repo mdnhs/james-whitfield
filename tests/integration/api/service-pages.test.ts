@@ -500,3 +500,42 @@ describe("automatic service pages", () => {
     expect(page?.status).toBe("published")
   })
 })
+
+describe("changing a service page's slug from the page", () => {
+  const rename = (cookie: string, serviceId: string, slug: string) =>
+    adminRequest(`/service-pages/${serviceId}/slug`, cookie, {
+      method: "PATCH",
+      body: { slug },
+    })
+
+  it("renames the service, moves the live page and leaves a redirect", async () => {
+    const { service } = await setup()
+    const cookie = await cookieFor("editor")
+    const { pageId } = await (await enable(cookie, service.id)).json()
+    const res = await rename(cookie, service.id, "calmer-days")
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({ path: "/services/calmer-days" })
+    expect((await findService(service.id)).slug).toBe("calmer-days")
+    expect((await findPage(pageId))!.path).toBe("/services/calmer-days")
+    const [redirect] = await getDb()
+      .select()
+      .from(redirects)
+      .where(eq(redirects.sourcePath, "/services/a"))
+    expect(redirect?.destination).toBe("/services/calmer-days")
+  })
+
+  it("refuses a bad slug, a taken slug and a reader", async () => {
+    const { service } = await setup()
+    const editor = await cookieFor("editor")
+    await enable(editor, service.id)
+    await getDb()
+      .insert(services)
+      .values({ slug: "taken", title: "Taken", body: "B", icon: "mind" })
+    expect((await rename(editor, service.id, "Not A Slug")).status).toBe(400)
+    expect((await rename(editor, service.id, "taken")).status).toBe(409)
+    expect(
+      (await rename(await cookieFor("author"), service.id, "x")).status
+    ).toBe(403)
+    expect((await findService(service.id)).slug).toBe("a")
+  })
+})

@@ -131,6 +131,8 @@ export async function listArticles(query: ArticleListQuery) {
       // What readers see now: the target of an unpublish redirect.
       liveSlug: articles.slug,
       status: articles.status,
+      // Row actions (publish switch) send it back as the optimistic lock.
+      version: articles.version,
       featured: articles.featured,
       category: articleCategories.name,
       author: authors.name,

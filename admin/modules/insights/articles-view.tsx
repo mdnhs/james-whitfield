@@ -6,12 +6,17 @@ import {
   tableFeatures,
   useTable,
 } from "@tanstack/react-table"
-import { NewspaperIcon, PlusIcon } from "lucide-react"
+import { NewspaperIcon, PlusIcon, Trash2Icon } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { parseAsString, useQueryState } from "nuqs"
 import { useEffect, useState } from "react"
+import { toast } from "sonner"
 
+import {
+  DeleteIconButton,
+  EditIconButton,
+} from "@/admin/components/actions/icon-actions"
 import { EmptyState } from "@/admin/components/dashboard/empty-state"
 import {
   PageHeader,
@@ -50,6 +55,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Spinner } from "@/components/ui/spinner"
+import { Switch } from "@/components/ui/switch"
 import { Toggle } from "@/components/ui/toggle"
 import type { ArticleStatus } from "@/lib/content/article"
 
@@ -104,6 +110,119 @@ export function ArticleStatus({
   )
 }
 
+// The same row actions as Services: a switch for whether it is live, then
+// Edit and Delete as icons. The server re-checks every permission (an
+// author can only delete their own drafts).
+function ArticleRowActions({ row }: { row: ArticleSummaryRow }) {
+  const queryClient = useQueryClient()
+  const router = useRouter()
+  const canPublish = usePermission({ article: ["publish"] })
+  const canDelete = usePermission({ article: ["delete"] })
+  const [removing, setRemoving] = useState(false)
+  const title = row.title || "Untitled article"
+  const refresh = () =>
+    queryClient.invalidateQueries({ queryKey: queryKeys.articles.all })
+
+  const live = useMutation({
+    mutationFn: async (next: boolean) => {
+      if (next) {
+        await parseResponse(
+          articlesApi[":id"].publish.$post({
+            param: { id: row.id },
+            json: { version: row.version },
+          })
+        )
+        return
+      }
+      // Readers who follow an old link land on the Insights list, not a
+      // 404 (the editor's Unpublish offers other targets).
+      await parseResponse(
+        articlesApi[":id"].unpublish.$post({
+          param: { id: row.id },
+          json: {
+            version: row.version,
+            archive: false,
+            redirectTo: "/insights",
+          },
+        })
+      )
+    },
+    onSuccess: (_, next) => {
+      toast.success(next ? `Published “${title}”` : `Unpublished “${title}”`)
+      void refresh()
+    },
+    onError: (error) => {
+      toast.error(error.message)
+      void refresh()
+    },
+  })
+
+  const remove = useMutation({
+    mutationFn: () =>
+      parseResponse(articlesApi[":id"].$delete({ param: { id: row.id } })),
+    onSuccess: () => {
+      toast.success(`Deleted “${title}”`)
+      setRemoving(false)
+      void refresh()
+    },
+    onError: (error) => toast.error(error.message),
+  })
+
+  return (
+    <div className="flex items-center justify-end gap-1">
+      {/* The switch alone says whether it is live; no label. */}
+      <Switch
+        aria-label={`Publish ${title}`}
+        checked={row.status === "published"}
+        disabled={!canPublish || live.isPending}
+        onCheckedChange={(next) => live.mutate(next)}
+        className="mr-1"
+      />
+      <EditIconButton
+        label={`Edit ${title}`}
+        onClick={() => router.push(`/admin/insights/${row.id}`)}
+      />
+      {canDelete ? (
+        <DeleteIconButton
+          label={`Delete ${title}`}
+          onClick={() => setRemoving(true)}
+        />
+      ) : null}
+      <Dialog open={removing} onOpenChange={setRemoving}>
+        <DialogContent className="gap-5 p-6 sm:max-w-md">
+          <DialogHeader className="gap-3">
+            <DialogTitle className="text-lg font-semibold">
+              {`Delete “${title}”?`}
+            </DialogTitle>
+            <DialogDescription>
+              {row.status === "published"
+                ? "It is live now. Deleting it removes it from the site and its revision history. This can't be undone."
+                : "This removes the article and its revision history. This can't be undone."}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setRemoving(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={remove.isPending}
+              onClick={() => remove.mutate()}
+            >
+              {remove.isPending ? (
+                <Spinner data-icon="inline-start" />
+              ) : (
+                <Trash2Icon data-icon="inline-start" />
+              )}
+              Delete
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}
+
 const rowStatus = (row: ArticleSummaryRow) => (
   <ArticleStatus
     status={row.status}
@@ -141,6 +260,11 @@ const columns = helper.columns([
         {formatDublin(info.getValue())}
       </time>
     ),
+  }),
+  helper.display({
+    id: "actions",
+    header: () => <span className="sr-only">Actions</span>,
+    cell: (info) => <ArticleRowActions row={info.row.original} />,
   }),
 ])
 
@@ -210,8 +334,8 @@ export function ArticlesView() {
         description="Articles for the Insights section. Changes stay in a draft until you publish."
         actions={newButton}
       />
-      <div className="flex flex-wrap items-end gap-3">
-        <Field className="w-full sm:w-64">
+      <div className="grid grid-cols-2 items-end gap-3 sm:flex sm:flex-wrap">
+        <Field className="col-span-2 w-full sm:w-64">
           <FieldLabel htmlFor="articles-search">Search articles</FieldLabel>
           <Input
             id="articles-search"
@@ -269,7 +393,7 @@ export function ArticlesView() {
         </Field>
         <Toggle
           variant="outline"
-          className="h-9"
+          className="col-span-2 h-9 justify-self-start"
           pressed={review}
           onPressedChange={(next) => {
             setReview(next)
@@ -318,6 +442,7 @@ export function ArticlesView() {
                   {row.original.category} · {row.original.author} · Updated{" "}
                   {formatDublin(row.original.updatedAt)}
                 </p>
+                <ArticleRowActions row={row.original} />
               </div>
             )}
           />

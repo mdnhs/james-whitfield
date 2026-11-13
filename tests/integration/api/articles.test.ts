@@ -118,6 +118,57 @@ describe("articles API", () => {
     expect((await json(stale)).error.details.current.version).toBe(2)
   })
 
+  // The Insights list's row switch publishes and unpublishes with the
+  // version the list row carries.
+  it("list rows carry the version the row switch publishes and unpublishes with", async () => {
+    const refs = await insertTaxonomy()
+    const cookie = await cookieFor("editor")
+    const { id } = await json(
+      await create(cookie, {
+        title: "Row switch",
+        categoryId: refs.category.id,
+        authorId: refs.author.id,
+      })
+    )
+    await saveDraft(
+      cookie,
+      id,
+      1,
+      content({
+        categoryId: refs.category.id,
+        authorId: refs.author.id,
+        coverId: refs.media.id,
+      })
+    )
+    const row = async () =>
+      (await json(await adminRequest("/articles", cookie))).items.find(
+        (i: { id: string }) => i.id === id
+      )
+    const before = await row()
+    expect(before.version).toBe(2)
+    const published = await adminRequest(`/articles/${id}/publish`, cookie, {
+      method: "POST",
+      body: { version: before.version },
+    })
+    expect(published.status).toBe(200)
+    const live = await row()
+    expect(live.status).toBe("published")
+    const unpublished = await adminRequest(
+      `/articles/${id}/unpublish`,
+      cookie,
+      {
+        method: "POST",
+        body: {
+          version: live.version,
+          archive: false,
+          redirectTo: "/insights",
+        },
+      }
+    )
+    expect(unpublished.status).toBe(200)
+    expect((await row()).status).toBe("draft")
+  })
+
   it("enforces ownership for authors (Review Focus 2)", async () => {
     const refs = await insertTaxonomy()
     const writer = await cookieFor("author", "writer@example.com")

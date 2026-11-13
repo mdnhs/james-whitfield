@@ -49,37 +49,47 @@ function navGroups(roles: readonly RoleName[]): HelpNavGroup[] {
 }
 
 // Three columns like a docs site: topics (~17rem), the page, and "On this
-// page" (~14rem). The side columns stick, with their own scroll, while
-// <main> scrolls the page.
-function HelpLayout({
+// page" (~14rem). HelpShell (the topics) is rendered by help/layout.tsx, so
+// it stays mounted across articles; each page brings its own TOC column.
+// The side columns stick, with their own scroll, while <main> scrolls.
+export function HelpShell({
   roles,
-  active,
-  aside,
   children,
 }: {
   roles: readonly RoleName[]
-  active: string | null
-  aside?: React.ReactNode
   children: React.ReactNode
 }) {
   const groups = navGroups(roles)
   return (
     <div
       data-testid="help"
-      className="grid gap-8 lg:grid-cols-[17rem_minmax(0,1fr)] xl:grid-cols-[17rem_minmax(0,1fr)_14rem]"
+      className="grid gap-8 lg:grid-cols-[17rem_minmax(0,1fr)]"
     >
       <aside className="sticky top-0 hidden max-h-(--content-h) self-start overflow-y-auto overscroll-contain pr-2 pb-6 lg:block">
-        <HelpSidebar groups={groups} active={active} />
+        <HelpSidebar groups={groups} />
       </aside>
       <div className="flex min-w-0 flex-col gap-6">
-        <HelpMobileNav groups={groups} active={active} />
+        <HelpMobileNav groups={groups} />
         {children}
       </div>
-      {aside ? (
-        <aside className="sticky top-0 hidden max-h-(--content-h) self-start overflow-y-auto pb-6 xl:block">
-          {aside}
-        </aside>
-      ) : null}
+    </div>
+  )
+}
+
+function HelpPage({
+  aside,
+  children,
+}: {
+  aside?: React.ReactNode
+  children: React.ReactNode
+}) {
+  if (!aside) return <>{children}</>
+  return (
+    <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_14rem]">
+      <div className="min-w-0">{children}</div>
+      <aside className="sticky top-0 hidden max-h-(--content-h) self-start overflow-y-auto pb-6 xl:block">
+        {aside}
+      </aside>
     </div>
   )
 }
@@ -185,11 +195,7 @@ export function HelpArticleView({
 }) {
   const { prev, next } = neighbours(roles, article.slug)
   return (
-    <HelpLayout
-      roles={roles}
-      active={article.slug}
-      aside={<HelpToc entries={tocFor(article)} />}
-    >
+    <HelpPage aside={<HelpToc entries={tocFor(article)} />}>
       <article className="flex max-w-[70ch] flex-col gap-10">
         <header className="flex flex-col gap-3">
           <Breadcrumb>
@@ -261,7 +267,7 @@ export function HelpArticleView({
           )}
         </nav>
       </article>
-    </HelpLayout>
+    </HelpPage>
   )
 }
 
@@ -310,7 +316,7 @@ export function HelpOverview({ roles }: { roles: readonly RoleName[] }) {
   const start = helpArticle("getting-started")!
   const groups = groupedArticles(roles)
   return (
-    <HelpLayout roles={roles} active={null}>
+    <HelpPage>
       <div className="flex flex-col gap-8">
         <header className="flex max-w-3xl flex-col gap-3">
           <h1 className="text-title text-balance">Help</h1>
@@ -378,6 +384,6 @@ export function HelpOverview({ roles }: { roles: readonly RoleName[] }) {
           })}
         </div>
       </div>
-    </HelpLayout>
+    </HelpPage>
   )
 }

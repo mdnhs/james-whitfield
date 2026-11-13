@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { Suspense } from "react"
 
-import { HelpPageSkeleton } from "@/admin/components/dashboard/page-skeletons"
+import { HelpArticleSkeleton } from "@/admin/components/dashboard/page-skeletons"
 import { HelpArticleView } from "@/admin/modules/help/help-view"
 import {
   canReadArticle,
@@ -30,7 +30,7 @@ export default function HelpArticlePage({
   params,
 }: PageProps<"/admin/help/[slug]">) {
   return (
-    <Suspense fallback={<HelpPageSkeleton />}>
+    <Suspense fallback={<HelpArticleSkeleton />}>
       <Gate params={params} />
     </Suspense>
   )

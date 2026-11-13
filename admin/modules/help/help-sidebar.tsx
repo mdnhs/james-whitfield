@@ -2,6 +2,7 @@
 
 import { ChevronRightIcon, SearchIcon } from "lucide-react"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { useId, useMemo, useState, useSyncExternalStore } from "react"
 
 import {
@@ -76,16 +77,29 @@ export function filterGroups(
 // The docs' left column: a filter, then one collapsible group per feature.
 // Several groups may be open at once; the current article's group opens on
 // its own, and the open groups are remembered in this browser.
+// The article slug a help path is on; null on the overview.
+export function activeHelpSlug(pathname: string | null): string | null {
+  const rest = (pathname ?? "").slice(HELP_HREF.length).replace(/^\/+/, "")
+  return rest.split(/[/?#]/)[0] || null
+}
+
+// The sidebar lives in help/layout.tsx, so it stays mounted (open groups,
+// filter text, scroll) while the article beside it changes. The current
+// article comes from the URL unless a test passes it in.
 export function HelpSidebar({
   groups,
-  active,
+  active: activeProp,
   onNavigate,
 }: {
   groups: readonly HelpNavGroup[]
-  // The current article's slug; null on the overview.
-  active: string | null
+  // The current article's slug; null on the overview. Read from the URL
+  // when left out.
+  active?: string | null
   onNavigate?: () => void
 }) {
+  const pathname = usePathname()
+  const active =
+    activeProp === undefined ? activeHelpSlug(pathname) : activeProp
   const reduced = useReducedMotion()
   const baseId = useId()
   const current = groups.find((group) =>

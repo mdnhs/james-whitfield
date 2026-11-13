@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import { Suspense } from "react"
 
-import { HelpPageSkeleton } from "@/admin/components/dashboard/page-skeletons"
+import { HelpArticleSkeleton } from "@/admin/components/dashboard/page-skeletons"
 import { HelpOverview } from "@/admin/modules/help/help-view"
 import { permissionFor } from "@/lib/admin/nav"
 import { requirePermission } from "@/server/auth/session"
@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: "Help" }
 
 export default function HelpPage() {
   return (
-    <Suspense fallback={<HelpPageSkeleton />}>
+    <Suspense fallback={<HelpArticleSkeleton />}>
       <Overview />
     </Suspense>
   )

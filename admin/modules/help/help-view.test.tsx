@@ -12,7 +12,10 @@ import {
   HelpToc,
   RAIL_X,
 } from "./help-toc"
-import { HelpArticleView, HelpOverview } from "./help-view"
+import { HelpArticleView, HelpOverview, HelpShell } from "./help-view"
+
+const pathname = vi.hoisted(() => ({ current: "/admin/help" }))
+vi.mock("next/navigation", () => ({ usePathname: () => pathname.current }))
 
 const navLinks = (name: string) =>
   within(screen.getByRole("navigation", { name }))
@@ -40,9 +43,20 @@ afterEach(() => {
 describe("help article page", () => {
   it("renders the topics sidebar, the article and its table of contents", () => {
     const article = helpArticle("media")!
-    render(<HelpArticleView article={article} roles={["owner"]} />)
+    pathname.current = "/admin/help/media"
+    render(
+      <HelpShell roles={["owner"]}>
+        <HelpArticleView article={article} roles={["owner"]} />
+      </HelpShell>
+    )
 
     expect(navLinks("Help topics")).toContain("The Media library")
+    // The current article, read from the URL, is marked in the topics.
+    expect(
+      within(screen.getByRole("navigation", { name: "Help topics" }))
+        .getByRole("link", { name: "The Media library" })
+        .getAttribute("aria-current")
+    ).toBe("page")
     expect(
       screen.getByRole("heading", { level: 1, name: "The Media library" })
     ).toBeDefined()
@@ -112,11 +126,14 @@ describe("help article page", () => {
   })
 
   it("does not link a role to screens it cannot open", () => {
+    pathname.current = "/admin/help/getting-started"
     render(
-      <HelpArticleView
-        article={helpArticle("getting-started")!}
-        roles={["intake"]}
-      />
+      <HelpShell roles={["intake"]}>
+        <HelpArticleView
+          article={helpArticle("getting-started")!}
+          roles={["intake"]}
+        />
+      </HelpShell>
     )
     const hrefs = screen
       .getAllByRole("link")

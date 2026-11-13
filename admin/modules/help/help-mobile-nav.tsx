@@ -21,7 +21,7 @@ export function HelpMobileNav({
   active,
 }: {
   groups: readonly HelpNavGroup[]
-  active: string | null
+  active?: string | null
 }) {
   const [open, setOpen] = useState(false)
   return (

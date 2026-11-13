@@ -161,3 +161,13 @@ describe("filterGroups", () => {
     expect(filterGroups(GROUPS, " ")).toEqual(GROUPS)
   })
 })
+
+describe("activeHelpSlug", () => {
+  it("reads the article from the path; the overview has none", async () => {
+    const { activeHelpSlug } = await import("./help-sidebar")
+    expect(activeHelpSlug("/admin/help")).toBeNull()
+    expect(activeHelpSlug("/admin/help/")).toBeNull()
+    expect(activeHelpSlug("/admin/help/media")).toBe("media")
+    expect(activeHelpSlug(null)).toBeNull()
+  })
+})

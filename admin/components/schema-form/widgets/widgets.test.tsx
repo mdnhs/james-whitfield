@@ -514,6 +514,32 @@ describe("list item headers", () => {
     expect(screen.getByRole("button", { name: "Remove Social 1" })).toBeTruthy()
   })
 
+  // Content saved before a select field existed has no value for it.
+  it("a select with no saved value shows its schema default, not 'Choose…'", () => {
+    wrap(
+      <SchemaForm
+        schema={z.object({
+          show: z.enum(["all", "site", "google"]).default("all"),
+        })}
+        overrides={{
+          show: {
+            options: [
+              { value: "all", label: "All" },
+              { value: "site", label: "Website testimonials only" },
+              { value: "google", label: "Google reviews only" },
+            ],
+          },
+        }}
+        defaultValues={{}}
+        onSubmit={vi.fn()}
+        submitLabel="Save"
+      />
+    )
+    const trigger = screen.getByRole("combobox")
+    expect(trigger.textContent).toContain("All")
+    expect(trigger.textContent).not.toContain("Choose…")
+  })
+
   it("drops the repeated label of a one-field item from view", () => {
     wrap(
       <SchemaForm

@@ -666,7 +666,12 @@ function ScalarWidget({
     control = (
       <Select
         items={options}
-        value={input.value ?? null}
+        // A field added after the content was saved has no value yet; show
+        // the schema default the server applies, not an empty "Choose…".
+        value={
+          input.value ??
+          (typeof field.node.default === "string" ? field.node.default : null)
+        }
         onValueChange={(value) => input.onChange(value)}
       >
         <SelectTrigger

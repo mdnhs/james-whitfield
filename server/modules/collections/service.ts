@@ -23,6 +23,7 @@ import {
 import { assertMediaExists } from "@/server/modules/media/assert-media"
 import {
   detailPagesByService,
+  enableServicePage,
   removeServicePage,
   serviceRow,
   syncServicePage,
@@ -121,6 +122,16 @@ export async function createItem(
       return inserted!
     })
     invalidate([tags.collection(e.tag)])
+    // A new service gets its details page straight away. A failure (no CTA
+    // band yet, say) leaves the service saved; the Service pages list makes
+    // the page later and says why it couldn't.
+    if (name === "services") {
+      try {
+        await enableServicePage(actor, created.id)
+      } catch (error) {
+        if (!(error instanceof ApiError)) throw error
+      }
+    }
     return toItem(name, created, [])
   } catch (error) {
     if (isUniqueViolation(error)) throw slugTaken()

@@ -13,6 +13,8 @@ test("upload strips GPS; in-use files can't be deleted", async ({ page }) => {
   const buffer = await gpsJpeg()
   const name = `e2e-${Date.now()}.jpg`
   await page.goto("/admin/media")
+  // A file set before hydration fires no change event: wait for the library.
+  await expect(page.getByRole("button", { name: /hero-bg\.png/ })).toBeVisible()
   await page
     .getByLabel("Upload files")
     .setInputFiles({ name, mimeType: "image/jpeg", buffer })

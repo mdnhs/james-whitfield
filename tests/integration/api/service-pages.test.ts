@@ -427,3 +427,72 @@ describe("admin services list", () => {
     expect(faqList.items[0]).not.toHaveProperty("detailPage")
   })
 })
+
+describe("automatic service pages", () => {
+  const ensure = (cookie: string) =>
+    adminRequest(`/service-pages/ensure`, cookie, { method: "POST" })
+  const linked = async (serviceId: string) =>
+    (
+      await getDb().select().from(pages).where(eq(pages.serviceId, serviceId))
+    )[0]
+
+  it("creates every missing page once and reports nothing failed", async () => {
+    const { service } = await setup()
+    const [second] = await getDb()
+      .insert(services)
+      .values({ slug: "b", title: "Sleep", body: "Rest.", icon: "mind" })
+      .returning()
+    const cookie = await cookieFor("editor")
+    const first = await ensure(cookie)
+    expect(first.status).toBe(200)
+    expect(await first.json()).toEqual({ created: 2, failed: [] })
+    expect((await linked(service.id))?.path).toBe("/services/a")
+    expect((await linked(second!.id))?.status).toBe("draft")
+    // Idempotent: a second call creates nothing.
+    expect(await (await ensure(cookie)).json()).toEqual({
+      created: 0,
+      failed: [],
+    })
+  })
+
+  it("reports why a page could not be made", async () => {
+    const { service } = await setup({ band: false })
+    const res = await ensure(await cookieFor("editor"))
+    expect(await res.json()).toEqual({
+      created: 0,
+      failed: [
+        { serviceId: service.id, message: "Add a call-to-action band first" },
+      ],
+    })
+  })
+
+  it("is refused without collection:create", async () => {
+    await setup()
+    expect((await ensure(await cookieFor("author"))).status).toBe(403)
+  })
+
+  it("adding a service creates its details page", async () => {
+    await setup()
+    const res = await adminRequest(
+      "/collections/services",
+      await cookieFor("editor"),
+      {
+        method: "POST",
+        body: {
+          values: {
+            slug: "new-one",
+            title: "New one",
+            body: "Fresh.",
+            icon: "mind",
+            isVisible: true,
+          },
+        },
+      }
+    )
+    expect(res.status).toBe(201)
+    const { id } = await res.json()
+    const page = await linked(id)
+    expect(page?.path).toBe("/services/new-one")
+    expect(page?.status).toBe("draft")
+  })
+})

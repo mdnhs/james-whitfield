@@ -19,6 +19,11 @@ const serviceId = zValidator(
 // A service's detail page (/services/<slug>): turned on and off from the
 // service, so it takes the collection's permissions.
 export const servicePagesRoutes = new Hono<AppEnv>()
+  // Every service gets its page automatically; the admin list calls this
+  // to make any that are missing.
+  .post("/ensure", can({ collection: ["create"] }), async (c) =>
+    c.json(await servicePages.ensureServicePages(c.get("actor")!))
+  )
   .post("/:serviceId", can({ collection: ["create"] }), serviceId, async (c) =>
     c.json(
       await servicePages.enableServicePage(

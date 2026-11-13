@@ -1,6 +1,6 @@
 import "server-only"
 
-import { and, asc, eq, isNotNull, ne } from "drizzle-orm"
+import { and, asc, eq, isNotNull, isNull, ne } from "drizzle-orm"
 
 import type { PageDocument } from "@/blocks/page"
 import { serviceTemplate } from "@/blocks/service-template"
@@ -98,6 +98,35 @@ export async function enableServicePage(actor: Actor, serviceId: string) {
     ...(result.released ? REDIRECT_TAGS : []),
   ])
   return { pageId: result.pageId, path: result.path }
+}
+
+// Every service has a details page: this makes the ones that are missing
+// (services added before pages existed, or a create whose page failed).
+// Idempotent; a service whose page can't be made yet is reported, not thrown.
+export async function ensureServicePages(actor: Actor): Promise<{
+  created: number
+  failed: { serviceId: string; message: string }[]
+}> {
+  const missing = await getDb()
+    .select({ id: services.id })
+    .from(services)
+    .leftJoin(pages, eq(pages.serviceId, services.id))
+    .where(isNull(pages.id))
+    .orderBy(asc(services.sort))
+  let created = 0
+  const failed: { serviceId: string; message: string }[] = []
+  for (const { id } of missing) {
+    try {
+      await enableServicePage(actor, id)
+      created++
+    } catch (error) {
+      if (!(error instanceof ApiError)) throw error
+      // Made meanwhile by another request: nothing to report.
+      if (error.message === "This service already has a details page") continue
+      failed.push({ serviceId: id, message: error.message })
+    }
+  }
+  return { created, failed }
 }
 
 export async function disableServicePage(actor: Actor, serviceId: string) {

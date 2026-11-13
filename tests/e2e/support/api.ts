@@ -105,11 +105,13 @@ export async function createPublishedPage(
   { title }: { title?: string } = {}
 ) {
   const service = await createService(request, title)
-  const { pageId: id, path } = await api<{ pageId: string; path: string }>(
-    request,
-    "POST",
-    `/service-pages/${service.id}`
-  )
+  // Adding a service makes its details page automatically.
+  const { items } = await api<{
+    items: { id: string; detailPage: { id: string; path: string } | null }[]
+  }>(request, "GET", "/collections/services")
+  const made = items.find((item) => item.id === service.id)?.detailPage
+  if (!made) throw new Error(`No details page was made for ${service.title}`)
+  const { id, path } = made
   const page = await api<{ version: number; draft: PageDocument }>(
     request,
     "GET",

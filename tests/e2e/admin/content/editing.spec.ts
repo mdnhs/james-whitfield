@@ -148,18 +148,19 @@ test("reopening a page after editing it saves without a conflict", async ({
   await expect(page.getByText(/^Saved \d+ s ago$/)).toBeVisible({
     timeout: 10_000,
   })
-  // Client-side navigation keeps the query cache: back to Website → Services,
-  // away to another service page's builder (which replaces this one) and back.
+  // Client-side navigation keeps the query cache: back to Website → Service
+  // pages, away to another service page's builder (which replaces this one)
+  // and back.
   for (const { id, title } of [b, a]) {
     await page
-      .getByRole("link", { name: "Services", exact: true })
+      .getByRole("link", { name: "Service pages", exact: true })
       .first()
       .click()
-    await expect(page).toHaveURL(/\/admin\/website\/services$/)
+    await expect(page).toHaveURL(/\/admin\/website\/service-pages$/)
     await page
-      .getByRole("listitem")
+      .getByRole("row")
       .filter({ hasText: title })
-      .getByRole("link", { name: "Edit page" })
+      .getByRole("link", { name: title })
       .click()
     await expect(page).toHaveURL(new RegExp(`/admin/pages/${id}$`))
     await openHero()

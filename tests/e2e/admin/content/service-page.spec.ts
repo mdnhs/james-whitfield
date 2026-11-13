@@ -22,12 +22,14 @@ test("turn on a service's details page, edit its hero, publish", async ({
   )
   const band = bands.find((b) => b.values.isVisible)!
 
+  // The page was made with the service: the list links to it, nothing to create.
   await page.goto("/admin/website/service-pages")
-  await page.getByRole("button", { name: "New service page" }).click()
-  const dialog = page.getByRole("dialog", { name: "New service page" })
-  await dialog.getByLabel("Service").click()
-  await page.getByRole("option", { name: service.title }).click()
-  await dialog.getByRole("button", { name: "Create page" }).click()
+  const row = page.getByRole("row").filter({ hasText: service.title })
+  await expect(row.getByText("Draft", { exact: true })).toBeVisible()
+  await expect(
+    page.getByRole("button", { name: /create|delete/i })
+  ).toHaveCount(0)
+  await row.getByRole("link", { name: service.title }).click()
   await expect(page).toHaveURL(/\/admin\/pages\/[0-9a-f-]{36}$/)
 
   // Seven fixed sections and nothing that adds, removes, hides or moves one.

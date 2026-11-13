@@ -1,12 +1,10 @@
 // @vitest-environment jsdom
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { render, screen, waitFor } from "@testing-library/react"
-import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
-import { ApiError } from "@/admin/lib/api-error"
-
 const post = vi.fn()
+const ensure = vi.fn()
 const del = vi.fn()
 const toastError = vi.fn()
 const perms: { denied: Set<string> } = { denied: new Set() }
@@ -18,13 +16,12 @@ vi.mock("@/admin/lib/actor-context", () => ({
       acts.every((a) => !perms.denied.has(`${r}:${a}`))
     ),
 }))
-const push = vi.fn()
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }))
 vi.mock("sonner", () => ({
   toast: { error: (m: string) => toastError(m), success: vi.fn() },
 }))
 vi.mock("@/admin/lib/api", () => ({
   servicePagesApi: {
+    ensure: { $post: () => ensure() },
     ":serviceId": {
       $post: (a: unknown) => post(a),
       $delete: (a: unknown) => del(a),
@@ -65,84 +62,50 @@ beforeEach(() => {
   vi.clearAllMocks()
   perms.denied = new Set()
   state.detailPage = null
+  ensure.mockResolvedValue({ created: 0, failed: [] })
 })
 
-const published = {
+const draft = {
   id: "p1",
   path: "/services/websites",
-  status: "published",
+  status: "draft",
   updatedAt: "2026-11-13T10:00:00.000Z",
 }
 
 describe("ServicePagesView", () => {
-  it("lists a service without a page and creates one, then opens the editor", async () => {
-    post.mockResolvedValue({ pageId: "p1", path: "/services/websites" })
+  it("makes any missing pages once when it opens", async () => {
     setup()
-    expect(await screen.findAllByText("No page yet")).not.toHaveLength(0)
-    await userEvent.click(
-      screen.getAllByRole("button", { name: "Create page" })[0]!
-    )
-    expect(post).toHaveBeenCalledWith({ param: { serviceId: "s1" } })
-    await waitFor(() => expect(push).toHaveBeenCalledWith("/admin/pages/p1"))
+    await waitFor(() => expect(ensure).toHaveBeenCalledTimes(1))
   })
 
-  it("links the title to the editor and shows the status", async () => {
-    state.detailPage = published
+  it("links each service to its page editor and offers no create or delete", async () => {
+    state.detailPage = draft
     setup()
     const links = await screen.findAllByRole("link", { name: "Websites" })
     expect(links[0]!.getAttribute("href")).toBe("/admin/pages/p1")
-    expect(screen.getAllByText("Published").length).toBeGreaterThan(0)
-  })
-
-  it("asks before deleting, then calls DELETE once", async () => {
-    state.detailPage = published
-    del.mockResolvedValue(undefined)
-    setup()
-    await userEvent.click(
-      (await screen.findAllByRole("button", { name: "Delete" }))[0]!
-    )
+    expect(screen.getAllByText("Draft").length).toBeGreaterThan(0)
+    for (const name of [/create/i, /delete/i, /new service page/i])
+      expect(screen.queryByRole("button", { name })).toBeNull()
+    expect(post).not.toHaveBeenCalled()
     expect(del).not.toHaveBeenCalled()
-    expect(
-      screen.getByText(
-        "Delete the details page for Websites? Its content can't be recovered."
-      )
-    ).toBeTruthy()
-    const confirm = screen.getByRole("button", { name: "Delete page" })
-    await userEvent.dblClick(confirm)
-    await waitFor(() =>
-      expect(del).toHaveBeenCalledWith({ param: { serviceId: "s1" } })
-    )
-    expect(del).toHaveBeenCalledTimes(1)
   })
 
-  it("hides Create page without collection:create", async () => {
+  it("says why a page could not be made", async () => {
+    ensure.mockResolvedValue({
+      created: 0,
+      failed: [{ serviceId: "s1", message: "Add a call-to-action band first" }],
+    })
+    setup()
+    const alert = await screen.findByRole("alert")
+    expect(alert.textContent).toContain("Websites")
+    expect(alert.textContent).toContain("Add a call-to-action band first")
+    expect(screen.getAllByText("Not created").length).toBeGreaterThan(0)
+  })
+
+  it("does not try to make pages without collection:create", async () => {
     perms.denied.add("collection:create")
     setup()
-    await screen.findAllByText("No page yet")
-    expect(screen.queryByRole("button", { name: "Create page" })).toBeNull()
-    expect(
-      screen.queryByRole("button", { name: "New service page" })
-    ).toBeNull()
-  })
-
-  it("shows the server's message on a 409", async () => {
-    post.mockRejectedValue(
-      new ApiError(
-        "CONFLICT",
-        "Add a call-to-action band first",
-        409,
-        null,
-        {},
-        {}
-      )
-    )
-    setup()
-    await userEvent.click(
-      (await screen.findAllByRole("button", { name: "Create page" }))[0]!
-    )
-    await waitFor(() =>
-      expect(toastError).toHaveBeenCalledWith("Add a call-to-action band first")
-    )
-    expect(push).not.toHaveBeenCalled()
+    await screen.findAllByText("Websites")
+    expect(ensure).not.toHaveBeenCalled()
   })
 })

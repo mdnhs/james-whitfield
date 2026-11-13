@@ -92,7 +92,7 @@ test("a new service page opens its own builder after another was visited", async
   await page
     .getByRole("row")
     .filter({ hasText: fresh.title })
-    .getByRole("button", { name: "Create page" })
+    .getByRole("link", { name: fresh.title })
     .click()
   await expect(page).toHaveURL(/\/admin\/pages\/[0-9a-f-]{36}$/)
   await expect(

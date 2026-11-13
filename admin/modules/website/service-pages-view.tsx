@@ -1,22 +1,17 @@
 "use client"
 
-import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   createColumnHelper,
   tableFeatures,
   useTable,
 } from "@tanstack/react-table"
-import { FileTextIcon, PlusIcon } from "lucide-react"
+import { FileTextIcon, TriangleAlertIcon } from "lucide-react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { useMemo, useState } from "react"
-import { toast } from "sonner"
+import { useEffect, useMemo, useRef, useState } from "react"
 
 import { EmptyState } from "@/admin/components/dashboard/empty-state"
-import {
-  PageHeader,
-  PRIMARY_ACTION,
-} from "@/admin/components/dashboard/page-header"
+import { PageHeader } from "@/admin/components/dashboard/page-header"
 import { CardSkeleton } from "@/admin/components/dashboard/skeletons"
 import { StatusPill } from "@/admin/components/dashboard/status-pill"
 import { DataTable } from "@/admin/components/data-table/data-table"
@@ -26,14 +21,6 @@ import { queryKeys } from "@/admin/lib/query-keys"
 import { collectionListQuery } from "@/admin/modules/collections/queries"
 import { formatDublin } from "@/admin/modules/insights/schedule-time"
 import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
@@ -51,7 +38,7 @@ type DetailPage = {
   updatedAt: string
 }
 
-// One row per service: its details page, if it has one.
+// One row per service and its details page.
 export type ServicePageRow = {
   serviceId: string
   title: string
@@ -59,22 +46,20 @@ export type ServicePageRow = {
   page: DetailPage | null
 }
 
-type StatusFilter = "all" | "published" | "draft" | "none"
+type Failure = { serviceId: string; message: string }
+
+type StatusFilter = "all" | "published" | "draft"
 const STATUS_ITEMS: { value: StatusFilter; label: string }[] = [
   { value: "all", label: "All" },
   { value: "published", label: "Published" },
   { value: "draft", label: "Draft" },
-  { value: "none", label: "No page yet" },
 ]
 
 const features = tableFeatures({})
 const helper = createColumnHelper<typeof features, ServicePageRow>()
 
-const editHref = (row: ServicePageRow) =>
-  row.page ? `/admin/pages/${row.page.id}` : null
-
 function PageStatus({ page }: { page: DetailPage | null }) {
-  if (!page) return <StatusPill tone="neutral">No page yet</StatusPill>
+  if (!page) return <StatusPill tone="warning">Not created</StatusPill>
   return page.status === "published" ? (
     <StatusPill tone="success">Published</StatusPill>
   ) : (
@@ -82,27 +67,89 @@ function PageStatus({ page }: { page: DetailPage | null }) {
   )
 }
 
-function matches(row: ServicePageRow, q: string, status: StatusFilter) {
-  if (q && !row.title.toLowerCase().includes(q.toLowerCase())) return false
-  if (status === "none") return row.page === null
-  if (status === "all") return true
-  return row.page?.status === status
+function Title({ row }: { row: ServicePageRow }) {
+  return row.page ? (
+    <Link
+      href={`/admin/pages/${row.page.id}`}
+      className="font-semibold underline-offset-4 hover:text-primary hover:underline"
+    >
+      {row.title}
+    </Link>
+  ) : (
+    <span className="font-semibold">{row.title}</span>
+  )
 }
 
-// Service details pages, listed like articles: open one to edit it, create
-// one for a service that has none, or delete one.
+const columns = helper.columns([
+  helper.accessor("title", {
+    header: "Service",
+    cell: (info) => <Title row={info.row.original} />,
+  }),
+  helper.display({
+    id: "status",
+    header: "Status",
+    cell: (info) => <PageStatus page={info.row.original.page} />,
+  }),
+  helper.display({
+    id: "address",
+    header: "Address",
+    cell: (info) => (
+      <span className="font-mono text-xs text-muted-foreground">
+        {info.row.original.page?.path ?? `/services/${info.row.original.slug}`}
+      </span>
+    ),
+  }),
+  helper.display({
+    id: "updated",
+    header: "Updated",
+    cell: (info) => {
+      const page = info.row.original.page
+      return page ? (
+        <time
+          dateTime={page.updatedAt}
+          className="whitespace-nowrap text-muted-foreground"
+        >
+          {formatDublin(page.updatedAt)}
+        </time>
+      ) : (
+        <span className="text-muted-foreground">—</span>
+      )
+    },
+  }),
+])
+
+// Every service has a details page, made automatically (when the service is
+// added, or here for any that are missing). Editors open one to edit its
+// content; there is nothing to create or delete.
 export function ServicePagesView() {
-  const router = useRouter()
   const queryClient = useQueryClient()
   const list = useQuery(collectionListQuery("services"))
   const canCreate = usePermission({ collection: ["create"] })
-  const canDelete = usePermission({ collection: ["delete"] })
   const [search, setSearch] = useState("")
   const [status, setStatus] = useState<StatusFilter>("all")
-  const [busy, setBusy] = useState<string | null>(null)
-  const [creating, setCreating] = useState(false)
-  const [pick, setPick] = useState<string | null>(null)
-  const [deleting, setDeleting] = useState<ServicePageRow | null>(null)
+
+  const ensure = useMutation({
+    mutationFn: () =>
+      parseResponse(servicePagesApi.ensure.$post()) as Promise<{
+        created: number
+        failed: Failure[]
+      }>,
+    onSuccess: async (result) => {
+      if (result.created > 0)
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.collections.list("services"),
+          }),
+          queryClient.invalidateQueries({ queryKey: queryKeys.pages.list }),
+        ])
+    },
+  })
+  const ran = useRef(false)
+  useEffect(() => {
+    if (!canCreate || ran.current) return
+    ran.current = true
+    ensure.mutate()
+  }, [canCreate, ensure])
 
   const rows = useMemo<ServicePageRow[]>(
     () =>
@@ -115,143 +162,15 @@ export function ServicePagesView() {
       })),
     [list.data]
   )
-  const shown = rows.filter((row) => matches(row, search.trim(), status))
-  const withoutPage = rows.filter((row) => row.page === null)
-
-  async function refresh() {
-    await Promise.all([
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.collections.list("services"),
-      }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.pages.list }),
-    ])
-  }
-
-  async function create(serviceId: string) {
-    if (busy) return
-    setBusy(serviceId)
-    try {
-      const { pageId } = (await parseResponse(
-        servicePagesApi[":serviceId"].$post({ param: { serviceId } })
-      )) as { pageId: string }
-      setCreating(false)
-      await refresh()
-      router.push(`/admin/pages/${pageId}`)
-    } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Couldn't create the details page"
-      )
-      await refresh()
-    } finally {
-      setBusy(null)
-    }
-  }
-
-  async function confirmDelete() {
-    if (!deleting || busy) return
-    const { serviceId } = deleting
-    setBusy(serviceId)
-    try {
-      await parseResponse(
-        servicePagesApi[":serviceId"].$delete({ param: { serviceId } })
-      )
-      setDeleting(null)
-      toast.success("Details page deleted")
-    } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Couldn't delete the details page"
-      )
-    } finally {
-      await refresh()
-      setBusy(null)
-    }
-  }
-
-  const actions = (row: ServicePageRow) =>
-    row.page ? (
-      canDelete ? (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-destructive"
-          disabled={busy !== null}
-          onClick={() => setDeleting(row)}
-        >
-          Delete
-        </Button>
-      ) : null
-    ) : canCreate ? (
-      <Button
-        variant="outline"
-        size="sm"
-        disabled={busy !== null}
-        onClick={() => void create(row.serviceId)}
-      >
-        Create page
-      </Button>
-    ) : null
-
-  const columns = helper.columns([
-    helper.accessor("title", {
-      header: "Service",
-      cell: (info) => {
-        const href = editHref(info.row.original)
-        return href ? (
-          <Link
-            href={href}
-            className="font-semibold underline-offset-4 hover:text-primary hover:underline"
-          >
-            {info.getValue()}
-          </Link>
-        ) : (
-          <span className="font-semibold">{info.getValue()}</span>
-        )
-      },
-    }),
-    helper.display({
-      id: "status",
-      header: "Status",
-      cell: (info) => <PageStatus page={info.row.original.page} />,
-    }),
-    helper.display({
-      id: "address",
-      header: "Address",
-      cell: (info) => (
-        <span className="font-mono text-xs text-muted-foreground">
-          {info.row.original.page?.path ??
-            `/services/${info.row.original.slug}`}
-        </span>
-      ),
-    }),
-    helper.display({
-      id: "updated",
-      header: "Updated",
-      cell: (info) => {
-        const page = info.row.original.page
-        return page ? (
-          <time
-            dateTime={page.updatedAt}
-            className="whitespace-nowrap text-muted-foreground"
-          >
-            {formatDublin(page.updatedAt)}
-          </time>
-        ) : (
-          <span className="text-muted-foreground">—</span>
-        )
-      },
-    }),
-    helper.display({
-      id: "actions",
-      header: () => <span className="sr-only">Actions</span>,
-      cell: (info) => (
-        <div className="flex justify-end">{actions(info.row.original)}</div>
-      ),
-    }),
-  ])
+  const q = search.trim().toLowerCase()
+  const shown = rows.filter(
+    (row) =>
+      (!q || row.title.toLowerCase().includes(q)) &&
+      (status === "all" || row.page?.status === status)
+  )
+  const failures = ensure.data?.failed ?? []
+  const titleOf = (id: string) =>
+    rows.find((row) => row.serviceId === id)?.title ?? "A service"
 
   const table = useTable({
     features,
@@ -259,23 +178,35 @@ export function ServicePagesView() {
     data: shown,
     getRowId: (row) => row.serviceId,
   })
-
-  const newButton =
-    canCreate && withoutPage.length > 0 ? (
-      <Button className={PRIMARY_ACTION} onClick={() => setCreating(true)}>
-        <PlusIcon data-icon="inline-start" />
-        New service page
-      </Button>
-    ) : null
-  const filtered = Boolean(search.trim()) || status !== "all"
+  const filtered = Boolean(q) || status !== "all"
 
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Service pages"
-        description="A details page for each service, at /services/<slug>. Changes stay in a draft until you publish."
-        actions={newButton}
+        description="Each service has its own details page at /services/<slug>. Open one to edit it; changes stay in a draft until you publish."
       />
+      {failures.length > 0 ? (
+        <div
+          role="alert"
+          className="flex items-start gap-3 rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm"
+        >
+          <TriangleAlertIcon
+            aria-hidden
+            className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400"
+          />
+          <ul className="flex flex-col gap-1">
+            {failures.map((failure) => (
+              <li key={failure.serviceId}>
+                <span className="font-semibold">
+                  {titleOf(failure.serviceId)}:
+                </span>{" "}
+                its page couldn&apos;t be made yet. {failure.message}.
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
       <div className="flex flex-wrap items-end gap-3">
         <Field className="w-full sm:w-64">
           <FieldLabel htmlFor="service-pages-search">
@@ -320,7 +251,7 @@ export function ServicePagesView() {
         <DataTable
           table={table}
           caption="Service pages"
-          isFetching={list.isFetching}
+          isFetching={list.isFetching || ensure.isPending}
           empty={
             <EmptyState
               icon={FileTextIcon}
@@ -328,109 +259,18 @@ export function ServicePagesView() {
               description={
                 filtered
                   ? "Try a different search or clear the filter."
-                  : "Add services on the Services page; each can then have a details page here."
+                  : "Add a service on the Services page and its details page appears here."
               }
             />
           }
-          renderCard={(row) => {
-            const href = editHref(row.original)
-            return (
-              <div className="flex flex-col gap-2 text-sm">
-                {href ? (
-                  <Link href={href} className="font-semibold">
-                    {row.original.title}
-                  </Link>
-                ) : (
-                  <span className="font-semibold">{row.original.title}</span>
-                )}
-                <PageStatus page={row.original.page} />
-                <div>{actions(row.original)}</div>
-              </div>
-            )
-          }}
+          renderCard={(row) => (
+            <div className="flex flex-col gap-2 text-sm">
+              <Title row={row.original} />
+              <PageStatus page={row.original.page} />
+            </div>
+          )}
         />
       )}
-
-      <Dialog
-        open={creating}
-        onOpenChange={(open) => {
-          setCreating(open)
-          if (!open) setPick(null)
-        }}
-      >
-        <DialogContent className="gap-5 p-6 sm:max-w-md">
-          <DialogHeader className="gap-3">
-            <DialogTitle className="text-lg font-semibold">
-              New service page
-            </DialogTitle>
-            <DialogDescription>
-              Choose the service. Its page starts as a draft with every section
-              ready to fill in.
-            </DialogDescription>
-          </DialogHeader>
-          <Field>
-            <FieldLabel htmlFor="new-service-page">Service</FieldLabel>
-            <Select
-              items={withoutPage.map((row) => ({
-                value: row.serviceId,
-                label: row.title,
-              }))}
-              value={pick}
-              onValueChange={(value) => setPick(String(value))}
-            >
-              <SelectTrigger id="new-service-page" className="w-full">
-                <SelectValue placeholder="Choose a service" />
-              </SelectTrigger>
-              <SelectContent>
-                {withoutPage.map((row) => (
-                  <SelectItem key={row.serviceId} value={row.serviceId}>
-                    {row.title}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
-          <DialogFooter className="-mx-6 -mb-6 rounded-b-xl border-t bg-muted/50 p-4 sm:justify-end">
-            <Button variant="outline" onClick={() => setCreating(false)}>
-              Cancel
-            </Button>
-            <Button
-              disabled={!pick || busy !== null}
-              onClick={() => pick && void create(pick)}
-            >
-              Create page
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
-        open={deleting !== null}
-        onOpenChange={(open) => !open && setDeleting(null)}
-      >
-        <DialogContent className="gap-5 p-6 sm:max-w-md">
-          <DialogHeader className="gap-3">
-            <DialogTitle className="text-lg font-semibold">
-              Delete details page?
-            </DialogTitle>
-            <DialogDescription>
-              {`Delete the details page for ${deleting?.title ?? ""}? Its content can't be recovered.`}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="-mx-6 -mb-6 rounded-b-xl border-t bg-muted/50 p-4 sm:justify-end">
-            <Button variant="outline" onClick={() => setDeleting(null)}>
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              disabled={busy !== null}
-              onClick={() => void confirmDelete()}
-            >
-              Delete page
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }

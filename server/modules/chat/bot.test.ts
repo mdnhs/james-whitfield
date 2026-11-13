@@ -192,6 +192,18 @@ describe("isActive", () => {
   })
 })
 
+describe("visitor name", () => {
+  it("gives the model the first name, but none for the Visitor placeholder", async () => {
+    await maybeReply(ID)
+    expect(state.prompts[0]).toContain("first name is Aoife")
+    state.chat.visitorName = "Visitor"
+    state.lease = false
+    push("visitor", "And the fees?")
+    await maybeReply(ID)
+    expect(state.prompts.at(-1)).not.toContain("first name")
+  })
+})
+
 describe("maybeReply", () => {
   it("(a) happy path stores one ai message", async () => {
     expect(await maybeReply(ID)).toBe("replied")

@@ -31,13 +31,13 @@ test("visitor, AI, staff take-over and hand-back", async ({
   const visitor = await visitorCtx.newPage()
   await visitor.goto("/")
 
-  // 1-2. Consent, send, AI reply with its caption.
+  // 1-2. No start form: the first message starts the chat (the notice above
+  // the composer is the consent), then the AI replies with its caption.
   await visitor.getByRole("button", { name: "Open chat" }).click()
   const dialog = visitor.getByRole("dialog", { name: "Chat with us" })
-  await dialog.getByLabel("Name", { exact: true }).fill("Vivian Visitor")
-  await dialog.getByLabel("Message", { exact: true }).fill("Hello from the E2E suite")
-  await dialog.getByRole("checkbox").check()
-  await dialog.getByRole("button", { name: "Start chat" }).click()
+  await expect(dialog).toContainText("read by an AI assistant")
+  await dialog.getByLabel("Your message").fill("Hello from the E2E suite")
+  await dialog.getByRole("button", { name: "Send message" }).click()
   const log = dialog.getByRole("log", { name: "Conversation" })
   await expect(log).toContainText("Hello from the E2E suite")
   await expect(log).toContainText("Assistant · AI", { timeout: 20_000 })
@@ -54,7 +54,8 @@ test("visitor, AI, staff take-over and hand-back", async ({
     "GET",
     "/chat?status=open"
   )
-  const chat = list.items.find((c) => c.visitorName === "Vivian Visitor")
+  // No name is asked for; the newest open chat is this one.
+  const chat = list.items.find((c) => c.visitorName === "Visitor")
   expect(chat).toBeTruthy()
   await staff.goto(`/admin/chat?c=${chat!.id}`)
   await expect(
@@ -74,7 +75,7 @@ test("visitor, AI, staff take-over and hand-back", async ({
   const before = await aiCount()
   const sendVisitor = async (text: string) => {
     await dialog.getByLabel("Your message").fill(text)
-    await dialog.getByRole("button", { name: "Send", exact: true }).click()
+    await dialog.getByRole("button", { name: "Send message" }).click()
     await expect(log).toContainText(text)
   }
   await sendVisitor("Are you still there?")

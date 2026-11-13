@@ -4,6 +4,7 @@ import { generateText, isStepCount, tool } from "ai"
 import { format } from "date-fns"
 import { z } from "zod"
 
+import { VISITOR_PLACEHOLDER } from "@/lib/chat/schema"
 import { ChatGlobal } from "@/lib/content/globals"
 import { hitLimit } from "@/server/lib/rate-limit-db"
 import { errorTag } from "@/server/modules/ai/errors"
@@ -175,7 +176,8 @@ async function run(id: string, since: number): Promise<Result> {
           siteName: siteGlobal.name,
           knowledge: await loadKnowledge(),
           extra: settings.extra,
-          firstName: chat.visitorName,
+          firstName:
+            chat.visitorName === VISITOR_PLACEHOLDER ? null : chat.visitorName,
           today: format(new Date(), "EEEE d MMMM yyyy", { in: DUBLIN }),
         }),
         messages: toModelMessages(

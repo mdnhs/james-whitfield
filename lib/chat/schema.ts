@@ -6,8 +6,11 @@ const Email = z.string().trim().toLowerCase().max(254).pipe(z.email())
 export const CHAT_SENDERS = ["visitor", "staff", "ai", "system"] as const
 export type ChatSender = (typeof CHAT_SENDERS)[number]
 
+// The widget asks for no name; the server stores "Visitor" instead.
+export const VISITOR_PLACEHOLDER = "Visitor"
+
 export const StartChatInput = z.object({
-  name: s(1, 80),
+  name: s(0, 80).optional(),
   email: Email.or(z.literal("")).optional(),
   message: s(1, 2000),
   consent: z.literal(true),

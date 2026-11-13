@@ -8,6 +8,7 @@ import type {
   StartChatInput,
   VisitorView,
 } from "@/lib/chat/schema"
+import { VISITOR_PLACEHOLDER } from "@/lib/chat/schema"
 import { ChatGlobal } from "@/lib/content/globals"
 import { ApiError } from "@/server/api/errors"
 import { errorTag } from "@/server/modules/ai/errors"
@@ -151,7 +152,7 @@ export async function start(input: StartChatInput) {
   const token = newToken()
   const chat = await repo.createConversation({
     tokenHash: hashToken(token),
-    name: input.name,
+    name: input.name || VISITOR_PLACEHOLDER,
     email: input.email || null,
     sourcePath: input.sourcePath ?? null,
     firstMessage: input.message,

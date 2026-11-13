@@ -1,16 +1,40 @@
 "use client"
 
+import { MessageCircle, X } from "lucide-react"
 import dynamic from "next/dynamic"
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 
-import { cn } from "@/lib/utils"
+import type { ChatStatus } from "@/lib/chat/schema"
 
+import { getStatus } from "./api"
+import { ChatHint } from "./chat-hint"
+import type { Preset } from "./chat-panel"
 import { useChat } from "./use-chat"
+import { useUnreadMoment } from "./use-chat-moments"
+import { useLauncherMotion } from "./use-widget-motion"
 
-// The panel (form, thread, Turnstile) stays out of the page bundle until the
-// first click. The launcher itself is small and owns the polling hook so the
-// unread dot works while the panel is closed.
+// The panel (thread, composer, Turnstile) stays out of the page bundle until
+// the first open. The launcher and hint are small and GSAP is already on every
+// page; the launcher owns the polling hook so the unread badge works while the
+// panel is closed.
 const ChatPanel = dynamic(() => import("./chat-panel"), { ssr: false })
+
+// Remembers only that the visitor hid the hint, for this browser tab.
+const HINT_KEY = "chat-hint-hidden"
+const hintWasHidden = () => {
+  try {
+    return sessionStorage.getItem(HINT_KEY) === "1"
+  } catch {
+    return false
+  }
+}
+const rememberHintHidden = () => {
+  try {
+    sessionStorage.setItem(HINT_KEY, "1")
+  } catch {
+    // Private windows can refuse storage; the hint just returns next page.
+  }
+}
 
 export function ChatLauncher({
   botName,
@@ -19,67 +43,132 @@ export function ChatLauncher({
   botName: string
   welcome: string
 }) {
+  const [ready, setReady] = useState(false)
   const [open, setOpen] = useState(false)
-  const [everOpened, setEverOpened] = useState(false)
-  const button = useRef<HTMLButtonElement>(null)
+  const [status, setStatus] = useState<ChatStatus | null>(null)
+  const [hintHidden, setHintHidden] = useState(true)
+  const [hintEntered, setHintEntered] = useState(false)
+  const [preset, setPreset] = useState<Preset | null>(null)
+  // The panel outlives `open` so it can animate away; assistive tech follows
+  // `open` at once.
+  const [panelMounted, setPanelMounted] = useState(false)
+  if (open && !panelMounted) setPanelMounted(true)
+
+  const presetId = useRef(0)
   const wasOpen = useRef(false)
   const chat = useChat(open)
+  const { launcher, chatIcon, closeIcon } = useLauncherMotion(ready, open)
+  const badge = useUnreadMoment(chat.unread, launcher)
 
-  // Focus returns to the launcher once it is visible again.
+  const refreshStatus = useCallback(() => {
+    void getStatus().then((r) => {
+      if (r.ok) setStatus(r.data)
+    })
+  }, [])
+
   useEffect(() => {
-    if (wasOpen.current && !open) button.current?.focus()
+    // Browser-only values, read after hydration; the launcher renders nothing
+    // on the server so its arrival can animate.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- see above
+    setReady(true)
+    setHintHidden(hintWasHidden())
+    refreshStatus()
+  }, [refreshStatus])
+
+  // Focus returns to the launcher when the panel closes.
+  useEffect(() => {
+    if (wasOpen.current && !open) launcher.current?.focus()
     wasOpen.current = open
-  }, [open])
+  }, [open, launcher])
+
+  // Reopening mid-close plays the panel forward again, so it never reports
+  // closed while open; render puts it back if it ever does.
+  const onClosed = useCallback(() => setPanelMounted(false), [])
+
+  if (!ready) return null
+
+  const openPanel = (message?: string) => {
+    setOpen(true)
+    refreshStatus()
+    if (message) setPreset({ id: ++presetId.current, text: message })
+  }
+  const close = () => setOpen(false)
+  const online = status?.online ?? false
 
   return (
     <>
-      <button
-        ref={button}
-        type="button"
-        aria-label={chat.unread ? "Open chat, new message" : "Open chat"}
-        aria-haspopup="dialog"
-        aria-expanded={open}
-        onClick={() => {
-          setEverOpened(true)
-          setOpen(true)
-        }}
+      {panelMounted ? (
+        <ChatPanel
+          chat={chat}
+          status={status}
+          botName={botName}
+          welcome={welcome}
+          open={open}
+          preset={preset}
+          onClose={close}
+          onClosed={onClosed}
+        />
+      ) : null}
+      <div
         style={{
           bottom:
             "calc(max(1rem, env(safe-area-inset-bottom)) + var(--sticky-cta-h, 0px))",
         }}
-        className={cn(
-          "fixed right-4 z-40 grid size-14 place-items-center rounded-full bg-brand text-cream shadow-lg transition-[transform,background-color,bottom] duration-300 ease-out hover:scale-105 hover:bg-brand-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand motion-reduce:transition-none",
-          open && "invisible"
-        )}
+        className="fixed right-4 z-40 flex items-end gap-3 transition-[bottom] duration-300 ease-out motion-reduce:transition-none sm:right-6"
       >
-        <svg
-          viewBox="0 0 24 24"
-          width="26"
-          height="26"
-          aria-hidden
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M21 11.5a8.5 8.5 0 0 1-12.6 7.4L3 20.5l1.7-5A8.5 8.5 0 1 1 21 11.5Z" />
-        </svg>
-        {chat.unread ? (
-          <span
-            aria-hidden
-            className="absolute top-1 right-1 size-3.5 rounded-full border-2 border-cream bg-clay"
+        {!open && !hintHidden ? (
+          <ChatHint
+            online={online}
+            skipEntrance={hintEntered}
+            onEntered={() => setHintEntered(true)}
+            onOpen={openPanel}
+            onGone={() => {
+              rememberHintHidden()
+              setHintHidden(true)
+            }}
           />
         ) : null}
-      </button>
-      {everOpened && open ? (
-        <ChatPanel
-          chat={chat}
-          botName={botName}
-          welcome={welcome}
-          onClose={() => setOpen(false)}
-        />
-      ) : null}
+        <button
+          ref={launcher}
+          type="button"
+          aria-label={
+            open
+              ? "Close chat"
+              : chat.unread
+                ? "Open chat, new message"
+                : "Open chat"
+          }
+          aria-haspopup="dialog"
+          aria-expanded={open}
+          onClick={() => (open ? close() : openPanel())}
+          className="relative grid size-14 shrink-0 cursor-pointer place-items-center rounded-full bg-brand text-cream shadow-lg transition-colors hover:bg-brand-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand motion-reduce:transition-none"
+        >
+          <span
+            ref={chatIcon}
+            className="absolute inset-0 grid place-items-center"
+          >
+            <MessageCircle className="size-6.5" strokeWidth={1.8} aria-hidden />
+          </span>
+          <span
+            ref={closeIcon}
+            className="absolute inset-0 grid place-items-center opacity-0"
+          >
+            <X className="size-6.5" strokeWidth={1.8} aria-hidden />
+          </span>
+          {chat.unread && !open ? (
+            <span
+              ref={badge}
+              aria-hidden
+              className="absolute top-0.5 right-0.5 size-4 rounded-full border-2 border-cream bg-clay"
+            />
+          ) : online ? (
+            <span
+              aria-hidden
+              className="absolute top-0.5 right-0.5 size-3.5 rounded-full border-2 border-cream bg-emerald-500"
+            />
+          ) : null}
+        </button>
+      </div>
     </>
   )
 }

@@ -1,11 +1,21 @@
 // @vitest-environment jsdom
 import { act, fireEvent, render, screen } from "@testing-library/react"
+import { useEffect } from "react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
-import type { VisitorView } from "@/lib/chat/schema"
+import type { ChatStatus, VisitorView } from "@/lib/chat/schema"
 
-import { ChatPanel } from "./chat-panel"
+import { ChatPanel, type Preset } from "./chat-panel"
+import { stubMedia } from "./test-media"
 import { useChat } from "./use-chat"
+
+// Turnstile stand-in: solves at once and shows where it sits.
+vi.mock("@/features/contact/components/turnstile", () => ({
+  Turnstile: ({ onToken }: { onToken(t: string | null): void }) => {
+    useEffect(() => onToken("tok"), [onToken])
+    return <div data-testid="turnstile" />
+  },
+}))
 
 type M = VisitorView["messages"][number]
 const msg = (
@@ -29,10 +39,10 @@ const view = (
 })
 
 let queue: { status: number; body: unknown }[] = []
-let posts: { url: string; body: unknown }[] = []
-const STATUS = {
+let posts: { url: string; body: Record<string, unknown> }[] = []
+const STATUS: ChatStatus = {
   enabled: true,
-  online: true,
+  online: false,
   botActive: true,
   welcome: "w",
   offlineNote: "OFFLINE-NOTE",
@@ -41,12 +51,13 @@ const STATUS = {
 }
 beforeEach(() => {
   vi.useFakeTimers()
+  stubMedia(true)
   queue = []
   posts = []
+  onClose.mockClear()
+  onClosed.mockClear()
   vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
     const url = String(input)
-    if (url.endsWith("/status"))
-      return new Response(JSON.stringify(STATUS), { status: 200 })
     if (init?.method === "POST") {
       posts.push({
         url,
@@ -60,17 +71,31 @@ beforeEach(() => {
 afterEach(() => {
   vi.useRealTimers()
   vi.restoreAllMocks()
+  vi.unstubAllGlobals()
 })
 
 const onClose = vi.fn()
-function Harness() {
-  const chat = useChat(true)
+const onClosed = vi.fn()
+function Harness({
+  status = STATUS,
+  preset = null,
+  open = true,
+}: {
+  status?: ChatStatus | null
+  preset?: Preset | null
+  open?: boolean
+}) {
+  const chat = useChat(open)
   return (
     <ChatPanel
       chat={chat}
+      status={status}
       botName="Aoife"
       welcome="Hello there"
+      open={open}
+      preset={preset}
       onClose={onClose}
+      onClosed={onClosed}
     />
   )
 }
@@ -82,52 +107,184 @@ const tick = (ms: number) =>
   act(async () => {
     await vi.advanceTimersByTimeAsync(ms)
   })
+const composer = () => screen.getByRole("textbox", { name: "Your message" })
+const type = (text: string) =>
+  fireEvent.change(composer(), { target: { value: text } })
+const sendButton = () => screen.getByRole("button", { name: /^send/i })
 
-describe("start form", () => {
-  it("blocks submit without consent and shows the field error", async () => {
-    queue = [{ status: 404, body: {} }]
+describe("no start form", () => {
+  it("opens straight to the thread: welcome bubble, consent notice, composer", async () => {
     render(<Harness />)
     await flush()
-    fireEvent.change(screen.getByLabelText(/^name/i), {
-      target: { value: "Sam" },
-    })
-    fireEvent.change(screen.getByLabelText(/^message/i), {
-      target: { value: "Hi" },
-    })
-    fireEvent.click(screen.getByRole("button", { name: /start chat/i }))
-    await flush()
-    expect(posts).toHaveLength(0)
-    expect(screen.getByText(/please tick the box/i)).toBeTruthy()
+    expect(screen.getByText("Hello there")).toBeTruthy()
+    expect(screen.queryByLabelText(/name/i)).toBeNull()
+    expect(screen.queryByLabelText(/email/i)).toBeNull()
+    expect(screen.queryByRole("checkbox")).toBeNull()
+    expect(
+      screen.getByText(/Messages are read by an AI assistant and Magda's team/)
+        .textContent
+    ).toContain("Please don't share health details here.")
+    const policy = screen.getByRole("link", { name: /privacy policy/i })
+    expect(policy.getAttribute("href")).toBe("/privacy")
+    expect(composer()).toBeTruthy()
   })
 
-  it("posts the chat once consent is ticked", async () => {
+  it("the first message starts the chat with consent and no name", async () => {
     queue = [
       { status: 404, body: {} },
       { status: 201, body: view([msg(1, "visitor")]) },
     ]
     render(<Harness />)
     await flush()
-    fireEvent.change(screen.getByLabelText(/^name/i), {
-      target: { value: "Sam" },
-    })
-    fireEvent.change(screen.getByLabelText(/^message/i), {
-      target: { value: "Hi" },
-    })
-    fireEvent.click(screen.getByRole("checkbox"))
-    fireEvent.click(screen.getByRole("button", { name: /start chat/i }))
+    type("Hi there")
+    fireEvent.click(sendButton())
     await flush()
-    expect(posts[0]?.url).toBe("/api/v1/public/chat/start")
-    expect(posts[0]?.body).toMatchObject({
-      name: "Sam",
-      message: "Hi",
+    expect(posts).toHaveLength(1)
+    expect(posts[0]!.url).toBe("/api/v1/public/chat/start")
+    expect(posts[0]!.body).toMatchObject({
+      message: "Hi there",
+      consent: true,
+      sourcePath: "/",
+      website: "",
+    })
+    expect(posts[0]!.body).not.toHaveProperty("name")
+    expect(screen.getByText("body1")).toBeTruthy()
+    expect((composer() as HTMLTextAreaElement).value).toBe("")
+  })
+
+  it("later messages go to /messages", async () => {
+    queue = [
+      { status: 200, body: view([msg(1, "ai")]) },
+      { status: 201, body: { ok: true, id: 2 } },
+    ]
+    render(<Harness />)
+    await flush()
+    type("More")
+    fireEvent.keyDown(composer(), { key: "Enter" })
+    await flush()
+    expect(posts[0]!.url).toBe("/api/v1/public/chat/messages")
+    expect(posts[0]!.body).toEqual({ body: "More" })
+  })
+
+  it("keeps the consent line in the footer once the chat exists", async () => {
+    queue = [{ status: 200, body: view([msg(1, "ai")]) }]
+    render(<Harness />)
+    await flush()
+    expect(screen.getByText(/read by an AI assistant/)).toBeTruthy()
+  })
+
+  it("renders Turnstile above the composer only before the first message", async () => {
+    queue = [
+      { status: 404, body: {} },
+      { status: 201, body: view([msg(1, "visitor")]) },
+    ]
+    render(<Harness status={{ ...STATUS, turnstileSiteKey: "site" }} />)
+    await flush()
+    expect(screen.getByTestId("turnstile")).toBeTruthy()
+    type("Hi")
+    fireEvent.click(sendButton())
+    await flush()
+    expect(posts[0]!.body).toMatchObject({ turnstileToken: "tok" })
+    expect(screen.queryByTestId("turnstile")).toBeNull()
+  })
+
+  it("has no Turnstile without a site key", async () => {
+    render(<Harness />)
+    await flush()
+    expect(screen.queryByTestId("turnstile")).toBeNull()
+  })
+
+  it("sends a preset as the first message", async () => {
+    queue = [
+      { status: 404, body: {} },
+      { status: 201, body: view([msg(1, "visitor")]) },
+    ]
+    render(
+      <Harness preset={{ id: 1, text: "How does hypnotherapy work?" }} />
+    )
+    await flush()
+    await flush()
+    expect(posts).toHaveLength(1)
+    expect(posts[0]!.body).toMatchObject({
+      message: "How does hypnotherapy work?",
       consent: true,
     })
-    expect(screen.getByRole("log")).toBeTruthy()
+  })
+})
+
+describe("status line", () => {
+  it("names the agent who holds the chat", async () => {
+    queue = [
+      {
+        status: 200,
+        body: view([msg(1, "staff", "Magda")], {
+          agentName: "Magda",
+          botActive: false,
+        }),
+      },
+    ]
+    render(<Harness />)
+    await flush()
+    expect(screen.getByText("Chatting with Magda")).toBeTruthy()
+  })
+
+  it("names the bot while it is active", async () => {
+    queue = [{ status: 200, body: view([msg(1, "ai")]) }]
+    render(<Harness />)
+    await flush()
+    expect(screen.getByText("Aoife (AI) · Magda's team can join")).toBeTruthy()
+  })
+
+  it("says we're online, or that we'll reply soon", async () => {
+    const first = render(<Harness status={{ ...STATUS, online: true }} />)
+    await flush()
+    expect(screen.getByText("We're online")).toBeTruthy()
+    first.unmount()
+    render(<Harness />)
+    await flush()
+    expect(screen.getByText("We'll reply as soon as we can")).toBeTruthy()
+  })
+})
+
+describe("email ask", () => {
+  const offlineHumanChat = (extra: Partial<VisitorView> = {}) => [
+    { status: 200, body: view([msg(1, "ai")], { botActive: false, ...extra }) },
+  ]
+  const asks = () => screen.queryByRole("button", { name: "Save email" })
+
+  it("shows when the chat exists, nobody is online and no one answers", async () => {
+    queue = offlineHumanChat()
+    render(<Harness />)
+    await flush()
+    expect(asks()).toBeTruthy()
+    expect(screen.getByText("OFFLINE-NOTE")).toBeTruthy()
+    expect(screen.getByLabelText("OFFLINE-NOTE").className).toContain(
+      "text-base"
+    )
+  })
+
+  it.each([
+    ["someone is online", {}, { online: true }],
+    ["the bot is active", { botActive: true }, {}],
+    ["an agent holds the chat", { agentName: "Magda" }, {}],
+    ["the email is already stored", { hasEmail: true }, {}],
+    ["the chat has ended", { status: "closed" as const }, {}],
+  ])("hides when %s", async (_why, extra, status) => {
+    queue = offlineHumanChat(extra)
+    render(<Harness status={{ ...STATUS, ...status }} />)
+    await flush()
+    expect(asks()).toBeNull()
+  })
+
+  it("hides before there is a chat", async () => {
+    render(<Harness />)
+    await flush()
+    expect(asks()).toBeNull()
   })
 })
 
 describe("thread", () => {
-  it("captions AI messages and shows typing until the next reply", async () => {
+  it("captions AI messages and shows the typing bubble until the next reply", async () => {
     queue = [
       { status: 200, body: view([msg(1, "ai"), msg(2, "visitor")]) },
       { status: 200, body: view([msg(3, "ai")]) },
@@ -140,7 +297,7 @@ describe("thread", () => {
     expect(screen.queryByText(/is typing/)).toBeNull()
   })
 
-  it("hides the typing indicator after 30s", async () => {
+  it("hides the typing bubble after 30s", async () => {
     queue = [{ status: 200, body: view([msg(1, "visitor")]) }]
     render(<Harness />)
     await flush()
@@ -149,6 +306,18 @@ describe("thread", () => {
       queue.push({ status: 200, body: view([], { lastId: 1 }) })
     await tick(30_000)
     expect(screen.queryByText(/is typing/)).toBeNull()
+  })
+
+  it("renders message text as plain text, never as markup or links", async () => {
+    const evil = {
+      ...msg(1, "ai"),
+      body: '<a href="https://x.example">x</a> https://y.example',
+    }
+    queue = [{ status: 200, body: view([evil]) }]
+    const { container } = render(<Harness />)
+    await flush()
+    expect(container.querySelector('a[href*="example"]')).toBeNull()
+    expect(screen.getByText(/https:\/\/y\.example/)).toBeTruthy()
   })
 
   it("announces staff messages but not the visitor's own", async () => {
@@ -168,34 +337,32 @@ describe("thread", () => {
     const live = container.querySelector('[aria-live="polite"]')
     expect(live?.textContent).toContain("body3")
     expect(live?.textContent).not.toContain("body2")
-    expect(screen.getByText(/Chatting with Magda/)).toBeTruthy()
   })
 
-  it("shows Start a new chat after a 409", async () => {
+  it("shows Start a new chat after a 409, then the composer again", async () => {
     queue = [
       { status: 200, body: view([msg(1, "ai")]) },
       { status: 409, body: { error: { code: "CONFLICT" } } },
     ]
     render(<Harness />)
     await flush()
-    fireEvent.change(screen.getByRole("textbox"), {
-      target: { value: "hello" },
-    })
-    fireEvent.click(screen.getByRole("button", { name: /^send/i }))
+    type("hello")
+    fireEvent.click(sendButton())
     await flush()
     expect(screen.getAllByText("This chat has ended.").length).toBeGreaterThan(
       0
     )
-    expect(
-      screen.getByRole("button", { name: "Start a new chat" })
-    ).toBeTruthy()
+    const again = screen.getByRole("button", { name: "Start a new chat" })
+    expect(document.activeElement).toBe(again)
     expect(screen.queryByRole("textbox")).toBeNull()
+    fireEvent.click(again)
+    await flush()
+    expect(document.activeElement).toBe(composer())
   })
 })
 
 describe("dialog", () => {
   it("is a labelled modal that traps Tab and closes on Escape", async () => {
-    queue = [{ status: 404, body: {} }]
     render(<Harness />)
     await flush()
     const dialog = screen.getByRole("dialog")
@@ -204,12 +371,11 @@ describe("dialog", () => {
     expect(document.getElementById(labelId!)?.textContent).toBeTruthy()
     const focusables = [
       ...dialog.querySelectorAll<HTMLElement>(
-        "button, input:not([type=hidden]), textarea, a[href]"
+        "button:not([disabled]), input:not([type=hidden]), textarea, a[href]"
       ),
-    ].filter((el) => el.tabIndex >= 0 && el.getAttribute("tabindex") !== "-1")
+    ].filter((el) => el.getAttribute("tabindex") !== "-1")
     const first = focusables[0]!
     const last = focusables[focusables.length - 1]!
-    expect(document.activeElement).toBe(screen.getByLabelText(/^name/i))
     last.focus()
     fireEvent.keyDown(last, { key: "Tab" })
     expect(document.activeElement).toBe(first)
@@ -220,66 +386,44 @@ describe("dialog", () => {
     expect(onClose).toHaveBeenCalled()
   })
 
-  it("focuses the name field on open, before the cookie lookup lands", () => {
-    queue = [{ status: 404, body: {} }]
+  it("focuses the composer on open, before the cookie lookup lands", () => {
     render(<Harness />)
-    expect(document.activeElement).toBe(screen.getByLabelText(/^name/i))
+    expect(document.activeElement).toBe(composer())
   })
 
-  it("moves focus to the composer after start and back to the form after Start a new chat", async () => {
-    queue = [
-      { status: 404, body: {} },
-      { status: 201, body: view([msg(1, "visitor")]) },
-      { status: 200, body: view([msg(1, "visitor")], { status: "closed" }) },
-    ]
+  it("is a full-screen sheet on phones, above the sticky bar, with 16px inputs", async () => {
     render(<Harness />)
     await flush()
-    fireEvent.change(screen.getByLabelText(/^name/i), {
-      target: { value: "Sam" },
-    })
-    fireEvent.change(screen.getByLabelText(/^message/i), {
-      target: { value: "Hi" },
-    })
-    fireEvent.click(screen.getByRole("checkbox"))
-    fireEvent.click(screen.getByRole("button", { name: /start chat/i }))
-    await flush()
-    expect(document.activeElement).toBe(screen.getByRole("textbox"))
-    await tick(3000)
-    const again = screen.getByRole("button", { name: "Start a new chat" })
-    expect(document.activeElement).toBe(again)
-    fireEvent.click(again)
-    await flush()
-    expect(document.activeElement).toBe(screen.getByLabelText(/^name/i))
-  })
-})
-
-describe("email ask", () => {
-  it("shows when a human is needed and no email is stored, hidden when hasEmail", async () => {
-    queue = [{ status: 200, body: view([msg(1, "ai")], { needsHuman: true }) }]
-    const first = render(<Harness />)
-    await flush()
-    expect(screen.getByRole("button", { name: "Save email" })).toBeTruthy()
-    first.unmount()
-    queue = [
-      {
-        status: 200,
-        body: view([msg(1, "ai")], { needsHuman: true, hasEmail: true }),
-      },
-    ]
-    render(<Harness />)
-    await flush()
-    expect(screen.queryByRole("button", { name: "Save email" })).toBeNull()
-  })
-})
-
-describe("layering", () => {
-  it("sits above the mobile sticky bar (z-50)", async () => {
-    queue = [{ status: 404, body: {} }]
-    render(<Harness />)
-    await flush()
-    const z = /(?:^|\s)z-(\d+)(?:\s|$)/.exec(
-      screen.getByRole("dialog").className
-    )
+    const dialog = screen.getByRole("dialog")
+    const z = /(?:^|\s)z-(\d+)(?:\s|$)/.exec(dialog.className)
     expect(Number(z?.[1])).toBeGreaterThan(50)
+    expect(dialog.className).toContain("h-svh")
+    expect(composer().className).toContain("text-base")
+  })
+})
+
+describe("motion", () => {
+  it("with reduced motion the panel is visible at once and closes at once", async () => {
+    const { rerender } = render(<Harness />)
+    await flush()
+    const dialog = screen.getByRole("dialog")
+    expect(dialog.style.opacity).toBe("")
+    expect(dialog.style.transform).toBe("")
+    rerender(<Harness open={false} />)
+    expect(onClosed).toHaveBeenCalledTimes(1)
+  })
+
+  it("without reduced motion the panel animates in from hidden", async () => {
+    stubMedia(false)
+    render(<Harness />)
+    expect(screen.getByRole("dialog").style.opacity).toBe("0")
+  })
+
+  it("closes the panel to assistive tech at once, even while it animates", async () => {
+    stubMedia(false)
+    const { rerender } = render(<Harness />)
+    rerender(<Harness open={false} />)
+    const dialog = document.querySelector('[role="dialog"]')
+    expect(dialog?.hasAttribute("inert")).toBe(true)
   })
 })

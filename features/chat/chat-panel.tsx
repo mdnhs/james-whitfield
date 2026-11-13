@@ -1,5 +1,6 @@
 "use client"
 
+import { MessageCircle, SendHorizontal, X } from "lucide-react"
 import Link from "next/link"
 import { useEffect, useId, useRef, useState } from "react"
 
@@ -7,26 +8,39 @@ import { Turnstile } from "@/features/contact/components/turnstile"
 import type { ChatStatus, VisitorMessage } from "@/lib/chat/schema"
 import { cn } from "@/lib/utils"
 
-import { getStatus } from "./api"
+import { TypingIndicator } from "./typing-indicator"
+import { usePanelMoments } from "./use-chat-moments"
 import type { ChatApi } from "./use-chat"
+import { usePanelMotion } from "./use-widget-motion"
+
+// A preset question from the hint. `id` changes on every pick, so picking the
+// same one twice sends it twice.
+export type Preset = { id: number; text: string }
 
 const DEFAULT_OFFLINE =
   "No one is online right now. Leave your email and Magda's team will reply."
 const TYPING_MS = 30_000
+const MESSAGE_MAX = 2000
 const FOCUSABLE =
   'button:not([disabled]), input:not([disabled]):not([type="hidden"]):not([tabindex="-1"]), textarea:not([disabled]), a[href]'
 
 const field =
-  "w-full rounded-xl border border-brand/25 bg-white px-3.5 py-2.5 text-base text-ink placeholder:text-ink-muted/60 focus-visible:border-brand focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand"
+  "w-full rounded-2xl border border-brand/25 bg-white px-4 py-2.5 text-base text-ink placeholder:text-ink-muted/60 focus-visible:border-brand focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand"
 const pill =
   "inline-flex h-11 items-center justify-center rounded-full bg-brand px-6 text-base font-medium text-cream transition-colors hover:bg-brand-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:opacity-60"
+const bubble =
+  "max-w-[85%] rounded-2xl px-4 py-2.5 text-base leading-6 break-words whitespace-pre-wrap"
+const theirs = "rounded-bl-md bg-mist text-ink"
 
-type Errors = Partial<Record<"name" | "email" | "message" | "consent", string>>
-
+// Plain text only: bodies render as React text, never as markup or links.
 function Bubble({ m, botName }: { m: VisitorMessage; botName: string }) {
   if (m.sender === "system") {
     return (
-      <li className="px-4 text-center text-sm whitespace-pre-wrap text-ink-muted">
+      <li
+        data-message-id={m.id}
+        data-sender={m.sender}
+        className="px-4 text-center text-sm whitespace-pre-wrap text-ink-muted"
+      >
         {m.body}
       </li>
     )
@@ -40,6 +54,8 @@ function Bubble({ m, botName }: { m: VisitorMessage; botName: string }) {
         : null
   return (
     <li
+      data-message-id={m.id}
+      data-sender={m.sender}
       className={cn("flex flex-col gap-1", mine ? "items-end" : "items-start")}
     >
       {caption ? (
@@ -49,11 +65,11 @@ function Bubble({ m, botName }: { m: VisitorMessage; botName: string }) {
       ) : null}
       <p
         className={cn(
-          "max-w-[85%] rounded-2xl px-4 py-2.5 text-base leading-6 break-words whitespace-pre-wrap",
+          bubble,
           mine
             ? "rounded-br-md bg-brand text-cream"
             : m.sender === "ai"
-              ? "rounded-bl-md bg-mist text-ink"
+              ? theirs
               : "rounded-bl-md border border-brand/20 bg-white text-ink"
         )}
       >
@@ -63,177 +79,25 @@ function Bubble({ m, botName }: { m: VisitorMessage; botName: string }) {
   )
 }
 
-function StartForm({
-  chat,
-  welcome,
-  status,
-  firstField,
-}: {
-  chat: ChatApi
-  welcome: string
-  status: ChatStatus | null
-  firstField: React.RefObject<HTMLInputElement | null>
-}) {
-  const [errors, setErrors] = useState<Errors>({})
-  const [pending, setPending] = useState(false)
-  const [token, setToken] = useState<string | null>(null)
-  const [widget, setWidget] = useState(0)
-
-  async function submit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    const data = new FormData(e.currentTarget)
-    const text = (k: string) => String(data.get(k) ?? "").trim()
-    const next: Errors = {}
-    if (!text("name")) next.name = "Please enter your name."
-    const email = text("email")
-    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
-      next.email = "That email doesn't look right."
-    if (!text("message")) next.message = "Please write a message."
-    if (data.get("consent") !== "on")
-      next.consent = "Please tick the box to start the chat."
-    setErrors(next)
-    if (Object.keys(next).length) return
-    setPending(true)
-    const result = await chat.start({
-      name: text("name"),
-      email,
-      message: text("message"),
-      consent: true,
-      sourcePath: window.location.pathname,
-      turnstileToken: token ?? undefined,
-      website: text("website"),
-    })
-    setPending(false)
-    if (!result.ok) {
-      setToken(null)
-      setWidget((n) => n + 1)
-      if (result.kind === "invalid") {
-        const fe = result.fieldErrors
-        setErrors({
-          name: fe.name ? "Please enter your name." : undefined,
-          email: fe.email ? "That email doesn't look right." : undefined,
-          message: fe.message ? "Please write a message." : undefined,
-          consent: fe.consent
-            ? "Please tick the box to start the chat."
-            : undefined,
-        })
-      }
-    }
-  }
-
-  const err = (k: keyof Errors) =>
-    errors[k] ? (
-      <p id={`chat-${k}-err`} className="mt-1 text-sm text-[#a33a1f]">
-        {errors[k]}
-      </p>
-    ) : null
-  const aria = (k: keyof Errors) => ({
-    "aria-invalid": errors[k] ? true : undefined,
-    "aria-describedby": errors[k] ? `chat-${k}-err` : undefined,
-  })
-
+function ConsentLine({ quiet }: { quiet: boolean }) {
   return (
-    <form
-      onSubmit={submit}
-      noValidate
-      className="flex flex-1 flex-col gap-4 overflow-y-auto px-5 pt-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]"
+    <p
+      className={cn(
+        "text-ink-muted",
+        quiet ? "mt-2 text-xs leading-4" : "mb-2 text-[13px] leading-5"
+      )}
     >
-      <p className="text-base leading-6 text-ink">{welcome}</p>
-      <div>
-        <label
-          htmlFor="chat-name"
-          className="mb-1 block text-sm font-medium text-ink"
-        >
-          Name
-        </label>
-        <input
-          ref={firstField}
-          id="chat-name"
-          name="name"
-          autoComplete="given-name"
-          maxLength={80}
-          className={field}
-          {...aria("name")}
-        />
-        {err("name")}
-      </div>
-      <div>
-        <label
-          htmlFor="chat-email"
-          className="mb-1 block text-sm font-medium text-ink"
-        >
-          Email <span className="font-normal text-ink-muted">(optional)</span>
-        </label>
-        <input
-          id="chat-email"
-          name="email"
-          type="email"
-          autoComplete="email"
-          className={field}
-          {...aria("email")}
-        />
-        {err("email")}
-      </div>
-      <div>
-        <label
-          htmlFor="chat-message"
-          className="mb-1 block text-sm font-medium text-ink"
-        >
-          Message
-        </label>
-        <textarea
-          id="chat-message"
-          name="message"
-          rows={3}
-          maxLength={2000}
-          className={cn(field, "resize-none")}
-          {...aria("message")}
-        />
-        {err("message")}
-      </div>
-      <div
-        aria-hidden
-        className="absolute -left-2499.75 h-0 w-0 overflow-hidden"
+      Messages are read by an AI assistant and Magda&apos;s team. Please
+      don&apos;t share health details here.{" "}
+      <Link
+        href="/privacy"
+        target="_blank"
+        rel="noopener"
+        className="underline underline-offset-2 hover:text-brand-deep"
       >
-        <input name="website" tabIndex={-1} autoComplete="off" />
-      </div>
-      <div>
-        <label className="flex items-start gap-3 text-sm leading-5 text-ink">
-          <input
-            type="checkbox"
-            name="consent"
-            className="mt-0.5 size-5 shrink-0 accent-[#336060]"
-            {...aria("consent")}
-          />
-          <span>
-            I understand my messages are read by an AI assistant and by
-            Magda&apos;s team. Health details are best kept for the session, so
-            please don&apos;t share them here. See the{" "}
-            <Link
-              href="/privacy"
-              target="_blank"
-              rel="noopener"
-              className="underline underline-offset-2"
-            >
-              privacy policy
-            </Link>
-            .
-          </span>
-        </label>
-        {err("consent")}
-      </div>
-      {status?.turnstileSiteKey ? (
-        <Turnstile
-          key={widget}
-          siteKey={status.turnstileSiteKey}
-          action="chat"
-          onToken={setToken}
-        />
-      ) : null}
-      <button type="submit" disabled={pending} className={pill}>
-        Start chat
-      </button>
-    </form>
+        Privacy policy
+      </Link>
+    </p>
   )
 }
 
@@ -255,24 +119,24 @@ function EmailAsk({ chat, note }: { chat: ChatApi; note: string }) {
   return (
     <form
       onSubmit={submit}
-      className="flex flex-col gap-2 border-t border-brand/15 bg-mist/60 px-4 py-3"
+      className="mt-1 flex flex-col gap-2 rounded-2xl border border-brand/20 bg-white/70 p-3"
     >
       <label htmlFor="chat-email-ask" className="text-sm text-ink">
         {note}
       </label>
-      <div className="flex gap-2">
-        <input
-          id="chat-email-ask"
-          name="email"
-          type="email"
-          required
-          autoComplete="email"
-          className={cn(field, "min-w-0 flex-1")}
-        />
-        <button type="submit" disabled={pending} className={cn(pill, "px-4")}>
-          Save email
-        </button>
-      </div>
+      <input
+        id="chat-email-ask"
+        name="email"
+        type="email"
+        required
+        autoComplete="email"
+        maxLength={254}
+        placeholder="you@example.com"
+        className={field}
+      />
+      <button type="submit" disabled={pending} className={pill}>
+        Save email
+      </button>
       {error ? <p className="text-sm text-[#a33a1f]">{error}</p> : null}
     </form>
   )
@@ -280,74 +144,77 @@ function EmailAsk({ chat, note }: { chat: ChatApi; note: string }) {
 
 export function ChatPanel({
   chat,
+  status,
   botName,
   welcome,
+  open,
+  preset,
   onClose,
+  onClosed,
 }: {
   chat: ChatApi
+  status: ChatStatus | null
   botName: string
   welcome: string
+  open: boolean
+  preset: Preset | null
   onClose(): void
+  onClosed(): void
 }) {
   const titleId = useId()
-  const dialog = useRef<HTMLDivElement>(null)
-  const nameField = useRef<HTMLInputElement>(null)
+  const dialog = usePanelMotion(open, onClosed)
   const composer = useRef<HTMLTextAreaElement>(null)
   const restart = useRef<HTMLButtonElement>(null)
-  const list = useRef<HTMLUListElement>(null)
-  const focusedFor = useRef<boolean | null>(null)
+  const scroller = useRef<HTMLDivElement>(null)
   const seen = useRef<Set<number> | null>(null)
 
-  const [status, setStatus] = useState<ChatStatus | null>(null)
   const [draft, setDraft] = useState("")
+  const [honeypot, setHoneypot] = useState("")
   const [sending, setSending] = useState(false)
+  // A message waiting to go: for the cookie lookup, or for Turnstile.
+  const [queued, setQueued] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [token, setToken] = useState<string | null>(null)
+  const [widget, setWidget] = useState(0)
   const [announcement, setAnnouncement] = useState("")
   const [expiredFor, setExpiredFor] = useState<number | null>(null)
 
-  const { messages, loaded, exists, ended } = chat
+  const { messages, loaded, exists, ended, agentName, botActive } = chat
   const last = messages.at(-1)
-  const online = status?.online ?? true
+  const online = status?.online ?? false
+  const siteKey = status?.turnstileSiteKey ?? null
   const offlineNote = status?.offlineNote || DEFAULT_OFFLINE
 
-  useEffect(() => {
-    // The start form is already on screen (no chat until the cookie lookup
-    // says otherwise): focus its first field now, the dialog as a fallback.
-    ;(nameField.current ?? dialog.current)?.focus()
-    let alive = true
-    void getStatus().then((r) => {
-      if (alive && r.ok) setStatus(r.data)
-    })
-    return () => {
-      alive = false
+  const { avatar, statusLine, onlineDot } = usePanelMoments({
+    messageIds: messages.map((m) => m.id),
+    agentName,
+    online,
+    log: scroller,
+  })
+
+  // A new preset fills the composer and queues it: adjust during render, not
+  // in an effect. An ended chat has no composer, so it only opens.
+  const [presetSeen, setPresetSeen] = useState(0)
+  if (preset && preset.id !== presetSeen) {
+    setPresetSeen(preset.id)
+    if (preset.text && !ended) {
+      setDraft(preset.text)
+      setQueued(true)
     }
-  }, [])
+  }
 
-  // Focus the start form's first field, or the composer when a chat exists,
-  // on open and again whenever the view swaps (start, start a new chat): the
-  // focused control unmounts then. Until the cookie lookup lands, focus stays
-  // on the dialog.
+  // Focus the composer on open (or Start a new chat once a chat ended), and
+  // again when the view swaps between the two.
   useEffect(() => {
-    if (!loaded || focusedFor.current === exists) return
-    focusedFor.current = exists
-    // Keep focus where the visitor already is inside the form.
-    const active = document.activeElement
-    if (
-      !exists &&
-      active !== dialog.current &&
-      dialog.current?.contains(active)
-    )
-      return
-    ;(exists ? composer.current : nameField.current)?.focus()
-  }, [loaded, exists])
-
-  useEffect(() => {
+    if (!open) return
     if (ended) restart.current?.focus()
-  }, [ended])
+    else composer.current?.focus({ preventScroll: true })
+  }, [open, ended])
 
   useEffect(() => {
-    const el = list.current
+    const el = scroller.current
     if (el) el.scrollTop = el.scrollHeight
-  }, [messages.length])
+  }, [messages.length, last?.sender])
 
   // Screen readers hear only new messages from someone else, never the
   // visitor's own and never the history restored on open.
@@ -367,10 +234,7 @@ export function ChatPanel({
   }, [messages, loaded])
 
   const typing =
-    chat.botActive &&
-    !ended &&
-    last?.sender === "visitor" &&
-    expiredFor !== last.id
+    botActive && !ended && last?.sender === "visitor" && expiredFor !== last.id
   const lastVisitorId = last?.sender === "visitor" ? last.id : null
   useEffect(() => {
     if (lastVisitorId === null) return
@@ -402,23 +266,69 @@ export function ChatPanel({
     }
   }
 
-  async function submitMessage(e?: React.FormEvent) {
-    e?.preventDefault()
+  // The first message starts the chat; sending it is the consent. It waits
+  // for the cookie lookup (an open chat must not be started twice) and, when
+  // Turnstile is on, for its token.
+  async function submit() {
     const body = draft.trim()
-    if (!body || sending) return
+    if (!body || sending || ended) {
+      if (!sending) setQueued(false)
+      return
+    }
+    if (!exists && (!loaded || (siteKey && !token))) {
+      setQueued(true)
+      return
+    }
+    setQueued(false)
     setSending(true)
-    const ok = await chat.send(body)
+    setError(null)
+    if (exists) {
+      const ok = await chat.send(body)
+      setSending(false)
+      if (ok) setDraft("")
+      return
+    }
+    const result = await chat.start({
+      message: body,
+      consent: true,
+      sourcePath: window.location.pathname,
+      website: honeypot,
+      turnstileToken: token ?? undefined,
+    })
     setSending(false)
-    if (ok) setDraft("")
+    if (result.ok) {
+      setDraft("")
+      return
+    }
+    setToken(null)
+    setWidget((n) => n + 1)
+    if (result.kind === "invalid")
+      setError(
+        result.fieldErrors.message
+          ? "Please write a shorter message."
+          : "We couldn't start the chat. Please try again."
+      )
+    else if (result.kind === "other" || result.kind === "notfound")
+      setError("Something went wrong. Please try again.")
   }
 
-  const header = chat.botActive
-    ? `${botName} (AI) · Magda's team can join`
-    : chat.agentName
-      ? `Chatting with ${chat.agentName}`
-      : online
-        ? "Magda's team will reply here"
-        : offlineNote
+  const ready = exists || (loaded && (!siteKey || Boolean(token)))
+  useEffect(() => {
+    if (!queued || sending || !ready) return
+    // The queued message goes as soon as the lookup or Turnstile is done.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sends a message the visitor already asked to send
+    void submit()
+  })
+
+  const statusText = chat.reconnecting
+    ? "Reconnecting…"
+    : agentName
+      ? `Chatting with ${agentName}`
+      : botActive
+        ? `${botName} (AI) · Magda's team can join`
+        : online
+          ? "We're online"
+          : "We'll reply as soon as we can"
 
   const notice =
     chat.notice === "offline"
@@ -429,11 +339,9 @@ export function ChatPanel({
           ? "This chat has ended."
           : null
 
-  const emailAsk =
-    exists && !ended && !chat.emailSaved && (chat.needsHuman || !online)
-  const emailNote = online
-    ? "Want a reply by email too? Leave your address here."
-    : offlineNote
+  // VANTAGE's rule: ask only when no one can answer here and now.
+  const askEmail =
+    exists && !ended && !agentName && !chat.emailSaved && !botActive && !online
 
   return (
     <div
@@ -441,119 +349,168 @@ export function ChatPanel({
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
+      inert={!open}
       tabIndex={-1}
       onKeyDown={onKeyDown}
-      className="fixed inset-0 z-60 flex h-svh w-full flex-col overflow-hidden bg-cream text-ink shadow-2xl outline-none sm:inset-auto sm:right-4 sm:bottom-4 sm:h-140 sm:w-95 sm:rounded-3xl sm:border sm:border-brand/20"
+      className="fixed inset-0 z-60 flex h-svh w-full flex-col overflow-hidden bg-cream text-ink shadow-2xl outline-none sm:inset-auto sm:right-4 sm:bottom-[calc(max(1rem,env(safe-area-inset-bottom))+4.75rem)] sm:h-[min(560px,calc(100svh-7rem))] sm:w-95 sm:rounded-3xl sm:border sm:border-brand/20 sm:right-6"
     >
-      <header className="flex items-start justify-between gap-3 bg-brand px-5 py-4 text-cream">
-        <div className="min-w-0">
+      <header
+        data-chat-part
+        className="flex items-center gap-3 bg-brand px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-4 text-cream sm:pt-4"
+      >
+        <span
+          ref={avatar}
+          className="relative grid size-11 shrink-0 place-items-center rounded-full bg-cream/15 ring-1 ring-cream/25"
+        >
+          {agentName ? (
+            <span className="font-display text-lg font-semibold">
+              {agentName[0]?.toUpperCase()}
+            </span>
+          ) : (
+            <MessageCircle className="size-5" aria-hidden />
+          )}
+          {online ? (
+            <span
+              ref={onlineDot}
+              aria-hidden
+              className="absolute -top-0.5 -right-0.5 size-3 rounded-full border-2 border-brand bg-emerald-400"
+            />
+          ) : null}
+        </span>
+        <div className="min-w-0 flex-1">
           <h2
             id={titleId}
             className="font-display text-xl leading-6 font-bold [font-variation-settings:'SOFT'_0,'WONK'_1]"
           >
             Chat with us
           </h2>
-          <p className="mt-1 text-sm leading-5 text-cream/80">
-            {chat.reconnecting ? "Reconnecting…" : header}
+          <p ref={statusLine} className="truncate text-sm leading-5 text-cream/80">
+            {statusText}
           </p>
         </div>
         <button
           type="button"
           onClick={onClose}
           aria-label="Close chat"
-          className="-mt-1 -mr-2 grid size-10 shrink-0 place-items-center rounded-full text-cream transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-cream"
+          className="grid size-11 shrink-0 place-items-center rounded-full text-cream transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-cream"
         >
-          <svg
-            viewBox="0 0 24 24"
-            width="20"
-            height="20"
-            aria-hidden
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-          >
-            <path d="M6 6l12 12M18 6L6 18" />
-          </svg>
+          <X className="size-5" aria-hidden />
         </button>
       </header>
 
-      {!exists ? (
-        <StartForm
-          chat={chat}
-          welcome={welcome}
-          status={status}
-          firstField={nameField}
-        />
-      ) : (
-        <>
-          <ul
-            ref={list}
-            role="log"
-            aria-live="off"
-            aria-label="Conversation"
-            className="flex flex-1 flex-col gap-3 overflow-y-auto px-4 py-4"
+      <div
+        ref={scroller}
+        data-chat-part
+        data-lenis-prevent
+        className="flex flex-1 flex-col gap-3 overflow-y-auto overscroll-contain px-4 py-4"
+      >
+        <ul
+          role="log"
+          aria-live="off"
+          aria-label="Conversation"
+          className="flex flex-col gap-3"
+        >
+          <li className="flex flex-col items-start">
+            <p className={cn(bubble, theirs)}>{welcome}</p>
+          </li>
+          {messages.map((m) => (
+            <Bubble key={m.id} m={m} botName={botName} />
+          ))}
+        </ul>
+        {typing ? <TypingIndicator name={botName} /> : null}
+        {askEmail ? <EmailAsk chat={chat} note={offlineNote} /> : null}
+      </div>
+      <div className="sr-only" aria-live="polite" aria-atomic="true">
+        {announcement}
+      </div>
+
+      <div
+        data-chat-part
+        className="border-t border-brand/15 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+      >
+        {notice || error ? (
+          <p role="alert" className="mb-2 text-sm text-[#a33a1f]">
+            {error ?? notice}
+          </p>
+        ) : null}
+        {ended ? (
+          <button
+            ref={restart}
+            type="button"
+            onClick={chat.startNew}
+            className={cn(pill, "w-full")}
           >
-            {messages.map((m) => (
-              <Bubble key={m.id} m={m} botName={botName} />
-            ))}
-          </ul>
-          <div className="sr-only" aria-live="polite" aria-atomic="true">
-            {announcement}
-          </div>
-          {typing ? (
-            <p role="status" className="px-5 pb-2 text-sm text-ink-muted">
-              {botName} is typing…
-            </p>
-          ) : null}
-          {notice ? (
-            <p role="alert" className="px-5 pb-2 text-sm text-[#a33a1f]">
-              {notice}
-            </p>
-          ) : null}
-          {emailAsk ? <EmailAsk chat={chat} note={emailNote} /> : null}
-          {ended ? (
-            <div className="border-t border-brand/15 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-              <button
-                ref={restart}
-                type="button"
-                onClick={chat.startNew}
-                className={cn(pill, "w-full")}
-              >
-                Start a new chat
-              </button>
-            </div>
-          ) : (
+            Start a new chat
+          </button>
+        ) : (
+          <>
+            {!exists ? <ConsentLine quiet={false} /> : null}
+            {!exists && siteKey ? (
+              <div className="mb-2">
+                <Turnstile
+                  key={widget}
+                  siteKey={siteKey}
+                  action="chat"
+                  onToken={setToken}
+                />
+              </div>
+            ) : null}
             <form
-              onSubmit={submitMessage}
-              className="flex items-end gap-2 border-t border-brand/15 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+              onSubmit={(e) => {
+                e.preventDefault()
+                void submit()
+              }}
+              className="flex items-end gap-2"
             >
               <textarea
                 ref={composer}
                 aria-label="Your message"
+                placeholder="Write a message"
                 value={draft}
                 rows={1}
-                maxLength={2000}
+                maxLength={MESSAGE_MAX}
                 onChange={(e) => setDraft(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
+                  if (
+                    e.key === "Enter" &&
+                    !e.shiftKey &&
+                    !e.nativeEvent.isComposing
+                  ) {
                     e.preventDefault()
-                    void submitMessage()
+                    void submit()
                   }
                 }}
-                className={cn(field, "max-h-28 min-w-0 flex-1 resize-none")}
+                data-lenis-prevent
+                className={cn(field, "max-h-28 min-h-11 min-w-0 flex-1 resize-none")}
               />
               <button
                 type="submit"
                 disabled={sending || !draft.trim()}
-                className={cn(pill, "px-5")}
+                aria-label="Send message"
+                className="grid size-11 shrink-0 place-items-center rounded-full bg-brand text-cream transition-colors hover:bg-brand-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:opacity-50"
               >
-                Send
+                <SendHorizontal className="size-5" aria-hidden />
               </button>
             </form>
-          )}
-        </>
-      )}
+            {queued && !exists ? (
+              <p role="status" className="mt-2 text-xs text-ink-muted">
+                One moment, connecting…
+              </p>
+            ) : null}
+            {exists ? <ConsentLine quiet /> : null}
+          </>
+        )}
+        {/* Off-screen for people; bots fill it in. */}
+        <input
+          tabIndex={-1}
+          aria-hidden
+          autoComplete="off"
+          name="website"
+          value={honeypot}
+          onChange={(e) => setHoneypot(e.target.value)}
+          className="absolute -left-[9999px] size-px opacity-0"
+        />
+      </div>
     </div>
   )
 }

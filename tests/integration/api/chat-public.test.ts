@@ -112,6 +112,24 @@ describe("chat public api", () => {
     expect(await getDb().select().from(chatConversations)).toHaveLength(0)
   })
 
+  it("start without a name stores the visitor as Visitor", async () => {
+    const { name: _name, ...noName } = startBody()
+    void _name
+    const res = await chatRequest("/start", { method: "POST", body: noName })
+    expect(res.status).toBe(201)
+    const [row] = await getDb().select().from(chatConversations)
+    expect(row!.visitorName).toBe("Visitor")
+  })
+
+  it("start with an empty name and no consent is still 400", async () => {
+    const res = await chatRequest("/start", {
+      method: "POST",
+      body: startBody({ name: "", consent: undefined }),
+    })
+    expect(res.status).toBe(400)
+    expect(await getDb().select().from(chatConversations)).toHaveLength(0)
+  })
+
   it("a filled honeypot answers { ok: true } and stores nothing", async () => {
     const res = await chatRequest("/start", {
       method: "POST",

@@ -25,12 +25,12 @@ const FOCUSABLE =
   'button:not([disabled]), input:not([disabled]):not([type="hidden"]):not([tabindex="-1"]), textarea:not([disabled]), a[href]'
 
 const field =
-  "w-full rounded-2xl border border-brand/25 bg-white px-4 py-2.5 text-base text-ink placeholder:text-ink-muted/60 focus-visible:border-brand focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand"
+  "w-full rounded-2xl border border-white/12 bg-white/10 px-4 py-2.5 text-base text-white placeholder:text-white/50 focus-visible:border-white/35 focus-visible:bg-white/14 focus-visible:outline-none"
 const pill =
-  "inline-flex h-11 items-center justify-center rounded-full bg-brand px-6 text-base font-medium text-cream transition-colors hover:bg-brand-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:opacity-60"
+  "inline-flex h-11 items-center justify-center rounded-full bg-brand px-6 text-base font-medium text-cream transition-colors hover:bg-brand-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70 disabled:opacity-60"
 const bubble =
   "max-w-[85%] rounded-2xl px-4 py-2.5 text-base leading-6 break-words whitespace-pre-wrap"
-const theirs = "rounded-bl-md bg-mist text-ink"
+const theirs = "rounded-bl-md bg-white/12 text-white"
 
 // Plain text only: bodies render as React text, never as markup or links.
 function Bubble({ m, botName }: { m: VisitorMessage; botName: string }) {
@@ -39,7 +39,7 @@ function Bubble({ m, botName }: { m: VisitorMessage; botName: string }) {
       <li
         data-message-id={m.id}
         data-sender={m.sender}
-        className="px-4 text-center text-sm whitespace-pre-wrap text-ink-muted"
+        className="px-4 text-center text-sm whitespace-pre-wrap text-white/60"
       >
         {m.body}
       </li>
@@ -59,7 +59,7 @@ function Bubble({ m, botName }: { m: VisitorMessage; botName: string }) {
       className={cn("flex flex-col gap-1", mine ? "items-end" : "items-start")}
     >
       {caption ? (
-        <span className="px-1 text-xs font-medium text-ink-muted">
+        <span className="px-1 text-xs font-medium text-white/60">
           {caption}
         </span>
       ) : null}
@@ -67,10 +67,10 @@ function Bubble({ m, botName }: { m: VisitorMessage; botName: string }) {
         className={cn(
           bubble,
           mine
-            ? "rounded-br-md bg-brand text-cream"
+            ? "rounded-br-md bg-cream text-brand-deep"
             : m.sender === "ai"
               ? theirs
-              : "rounded-bl-md border border-brand/20 bg-white text-ink"
+              : "rounded-bl-md bg-white/18 text-white"
         )}
       >
         {m.body}
@@ -83,7 +83,7 @@ function ConsentLine({ quiet }: { quiet: boolean }) {
   return (
     <p
       className={cn(
-        "text-ink-muted",
+        "text-white/65",
         quiet ? "mt-2 text-xs leading-4" : "mb-2 text-[13px] leading-5"
       )}
     >
@@ -93,7 +93,7 @@ function ConsentLine({ quiet }: { quiet: boolean }) {
         href="/privacy"
         target="_blank"
         rel="noopener"
-        className="underline underline-offset-2 hover:text-brand-deep"
+        className="underline underline-offset-2 hover:text-white"
       >
         Privacy policy
       </Link>
@@ -119,9 +119,9 @@ function EmailAsk({ chat, note }: { chat: ChatApi; note: string }) {
   return (
     <form
       onSubmit={submit}
-      className="mt-1 flex flex-col gap-2 rounded-2xl border border-brand/20 bg-white/70 p-3"
+      className="mt-1 flex flex-col gap-2 rounded-2xl bg-white/8 p-3"
     >
-      <label htmlFor="chat-email-ask" className="text-sm text-ink">
+      <label htmlFor="chat-email-ask" className="text-sm text-white/85">
         {note}
       </label>
       <input
@@ -137,7 +137,7 @@ function EmailAsk({ chat, note }: { chat: ChatApi; note: string }) {
       <button type="submit" disabled={pending} className={pill}>
         Save email
       </button>
-      {error ? <p className="text-sm text-[#a33a1f]">{error}</p> : null}
+      {error ? <p className="text-sm text-[#ffc2b3]">{error}</p> : null}
     </form>
   )
 }
@@ -362,11 +362,11 @@ export function ChatPanel({
       inert={!open}
       tabIndex={-1}
       onKeyDown={onKeyDown}
-      className="fixed inset-0 z-60 flex h-svh w-full flex-col overflow-hidden bg-cream text-ink shadow-2xl outline-none sm:inset-auto sm:right-4 sm:bottom-[calc(max(1rem,env(safe-area-inset-bottom))+4.75rem)] sm:h-[min(560px,calc(100svh-7rem))] sm:w-95 sm:rounded-3xl sm:border sm:border-brand/20 sm:right-6"
+      className="fixed inset-0 z-80 flex h-svh w-full flex-col overflow-hidden bg-[rgba(18,52,51,0.72)] text-white shadow-[0_24px_60px_-18px_rgb(0_0_0/0.6)] outline-none backdrop-blur-xl backdrop-saturate-150 sm:inset-auto sm:right-4 sm:bottom-[calc(max(1rem,env(safe-area-inset-bottom))+4.75rem)] sm:h-[min(560px,calc(100svh-7rem))] sm:w-95 sm:rounded-3xl sm:right-6"
     >
       <header
         data-chat-part
-        className="flex items-center gap-3 bg-brand px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-4 text-cream sm:pt-4"
+        className="flex items-center gap-3 bg-black/15 px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-4 text-white sm:pt-4"
       >
         <span
           ref={avatar}
@@ -394,7 +394,7 @@ export function ChatPanel({
           >
             Chat with us
           </h2>
-          <p ref={statusLine} className="truncate text-sm leading-5 text-cream/80">
+          <p ref={statusLine} className="truncate text-sm leading-5 text-white/75">
             {statusText}
           </p>
         </div>
@@ -402,7 +402,7 @@ export function ChatPanel({
           type="button"
           onClick={onClose}
           aria-label="Close chat"
-          className="grid size-11 shrink-0 place-items-center rounded-full text-cream transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-cream"
+          className="grid size-11 shrink-0 place-items-center rounded-full text-white transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-white/70"
         >
           <X className="size-5" aria-hidden />
         </button>
@@ -436,10 +436,10 @@ export function ChatPanel({
 
       <div
         data-chat-part
-        className="border-t border-brand/15 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+        className="bg-black/10 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
       >
         {notice || error ? (
-          <p role="alert" className="mb-2 text-sm text-[#a33a1f]">
+          <p role="alert" className="mb-2 text-sm text-[#ffc2b3]">
             {error ?? notice}
           </p>
         ) : null}
@@ -497,13 +497,13 @@ export function ChatPanel({
                 type="submit"
                 disabled={sending || !draft.trim()}
                 aria-label="Send message"
-                className="grid size-11 shrink-0 place-items-center rounded-full bg-brand text-cream transition-colors hover:bg-brand-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:opacity-50"
+                className="grid size-11 shrink-0 place-items-center rounded-full bg-cream text-brand-deep transition-colors hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70 disabled:opacity-50"
               >
                 <SendHorizontal className="size-5" aria-hidden />
               </button>
             </form>
             {queued && !exists ? (
-              <p role="status" className="mt-2 text-xs text-ink-muted">
+              <p role="status" className="mt-2 text-xs text-white/65">
                 One moment, connecting…
               </p>
             ) : null}

@@ -42,13 +42,13 @@ export function TypingIndicator({ name }: { name: string }) {
     <div ref={root} role="status" className="flex items-center gap-2">
       <span
         aria-hidden
-        className="flex items-center gap-1 rounded-2xl rounded-bl-md bg-mist px-4 py-3.5"
+        className="flex items-center gap-1 rounded-2xl rounded-bl-md bg-white/12 px-4 py-3.5"
       >
         {DOTS.map((i) => (
           <span
             key={i}
             data-dot
-            className="size-1.5 rounded-full bg-brand opacity-70"
+            className="size-1.5 rounded-full bg-white opacity-70"
           />
         ))}
       </span>

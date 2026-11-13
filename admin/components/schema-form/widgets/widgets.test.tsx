@@ -306,7 +306,7 @@ describe("media widget", () => {
     await waitFor(() =>
       expect(onSubmit).toHaveBeenCalledWith({ image: { mediaId: ID } })
     )
-    await user.click(await screen.findByRole("button", { name: "Remove" }))
+    await user.click(await screen.findByRole("button", { name: "Remove image" }))
     await user.click(screen.getByRole("button", { name: "Save" }))
     await waitFor(() =>
       expect(onSubmit).toHaveBeenLastCalledWith({ image: null })

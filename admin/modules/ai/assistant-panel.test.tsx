@@ -223,7 +223,7 @@ describe("AssistantPanel", () => {
       ...extra,
     })
     expect(screen.queryByRole("button", { name: "Regenerate" })).toBeNull()
-    expect(screen.queryByRole("button", { name: "Edit" })).toBeNull()
+    expect(screen.queryByRole("button", { name: "Edit message" })).toBeNull()
   })
 
   it("hides Regenerate and Edit without a saved conversation or while viewing as", () => {
@@ -235,13 +235,13 @@ describe("AssistantPanel", () => {
       me({ impersonatedBy: "o1" })
     )
     expect(screen.queryByRole("button", { name: "Regenerate" })).toBeNull()
-    expect(screen.queryByRole("button", { name: "Edit" })).toBeNull()
+    expect(screen.queryByRole("button", { name: "Edit message" })).toBeNull()
   })
 
   it("edits the last message of the person and resends it", async () => {
     const onEdit = vi.fn()
     setup({ messages: turn, activeConversationId: "c1", onEdit })
-    const edits = screen.getAllByRole("button", { name: "Edit" })
+    const edits = screen.getAllByRole("button", { name: "Edit message" })
     expect(edits).toHaveLength(1)
     await userEvent.click(edits[0]!)
     const box = screen.getByLabelText(

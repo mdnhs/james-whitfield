@@ -6,11 +6,15 @@ import {
   tableFeatures,
   useTable,
 } from "@tanstack/react-table"
-import { PlusIcon, TagsIcon, UserRoundIcon } from "lucide-react"
+import { PlusIcon, TagsIcon, Trash2Icon, UserRoundIcon } from "lucide-react"
 import { useMemo, useState } from "react"
 import { toast } from "sonner"
 import type * as z from "zod"
 
+import {
+  DeleteIconButton,
+  EditIconButton,
+} from "@/admin/components/actions/icon-actions"
 import { EmptyState } from "@/admin/components/dashboard/empty-state"
 import {
   PageHeader,
@@ -221,22 +225,14 @@ export function TaxonomyView({ name }: { name: Taxonomy }) {
                 header: () => <span className="sr-only">Actions</span>,
                 cell: (info) => (
                   <span className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      aria-label={`Edit ${info.row.original.name}`}
+                    <EditIconButton
+                      label={`Edit ${info.row.original.name}`}
                       onClick={() => setEditing(info.row.original)}
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      aria-label={`Delete ${info.row.original.name}`}
+                    />
+                    <DeleteIconButton
+                      label={`Delete ${info.row.original.name}`}
                       onClick={() => setDeleting(info.row.original)}
-                    >
-                      Delete
-                    </Button>
+                    />
                   </span>
                 ),
               }),
@@ -304,22 +300,14 @@ export function TaxonomyView({ name }: { name: Taxonomy }) {
               </p>
               {canManage ? (
                 <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    aria-label={`Edit ${row.original.name}`}
+                  <EditIconButton
+                    label={`Edit ${row.original.name}`}
                     onClick={() => setEditing(row.original)}
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    aria-label={`Delete ${row.original.name}`}
+                  />
+                  <DeleteIconButton
+                    label={`Delete ${row.original.name}`}
                     onClick={() => setDeleting(row.original)}
-                  >
-                    Delete
-                  </Button>
+                  />
                 </div>
               ) : null}
             </div>
@@ -476,6 +464,7 @@ function DeleteDialog({
             disabled={remove.isPending}
             onClick={() => item && remove.mutate(item.id)}
           >
+            <Trash2Icon aria-hidden data-icon="inline-start" />
             Delete
           </Button>
         </DialogFooter>

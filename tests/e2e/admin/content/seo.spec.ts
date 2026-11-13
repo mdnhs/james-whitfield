@@ -53,7 +53,7 @@ test("a redirect from a live page warns and does not take effect", async ({
   )
   // Clean up so other specs see /contact untouched.
   const row = page.getByRole("row", { name: /\/contact/ })
-  await row.getByRole("button", { name: "Delete" }).click()
+  await row.getByRole("button", { name: /^Delete the redirect from / }).click()
   await page.getByRole("button", { name: "Delete", exact: true }).last().click()
 })
 

@@ -361,7 +361,7 @@ test("Edit replaces the last message and the reply after it", async ({
   await sheet.getByLabel("Message the AI assistant").press("Enter")
   await expect(log).toContainText("Mock reply: Edit test first draft")
 
-  await sheet.getByRole("button", { name: "Edit" }).click()
+  await sheet.getByRole("button", { name: "Edit message" }).click()
   const edit = sheet.getByLabel("Edit your message")
   await expect(edit).toBeFocused()
   await edit.fill("Edit test second draft")

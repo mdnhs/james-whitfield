@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query"
 import { ImageIcon } from "lucide-react"
 import { useId, useState } from "react"
 
+import { DeleteIconButton } from "@/admin/components/actions/icon-actions"
 import { mediaListQuery } from "@/admin/modules/media/queries"
 import { Button } from "@/components/ui/button"
 
@@ -48,13 +49,10 @@ export function MediaWidget({
             {current ? "Change image" : "Choose image"}
           </Button>
           {field.nullable && current ? (
-            <Button
-              type="button"
-              variant="ghost"
+            <DeleteIconButton
+              label="Remove image"
               onClick={() => onChange(null)}
-            >
-              Remove
-            </Button>
+            />
           ) : null}
         </div>
       </div>

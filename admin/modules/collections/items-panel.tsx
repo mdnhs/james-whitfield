@@ -20,10 +20,14 @@ import {
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { GripVerticalIcon, PlusIcon } from "lucide-react"
+import { GripVerticalIcon, PlusIcon, Trash2Icon } from "lucide-react"
 import { useId, useState } from "react"
 import { toast } from "sonner"
 
+import {
+  DeleteIconButton,
+  EditIconButton,
+} from "@/admin/components/actions/icon-actions"
 import { StatusPill } from "@/admin/components/dashboard/status-pill"
 import { usePermission } from "@/admin/lib/actor-context"
 import { collectionsApi, parseResponse } from "@/admin/lib/api"
@@ -257,10 +261,8 @@ export function ItemsPanel({
                         )}
                       </span>
                       {canUpdate ? (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          aria-label={`Edit ${item.title}`}
+                        <EditIconButton
+                          label={`Edit ${item.title}`}
                           onClick={() =>
                             setEditing({
                               id: item.id,
@@ -268,20 +270,13 @@ export function ItemsPanel({
                               values: item.values,
                             })
                           }
-                        >
-                          Edit
-                        </Button>
+                        />
                       ) : null}
                       {canDelete ? (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="hover:bg-danger-soft hover:text-danger text-muted-foreground"
-                          aria-label={`Remove ${item.title}`}
+                        <DeleteIconButton
+                          label={`Remove ${item.title}`}
                           onClick={() => setRemoving(item)}
-                        >
-                          Remove
-                        </Button>
+                        />
                       ) : null}
                     </>
                   )}
@@ -318,6 +313,7 @@ export function ItemsPanel({
               disabled={deleting}
               onClick={() => removing && void remove(removing)}
             >
+              <Trash2Icon aria-hidden data-icon="inline-start" />
               Remove
             </Button>
           </DialogFooter>

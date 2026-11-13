@@ -12,7 +12,7 @@ import {
   tableFeatures,
   useTable,
 } from "@tanstack/react-table"
-import { DownloadIcon, MailIcon } from "lucide-react"
+import { DownloadIcon, MailIcon, Trash2Icon } from "lucide-react"
 import {
   parseAsInteger,
   parseAsString,
@@ -22,6 +22,7 @@ import {
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
 
+import { DeleteIconButton } from "@/admin/components/actions/icon-actions"
 import { EmptyState } from "@/admin/components/dashboard/empty-state"
 import {
   PageHeader,
@@ -141,13 +142,10 @@ export function NewsletterView() {
             id: "actions",
             header: () => <span className="sr-only">Actions</span>,
             cell: (info) => (
-              <Button
-                variant="ghost"
-                size="sm"
+              <DeleteIconButton
+                label={`Delete ${info.row.original.email}`}
                 onClick={() => setRemoving(info.row.original)}
-              >
-                Delete
-              </Button>
+              />
             ),
           }),
         ]
@@ -246,14 +244,11 @@ export function NewsletterView() {
                   </span>
                 </span>
                 {canDelete ? (
-                  <Button
-                    variant="ghost"
-                    size="sm"
+                  <DeleteIconButton
+                    label={`Delete ${row.original.email}`}
                     className="self-start"
                     onClick={() => setRemoving(row.original)}
-                  >
-                    Delete
-                  </Button>
+                  />
                 ) : null}
               </div>
             )}
@@ -313,6 +308,7 @@ function RemoveDialog({
             disabled={remove.isPending}
             onClick={() => subscriber && remove.mutate(subscriber.id)}
           >
+            <Trash2Icon aria-hidden data-icon="inline-start" />
             Remove
           </Button>
         </DialogFooter>

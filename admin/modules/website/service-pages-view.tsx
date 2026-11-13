@@ -37,7 +37,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { cn } from "@/lib/utils"
 
 type DetailPage = {
   id: string
@@ -98,14 +97,11 @@ function RowActions({ row }: { row: ServicePageRow }) {
     <div className="flex flex-nowrap items-center justify-end gap-1">
       <Link
         href={`/admin/pages/${page.id}`}
-        className={cn(
-          buttonVariants({ variant: "outline", size: "sm" }),
-          "mr-1 whitespace-nowrap"
-        )}
+        className={icon}
+        title={`Edit ${row.title}`}
         aria-label={`Edit ${row.title}`}
       >
-        <PencilIcon aria-hidden data-icon="inline-start" />
-        Edit
+        <PencilIcon aria-hidden />
       </Link>
       <a
         href={previewSrc(page.path)}

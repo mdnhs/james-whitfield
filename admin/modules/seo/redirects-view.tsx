@@ -12,11 +12,15 @@ import {
   tableFeatures,
   useTable,
 } from "@tanstack/react-table"
-import { ArrowRightLeftIcon, PlusIcon } from "lucide-react"
+import { ArrowRightLeftIcon, PlusIcon, Trash2Icon } from "lucide-react"
 import { parseAsInteger, parseAsString, useQueryStates } from "nuqs"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
 
+import {
+  DeleteIconButton,
+  EditIconButton,
+} from "@/admin/components/actions/icon-actions"
 import { EmptyState } from "@/admin/components/dashboard/empty-state"
 import {
   PageHeader,
@@ -118,10 +122,11 @@ export function RedirectsView() {
   })
 
   const actions = (row: RedirectRow) => (
-    <div className="flex flex-wrap gap-1">
-      <Button variant="ghost" size="sm" onClick={() => setEditing(row)}>
-        Edit
-      </Button>
+    <div className="flex flex-wrap items-center gap-1">
+      <EditIconButton
+        label={`Edit the redirect from ${row.sourcePath}`}
+        onClick={() => setEditing(row)}
+      />
       <Button
         variant="ghost"
         size="sm"
@@ -130,9 +135,10 @@ export function RedirectsView() {
       >
         {row.isActive ? "Turn off" : "Turn on"}
       </Button>
-      <Button variant="ghost" size="sm" onClick={() => setRemoving(row)}>
-        Delete
-      </Button>
+      <DeleteIconButton
+        label={`Delete the redirect from ${row.sourcePath}`}
+        onClick={() => setRemoving(row)}
+      />
     </div>
   )
 
@@ -333,6 +339,7 @@ function DeleteDialog({
             disabled={remove.isPending}
             onClick={() => redirect && remove.mutate(redirect.id)}
           >
+            <Trash2Icon aria-hidden data-icon="inline-start" />
             Delete
           </Button>
         </DialogFooter>

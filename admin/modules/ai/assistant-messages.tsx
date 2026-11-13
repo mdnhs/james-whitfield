@@ -1,15 +1,10 @@
 // admin/modules/ai/assistant-messages.tsx
 "use client"
 
-import {
-  CheckIcon,
-  CopyIcon,
-  PencilIcon,
-  RefreshCwIcon,
-  SearchIcon,
-} from "lucide-react"
+import { CheckIcon, CopyIcon, RefreshCwIcon, SearchIcon } from "lucide-react"
 import { useId, useLayoutEffect, useRef, useState } from "react"
 
+import { EditIconButton } from "@/admin/components/actions/icon-actions"
 import { Button } from "@/components/ui/button"
 import { textOf, toolLabel, type AiUIMessage } from "@/lib/ai/messages"
 import { MAX_INPUT_CHARS } from "@/lib/ai/schema"
@@ -49,15 +44,7 @@ export function UserMessage({
         {text}
       </div>
       {canEdit ? (
-        <Button
-          variant="ghost"
-          size="xs"
-          className="text-muted-foreground"
-          onClick={() => setEditing(true)}
-        >
-          <PencilIcon data-icon="inline-start" />
-          Edit
-        </Button>
+        <EditIconButton label="Edit message" onClick={() => setEditing(true)} />
       ) : null}
     </div>
   )

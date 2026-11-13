@@ -184,6 +184,9 @@ export function ChatPanel({
   const online = status?.online ?? false
   const siteKey = status?.turnstileSiteKey ?? null
   const offlineNote = status?.offlineNote || DEFAULT_OFFLINE
+  // Before the first message there is no conversation to ask, so the site's
+  // status says whether the assistant will answer.
+  const botAnswers = exists ? botActive : (status?.botActive ?? false)
 
   const { avatar, statusLine, onlineDot } = usePanelMoments({
     messageIds: messages.map((m) => m.id),
@@ -324,7 +327,7 @@ export function ChatPanel({
     ? "Reconnecting…"
     : agentName
       ? `Chatting with ${agentName}`
-      : botActive
+      : botAnswers
         ? `${botName} (AI) · Magda's team can join`
         : online
           ? "We're online"

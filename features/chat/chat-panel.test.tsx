@@ -241,12 +241,19 @@ describe("status line", () => {
     expect(screen.getByText("Aoife (AI) · Magda's team can join")).toBeTruthy()
   })
 
+  it("names the bot before the first message when the bot is on", async () => {
+    render(<Harness />)
+    await flush()
+    expect(screen.getByText("Aoife (AI) · Magda's team can join")).toBeTruthy()
+  })
+
   it("says we're online, or that we'll reply soon", async () => {
-    const first = render(<Harness status={{ ...STATUS, online: true }} />)
+    const noBot = { ...STATUS, botActive: false }
+    const first = render(<Harness status={{ ...noBot, online: true }} />)
     await flush()
     expect(screen.getByText("We're online")).toBeTruthy()
     first.unmount()
-    render(<Harness />)
+    render(<Harness status={noBot} />)
     await flush()
     expect(screen.getByText("We'll reply as soon as we can")).toBeTruthy()
   })

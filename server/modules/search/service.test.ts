@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { normaliseSearch, searchNavigation } from "./service"
+import { normaliseSearch, searchHelpHits, searchNavigation } from "./service"
 
 const hrefs = (roles: Parameters<typeof searchNavigation>[0], q: string) =>
   searchNavigation(roles, q).map((hit) => hit.href)
@@ -37,5 +37,18 @@ describe("searchNavigation", () => {
       label: "SEO › Redirects",
       href: "/admin/seo/redirects",
     })
+  })
+})
+
+describe("searchHelpHits", () => {
+  it("finds help articles the caller may read, only for a typed query", () => {
+    expect(searchHelpHits(["owner"], "focal point")).toContainEqual({
+      id: "help:media",
+      kind: "help",
+      label: "The Media library",
+      href: "/admin/help/media",
+    })
+    expect(searchHelpHits(["intake"], "focal point")).toEqual([])
+    expect(searchHelpHits(["owner"], "")).toEqual([])
   })
 })

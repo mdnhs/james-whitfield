@@ -1,7 +1,12 @@
 "use client"
 
 import { keepPreviousData, queryOptions, useQuery } from "@tanstack/react-query"
-import { ArrowUpRightIcon, NewspaperIcon, SparklesIcon } from "lucide-react"
+import {
+  ArrowUpRightIcon,
+  CircleHelpIcon,
+  NewspaperIcon,
+  SparklesIcon,
+} from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useTheme } from "next-themes"
 import { useDeferredValue, useMemo, useState } from "react"
@@ -44,6 +49,7 @@ export function CommandPalette({ siteUrl }: { siteUrl: string }) {
   })
   const pageHits = data?.items.filter((hit) => hit.kind === "page") ?? []
   const articleHits = data?.items.filter((hit) => hit.kind === "article") ?? []
+  const helpHits = data?.items.filter((hit) => hit.kind === "help") ?? []
 
   // A hidden route (<Activity>) must not come back with the palette open.
   useResetOnHide(() => {
@@ -121,6 +127,23 @@ export function CommandPalette({ siteUrl }: { siteUrl: string }) {
                   }}
                 >
                   <NewspaperIcon aria-hidden />
+                  {hit.label}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          ) : null}
+          {helpHits.length ? (
+            <CommandGroup heading="Help">
+              {helpHits.map((hit) => (
+                <CommandItem
+                  key={hit.id}
+                  value={hit.id}
+                  onSelect={() => {
+                    close()
+                    router.push(hit.href)
+                  }}
+                >
+                  <CircleHelpIcon aria-hidden />
                   {hit.label}
                 </CommandItem>
               ))}

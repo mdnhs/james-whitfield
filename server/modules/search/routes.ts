@@ -11,7 +11,7 @@ import type { AppEnv } from "@/server/api/types"
 import { takeToken } from "@/server/lib/rate-limit"
 import { searchArticleHits } from "@/server/modules/articles/service"
 
-import { searchNavigation } from "./service"
+import { searchHelpHits, searchNavigation } from "./service"
 
 const SearchQuery = z.object({
   q: z.string().trim().max(100).default(""),
@@ -35,7 +35,13 @@ export const searchRoutes = new Hono<AppEnv>().get(
     const articles = hasPermission(actor.roles, { article: ["read"] })
       ? await searchArticleHits(q)
       : []
-    return c.json({ items: [...searchNavigation(actor.roles, q), ...articles] })
+    return c.json({
+      items: [
+        ...searchNavigation(actor.roles, q),
+        ...articles,
+        ...searchHelpHits(actor.roles, q),
+      ],
+    })
   }
 )
 

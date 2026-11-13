@@ -5,7 +5,7 @@ import { Suspense } from "react"
 
 import { CollectionPageSkeleton } from "@/admin/components/dashboard/page-skeletons"
 import { TitledSection } from "@/admin/components/titled-section"
-import { HELP_LINK, linkForPath, NAV } from "@/lib/admin/nav"
+import { linkForPath, NAV } from "@/lib/admin/nav"
 import { requireActor, requirePermission } from "@/server/auth/session"
 
 export const metadata: Metadata = { title: "Coming soon" }
@@ -19,8 +19,8 @@ type Params = { section: string; rest?: string[] }
 // treats every [section] value as the same page and shows whichever
 // placeholder it fetched first (a click on Enquiries opened Media).
 export function generateStaticParams(): Params[] {
+  // Help has its own route (help/page.tsx).
   const hrefs = [
-    HELP_LINK.href,
     ...NAV.flatMap((item) => [
       item.href,
       ...(item.children ?? []).map((child) => child.href),

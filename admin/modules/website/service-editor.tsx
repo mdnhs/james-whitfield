@@ -2,7 +2,7 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useCallback, useEffect, useRef, useState } from "react"
-import { ArrowLeftIcon } from "lucide-react"
+import { ArrowLeftIcon, HeartHandshakeIcon } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 
@@ -196,7 +196,11 @@ export function ServiceEditor({
   if (!pageId)
     return (
       <div className="flex flex-col gap-6">
-        <PageHeader breadcrumbs={<BackLink />} title="Edit service" />
+        <PageHeader
+          breadcrumbs={<BackLink />}
+          icon={<HeartHandshakeIcon />}
+          title="Edit service"
+        />
         {reason ? (
           <p role="alert" className="text-sm">
             Its details page couldn&apos;t be made yet. {reason}
@@ -223,7 +227,11 @@ export function NewServiceEditor() {
   const queryClient = useQueryClient()
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader breadcrumbs={<BackLink />} title="Add service" />
+      <PageHeader
+        breadcrumbs={<BackLink />}
+        icon={<HeartHandshakeIcon />}
+        title="Add service"
+      />
       <Tabs value="card" className="gap-5">
         <TabsList className="h-11 w-fit max-w-full rounded-xl bg-card p-1">
           <TabsTrigger value="card" className="rounded-lg px-5">

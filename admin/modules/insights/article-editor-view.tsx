@@ -6,6 +6,7 @@ import {
   CalendarClockIcon,
   HistoryIcon,
   LockIcon,
+  NewspaperIcon,
   RotateCwIcon,
   SendIcon,
   TriangleAlertIcon,
@@ -279,6 +280,7 @@ function Editor({
             Insights
           </Link>
         }
+        icon={<NewspaperIcon />}
         title={draft.title.trim() || "Untitled article"}
         description={
           <span className="flex flex-wrap items-center gap-2">

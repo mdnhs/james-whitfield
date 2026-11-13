@@ -331,7 +331,8 @@ export function ArticlesView() {
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Insights"
-        description="Articles for the Insights section. Changes stay in a draft until you publish."
+        icon={<NewspaperIcon />}
+        description="Drafts stay private until published."
         actions={newButton}
       />
       <div className="grid grid-cols-2 items-end gap-3 sm:flex sm:flex-wrap">

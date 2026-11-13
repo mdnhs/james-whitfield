@@ -2,7 +2,12 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { formatDistanceToNow } from "date-fns"
-import { HistoryIcon } from "lucide-react"
+import {
+  HistoryIcon,
+  MenuIcon,
+  PanelBottomIcon,
+  type LucideIcon,
+} from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
 
@@ -35,32 +40,47 @@ import { GLOBALS } from "@/lib/content/globals"
 import { GLOBAL_FIELD_UI } from "./global-ui"
 import { globalQuery, globalRevisionsQuery } from "./queries"
 
+// Tab icons for the keys edited side by side (Header & footer).
+const TAB_ICONS: Partial<Record<EditableGlobalKey, LucideIcon>> = {
+  navigation: MenuIcon,
+  footer: PanelBottomIcon,
+}
+
 export function GlobalEditor({
   title,
+  icon,
+  description = "Changes go live as soon as you save.",
   keys,
   onValuesChange,
 }: {
   title: string
+  icon?: React.ReactNode
+  description?: string
   keys: readonly EditableGlobalKey[]
   // Single-key editors only: live values for previews.
   onValuesChange?: (values: unknown) => void
 }) {
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader
-        title={title}
-        description="Changes go live as soon as you save."
-      />
+      <PageHeader title={title} icon={icon} description={description} />
       {keys.length === 1 ? (
         <GlobalForm settingKey={keys[0]!} onValuesChange={onValuesChange} />
       ) : (
         <Tabs defaultValue={keys[0]}>
           <TabsList className="h-auto flex-wrap">
-            {keys.map((key) => (
-              <TabsTrigger key={key} value={key} className="px-3 py-1.5">
-                {GLOBAL_LABELS[key]}
-              </TabsTrigger>
-            ))}
+            {keys.map((key) => {
+              const Icon = TAB_ICONS[key]
+              return (
+                <TabsTrigger
+                  key={key}
+                  value={key}
+                  className="gap-2 px-3 py-1.5"
+                >
+                  {Icon ? <Icon aria-hidden /> : null}
+                  {GLOBAL_LABELS[key]}
+                </TabsTrigger>
+              )
+            })}
           </TabsList>
           {keys.map((key) => (
             <TabsContent key={key} value={key} className="pt-2">

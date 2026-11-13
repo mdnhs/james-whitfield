@@ -12,6 +12,8 @@ import {
 } from "@/lib/admin/nav"
 import { cn } from "@/lib/utils"
 
+import { SUBNAV_ICONS } from "./nav-icons"
+
 // A section's sub-pages (Website, SEO, Marketing, Site
 // settings) as vertical tabs inside the content panel, so the sidebar lists
 // sections only. Below 1024px the tabs become a scrolling row above the page.
@@ -37,6 +39,7 @@ export function SectionTabs({ children }: { children: React.ReactNode }) {
         <ul className="flex gap-1 px-1 lg:flex-col lg:px-0">
           {section.children.map((tab) => {
             const active = tab.id === current?.id
+            const Icon = SUBNAV_ICONS[tab.id]
             return (
               <li key={tab.id} className="relative shrink-0">
                 {active ? (
@@ -49,10 +52,19 @@ export function SectionTabs({ children }: { children: React.ReactNode }) {
                   href={tab.href}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "flex h-9 items-center rounded-md px-3 text-sm whitespace-nowrap text-muted-foreground outline-none hover:bg-sidebar-accent/60 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50",
+                    "flex h-9 items-center gap-2.5 rounded-md px-3 text-sm whitespace-nowrap text-muted-foreground outline-none hover:bg-sidebar-accent/60 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50",
                     active && "bg-sidebar-accent font-semibold text-foreground"
                   )}
                 >
+                  {Icon ? (
+                    <Icon
+                      aria-hidden
+                      className={cn(
+                        "size-4 shrink-0",
+                        active && "text-primary"
+                      )}
+                    />
+                  ) : null}
                   {tab.label}
                 </Link>
               </li>

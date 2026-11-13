@@ -6,7 +6,13 @@ import {
   tableFeatures,
   useTable,
 } from "@tanstack/react-table"
-import { PlusIcon, TagsIcon, Trash2Icon, UserRoundIcon } from "lucide-react"
+import {
+  NewspaperIcon,
+  PlusIcon,
+  TagsIcon,
+  Trash2Icon,
+  UserRoundIcon,
+} from "lucide-react"
 import { useMemo, useState } from "react"
 import { toast } from "sonner"
 import type * as z from "zod"
@@ -252,9 +258,10 @@ export function TaxonomyView({ name }: { name: Taxonomy }) {
     <div className="flex flex-col gap-6">
       <PageHeader
         title={noun.title}
+        icon={<NewspaperIcon />}
         description={
           name === "categories"
-            ? "Group articles. Each category can point readers at a service."
+            ? "Group articles; each can point to a service."
             : "People credited on articles."
         }
         actions={

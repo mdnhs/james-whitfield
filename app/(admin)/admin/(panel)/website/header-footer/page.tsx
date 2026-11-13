@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { PanelsTopLeftIcon } from "lucide-react"
 import { Suspense } from "react"
 
 import { CardSkeleton } from "@/admin/components/dashboard/skeletons"
@@ -22,6 +23,8 @@ async function Gate() {
   return (
     <GlobalEditor
       title="Header & footer"
+      icon={<PanelsTopLeftIcon />}
+      description="Live as soon as you save."
       keys={[...SETTINGS_PAGES.navigation, ...SETTINGS_PAGES.footer]}
     />
   )

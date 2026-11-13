@@ -23,12 +23,15 @@ export const LINK_FORM = cn(buttonVariants(), FORM_ACTION)
 
 export function PageHeader({
   title,
+  icon,
   description,
   actions,
   breadcrumbs,
   titleTestId,
 }: {
   title: React.ReactNode
+  // An icon before the title (the screen's sub-nav icon), decorative.
+  icon?: React.ReactNode
   description?: React.ReactNode
   actions?: React.ReactNode
   breadcrumbs?: React.ReactNode
@@ -38,9 +41,26 @@ export function PageHeader({
     <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
       <div className="flex min-w-0 flex-col gap-2">
         {breadcrumbs}
-        <h1 className="text-title text-balance" data-testid={titleTestId}>
-          {title}
-        </h1>
+        {icon ? (
+          <div className="flex min-w-0 items-center gap-3">
+            <span
+              aria-hidden
+              className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground [&_svg]:size-5"
+            >
+              {icon}
+            </span>
+            <h1
+              className="text-title min-w-0 text-balance"
+              data-testid={titleTestId}
+            >
+              {title}
+            </h1>
+          </div>
+        ) : (
+          <h1 className="text-title text-balance" data-testid={titleTestId}>
+            {title}
+          </h1>
+        )}
         {description ? (
           <p className="text-[15px] text-muted-foreground">{description}</p>
         ) : null}

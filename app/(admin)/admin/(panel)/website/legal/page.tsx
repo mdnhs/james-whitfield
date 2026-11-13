@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { ScaleIcon } from "lucide-react"
 import { Suspense } from "react"
 
 import { CardSkeleton } from "@/admin/components/dashboard/skeletons"
@@ -26,7 +27,8 @@ async function Gate() {
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Legal pages"
-        description="Privacy, terms and the other pages linked from the footer."
+        icon={<ScaleIcon />}
+        description="Linked from the footer."
       />
       <LegalPagesList
         pages={legal.map(({ id, title, path, status, version }) => ({

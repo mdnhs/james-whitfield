@@ -127,8 +127,13 @@ describe("ItemsPanel", () => {
   it("lists items and names the other pages that show them", async () => {
     setup(false)
     expect(await screen.findByText("Is it free?")).toBeTruthy()
-    expect(screen.getByText("Also shown on: Contact")).toBeTruthy()
-    expect(screen.queryByText(/Also shown on: Home/)).toBeNull()
+    // A link badge with the count; the pages are its name and tooltip.
+    expect(
+      screen.getByRole("img", { name: "Also shown on: Contact" })
+    ).toBeTruthy()
+    expect(
+      screen.queryByRole("img", { name: /Also shown on: Home/ })
+    ).toBeNull()
   })
 
   it("has no Add, Edit or Remove when read-only", async () => {

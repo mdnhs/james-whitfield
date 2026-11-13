@@ -20,7 +20,7 @@ import {
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { GripVerticalIcon, PlusIcon, Trash2Icon } from "lucide-react"
+import { GripVerticalIcon, LinkIcon, PlusIcon, Trash2Icon } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useEffect, useId, useRef, useState } from "react"
 import { toast } from "sonner"
@@ -29,6 +29,7 @@ import {
   DeleteIconButton,
   EditIconButton,
 } from "@/admin/components/actions/icon-actions"
+import { IconTip, InfoHint } from "@/admin/components/actions/icon-tip"
 import { usePermission } from "@/admin/lib/actor-context"
 import { collectionsApi, parseResponse, servicePagesApi } from "@/admin/lib/api"
 import { queryKeys } from "@/admin/lib/query-keys"
@@ -73,6 +74,7 @@ export function ItemsPanel({
 }) {
   const queryClient = useQueryClient()
   const list = useQuery(collectionListQuery(name))
+  const sharedId = useId()
   const canCreate = usePermission({ collection: ["create"] }) && !readOnly
   const canUpdate = usePermission({ collection: ["update"] }) && !readOnly
   const canDelete = usePermission({ collection: ["delete"] }) && !readOnly
@@ -200,13 +202,13 @@ export function ItemsPanel({
       className="flex flex-col gap-3 border-t pt-6"
     >
       <div className="flex items-center justify-between gap-2">
-        <div>
+        <div className="flex items-center gap-1.5">
           <h3 className="text-[15px] font-semibold">
             {COLLECTION_LABELS[name]}
           </h3>
-          <p className="text-sm text-muted-foreground">
+          <InfoHint id={`${sharedId}-shared`}>
             Shared: a saved change is live everywhere these are shown.
-          </p>
+          </InfoHint>
         </div>
         {canCreate ? (
           <Button
@@ -256,16 +258,12 @@ export function ItemsPanel({
                   {(handle) => (
                     <>
                       {handle}
-                      <div className="min-w-0 flex-1">
-                        <p className="font-semibold break-words">
-                          {item.title}
-                        </p>
-                        {others.length > 0 ? (
-                          <p className="text-xs text-muted-foreground">
-                            {`Also shown on: ${others.join(", ")}`}
-                          </p>
-                        ) : null}
-                      </div>
+                      <p className="min-w-0 flex-1 font-semibold break-words">
+                        {item.title}
+                      </p>
+                      {others.length > 0 ? (
+                        <AlsoShownOn pages={others} />
+                      ) : null}
                       {/* The switch alone says whether it shows; no label. */}
                       <Switch
                         aria-label={`Show ${item.title}`}
@@ -454,5 +452,24 @@ function SortableRow({
     >
       {children(handle)}
     </li>
+  )
+}
+
+// The other pages that show a row: a link icon with their count, the
+// names in a tooltip (and as the badge's accessible name).
+function AlsoShownOn({ pages }: { pages: readonly string[] }) {
+  const label = `Also shown on: ${pages.join(", ")}`
+  return (
+    <IconTip label={label}>
+      <span
+        role="img"
+        tabIndex={0}
+        aria-label={label}
+        className="inline-flex h-6 shrink-0 items-center gap-1 rounded-full bg-muted px-2 text-xs font-medium text-muted-foreground tabular-nums outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+      >
+        <LinkIcon aria-hidden className="size-3.5" />
+        {pages.length}
+      </span>
+    </IconTip>
   )
 }

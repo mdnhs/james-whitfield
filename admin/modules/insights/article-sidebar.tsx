@@ -1,7 +1,7 @@
 "use client"
 
 import { useQuery } from "@tanstack/react-query"
-import { useId } from "react"
+import { useId, useState } from "react"
 
 import { MediaWidget } from "@/admin/components/schema-form/widgets/media-widget"
 import type { FormField } from "@/admin/components/schema-form/to-fields"
@@ -63,6 +63,10 @@ export function ArticleSidebar({
   canPublish: boolean
 }) {
   const id = useId()
+  // The excerpt counter shows while typing or once near the limit (90%).
+  const [excerptFocused, setExcerptFocused] = useState(false)
+  const showExcerptCount =
+    excerptFocused || draft.excerpt.length >= Math.ceil(EXCERPT_MAX * 0.9)
   const categories = useQuery(categoriesQuery())
   const authors = useQuery(authorsQuery())
   const categoryItems = (categories.data?.items ?? []).map((c) => ({
@@ -103,17 +107,21 @@ export function ArticleSidebar({
           value={draft.excerpt}
           rows={4}
           aria-invalid={excerptError ? true : undefined}
+          onFocus={() => setExcerptFocused(true)}
+          onBlur={() => setExcerptFocused(false)}
           onChange={(event) => patch({ excerpt: event.target.value })}
         />
-        <p
-          className={
-            draft.excerpt.length > EXCERPT_MAX
-              ? "text-xs text-destructive tabular-nums"
-              : "text-xs text-muted-foreground tabular-nums"
-          }
-        >
-          {draft.excerpt.length}/{EXCERPT_MAX}
-        </p>
+        {showExcerptCount ? (
+          <p
+            className={
+              draft.excerpt.length > EXCERPT_MAX
+                ? "text-xs text-destructive tabular-nums"
+                : "text-xs text-muted-foreground tabular-nums"
+            }
+          >
+            {draft.excerpt.length}/{EXCERPT_MAX}
+          </p>
+        ) : null}
         {excerptError ? <FieldError>{excerptError}</FieldError> : null}
       </Field>
       <MediaWidget

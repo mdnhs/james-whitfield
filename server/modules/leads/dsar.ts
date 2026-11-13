@@ -12,6 +12,8 @@ import {
   exportConversationsFor,
 } from "@/server/modules/ai/conversations"
 
+import * as chatRepo from "@/server/modules/chat/repo"
+
 import { getLeadsDetail } from "./service"
 
 const byEmail = (email: string) => sql`lower(${leads.email}) = lower(${email})`
@@ -34,11 +36,12 @@ export async function exportPerson(actor: Actor, email: string) {
     (actor.roles.includes("owner") ||
       actor.email.toLowerCase() === email.toLowerCase())
   const aiConversations = withAi ? await exportConversationsFor(email) : []
+  const liveChats = await chatRepo.exportForEmail(email)
   await audit(actor, {
     action: "privacy.export",
     entityType: "person",
     entityId: hashEmail(email),
-    summary: `Privacy request: ${found.length} enquiries, ${newsletter ? 1 : 0} subscriptions, ${aiConversations.length} AI conversations${withAi ? "" : " (not included)"}`,
+    summary: `Privacy request: ${found.length} enquiries, ${newsletter ? 1 : 0} subscriptions, ${aiConversations.length} AI conversations, ${liveChats.length} live chats${withAi ? "" : " (not included)"}`,
   })
   return {
     email,
@@ -46,6 +49,7 @@ export async function exportPerson(actor: Actor, email: string) {
     leads: found,
     newsletter: newsletter ?? null,
     aiConversations,
+    liveChats,
     ...(withAi
       ? {}
       : {
@@ -68,16 +72,17 @@ export async function erasePerson(actor: Actor, email: string) {
       .returning({ id: newsletterSubscribers.id })
     // Opted-in enquiry quotes in saved assistant replies (spec §6).
     const aiMessages = await eraseMessagesMentioning(tx, email)
+    const chats = await chatRepo.eraseForEmail(email, tx)
     await audit(
       actor,
       {
         action: "privacy.erase",
         entityType: "person",
         entityId: hashEmail(email),
-        summary: `Privacy request: ${gone.length} enquiries, ${subs.length} subscriptions, ${aiMessages} AI messages`,
+        summary: `Privacy request: ${gone.length} enquiries, ${subs.length} subscriptions, ${aiMessages} AI messages, ${chats} live chats`,
       },
       tx
     )
-    return { leads: gone.length, newsletter: subs.length, aiMessages }
+    return { leads: gone.length, newsletter: subs.length, aiMessages, chats }
   })
 }

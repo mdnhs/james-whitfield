@@ -39,6 +39,7 @@ const VALUES: Record<GlobalKey, unknown> = {
   theme: {},
   notifications: {},
   privacy: {},
+  chat: {},
 }
 
 export async function seedGlobals(db: Db) {

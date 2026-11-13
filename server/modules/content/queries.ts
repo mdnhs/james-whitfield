@@ -48,6 +48,22 @@ export async function getSetting<K extends PublicGlobalKey>(
   return parseGlobal(key, row?.value)
 }
 
+// The chat global is operator-only, so the site frame reads this reduced copy
+// (never the document). Empty saved strings fall back to the defaults.
+export async function getChatLauncher() {
+  "use cache"
+  cacheTag(tags.setting("chat"))
+  const row = await repo.findSetting("chat")
+  lifetime(row !== null)
+  const value = parseGlobal("chat", row?.value)
+  const d = parseGlobal("chat", {})
+  return {
+    enabled: value.enabled,
+    botName: value.bot.name || d.bot.name,
+    welcome: value.welcome || d.welcome,
+  }
+}
+
 // Ruling R10: `draft` comes from isPreviewing() only. In draft mode Next
 // re-runs this scope per request and stores nothing (use-cache.md).
 export async function getThemeConfig(draft = false) {

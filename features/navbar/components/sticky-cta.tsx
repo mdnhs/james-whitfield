@@ -3,7 +3,7 @@
 import { Phone } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 
 import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -27,6 +27,27 @@ export function StickyCta({
 }) {
   const pathname = usePathname()
   const [covered, setCovered] = useState(true)
+  const bar = useRef<HTMLDivElement>(null)
+
+  // Publish the bar's visible height so fixed widgets (the chat launcher) can
+  // ride above it: 0px while it is covered, hidden (>= sm) or unmounted.
+  useEffect(() => {
+    const root = document.documentElement
+    const el = bar.current
+    if (covered || !el) {
+      root.style.setProperty("--sticky-cta-h", "0px")
+      return
+    }
+    const write = () =>
+      root.style.setProperty("--sticky-cta-h", `${el.offsetHeight}px`)
+    write()
+    const observer = new ResizeObserver(write)
+    observer.observe(el)
+    return () => {
+      observer.disconnect()
+      root.style.setProperty("--sticky-cta-h", "0px")
+    }
+  }, [covered])
 
   useEffect(() => {
     const targets = Array.from(document.querySelectorAll(PAGE_CTAS))
@@ -63,6 +84,7 @@ export function StickyCta({
 
   return (
     <div
+      ref={bar}
       data-site-chrome
       inert={covered}
       aria-hidden={covered || undefined}

@@ -50,6 +50,12 @@ export const queryKeys = {
     detail: (key: string) => ["globals", key] as const,
     revisions: (key: string) => ["globals", key, "revisions"] as const,
   },
+  chat: {
+    all: ["chat"] as const,
+    list: (status: string) => ["chat", "list", status] as const,
+    detail: (id: string) => ["chat", "detail", id] as const,
+    unread: ["chat", "unread"] as const,
+  },
   leads: {
     all: ["leads"] as const,
     list: (params: Record<string, unknown>) =>

@@ -29,8 +29,8 @@ const childIds = (role: RoleName, section: string) =>
 const GLOBALS_PAGES = ["settings-contact", "settings-forms"]
 
 describe("visibleNav (docs/brief.md §7.2, §9.1)", () => {
-  it("shows intake only the dashboard and enquiries", () => {
-    expect(ids("intake")).toEqual(["dashboard", "leads"])
+  it("shows intake only the dashboard, enquiries and live chat", () => {
+    expect(ids("intake")).toEqual(["dashboard", "leads", "chat"])
   })
 
   it("shows a viewer read-only content sections and only the globals", () => {

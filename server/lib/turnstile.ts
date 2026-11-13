@@ -24,7 +24,8 @@ type Siteverify = {
 // single-use (Cloudflare enforces it).
 export async function verifyTurnstile(
   token: string | undefined,
-  ip: string | null
+  ip: string | null,
+  action = "lead"
 ): Promise<TurnstileResult> {
   const env = getEnv()
   if (!token || !env.TURNSTILE_SECRET_KEY) return "fail"
@@ -51,7 +52,7 @@ export async function verifyTurnstile(
     return "unavailable"
   }
   return data.success === true &&
-    data.action === "lead" &&
+    data.action === action &&
     data.hostname === new URL(env.SITE_URL).hostname
     ? "pass"
     : "fail"

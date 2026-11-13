@@ -66,6 +66,8 @@ const MATRIX: [Permissions, RoleName[]][] = [
   [{ appearance: ["read", "update", "publish"] }, ["owner", "admin"]],
   [{ settings: ["read", "update"] }, ["owner", "admin"]],
   [{ audit: ["read"] }, ["owner", "admin"]],
+  [{ chat: ["read", "reply"] }, ["owner", "admin", "intake"]],
+  [{ chat: ["manage"] }, ["owner", "admin"]],
   [{ ai: ["use"] }, ALL],
   [{ ai: ["manage"] }, ["owner", "admin"]],
   [{ user: ["create", "list", "set-role", "ban"] }, ["owner", "admin"]],
@@ -181,6 +183,7 @@ const ADMIN: Record<string, string[]> = {
   appearance: ["read", "update", "publish"],
   settings: ["read", "update"],
   audit: ["read"],
+  chat: ["read", "reply", "manage"],
   user: ADMIN_USER,
   session: SESSION,
 }
@@ -213,7 +216,12 @@ const EXACT: Record<RoleName, Record<string, string[]>> = {
     tracking: ["read", "update"],
     ai: ["use"],
   },
-  intake: { dashboard: ["view"], lead: ["read", "update"], ai: ["use"] },
+  intake: {
+    dashboard: ["view"],
+    lead: ["read", "update"],
+    chat: ["read", "reply"],
+    ai: ["use"],
+  },
   viewer: {
     dashboard: ["view"],
     page: read,

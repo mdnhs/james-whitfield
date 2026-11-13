@@ -25,7 +25,7 @@ export type NavItem = NavLink & {
   group: NavGroupId
   children?: readonly NavLink[]
   // Phase 6 fills this with the new-enquiry count.
-  badge?: "new-leads"
+  badge?: "new-leads" | "chat-unread"
   // Drawn as an icon button in the sidebar's footer dock, not in the menu.
   dock?: true
 }
@@ -153,6 +153,15 @@ export const NAV: readonly NavItem[] = [
     badge: "new-leads",
   },
   {
+    id: "chat",
+    group: "menu",
+    label: "Live chat",
+    href: "/admin/chat",
+    permission: { chat: ["read"] },
+    keywords: ["chat", "support", "messages"],
+    badge: "chat-unread",
+  },
+  {
     id: "newsletter",
     group: "menu",
     label: "Newsletter",
@@ -238,6 +247,7 @@ export const NAV: readonly NavItem[] = [
       setting("forms", "Forms & microcopy", "globals"),
       setting("notifications", "Notifications", "settings"),
       setting("privacy", "Privacy", "settings"),
+      setting("chat", "Live chat", "settings"),
       {
         id: "settings-appearance",
         label: "Appearance",

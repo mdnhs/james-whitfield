@@ -3,6 +3,7 @@ import { io } from "next/cache"
 import { SmoothScroll } from "@/components/smooth-scroll"
 import { PreviewBar } from "@/components/preview-bar"
 import { TrackingBootstrap } from "@/components/tracking/tracking-bootstrap"
+import { ChatLauncher } from "@/features/chat/chat-launcher"
 import { ConsentBanner } from "@/features/consent/components/consent-banner"
 import { CustomScripts } from "@/features/tracking/components/custom-scripts"
 import { ClickTracker } from "@/features/tracking/components/click-tracker"
@@ -16,6 +17,7 @@ import { trackingFrame } from "@/lib/tracking/frame"
 import { getEnv } from "@/server/env"
 import { isPreviewing } from "@/server/modules/content/preview"
 import {
+  getChatLauncher,
   getMedia,
   getSetting,
   getThemeConfig,
@@ -39,6 +41,7 @@ export async function SiteFrame({ children }: { children: React.ReactNode }) {
     consent,
     scripts,
     tracking,
+    chat,
   ] = await Promise.all([
     getSetting("site"),
     getSetting("navigation"),
@@ -49,6 +52,7 @@ export async function SiteFrame({ children }: { children: React.ReactNode }) {
     getSetting("consent"),
     getSetting("scripts"),
     getPublicTracking(),
+    getChatLauncher(),
   ])
   const logo = site.logo
     ? ((await getMedia([site.logo.mediaId])).get(site.logo.mediaId) ?? null)
@@ -108,6 +112,9 @@ export async function SiteFrame({ children }: { children: React.ReactNode }) {
             categories: consent.categories,
           }}
         />
+      ) : null}
+      {chat.enabled && !preview ? (
+        <ChatLauncher botName={chat.botName} welcome={chat.welcome} />
       ) : null}
       {preview ? <PreviewBar /> : null}
     </>

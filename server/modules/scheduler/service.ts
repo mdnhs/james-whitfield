@@ -8,6 +8,10 @@ import { audit } from "@/server/lib/audit"
 import { invalidate, REDIRECT_TAGS } from "@/server/lib/cache"
 import { publishLocked } from "@/server/modules/articles/publish"
 import { articleTags } from "@/server/modules/articles/service"
+import { defer } from "@/server/lib/defer"
+import { isActive, maybeReply } from "@/server/modules/chat/bot"
+import { notifyNoReply } from "@/server/modules/chat/notify"
+import { chatSweep } from "@/server/modules/chat/sweep"
 import { purgeExpired } from "@/server/modules/leads/retention"
 
 // pg advisory lock key for the tick ("mkti").
@@ -20,6 +24,7 @@ const NO_PURGE = {
   rateLimits: 0,
   aiConversations: 0,
   aiMessages: 0,
+  chats: 0,
 }
 
 // docs/brief.md §5.5(f). One transaction holds the lock; due rows are locked
@@ -27,6 +32,8 @@ const NO_PURGE = {
 // broken draft cannot block the rest. The retention purge runs last, in its own savepoint.
 export async function runTick(now = new Date()) {
   const toExpire: string[] = []
+  const alertIds: string[] = []
+  const resumeIds: string[] = []
   const result = await getDb().transaction(async (tx) => {
     const { rows } = await tx.execute<{ locked: boolean }>(
       sql`select pg_try_advisory_xact_lock(${TICK_LOCK_KEY}) as locked`
@@ -37,6 +44,7 @@ export async function runTick(now = new Date()) {
         published: [] as string[],
         failed: [] as string[],
         purged: { ...NO_PURGE },
+        chat: { alerted: 0, resumed: 0, autoClosed: 0 },
       }
     }
     const due = await tx
@@ -81,6 +89,21 @@ export async function runTick(now = new Date()) {
         failed.push(row.id)
       }
     }
+    // Chat alerts, bot recovery and auto-close: own savepoint, emails and
+    // bot replies run after commit.
+    let chat = { alerted: 0, resumed: 0, autoClosed: 0 }
+    try {
+      const swept = await tx.transaction((sp) => chatSweep(sp, now))
+      alertIds.push(...swept.alerted)
+      resumeIds.push(...swept.resumed)
+      chat = {
+        alerted: swept.alerted.length,
+        resumed: swept.resumed.length,
+        autoClosed: swept.autoClosed,
+      }
+    } catch (error) {
+      console.error("[scheduler] chat sweep failed", error)
+    }
     // A savepoint, so a purge error cannot undo published articles.
     let purged = { ...NO_PURGE }
     try {
@@ -88,8 +111,26 @@ export async function runTick(now = new Date()) {
     } catch (error) {
       console.error("[scheduler] retention purge failed", error)
     }
-    return { skipped: false, published, failed, purged }
+    return { skipped: false, published, failed, purged, chat }
   })
   if (toExpire.length) invalidate(toExpire)
+  for (const id of alertIds) {
+    notifyNoReply(id).catch((error) =>
+      console.error("[scheduler] no-reply alert failed", error)
+    )
+  }
+  // With the assistant off there is nothing to resume: skip the deferred work
+  // instead of re-deferring (and re-skipping) every tick.
+  const resume = resumeIds.length ? await isActive().catch(() => false) : false
+  for (const id of resume ? resumeIds : []) {
+    try {
+      defer(() => maybeReply(id), "chat recovery")
+    } catch {
+      // Outside a request scope (no `after`): run it directly.
+      maybeReply(id).catch((error) =>
+        console.error("[scheduler] chat recovery failed", error)
+      )
+    }
+  }
   return result
 }

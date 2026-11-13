@@ -8,8 +8,11 @@ import {
   aiConversations,
   aiMessages,
   auditLogs,
+  chatConversations,
+  chatMessages,
   users,
 } from "@/server/db/schema"
+import * as chatRepo from "@/server/modules/chat/repo"
 import {
   appendMessage,
   createConversation,
@@ -252,5 +255,54 @@ describe("conversation reads, DSAR scope and erase", () => {
     expect(
       JSON.stringify(await getDb().select().from(auditLogs))
     ).not.toContain("ann@example.com")
+  })
+  describe("live chats", () => {
+    let t = 0
+    const chat = (email: string | null, body: string) => {
+      t += 1
+      return chatRepo.createConversation({
+        tokenHash: `dsar-${t}`,
+        name: "Visitor",
+        email,
+        sourcePath: null,
+        firstMessage: body,
+      })
+    }
+
+    it("exports chats by exact email, not lookalikes or message text", async () => {
+      const bob = await chat("Bob@X.com", "hi from bob")
+      await chat("bobby@x.com", "hi from bobby")
+      await chat(null, "my friend bob@x.com says hi")
+      const admin = await cookieFor("admin")
+      const res = await (
+        await adminRequest("/leads/dsar?email=bob%40x.com", admin)
+      ).json()
+      expect(res.liveChats).toHaveLength(1)
+      expect(
+        res.liveChats[0].messages.map((m: { body: string }) => m.body)
+      ).toEqual(["hi from bob"])
+      expect(JSON.stringify(res.liveChats)).not.toContain("bobby")
+      expect(res.liveChats[0].id).toBe(bob.id)
+    })
+
+    it("erases only the matching chats and their messages", async () => {
+      const bob = await chat("bob@x.com", "hi from bob")
+      const bobby = await chat("bobby@x.com", "hi from bobby")
+      const anon = await chat(null, "contact bob@x.com")
+      const admin = await cookieFor("admin")
+      const res = await (
+        await adminRequest("/leads/dsar?email=bob%40x.com", admin, {
+          method: "DELETE",
+        })
+      ).json()
+      expect(res.chats).toBe(1)
+      const left = await getDb().select().from(chatConversations)
+      expect(left.map((c) => c.id).sort()).toEqual([bobby.id, anon.id].sort())
+      const msgs = await getDb().select().from(chatMessages)
+      expect(msgs.some((m) => m.conversationId === bob.id)).toBe(false)
+      expect(
+        JSON.stringify(await getDb().select().from(auditLogs))
+      ).not.toContain("bob@x.com")
+    })
   })
 })

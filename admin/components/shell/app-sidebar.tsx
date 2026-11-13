@@ -27,7 +27,7 @@ export function AppSidebar({
   badges = {},
 }: {
   siteUrl: string
-  badges?: Partial<Record<"new-leads", number>>
+  badges?: Partial<Record<"new-leads" | "chat-unread", number>>
 }) {
   const { roles } = useActor()
   const pathname = usePathname()

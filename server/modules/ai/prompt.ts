@@ -6,7 +6,7 @@ import type { RoleName } from "@/lib/auth/permissions"
 // Names come from accounts and site settings: one line, no control
 // characters and bounded, so a name can't open a new paragraph of rules.
 const NAME_MAX = 80
-const oneLine = (text: string, max = NAME_MAX) =>
+export const oneLine = (text: string, max = NAME_MAX) =>
   text
     .replace(/[\u0000-\u001f\u007f-\u009f\u2028\u2029]+/g, " ")
     .replace(/\s+/g, " ")

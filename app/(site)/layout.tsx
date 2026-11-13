@@ -1,4 +1,4 @@
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import { io } from "next/cache"
 import { NuqsAdapter } from "nuqs/adapters/next/app"
 import { Suspense } from "react"
@@ -14,6 +14,10 @@ import { SiteFrame } from "./_cms/site-frame"
 import { siteFontClassName } from "./fonts"
 
 import "./site.css"
+
+// The chat composer stays above the on-screen keyboard: the layout viewport
+// resizes with it. No viewport-fit=cover (the page keeps its safe-area insets).
+export const viewport: Viewport = { interactiveWidget: "resizes-content" }
 
 export async function generateMetadata(): Promise<Metadata> {
   await io()

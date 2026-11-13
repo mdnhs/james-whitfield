@@ -10,6 +10,7 @@ import type { AccountRoutes } from "@/server/modules/account/routes"
 import type { AiRoutes } from "@/server/modules/ai/routes"
 import type { ArticlesRoutes } from "@/server/modules/articles/routes"
 import type { AuditRoutes } from "@/server/modules/audit/routes"
+import type { ChatRoutes } from "@/server/modules/chat/routes"
 import type { CollectionsRoutes } from "@/server/modules/collections/routes"
 import type { DashboardRoutes } from "@/server/modules/dashboard/routes"
 import type { GlobalsRoutes } from "@/server/modules/globals/routes"
@@ -33,6 +34,7 @@ import { ApiError } from "./api-error"
 export const accountApi = hc<AccountRoutes>("/api/v1/admin/account")
 export const articlesApi = hc<ArticlesRoutes>("/api/v1/admin/articles")
 export const auditApi = hc<AuditRoutes>("/api/v1/admin/audit")
+export const chatApi = hc<ChatRoutes>("/api/v1/admin/chat")
 export const collectionsApi = hc<CollectionsRoutes>("/api/v1/admin/collections")
 export const dashboardApi = hc<DashboardRoutes>("/api/v1/admin/dashboard")
 export const globalsApi = hc<GlobalsRoutes>("/api/v1/admin/globals")

@@ -3,6 +3,7 @@
 import { CommandPalette } from "@/admin/components/command/command-palette"
 import { CommandPaletteProvider } from "@/admin/components/command/palette-context"
 import { usePermission } from "@/admin/lib/actor-context"
+import { useChatUnread } from "@/admin/modules/chat/use-chat-unread"
 import { useNewLeadsCount } from "@/admin/modules/leads/use-new-leads-count"
 import { SidebarProvider } from "@/components/ui/sidebar"
 import { TooltipProvider } from "@/components/ui/tooltip"
@@ -24,6 +25,7 @@ export function AdminShell({
   children: React.ReactNode
 }) {
   const newLeads = useNewLeadsCount(usePermission({ lead: ["read"] }))
+  const chatUnread = useChatUnread(usePermission({ chat: ["read"] }))
   return (
     <TooltipProvider>
       <CommandPaletteProvider>
@@ -37,7 +39,7 @@ export function AdminShell({
           >
             Skip to content
           </a>
-          <AppSidebar siteUrl={siteUrl} badges={{ "new-leads": newLeads }} />
+          <AppSidebar siteUrl={siteUrl} badges={{ "new-leads": newLeads, "chat-unread": chatUnread }} />
           {/* The content panel scrolls inside its own rounded corners, below a
               still topbar. --content-h is its visible height (the svh less the
               gutters, the 72px topbar and the gap) for sticky panes inside.

@@ -6,7 +6,7 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react"
-import { StrictMode, useEffect } from "react"
+import { StrictMode, useEffect, useState } from "react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import type { ChatStatus, VisitorView } from "@/lib/chat/schema"
@@ -215,6 +215,48 @@ describe("no start form", () => {
       message: "How does hypnotherapy work?",
       consent: true,
     })
+  })
+
+  // As on the site: the launcher's lookup has finished before the panel
+  // mounts with a preset, so the queued send is ready on the very first
+  // effect, and dev React (StrictMode) runs that effect twice.
+  it("sends a preset exactly once when the panel mounts ready under StrictMode", async () => {
+    queue = [
+      { status: 404, body: {} },
+      { status: 201, body: view([msg(1, "visitor")]) },
+      { status: 201, body: view([msg(1, "visitor")]) },
+    ]
+    function MountLater() {
+      const chat = useChat(true)
+      const [shown, setShown] = useState(false)
+      return shown ? (
+        <ChatPanel
+          chat={chat}
+          status={STATUS}
+          botName="Aoife"
+          welcome="Hello there"
+          open
+          preset={{ id: 1, text: "How long are sessions?" }}
+          onClose={onClose}
+          onClosed={onClosed}
+        />
+      ) : (
+        <button type="button" onClick={() => setShown(true)}>
+          show
+        </button>
+      )
+    }
+    render(
+      <StrictMode>
+        <MountLater />
+      </StrictMode>
+    )
+    await flush()
+    await flush()
+    fireEvent.click(screen.getByRole("button", { name: "show" }))
+    await flush()
+    await flush()
+    expect(posts).toHaveLength(1)
   })
 })
 

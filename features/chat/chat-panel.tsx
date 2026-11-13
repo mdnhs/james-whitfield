@@ -167,6 +167,7 @@ export function ChatPanel({
   const restart = useRef<HTMLButtonElement>(null)
   const scroller = useRef<HTMLDivElement>(null)
   const seen = useRef<Set<number> | null>(null)
+  const inFlight = useRef(false)
 
   const [draft, setDraft] = useState("")
   const [honeypot, setHoneypot] = useState("")
@@ -274,19 +275,24 @@ export function ChatPanel({
   // Turnstile is on, for its token.
   async function submit() {
     const body = draft.trim()
-    if (!body || sending || ended) {
-      if (!sending) setQueued(false)
+    // `sending` is state, so two calls before the next render (the queued
+    // effect under StrictMode, a fast double Enter) would both pass it and
+    // send the message twice. The ref closes that window synchronously.
+    if (!body || sending || ended || inFlight.current) {
+      if (!sending && !inFlight.current) setQueued(false)
       return
     }
     if (!exists && (!loaded || (siteKey && !token))) {
       setQueued(true)
       return
     }
+    inFlight.current = true
     setQueued(false)
     setSending(true)
     setError(null)
     if (exists) {
       const ok = await chat.send(body)
+      inFlight.current = false
       setSending(false)
       if (ok) setDraft("")
       return
@@ -298,6 +304,7 @@ export function ChatPanel({
       website: honeypot,
       turnstileToken: token ?? undefined,
     })
+    inFlight.current = false
     setSending(false)
     if (result.ok) {
       setDraft("")

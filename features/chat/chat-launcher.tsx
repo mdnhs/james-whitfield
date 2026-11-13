@@ -19,23 +19,6 @@ import { useLauncherMotion } from "./use-widget-motion"
 // panel is closed.
 const ChatPanel = dynamic(() => import("./chat-panel"), { ssr: false })
 
-// Remembers only that the visitor hid the hint, for this browser tab.
-const HINT_KEY = "chat-hint-hidden"
-const hintWasHidden = () => {
-  try {
-    return sessionStorage.getItem(HINT_KEY) === "1"
-  } catch {
-    return false
-  }
-}
-const rememberHintHidden = () => {
-  try {
-    sessionStorage.setItem(HINT_KEY, "1")
-  } catch {
-    // Private windows can refuse storage; the hint just returns next page.
-  }
-}
-
 export function ChatLauncher({
   botName,
   welcome,
@@ -71,7 +54,9 @@ export function ChatLauncher({
     // on the server so its arrival can animate.
     // eslint-disable-next-line react-hooks/set-state-in-effect -- see above
     setReady(true)
-    setHintHidden(hintWasHidden())
+    // As on VANTAGE, hiding the hint lasts for this page view only: a reload
+    // or the next page offers the presets again.
+    setHintHidden(false)
     refreshStatus()
   }, [refreshStatus])
 
@@ -122,10 +107,7 @@ export function ChatLauncher({
             skipEntrance={hintEntered}
             onEntered={() => setHintEntered(true)}
             onOpen={openPanel}
-            onGone={() => {
-              rememberHintHidden()
-              setHintHidden(true)
-            }}
+            onGone={() => setHintHidden(true)}
           />
         ) : null}
         <button

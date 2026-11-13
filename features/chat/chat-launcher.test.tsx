@@ -152,7 +152,7 @@ describe("ChatLauncher", () => {
     expect(screen.getByTestId("preset").textContent).toBe("")
   })
 
-  it("the hint's X hides the pill for the rest of the visit", async () => {
+  it("the hint's X hides the pill for this page view only; a reload brings the presets back", async () => {
     const first = render(<ChatLauncher botName="Aoife" welcome="Hi" />)
     await settle()
     fireEvent.click(screen.getByRole("button", { name: "Hide this message" }))
@@ -162,7 +162,7 @@ describe("ChatLauncher", () => {
     first.unmount()
     render(<ChatLauncher botName="Aoife" welcome="Hi" />)
     await settle()
-    expect(hint()).toBeNull()
+    expect(hint()).toBeTruthy()
   })
 
   it("with reduced motion the launcher and hint are fully visible", async () => {

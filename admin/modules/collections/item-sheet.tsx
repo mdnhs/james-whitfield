@@ -28,10 +28,7 @@ export type EditableItem = {
   values: Record<string, unknown>
 }
 
-// Create (item = "new") or edit, from the collection's own schema. Saves go
-// live (docs/brief.md §6.3); a stale version reloads the list. Without
-// update rights the form is read-only.
-// A new item's slug follows its title (or name) until edited by hand.
+// A slug follows its title (or name) until edited by hand.
 function slugFromTitle(schema: (typeof COLLECTION_SCHEMAS)[CollectionSlug]) {
   const shape = (schema as unknown as { shape?: Record<string, unknown> }).shape
   if (!shape || !("slug" in shape)) return undefined
@@ -39,18 +36,23 @@ function slugFromTitle(schema: (typeof COLLECTION_SCHEMAS)[CollectionSlug]) {
   return from ? { from, to: "slug", transform: slugify } : undefined
 }
 
-export function ItemSheet({
+// Create (item = "new") or edit, from the collection's own schema. Saves go
+// live (docs/brief.md §6.3); a stale version reloads. Without update rights
+// the form is read-only. Used in the drawer and on a service's own editor.
+export function ItemForm({
   name,
   item,
   readOnly = false,
-  onClose,
   onSaved,
+  onCreated,
 }: {
   name: CollectionSlug
-  item: EditableItem | "new" | null
+  item: EditableItem | "new"
   readOnly?: boolean
-  onClose(): void
+  // After a save (or a conflict reload): refresh whatever shows the item.
   onSaved(): Promise<unknown>
+  // A new item's id, once created.
+  onCreated?(id: string): void
 }) {
   const schema = COLLECTION_SCHEMAS[name]
   const isNew = item === "new"
@@ -60,12 +62,79 @@ export function ItemSheet({
   const followsTitle =
     derive !== undefined &&
     (isNew ||
-      (item !== null &&
-        item.values[derive.to] ===
-          derive.transform(String(item.values[derive.from] ?? ""))))
+      item.values[derive.to] ===
+        derive.transform(String(item.values[derive.from] ?? "")))
   const defaults = isNew
     ? { ...(emptyValueFor(schema) as Record<string, unknown>), isVisible: true }
-    : item?.values
+    : item.values
+  return (
+    <fieldset disabled={readOnly} className="min-w-0">
+      <SchemaForm
+        key={isNew ? "new" : `${item.id}:${item.version}`}
+        schema={schema}
+        overrides={COLLECTION_FIELD_UI[name]}
+        defaultValues={defaults as never}
+        derive={followsTitle ? derive : undefined}
+        submitLabel="Save"
+        onSubmit={async (values) => {
+          try {
+            if (isNew) {
+              const created = (await parseResponse(
+                collectionsApi[":name"].$post({
+                  param: { name },
+                  json: { values },
+                })
+              )) as { id: string }
+              toast.success("Saved")
+              await onSaved()
+              onCreated?.(created.id)
+              return
+            }
+            await parseResponse(
+              collectionsApi[":name"][":id"].$patch({
+                param: { name, id: item.id },
+                json: { version: item.version, values },
+              })
+            )
+            toast.success("Saved")
+            await onSaved()
+          } catch (error) {
+            if (conflictOf(error)) {
+              await onSaved()
+              toast.error(
+                "Someone else changed this item. You now see their version."
+              )
+              return
+            }
+            if (error instanceof ApiError)
+              return {
+                formError: error.message,
+                fieldErrors: error.fieldErrors,
+              }
+            throw error
+          }
+        }}
+      />
+    </fieldset>
+  )
+}
+
+export function ItemSheet({
+  name,
+  item,
+  readOnly = false,
+  onClose,
+  onSaved,
+  onCreated,
+}: {
+  name: CollectionSlug
+  item: EditableItem | "new" | null
+  readOnly?: boolean
+  onClose(): void
+  onSaved(): Promise<unknown>
+  onCreated?(id: string): void
+}) {
+  const isNew = item === "new"
   return (
     <Sheet open={item !== null} onOpenChange={(open) => !open && onClose()}>
       <SheetContent className="w-full overflow-y-auto sm:max-w-xl">
@@ -76,53 +145,19 @@ export function ItemSheet({
               : `${readOnly ? "View" : "Edit"} ${ITEM_NOUN[name]}`}
           </SheetTitle>
         </SheetHeader>
-        {defaults ? (
-          <fieldset disabled={readOnly} className="min-w-0 p-4">
-            <SchemaForm
-              key={isNew ? "new" : `${item!.id}:${item!.version}`}
-              schema={schema}
-              overrides={COLLECTION_FIELD_UI[name]}
-              defaultValues={defaults as never}
-              derive={followsTitle ? derive : undefined}
-              submitLabel="Save"
-              onSubmit={async (values) => {
-                try {
-                  if (isNew)
-                    await parseResponse(
-                      collectionsApi[":name"].$post({
-                        param: { name },
-                        json: { values },
-                      })
-                    )
-                  else
-                    await parseResponse(
-                      collectionsApi[":name"][":id"].$patch({
-                        param: { name, id: item!.id },
-                        json: { version: item!.version, values },
-                      })
-                    )
-                  toast.success("Saved")
-                  await onSaved()
-                  onClose()
-                } catch (error) {
-                  if (conflictOf(error)) {
-                    await onSaved()
-                    onClose()
-                    toast.error(
-                      "Someone else changed this item. The list now shows their version."
-                    )
-                    return
-                  }
-                  if (error instanceof ApiError)
-                    return {
-                      formError: error.message,
-                      fieldErrors: error.fieldErrors,
-                    }
-                  throw error
-                }
+        {item ? (
+          <div className="p-4">
+            <ItemForm
+              name={name}
+              item={item}
+              readOnly={readOnly}
+              onSaved={async () => {
+                await onSaved()
+                onClose()
               }}
+              onCreated={onCreated}
             />
-          </fieldset>
+          </div>
         ) : null}
       </SheetContent>
     </Sheet>

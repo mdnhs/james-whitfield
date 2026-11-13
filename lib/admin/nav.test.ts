@@ -49,7 +49,6 @@ describe("visibleNav (docs/brief.md §7.2, §9.1)", () => {
       "Home",
       "About",
       "Services",
-      "Service pages",
       "How it works",
       "Contact",
       "Insights",

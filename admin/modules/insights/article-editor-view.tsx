@@ -405,7 +405,7 @@ function Editor({
         onValueChange={(value) => void setTab(value as "content" | "seo")}
         className="gap-5"
       >
-        <TabsList className="h-11 w-full rounded-xl bg-card p-1 sm:w-fit">
+        <TabsList className="h-11 w-fit max-w-full rounded-xl bg-card p-1">
           <TabsTrigger value="content" className="rounded-lg px-5">
             Content
           </TabsTrigger>

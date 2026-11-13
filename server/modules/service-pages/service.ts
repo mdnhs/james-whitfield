@@ -265,3 +265,34 @@ export async function removeServicePage(
     ...(redirectsChanged ? REDIRECT_TAGS : []),
   ]
 }
+
+// The page a service's editor shows; a missing one is made first (it should
+// exist already: pages are made with the service). Null when the service is
+// unknown or its page can't be made yet.
+export async function servicePageFor(
+  actor: Actor,
+  serviceId: string,
+  { make }: { make: boolean }
+): Promise<{ pageId: string } | { pageId: null; reason: string }> {
+  const page = await linkedPage(getDb(), serviceId)
+  if (page) return { pageId: page.id }
+  if (!make)
+    return { pageId: null, reason: "This service has no details page yet." }
+  try {
+    return { pageId: (await enableServicePage(actor, serviceId)).pageId }
+  } catch (error) {
+    if (!(error instanceof ApiError)) throw error
+    return { pageId: null, reason: error.message }
+  }
+}
+
+// The service a page belongs to, for sending old /admin/pages/<id> links to
+// the service's own editor.
+export async function serviceOfPage(pageId: string): Promise<string | null> {
+  const [row] = await getDb()
+    .select({ serviceId: pages.serviceId })
+    .from(pages)
+    .where(eq(pages.id, pageId))
+    .limit(1)
+  return row?.serviceId ?? null
+}

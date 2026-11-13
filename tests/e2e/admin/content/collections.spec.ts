@@ -22,7 +22,8 @@ test("add a hidden FAQ from the Home page's FAQ section, then remove it", async 
   await sheet.getByRole("button", { name: "Save" }).click()
   const row = panel.getByRole("listitem").filter({ hasText: question })
   await expect(row).toBeVisible()
-  await expect(row).toContainText("Hidden")
+  // Hidden: its switch is off (no label any more).
+  await expect(row.getByRole("switch")).not.toBeChecked()
   await expect(
     row.getByRole("switch", { name: `Show ${question}` })
   ).not.toBeChecked()

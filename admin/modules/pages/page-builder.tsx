@@ -29,7 +29,10 @@ import { ApiError } from "@/admin/lib/api-error"
 import { queryKeys } from "@/admin/lib/query-keys"
 import { DraftDocument } from "@/blocks/page"
 import { BLOCK_BY_TYPE } from "@/blocks/registry"
-import { useEditorTab } from "@/admin/modules/seo/use-editor-tab"
+import {
+  useEditorTab,
+  type EditorTab,
+} from "@/admin/modules/seo/use-editor-tab"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -58,13 +61,22 @@ import { SeoForm } from "./seo-form"
 import { conflictOf, useAutosave, type Conflict } from "./use-autosave"
 
 // The URL is the truth about which page is open (see ArticleEditorView).
-export function PageBuilder({ id }: { id: string }) {
-  const params = useParams<{ id?: string | string[] }>()
-  const urlId = typeof params.id === "string" ? params.id : id
-  return <PageLoader key={urlId} id={urlId} />
+// Extras for an editor that wraps a page, e.g. a service: its own first tab
+// (the service's card) and where "back" leads.
+export type BuilderExtras = {
+  card?: { label: string; content: React.ReactNode }
+  back?: { href: string; label: string }
+  // The sections tab's name ("Details" on a service's editor).
+  contentLabel?: string
 }
 
-function PageLoader({ id }: { id: string }) {
+export function PageBuilder({ id, ...extras }: { id: string } & BuilderExtras) {
+  const params = useParams<{ id?: string | string[] }>()
+  const urlId = typeof params.id === "string" ? params.id : id
+  return <PageLoader key={urlId} id={urlId} extras={extras} />
+}
+
+function PageLoader({ id, extras }: { id: string; extras: BuilderExtras }) {
   const query = useQuery(pageDetailQuery(id))
   // Review / restore / discard load the server copy into a fresh builder.
   const [generation, setGeneration] = useState(0)
@@ -86,7 +98,14 @@ function PageLoader({ id }: { id: string }) {
       </div>
     )
   }
-  return <Builder key={generation} page={query.data} reload={reload} />
+  return (
+    <Builder
+      key={generation}
+      page={query.data}
+      reload={reload}
+      extras={extras}
+    />
+  )
 }
 
 function BuilderSkeleton() {
@@ -110,12 +129,14 @@ const toDraft = (value: unknown): DraftDocument => {
 function Builder({
   page,
   reload,
+  extras,
 }: {
   page: PageDetail
   reload(): Promise<void>
+  extras: BuilderExtras
 }) {
   const queryClient = useQueryClient()
-  const [tab, setTab] = useEditorTab()
+  const [tab, setTab] = useEditorTab({ card: Boolean(extras.card) })
   const canEdit = usePermission({ page: ["update"] })
   const canPublish = usePermission({ page: ["publish"] })
   const readOnly = !canEdit
@@ -282,7 +303,7 @@ function Builder({
     state.conflict !== null &&
     state.conflict !== dismissed
 
-  const back = backLinkForPage(page)
+  const back = extras.back ?? backLinkForPage(page)
 
   return (
     <div className="flex flex-col gap-6">
@@ -418,17 +439,29 @@ function Builder({
       ) : null}
       <Tabs
         value={tab}
-        onValueChange={(value) => void setTab(value as "content" | "seo")}
+        onValueChange={(value) => void setTab(value as EditorTab)}
         className="gap-5"
       >
-        <TabsList className="h-11 w-full rounded-xl bg-card p-1 sm:w-fit">
+        <TabsList className="h-11 w-fit max-w-full rounded-xl bg-card p-1">
+          {extras.card ? (
+            <TabsTrigger value="card" className="rounded-lg px-5">
+              {extras.card.label}
+            </TabsTrigger>
+          ) : null}
           <TabsTrigger value="content" className="rounded-lg px-5">
-            Content
+            {extras.contentLabel ?? "Content"}
           </TabsTrigger>
           <TabsTrigger value="seo" className="rounded-lg px-5">
             SEO
           </TabsTrigger>
         </TabsList>
+        {extras.card ? (
+          <TabsContent value="card">
+            <div className="rounded-card max-w-2xl bg-card p-5 sm:p-6">
+              {extras.card.content}
+            </div>
+          </TabsContent>
+        ) : null}
         <TabsContent value="content">
           <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
             <div className="flex min-w-0 flex-col gap-5">

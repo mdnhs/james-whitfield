@@ -22,22 +22,27 @@ test("turn on a service's details page, edit its hero, publish", async ({
   )
   const band = bands.find((b) => b.values.isVisible)!
 
-  // The page was made with the service: the list links to it, nothing to create.
-  await page.goto("/admin/website/service-pages")
-  const row = page.getByRole("row").filter({ hasText: service.title })
+  // The page was made with the service. Services → Edit opens one editor
+  // with the service's card, its details page and SEO.
+  await page.goto("/admin/website/services")
+  await page.getByRole("button", { name: `Edit ${service.title}` }).click()
+  await expect(page).toHaveURL(
+    new RegExp(`/admin/website/services/${service.id}$`)
+  )
+  for (const tab of ["Card", "Details", "SEO"])
+    await expect(page.getByRole("tab", { name: tab })).toBeVisible()
   // Live at once, with placeholder copy to rewrite.
-  await expect(row.getByText("Published", { exact: true })).toBeVisible()
   await expect(
-    page.getByRole("button", { name: /create|delete/i })
-  ).toHaveCount(0)
-  await row.getByRole("link", { name: `Edit ${service.title}` }).click()
-  await expect(page).toHaveURL(/\/admin\/pages\/[0-9a-f-]{36}$/)
+    page.getByText("Published", { exact: true }).first()
+  ).toBeVisible()
+  await page.getByRole("tab", { name: "Details" }).click()
 
   // Seven fixed sections and nothing that adds, removes, hides or moves one.
-  await expect(page.locator("[data-block-card]")).toHaveCount(7)
+  // :visible — Next keeps the previous route's builder in the DOM, hidden.
+  await expect(page.locator("[data-block-card]:visible")).toHaveCount(7)
   await expect(page.getByRole("button", { name: "Add block" })).toHaveCount(0)
   for (const label of await page
-    .locator("[data-block-card] h2")
+    .locator("[data-block-card]:visible h2")
     .allTextContents()) {
     for (const verb of ["Remove", "Hide", "Show", "Reorder"])
       await expect(

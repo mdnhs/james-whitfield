@@ -15,6 +15,8 @@ const order = vi.fn()
 const dnd: { onDragEnd?: (e: unknown) => void } = {}
 const perms: { allowed: Set<string> | null } = { allowed: null }
 
+const push = vi.fn()
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }))
 vi.mock("@/admin/lib/actor-context", async (orig) => ({
   ...(await orig<typeof import("@/admin/lib/actor-context")>()),
   usePermission: (p: { collection?: string[] }) =>
@@ -44,6 +46,9 @@ vi.mock("@/admin/lib/api", () => ({
       ":id": { $delete: (a: unknown) => del(a), $patch: vi.fn() },
       order: { $patch: (a: unknown) => order(a) },
     },
+  },
+  servicePagesApi: {
+    ensure: { $post: async () => ({ created: 0, failed: [] }) },
   },
   parseResponse: (p: Promise<unknown>) => p,
 }))

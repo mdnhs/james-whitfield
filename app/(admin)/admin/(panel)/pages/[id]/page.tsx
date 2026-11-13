@@ -1,11 +1,12 @@
 import type { Metadata } from "next"
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 import { Suspense } from "react"
 import * as z from "zod"
 
 import { CardSkeleton } from "@/admin/components/dashboard/skeletons"
 import { PageBuilder } from "@/admin/modules/pages/page-builder"
 import { requirePermission } from "@/server/auth/session"
+import { serviceOfPage } from "@/server/modules/service-pages/service"
 
 export const metadata: Metadata = { title: "Edit page" }
 
@@ -33,5 +34,8 @@ async function Gate({
   const { id } = await params
   await requirePermission({ page: ["read"] })
   if (!z.uuid().safeParse(id).success) notFound()
+  // A service's page is edited with the service (card, content, SEO).
+  const serviceId = await serviceOfPage(id)
+  if (serviceId) redirect(`/admin/website/services/${serviceId}`)
   return <PageBuilder id={id} />
 }

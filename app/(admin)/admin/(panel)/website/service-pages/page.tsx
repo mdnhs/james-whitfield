@@ -1,22 +1,19 @@
-import type { Metadata } from "next"
+import { redirect } from "next/navigation"
 import { Suspense } from "react"
 
-import { CardSkeleton } from "@/admin/components/dashboard/skeletons"
-import { ServicePagesView } from "@/admin/modules/website/service-pages-view"
-import { permissionFor } from "@/lib/admin/nav"
-import { requirePermission } from "@/server/auth/session"
+import { requireActor } from "@/server/auth/session"
 
-export const metadata: Metadata = { title: "Service pages" }
-
+// Service pages are edited from Services now (each service opens one
+// editor for its card, details page and SEO).
 export default function ServicePages() {
   return (
-    <Suspense fallback={<CardSkeleton />}>
-      <Gate />
+    <Suspense fallback={null}>
+      <Go />
     </Suspense>
   )
 }
 
-async function Gate() {
-  await requirePermission(permissionFor("/admin/website/service-pages"))
-  return <ServicePagesView />
+async function Go(): Promise<never> {
+  await requireActor("/admin/website/service-pages")
+  redirect("/admin/website/services")
 }

@@ -49,6 +49,6 @@ export function backLinkForPage(page: {
   const known = WEBSITE_PAGES.find((p) => p.systemKey === page.systemKey)
   if (known) return { href: websiteHref(known.key), label: known.label }
   if (page.serviceId)
-    return { href: "/admin/website/service-pages", label: "Service pages" }
+    return { href: websiteHref("services"), label: "Services" }
   return { href: "/admin/website/legal", label: "Legal pages" }
 }

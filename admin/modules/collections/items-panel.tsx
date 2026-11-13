@@ -21,16 +21,16 @@ import {
 import { CSS } from "@dnd-kit/utilities"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { GripVerticalIcon, PlusIcon, Trash2Icon } from "lucide-react"
-import { useId, useState } from "react"
+import { useRouter } from "next/navigation"
+import { useEffect, useId, useRef, useState } from "react"
 import { toast } from "sonner"
 
 import {
   DeleteIconButton,
   EditIconButton,
 } from "@/admin/components/actions/icon-actions"
-import { StatusPill } from "@/admin/components/dashboard/status-pill"
 import { usePermission } from "@/admin/lib/actor-context"
-import { collectionsApi, parseResponse } from "@/admin/lib/api"
+import { collectionsApi, parseResponse, servicePagesApi } from "@/admin/lib/api"
 import { queryKeys } from "@/admin/lib/query-keys"
 import { useResetOnHide } from "@/admin/lib/use-reset-on-hide"
 import { Button } from "@/components/ui/button"
@@ -77,6 +77,17 @@ export function ItemsPanel({
   const canUpdate = usePermission({ collection: ["update"] }) && !readOnly
   const canDelete = usePermission({ collection: ["delete"] }) && !readOnly
   const [editing, setEditing] = useState<EditableItem | "new" | null>(null)
+  const router = useRouter()
+  // A service is edited on its own page (card, details page and SEO).
+  const ownEditor = (id: string) =>
+    name === "services" ? `/admin/website/services/${id}` : null
+  // Every service has a details page: make any that are missing, once.
+  const ensured = useRef(false)
+  useEffect(() => {
+    if (name !== "services" || !canCreate || ensured.current) return
+    ensured.current = true
+    void parseResponse(servicePagesApi.ensure.$post()).catch(() => {})
+  }, [name, canCreate])
   const [removing, setRemoving] = useState<Item | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [busy, setBusy] = useState<ReadonlySet<string>>(new Set())
@@ -198,7 +209,15 @@ export function ItemsPanel({
           </p>
         </div>
         {canCreate ? (
-          <Button variant="outline" size="sm" onClick={() => setEditing("new")}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              name === "services"
+                ? router.push("/admin/website/services/new")
+                : setEditing("new")
+            }
+          >
             <PlusIcon data-icon="inline-start" />
             {`Add ${noun}`}
           </Button>
@@ -247,29 +266,27 @@ export function ItemsPanel({
                           </p>
                         ) : null}
                       </div>
-                      <span className="flex items-center gap-2">
-                        <Switch
-                          aria-label={`Show ${item.title}`}
-                          checked={isVisible(item)}
-                          disabled={!canUpdate || busy.has(item.id)}
-                          onCheckedChange={(next) =>
-                            void toggleVisible(item, next)
-                          }
-                        />
-                        {isVisible(item) ? null : (
-                          <StatusPill tone="neutral">Hidden</StatusPill>
-                        )}
-                      </span>
-                      {canUpdate ? (
+                      {/* The switch alone says whether it shows; no label. */}
+                      <Switch
+                        aria-label={`Show ${item.title}`}
+                        checked={isVisible(item)}
+                        disabled={!canUpdate || busy.has(item.id)}
+                        onCheckedChange={(next) =>
+                          void toggleVisible(item, next)
+                        }
+                      />
+                      {canUpdate || ownEditor(item.id) ? (
                         <EditIconButton
                           label={`Edit ${item.title}`}
-                          onClick={() =>
+                          onClick={() => {
+                            const href = ownEditor(item.id)
+                            if (href) return router.push(href)
                             setEditing({
                               id: item.id,
                               version: item.version,
                               values: item.values,
                             })
-                          }
+                          }}
                         />
                       ) : null}
                       {canDelete ? (
@@ -324,6 +341,10 @@ export function ItemsPanel({
         item={editing}
         onClose={() => setEditing(null)}
         onSaved={refresh}
+        onCreated={(id) => {
+          const href = ownEditor(id)
+          if (href) router.push(href)
+        }}
       />
     </section>
   )

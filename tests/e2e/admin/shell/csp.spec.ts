@@ -38,6 +38,8 @@ test("csp: the page-builder preview iframe loads (frame-src / frame-ancestors se
 }) => {
   const { id } = await createPublishedPage(page.request, "CSP preview")
   await page.goto(`/admin/pages/${id}`)
+  // A service's page opens in the service's editor; the preview is on Details.
+  await page.getByRole("tab", { name: "Details" }).click()
   const frame = page.frameLocator('iframe[title="Page preview"]')
   await expect(frame.locator("body")).toContainText("CSP preview", {
     timeout: 15_000,

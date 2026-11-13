@@ -26,7 +26,9 @@ test("edit, preview, publish", async ({ page, browser }) => {
     visitor.getByRole("heading", { name: oldTitle, level: 1 })
   ).toBeVisible()
 
+  // A service's page opens in the service's editor; sections are on Details.
   await page.goto(`/admin/pages/${id}`)
+  await page.getByRole("tab", { name: "Details" }).click()
   await page
     .getByRole("group", { name: "Page hero" })
     .getByLabel("Title", { exact: true })
@@ -139,7 +141,8 @@ test("reopening a page after editing it saves without a conflict", async ({
     .getByRole("group", { name: "Page hero" })
     .getByLabel("Subtitle", { exact: true })
   async function openHero() {
-    // Every section's form is on the page; no outline to pick from.
+    // A service's editor opens on its card; the sections are under Details.
+    await page.getByRole("tab", { name: "Details" }).click()
     await expect(subtitle).toBeVisible()
   }
   await page.goto(`/admin/pages/${a.id}`)
@@ -148,21 +151,19 @@ test("reopening a page after editing it saves without a conflict", async ({
   await expect(page.getByText(/^Saved \d+ s ago$/)).toBeVisible({
     timeout: 10_000,
   })
-  // Client-side navigation keeps the query cache: back to Website → Service
-  // pages, away to another service page's builder (which replaces this one)
+  // Client-side navigation keeps the query cache: back to Website →
+  // Services, away to another service's editor (which replaces this one)
   // and back.
-  for (const { id, title } of [b, a]) {
+  for (const { service } of [b, a]) {
     await page
-      .getByRole("link", { name: "Service pages", exact: true })
+      .getByRole("link", { name: "Services", exact: true })
       .first()
       .click()
-    await expect(page).toHaveURL(/\/admin\/website\/service-pages$/)
-    await page
-      .getByRole("row")
-      .filter({ hasText: title })
-      .getByRole("link", { name: title, exact: true })
-      .click()
-    await expect(page).toHaveURL(new RegExp(`/admin/pages/${id}$`))
+    await expect(page).toHaveURL(/\/admin\/website\/services$/)
+    await page.getByRole("button", { name: `Edit ${service.title}` }).click()
+    await expect(page).toHaveURL(
+      new RegExp(`/admin/website/services/${service.id}`)
+    )
     await openHero()
   }
   await expect(subtitle).toHaveValue("First edit")

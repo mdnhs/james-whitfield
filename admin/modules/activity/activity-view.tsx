@@ -17,7 +17,6 @@ import {
   PageHeader,
   SECONDARY_ACTION,
 } from "@/admin/components/dashboard/page-header"
-import { CardSkeleton } from "@/admin/components/dashboard/skeletons"
 import { DataTable } from "@/admin/components/data-table/data-table"
 import { DataTablePagination } from "@/admin/components/data-table/data-table-pagination"
 import { Button, buttonVariants } from "@/components/ui/button"
@@ -35,6 +34,7 @@ import { cn } from "@/lib/utils"
 import { ActivityDetail } from "./activity-detail"
 import { activityParsers, exportHref, toAuditParams, toDay } from "./params"
 import { auditFacetsQuery, auditListQuery, type AuditRow } from "./queries"
+import { TableSkeleton } from "@/admin/components/dashboard/skeletons"
 
 const features = tableFeatures({ rowPaginationFeature })
 const helper = createColumnHelper<typeof features, AuditRow>()
@@ -309,7 +309,7 @@ export function ActivityView() {
         </Button>
       </div>
       {list.isPending ? (
-        <CardSkeleton />
+        <TableSkeleton columns={5} actions={0} />
       ) : list.isError ? (
         <EmptyState
           title="The activity log didn't load"

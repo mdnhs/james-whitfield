@@ -26,7 +26,6 @@ import {
   PageHeader,
   PRIMARY_ACTION,
 } from "@/admin/components/dashboard/page-header"
-import { CardSkeleton } from "@/admin/components/dashboard/skeletons"
 import { StatusPill } from "@/admin/components/dashboard/status-pill"
 import { DataTable } from "@/admin/components/data-table/data-table"
 import { DataTablePagination } from "@/admin/components/data-table/data-table-pagination"
@@ -50,6 +49,7 @@ import { cn } from "@/lib/utils"
 
 import { RedirectDialog, STATUS_LABELS, type Editing } from "./redirect-dialog"
 import { redirectsListQuery, type RedirectRow } from "./queries"
+import { TableSkeleton } from "@/admin/components/dashboard/skeletons"
 
 const PAGE_SIZE = 25
 const params = {
@@ -239,7 +239,7 @@ export function RedirectsView() {
         onChange={(event) => setSearch(event.target.value)}
       />
       {list.isPending ? (
-        <CardSkeleton />
+        <TableSkeleton columns={3} />
       ) : list.isError ? (
         <EmptyState
           title="Redirects didn't load"

@@ -3,7 +3,7 @@ import { notFound } from "next/navigation"
 import { Suspense } from "react"
 import * as z from "zod"
 
-import { CardSkeleton } from "@/admin/components/dashboard/skeletons"
+import { ServiceEditorSkeleton } from "@/admin/components/dashboard/page-skeletons"
 import { ServiceEditor } from "@/admin/modules/website/service-editor"
 import { hasPermission } from "@/lib/auth/permissions"
 import { requirePermission } from "@/server/auth/session"
@@ -20,7 +20,7 @@ export default function EditService({
   params,
 }: PageProps<"/admin/website/services/[serviceId]">) {
   return (
-    <Suspense fallback={<CardSkeleton />}>
+    <Suspense fallback={<ServiceEditorSkeleton />}>
       <Gate params={params} />
     </Suspense>
   )

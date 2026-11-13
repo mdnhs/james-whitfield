@@ -5,7 +5,6 @@ import { ArrowLeftIcon } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 
 import { useActor, usePermission } from "@/admin/lib/actor-context"
-import { CardSkeleton } from "@/admin/components/dashboard/skeletons"
 import { ConfirmDialog } from "@/admin/modules/users/confirm-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -13,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea"
 
 import { type ChatMessage, chatDetailQuery, useChatActions } from "./queries"
 import { formatMessageTime, useTabVisible } from "./present"
+import { ThreadSkeleton } from "@/admin/components/dashboard/skeletons"
 
 function Bubble({
   message,
@@ -110,7 +110,7 @@ export function ChatThread({
     markRead(newest)
   }, [visible, newest, markRead])
 
-  if (detail.isPending) return <CardSkeleton />
+  if (detail.isPending) return <ThreadSkeleton />
   if (detail.isError || !chat) {
     return (
       <div role="alert" className="flex flex-col items-start gap-3 p-6">

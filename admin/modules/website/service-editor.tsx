@@ -7,7 +7,6 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 
 import { PageHeader } from "@/admin/components/dashboard/page-header"
-import { CardSkeleton } from "@/admin/components/dashboard/skeletons"
 import { usePermission } from "@/admin/lib/actor-context"
 import { queryKeys } from "@/admin/lib/query-keys"
 import { ItemForm } from "@/admin/modules/collections/item-sheet"
@@ -19,6 +18,7 @@ import {
   type CardPreviewValues,
 } from "@/features/services/components/service-card-preview"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ServiceEditorSkeleton } from "@/admin/components/dashboard/page-skeletons"
 
 const BACK = { href: "/admin/website/services", label: "Services" }
 
@@ -138,7 +138,7 @@ function ServiceCard({ serviceId }: { serviceId: string }) {
   const moreLabel = useMoreLabel()
   const item = list.data?.items.find((i) => i.id === serviceId)
   const [draft, setDraft] = useState<Record<string, unknown> | null>(null)
-  if (list.isPending) return <CardSkeleton />
+  if (list.isPending) return <ServiceEditorSkeleton />
   if (!item) return <p className="text-sm">This service no longer exists.</p>
   return (
     <CardLayout preview={previewOf(draft ?? item.values, moreLabel)}>

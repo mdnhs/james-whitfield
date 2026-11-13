@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import { Suspense } from "react"
 
-import { CardSkeleton } from "@/admin/components/dashboard/skeletons"
+import { AccountPageSkeleton } from "@/admin/components/dashboard/page-skeletons"
 import { AccountView } from "@/admin/modules/account/account-view"
 import { permissionFor } from "@/lib/admin/nav"
 import { requirePermission } from "@/server/auth/session"
@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: "Account" }
 
 export default function AccountPage() {
   return (
-    <Suspense fallback={<CardSkeleton />}>
+    <Suspense fallback={<AccountPageSkeleton />}>
       <Account />
     </Suspense>
   )

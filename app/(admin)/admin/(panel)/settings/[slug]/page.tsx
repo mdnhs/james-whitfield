@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { Suspense } from "react"
 
-import { CardSkeleton } from "@/admin/components/dashboard/skeletons"
+import { GlobalEditorPageSkeleton } from "@/admin/components/dashboard/page-skeletons"
 import { GlobalEditor } from "@/admin/modules/globals/global-editor"
 import { linkForPath } from "@/lib/admin/nav"
 import { SETTINGS_PAGES, type SettingsPage } from "@/lib/content/global-access"
@@ -14,7 +14,7 @@ export default function SettingsSlugPage({
   params,
 }: PageProps<"/admin/settings/[slug]">) {
   return (
-    <Suspense fallback={<CardSkeleton />}>
+    <Suspense fallback={<GlobalEditorPageSkeleton />}>
       <Gate params={params} />
     </Suspense>
   )

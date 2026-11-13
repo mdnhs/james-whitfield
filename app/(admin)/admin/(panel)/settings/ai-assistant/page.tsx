@@ -2,7 +2,7 @@
 import type { Metadata } from "next"
 import { Suspense } from "react"
 
-import { CardSkeleton } from "@/admin/components/dashboard/skeletons"
+import { FormPageSkeleton } from "@/admin/components/dashboard/page-skeletons"
 import { AiSettingsView } from "@/admin/modules/ai/settings-view"
 import { requirePermission } from "@/server/auth/session"
 
@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: "AI assistant" }
 
 export default function AiAssistantSettingsPage() {
   return (
-    <Suspense fallback={<CardSkeleton />}>
+    <Suspense fallback={<FormPageSkeleton />}>
       <Gate />
     </Suspense>
   )

@@ -26,7 +26,6 @@ import {
   PageHeader,
   PRIMARY_ACTION,
 } from "@/admin/components/dashboard/page-header"
-import { CardSkeleton } from "@/admin/components/dashboard/skeletons"
 import { StatusPill } from "@/admin/components/dashboard/status-pill"
 import { DataTable } from "@/admin/components/data-table/data-table"
 import { SchemaForm } from "@/admin/components/schema-form/schema-form"
@@ -60,6 +59,7 @@ import {
 } from "@/lib/content/taxonomy"
 
 import { authorsQuery, categoriesQuery, type TaxonomyItem } from "./queries"
+import { TableSkeleton } from "@/admin/components/dashboard/skeletons"
 
 const features = tableFeatures({})
 const helper = createColumnHelper<typeof features, TaxonomyItem>()
@@ -277,7 +277,7 @@ export function TaxonomyView({ name }: { name: Taxonomy }) {
         }
       />
       {list.isPending ? (
-        <CardSkeleton />
+        <TableSkeleton columns={3} />
       ) : list.isError ? (
         <EmptyState
           title={`The ${noun.title.toLowerCase()} didn't load`}

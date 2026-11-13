@@ -8,11 +8,11 @@ import { DashboardCard } from "@/admin/components/dashboard/dashboard-card"
 import { EmptyState } from "@/admin/components/dashboard/empty-state"
 import { Gauge } from "@/admin/components/dashboard/gauge"
 import { PageHeader } from "@/admin/components/dashboard/page-header"
-import { CardSkeleton } from "@/admin/components/dashboard/skeletons"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 import { seoOverviewQuery, type SeoOverview } from "./queries"
+import { FormCardSkeleton } from "@/admin/components/dashboard/skeletons"
 
 type Issue = SeoOverview["issues"][number]
 
@@ -34,7 +34,10 @@ export function SeoOverviewView() {
     <div className="flex flex-col gap-6">
       <PageHeader title="SEO" description="How search engines see the site." />
       {overview.isPending ? (
-        <CardSkeleton />
+        <div className="grid gap-6 lg:grid-cols-2">
+          <FormCardSkeleton fields={2} />
+          <FormCardSkeleton fields={2} />
+        </div>
       ) : overview.isError ? (
         <EmptyState
           title="SEO health didn't load"

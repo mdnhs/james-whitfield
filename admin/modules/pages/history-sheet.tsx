@@ -18,7 +18,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
-import { Skeleton } from "@/components/ui/skeleton"
+import { ListRowsSkeleton } from "@/admin/components/dashboard/skeletons"
 import { Spinner } from "@/components/ui/spinner"
 
 import { conflictOf, type Conflict } from "./use-autosave"
@@ -89,11 +89,7 @@ export function HistorySheet<K extends QueryKey>({
         </SheetHeader>
         <div className="flex-1 overflow-y-auto p-5">
           {list.isPending ? (
-            <div className="flex flex-col gap-3" aria-hidden>
-              {[0, 1, 2].map((i) => (
-                <Skeleton key={i} className="bg-skeleton h-16 rounded-xl" />
-              ))}
-            </div>
+            <ListRowsSkeleton rows={3} rowClassName="h-16" />
           ) : list.isError ? (
             <div role="alert" className="flex flex-col items-start gap-3">
               <p>{list.error.message}</p>

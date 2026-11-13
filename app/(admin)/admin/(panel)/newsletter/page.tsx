@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import { Suspense } from "react"
 
-import { CardSkeleton } from "@/admin/components/dashboard/skeletons"
+import { NewsletterPageSkeleton } from "@/admin/components/dashboard/page-skeletons"
 import { NewsletterView } from "@/admin/modules/newsletter/newsletter-view"
 import { permissionFor } from "@/lib/admin/nav"
 import { requirePermission } from "@/server/auth/session"
@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: "Newsletter" }
 
 export default function NewsletterPage() {
   return (
-    <Suspense fallback={<CardSkeleton />}>
+    <Suspense fallback={<NewsletterPageSkeleton />}>
       <Gate />
     </Suspense>
   )

@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { Suspense } from "react"
 
-import { CardSkeleton } from "@/admin/components/dashboard/skeletons"
+import { PageBuilderSkeleton } from "@/admin/components/dashboard/page-skeletons"
 import { InsightsTabs } from "@/admin/modules/insights/insights-tabs"
 import { PageBuilder } from "@/admin/modules/pages/page-builder"
 import { isWebsiteKey, WEBSITE_PAGES, websiteHref } from "@/lib/admin/website"
@@ -20,7 +20,7 @@ export default function WebsitePage({
   params,
 }: PageProps<"/admin/website/[key]">) {
   return (
-    <Suspense fallback={<CardSkeleton />}>
+    <Suspense fallback={<PageBuilderSkeleton />}>
       <Gate params={params} />
     </Suspense>
   )

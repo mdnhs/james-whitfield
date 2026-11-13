@@ -19,7 +19,6 @@ import { toast } from "sonner"
 
 import { EmptyState } from "@/admin/components/dashboard/empty-state"
 import { PageHeader } from "@/admin/components/dashboard/page-header"
-import { CardSkeleton } from "@/admin/components/dashboard/skeletons"
 import { usePermission } from "@/admin/lib/actor-context"
 import { ApiError } from "@/admin/lib/api-error"
 import { queryKeys } from "@/admin/lib/query-keys"
@@ -33,6 +32,7 @@ import { servedAsIs } from "@/lib/media"
 import { MediaDetails } from "./media-details"
 import { mediaListQuery, type MediaItem } from "./queries"
 import { ACCEPT_ALL, uploadFile } from "./upload"
+import { MediaGridSkeleton } from "@/admin/components/dashboard/skeletons"
 
 const parsers = {
   q: parseAsString.withDefault(""),
@@ -205,7 +205,7 @@ export function MediaView() {
       </div>
 
       {list.isPending ? (
-        <CardSkeleton />
+        <MediaGridSkeleton />
       ) : list.isError ? (
         <EmptyState
           title="The library didn't load"

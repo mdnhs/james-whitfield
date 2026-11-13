@@ -3,6 +3,7 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { Suspense } from "react"
 
+import { CollectionPageSkeleton } from "@/admin/components/dashboard/page-skeletons"
 import { TitledSection } from "@/admin/components/titled-section"
 import { HELP_LINK, linkForPath, NAV } from "@/lib/admin/nav"
 import { requireActor, requirePermission } from "@/server/auth/session"
@@ -35,7 +36,7 @@ export function generateStaticParams(): Params[] {
 
 export default function SectionPage({ params }: { params: Promise<Params> }) {
   return (
-    <Suspense fallback={<div className="rounded-card h-48 animate-pulse" />}>
+    <Suspense fallback={<CollectionPageSkeleton />}>
       <Section params={params} />
     </Suspense>
   )

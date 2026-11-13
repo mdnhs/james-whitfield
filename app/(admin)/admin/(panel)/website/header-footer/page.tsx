@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import { PanelsTopLeftIcon } from "lucide-react"
 import { Suspense } from "react"
 
-import { CardSkeleton } from "@/admin/components/dashboard/skeletons"
+import { GlobalEditorPageSkeleton } from "@/admin/components/dashboard/page-skeletons"
 import { GlobalEditor } from "@/admin/modules/globals/global-editor"
 import { permissionFor } from "@/lib/admin/nav"
 import { SETTINGS_PAGES } from "@/lib/content/global-access"
@@ -12,7 +12,7 @@ export const metadata: Metadata = { title: "Header & footer" }
 
 export default function HeaderFooterPage() {
   return (
-    <Suspense fallback={<CardSkeleton />}>
+    <Suspense fallback={<GlobalEditorPageSkeleton />}>
       <Gate />
     </Suspense>
   )

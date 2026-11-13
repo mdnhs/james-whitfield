@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import { ScaleIcon } from "lucide-react"
 import { Suspense } from "react"
 
-import { CardSkeleton } from "@/admin/components/dashboard/skeletons"
+import { LegalPagesSkeleton } from "@/admin/components/dashboard/page-skeletons"
 import { PageHeader } from "@/admin/components/dashboard/page-header"
 import { LegalPagesList } from "@/admin/modules/website/legal-pages-list"
 import { permissionFor } from "@/lib/admin/nav"
@@ -13,7 +13,7 @@ export const metadata: Metadata = { title: "Legal pages" }
 
 export default function LegalPages() {
   return (
-    <Suspense fallback={<CardSkeleton />}>
+    <Suspense fallback={<LegalPagesSkeleton />}>
       <Gate />
     </Suspense>
   )

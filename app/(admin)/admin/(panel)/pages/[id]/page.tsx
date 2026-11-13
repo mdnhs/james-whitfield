@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation"
 import { Suspense } from "react"
 import * as z from "zod"
 
-import { CardSkeleton } from "@/admin/components/dashboard/skeletons"
+import { PageBuilderSkeleton } from "@/admin/components/dashboard/page-skeletons"
 import { PageBuilder } from "@/admin/modules/pages/page-builder"
 import { requirePermission } from "@/server/auth/session"
 import { serviceOfPage } from "@/server/modules/service-pages/service"
@@ -17,7 +17,7 @@ export function generateStaticParams() {
 
 export default function EditPage({ params }: PageProps<"/admin/pages/[id]">) {
   return (
-    <Suspense fallback={<CardSkeleton />}>
+    <Suspense fallback={<PageBuilderSkeleton />}>
       <Gate params={params} />
     </Suspense>
   )

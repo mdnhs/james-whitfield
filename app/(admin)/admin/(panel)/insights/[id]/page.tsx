@@ -3,7 +3,7 @@ import { notFound } from "next/navigation"
 import { Suspense } from "react"
 import * as z from "zod"
 
-import { CardSkeleton } from "@/admin/components/dashboard/skeletons"
+import { ArticleEditorSkeleton } from "@/admin/components/dashboard/page-skeletons"
 import { ArticleEditorView } from "@/admin/modules/insights/article-editor-view"
 import { permissionFor } from "@/lib/admin/nav"
 import { requirePermission } from "@/server/auth/session"
@@ -19,7 +19,7 @@ export default function EditArticlePage({
   params,
 }: PageProps<"/admin/insights/[id]">) {
   return (
-    <Suspense fallback={<CardSkeleton />}>
+    <Suspense fallback={<ArticleEditorSkeleton />}>
       <Gate params={params} />
     </Suspense>
   )

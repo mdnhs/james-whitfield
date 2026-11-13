@@ -12,7 +12,6 @@ import { useState } from "react"
 import { toast } from "sonner"
 
 import { PageHeader } from "@/admin/components/dashboard/page-header"
-import { CardSkeleton } from "@/admin/components/dashboard/skeletons"
 import { SchemaForm } from "@/admin/components/schema-form/schema-form"
 import { usePermission } from "@/admin/lib/actor-context"
 import { globalsApi, parseResponse } from "@/admin/lib/api"
@@ -27,7 +26,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
-import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
@@ -39,6 +37,10 @@ import { GLOBALS } from "@/lib/content/globals"
 
 import { GLOBAL_FIELD_UI } from "./global-ui"
 import { globalQuery, globalRevisionsQuery } from "./queries"
+import {
+  FormCardSkeleton,
+  ListRowsSkeleton,
+} from "@/admin/components/dashboard/skeletons"
 
 // Tab icons for the keys edited side by side (Header & footer).
 const TAB_ICONS: Partial<Record<EditableGlobalKey, LucideIcon>> = {
@@ -120,7 +122,7 @@ function GlobalForm({
         </Button>
       </div>
     )
-  if (!doc.data) return <CardSkeleton />
+  if (!doc.data) return <FormCardSkeleton fields={6} title={false} />
   const { version, value } = doc.data
   return (
     <section aria-label={label} className="flex flex-col gap-4">
@@ -233,11 +235,7 @@ function GlobalHistory({
         </SheetHeader>
         <div className="flex-1 overflow-y-auto p-5">
           {list.isPending ? (
-            <div className="flex flex-col gap-3" aria-hidden>
-              {[0, 1, 2].map((i) => (
-                <Skeleton key={i} className="bg-skeleton h-14 rounded-xl" />
-              ))}
-            </div>
+            <ListRowsSkeleton rows={3} rowClassName="h-14" />
           ) : list.isError ? (
             <div role="alert" className="flex flex-col items-start gap-3">
               <p>{list.error.message}</p>

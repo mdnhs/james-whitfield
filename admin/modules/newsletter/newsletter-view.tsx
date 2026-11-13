@@ -28,7 +28,6 @@ import {
   PageHeader,
   SECONDARY_ACTION,
 } from "@/admin/components/dashboard/page-header"
-import { CardSkeleton } from "@/admin/components/dashboard/skeletons"
 import {
   StatusPill,
   type StatusTone,
@@ -58,6 +57,7 @@ import {
   type SubscriberRow,
   type SubscribersListParams,
 } from "./queries"
+import { TableSkeleton } from "@/admin/components/dashboard/skeletons"
 
 const PAGE_SIZE = 25
 const TABS = ["confirmed", "pending", "unsubscribed", "all"] as const
@@ -208,7 +208,7 @@ export function NewsletterView() {
         />
       </div>
       {list.isPending ? (
-        <CardSkeleton />
+        <TableSkeleton columns={4} actions={1} />
       ) : list.isError ? (
         <EmptyState
           title="Subscribers didn't load"

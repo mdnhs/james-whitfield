@@ -10,7 +10,6 @@ import {
   FORM_ACTION,
   PageHeader,
 } from "@/admin/components/dashboard/page-header"
-import { CardSkeleton } from "@/admin/components/dashboard/skeletons"
 import { useActor } from "@/admin/lib/actor-context"
 import { aiApi, parseResponse } from "@/admin/lib/api"
 import { ApiError } from "@/admin/lib/api-error"
@@ -46,6 +45,7 @@ import {
 } from "@/lib/ai/schema"
 import type { RoleName } from "@/lib/auth/permissions"
 import type { AiAdmin } from "@/server/modules/ai/service"
+import { FormCardSkeleton } from "@/admin/components/dashboard/skeletons"
 
 type KeyMode = "keep" | "replace" | "remove"
 type Values = {
@@ -84,7 +84,7 @@ export function AiSettingsView() {
           </Button>
         </div>
       ) : !doc.data ? (
-        <CardSkeleton />
+        <FormCardSkeleton fields={6} title={false} />
       ) : (
         <SettingsForm key={doc.data.version} doc={doc.data} />
       )}

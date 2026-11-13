@@ -23,7 +23,6 @@ import {
   PRIMARY_ACTION,
   FORM_ACTION,
 } from "@/admin/components/dashboard/page-header"
-import { CardSkeleton } from "@/admin/components/dashboard/skeletons"
 import { StatusPill } from "@/admin/components/dashboard/status-pill"
 import { DataTable } from "@/admin/components/data-table/data-table"
 import { DataTablePagination } from "@/admin/components/data-table/data-table-pagination"
@@ -66,6 +65,7 @@ import {
   type ArticleSummaryRow,
 } from "./queries"
 import { formatDublin } from "./schedule-time"
+import { TableSkeleton } from "@/admin/components/dashboard/skeletons"
 
 const features = tableFeatures({})
 const helper = createColumnHelper<typeof features, ArticleSummaryRow>()
@@ -405,7 +405,7 @@ export function ArticlesView() {
         </Toggle>
       </div>
       {list.isPending ? (
-        <CardSkeleton />
+        <TableSkeleton columns={5} />
       ) : list.isError ? (
         <EmptyState
           title="The articles didn't load"

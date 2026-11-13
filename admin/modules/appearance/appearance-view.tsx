@@ -8,7 +8,6 @@ import {
   FORM_ACTION,
   PageHeader,
 } from "@/admin/components/dashboard/page-header"
-import { CardSkeleton } from "@/admin/components/dashboard/skeletons"
 import { usePermission } from "@/admin/lib/actor-context"
 import { ApiError } from "@/admin/lib/api-error"
 import { parseResponse, themeApi } from "@/admin/lib/api"
@@ -59,6 +58,7 @@ import { ContrastPanel } from "./contrast-panel"
 import { PresetGallery } from "./preset-gallery"
 import { themeQuery, type ThemeAdminDoc } from "./queries"
 import { ThemeHistory } from "./theme-history"
+import { AppearancePageSkeleton } from "@/admin/components/dashboard/page-skeletons"
 
 // Widened: the picks are values, not literals.
 const RADII: readonly number[] = ADMIN_RADII
@@ -81,7 +81,7 @@ export function AppearanceView({
     setGeneration((g) => g + 1)
   }, [refetch])
   if (query.isPending || (query.isSuccess && !query.isFetchedAfterMount))
-    return <CardSkeleton />
+    return <AppearancePageSkeleton />
   if (query.isError)
     return (
       <div role="alert" className="flex flex-col items-start gap-3">

@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import { Suspense } from "react"
 
-import { CardSkeleton } from "@/admin/components/dashboard/skeletons"
+import { TaxonomyPageSkeleton } from "@/admin/components/dashboard/page-skeletons"
 import { TaxonomyView } from "@/admin/modules/insights/taxonomy-view"
 import { InsightsTabs } from "@/admin/modules/insights/insights-tabs"
 import { permissionFor } from "@/lib/admin/nav"
@@ -11,7 +11,7 @@ export const metadata: Metadata = { title: "Authors" }
 
 export default function AuthorsPage() {
   return (
-    <Suspense fallback={<CardSkeleton />}>
+    <Suspense fallback={<TaxonomyPageSkeleton />}>
       <Gate />
     </Suspense>
   )

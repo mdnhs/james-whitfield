@@ -11,7 +11,6 @@ import {
   PageHeader,
   FORM_ACTION,
 } from "@/admin/components/dashboard/page-header"
-import { CardSkeleton } from "@/admin/components/dashboard/skeletons"
 import { useActor, usePermission } from "@/admin/lib/actor-context"
 import { parseResponse, trackingApi } from "@/admin/lib/api"
 import { ApiError } from "@/admin/lib/api-error"
@@ -34,6 +33,7 @@ import { GA4_ID, GTM_ID, PIXEL_ID } from "@/lib/tracking/ids"
 
 import { trackingQuery, type TrackingAdminDoc } from "./queries"
 import { TrackingStatus } from "./tracking-status"
+import { FormCardSkeleton } from "@/admin/components/dashboard/skeletons"
 
 const idField = (pattern: RegExp, message: string) =>
   z
@@ -98,7 +98,10 @@ export function TrackingView() {
           </Button>
         </div>
       ) : !doc.data ? (
-        <CardSkeleton />
+        <div className="grid items-start gap-8 xl:grid-cols-[minmax(0,1fr)_22rem]">
+          <FormCardSkeleton fields={5} />
+          <FormCardSkeleton fields={2} />
+        </div>
       ) : (
         <div className="grid items-start gap-8 xl:grid-cols-[minmax(0,1fr)_22rem]">
           <TrackingForm

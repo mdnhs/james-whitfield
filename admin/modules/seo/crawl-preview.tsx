@@ -41,7 +41,7 @@ function Pane({
         </a>
       </div>
       {query.isPending ? (
-        <Skeleton className="h-32 w-full" />
+        <Skeleton aria-hidden className="bg-skeleton h-32 w-full" />
       ) : query.isError ? (
         <p role="alert" className="text-sm text-destructive">
           {query.error.message}

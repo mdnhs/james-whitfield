@@ -2,7 +2,7 @@ import { dehydrate, HydrationBoundary } from "@tanstack/react-query"
 import type { Metadata } from "next"
 import { Suspense } from "react"
 
-import { CardSkeleton } from "@/admin/components/dashboard/skeletons"
+import { ActivityPageSkeleton } from "@/admin/components/dashboard/page-skeletons"
 import { getQueryClient } from "@/admin/lib/query-client"
 import { ActivityView } from "@/admin/modules/activity/activity-view"
 import {
@@ -27,7 +27,7 @@ export default function ActivityPage({
   searchParams: SearchParams
 }) {
   return (
-    <Suspense fallback={<CardSkeleton />}>
+    <Suspense fallback={<ActivityPageSkeleton />}>
       <Activity searchParams={searchParams} />
     </Suspense>
   )

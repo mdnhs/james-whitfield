@@ -6,7 +6,6 @@ import { parseAsString, parseAsStringLiteral, useQueryStates } from "nuqs"
 import { useEffect } from "react"
 
 import { EmptyState } from "@/admin/components/dashboard/empty-state"
-import { CardSkeleton } from "@/admin/components/dashboard/skeletons"
 import { useActor } from "@/admin/lib/actor-context"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -16,6 +15,7 @@ import { cn } from "@/lib/utils"
 import { ChatThread } from "./chat-thread"
 import { formatMessageTime, useTabVisible } from "./present"
 import { type ChatListItem, chatListQuery, chatUnreadQuery } from "./queries"
+import { ChatRowsSkeleton } from "@/admin/components/dashboard/skeletons"
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -133,7 +133,7 @@ export function ChatInbox() {
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto">
           {list.isPending ? (
-            <CardSkeleton />
+            <ChatRowsSkeleton />
           ) : list.isError ? (
             <div role="alert" className="flex flex-col items-start gap-3 p-4">
               <p className="text-sm">{list.error.message}</p>

@@ -10,7 +10,8 @@ import {
   PageHeader,
   SECONDARY_ACTION,
 } from "@/admin/components/dashboard/page-header"
-import { CardSkeleton } from "@/admin/components/dashboard/skeletons"
+import { TableSkeleton } from "@/admin/components/dashboard/skeletons"
+import { LeadsBoardSkeleton } from "./leads-skeleton"
 import { usePermission } from "@/admin/lib/actor-context"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -217,7 +218,7 @@ export function LeadsView() {
       </div>
       {view === "board" ? (
         columns.some((c) => c.isPending) ? (
-          <CardSkeleton />
+          <LeadsBoardSkeleton />
         ) : columns.find((c) => c.isError) ? (
           <EmptyState
             title="Enquiries didn't load"
@@ -238,7 +239,7 @@ export function LeadsView() {
           />
         )
       ) : list.isPending ? (
-        <CardSkeleton />
+        <TableSkeleton columns={5} actions={1} />
       ) : list.isError ? (
         <EmptyState
           title="Enquiries didn't load"

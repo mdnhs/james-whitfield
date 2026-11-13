@@ -18,7 +18,7 @@ export function ThemePreference() {
     () => false
   )
   const { theme, setTheme } = useTheme()
-  if (!mounted) return <Skeleton className="h-9 w-64" />
+  if (!mounted) return <Skeleton aria-hidden className="bg-skeleton h-9 w-64" />
   return (
     <ToggleGroup
       aria-label="Theme"

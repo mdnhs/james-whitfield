@@ -21,7 +21,6 @@ import {
   PageHeader,
   PRIMARY_ACTION,
 } from "@/admin/components/dashboard/page-header"
-import { CardSkeleton } from "@/admin/components/dashboard/skeletons"
 import { DataTablePagination } from "@/admin/components/data-table/data-table-pagination"
 import { useActor, usePermission } from "@/admin/lib/actor-context"
 import { parseResponse, usersApi } from "@/admin/lib/api"
@@ -52,6 +51,7 @@ import type { UserAction } from "./present"
 import { usersListQuery, type UsersParams } from "./queries"
 import { RoleDialog } from "./role-dialog"
 import { UsersTable } from "./users-table"
+import { TableSkeleton } from "@/admin/components/dashboard/skeletons"
 
 const PAGE_SIZE = 25
 const ALL = "__all__"
@@ -262,7 +262,7 @@ export function UsersView() {
             </Select>
           </div>
           {list.isPending ? (
-            <CardSkeleton />
+            <TableSkeleton columns={5} actions={3} />
           ) : list.isError ? (
             <EmptyState
               title="People didn't load"

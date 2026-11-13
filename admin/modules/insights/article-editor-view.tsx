@@ -23,7 +23,7 @@ import {
   PRIMARY_ACTION,
   SECONDARY_ACTION,
 } from "@/admin/components/dashboard/page-header"
-import { CardSkeleton } from "@/admin/components/dashboard/skeletons"
+import { ArticleEditorSkeleton } from "@/admin/components/dashboard/page-skeletons"
 import { usePermission } from "@/admin/lib/actor-context"
 import { articlesApi, parseResponse } from "@/admin/lib/api"
 import { ApiError } from "@/admin/lib/api-error"
@@ -79,7 +79,7 @@ function ArticleLoader({ id }: { id: string }) {
   }, [refetch])
   // Only a copy fetched for this mount: a cached one may be versions old.
   if (query.isPending || (query.isSuccess && !query.isFetchedAfterMount))
-    return <EditorSkeleton />
+    return <ArticleEditorSkeleton />
   if (query.isError) {
     return (
       <div role="alert" className="flex flex-col items-start gap-3">
@@ -91,18 +91,6 @@ function ArticleLoader({ id }: { id: string }) {
     )
   }
   return <Editor key={generation} article={query.data} reload={reload} />
-}
-
-function EditorSkeleton() {
-  return (
-    <div className="flex flex-col gap-6" aria-busy>
-      <CardSkeleton className="h-24" />
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
-        <CardSkeleton className="h-96" />
-        <CardSkeleton className="h-96" />
-      </div>
-    </div>
-  )
 }
 
 function Editor({

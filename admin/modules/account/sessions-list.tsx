@@ -5,7 +5,7 @@ import { MonitorSmartphoneIcon } from "lucide-react"
 import { toast } from "sonner"
 
 import { relativeTime } from "@/admin/components/dashboard/format"
-import { CardSkeleton } from "@/admin/components/dashboard/skeletons"
+import { ListRowsSkeleton } from "@/admin/components/dashboard/skeletons"
 import { StatusPill } from "@/admin/components/dashboard/status-pill"
 import { accountApi, parseResponse } from "@/admin/lib/api"
 import { ApiError } from "@/admin/lib/api-error"
@@ -50,7 +50,8 @@ export function SessionsList() {
     onError: (error) => toast.error(error.message),
   })
 
-  if (sessions.isPending) return <CardSkeleton className="h-40" />
+  if (sessions.isPending)
+    return <ListRowsSkeleton rows={2} rowClassName="h-16" />
   if (sessions.isError) {
     return (
       <p role="alert" className="text-sm text-destructive">

@@ -267,12 +267,12 @@ export function ChatHint({
         )
           setExpanded(false)
       }}
-      className="relative w-[min(272px,calc(100vw-104px))] overflow-hidden rounded-[28px] border border-brand/30 bg-cream text-ink shadow-[0_18px_44px_-14px_rgb(13_38_38/0.55)] will-change-transform max-[339px]:hidden"
+      className="relative w-[min(272px,calc(100vw-104px))] overflow-hidden rounded-[28px] border border-white/16 bg-[rgba(13,38,38,0.5)] text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.18),0_18px_44px_-14px_rgb(0_0_0/0.5)] backdrop-blur-md backdrop-saturate-150 will-change-transform max-[339px]:hidden"
     >
       <span
         ref={sheen}
         aria-hidden
-        className="pointer-events-none absolute inset-0 z-10 opacity-0 [background:radial-gradient(220px_140px_at_var(--sheen-x,50%)_var(--sheen-y,50%),rgb(51_96_96/0.12),transparent_72%)]"
+        className="pointer-events-none absolute inset-0 z-10 opacity-0 [background:radial-gradient(220px_140px_at_var(--sheen-x,50%)_var(--sheen-y,50%),rgb(255_255_255/0.14),transparent_72%)]"
       />
       <span
         ref={band}
@@ -281,19 +281,19 @@ export function ChatHint({
       />
 
       <div ref={tray} className="h-0 overflow-hidden">
-        <ul className="border-b border-brand/15 px-2 pt-3 pb-1.5">
+        <ul className="border-b border-white/12 px-2 pt-3 pb-1.5">
           {PRESETS.map((preset) => (
             <li key={preset.label}>
               <button
                 type="button"
                 onClick={() => onOpen(preset.message)}
-                className="group/option relative flex min-h-11 w-full cursor-pointer items-center overflow-hidden rounded-full px-4 text-left text-[15px] text-ink outline-none"
+                className="group/option relative flex min-h-11 w-full cursor-pointer items-center overflow-hidden rounded-full px-4 text-left text-[15px] text-white/90 outline-none"
               >
                 <span
                   aria-hidden
                   className="absolute inset-0 origin-left scale-x-0 rounded-full bg-brand transition-transform duration-300 ease-out group-hover/option:scale-x-100 group-focus-visible/option:scale-x-100 motion-reduce:transition-none"
                 />
-                <span className="relative transition-colors duration-300 group-hover/option:text-cream group-focus-visible/option:text-cream motion-reduce:transition-none">
+                <span className="relative transition-colors duration-300 group-hover/option:text-white group-focus-visible/option:text-white motion-reduce:transition-none">
                   {preset.label}
                 </span>
               </button>
@@ -310,12 +310,12 @@ export function ChatHint({
           // Only an option opens the chat. A tap toggles, as a touch screen
           // has no pointer to leave.
           onClick={() => setExpanded((was) => (touchOnly() ? !was : true))}
-          className="min-h-14 min-w-0 flex-1 cursor-pointer py-2 pr-1 pl-5 text-left outline-none focus-visible:bg-brand/6"
+          className="min-h-14 min-w-0 flex-1 cursor-pointer py-2 pr-1 pl-5 text-left outline-none focus-visible:bg-white/8"
         >
           <span className="block overflow-hidden">
             <span
               data-hint-rise
-              className="flex items-center gap-2 font-display text-base leading-6 font-semibold text-brand-deep"
+              className="flex items-center gap-2 font-display text-base leading-6 font-semibold text-white"
             >
               {online ? (
                 <span
@@ -330,7 +330,7 @@ export function ChatHint({
           <span className="block overflow-hidden">
             <span
               data-hint-rise
-              className="block text-[13px] leading-5 text-ink-muted"
+              className="block text-[13px] leading-5 text-white/80"
             >
               Questions about sessions or booking?
             </span>
@@ -340,7 +340,7 @@ export function ChatHint({
           type="button"
           onClick={dismiss}
           aria-label="Hide this message"
-          className="mr-1.5 grid size-11 shrink-0 cursor-pointer place-items-center rounded-full text-ink-muted outline-none hover:text-brand-deep focus-visible:text-brand-deep focus-visible:outline-2 focus-visible:outline-brand"
+          className="mr-1.5 grid size-11 shrink-0 cursor-pointer place-items-center rounded-full text-white/60 outline-none hover:text-white focus-visible:text-white focus-visible:outline-2 focus-visible:outline-white/70"
         >
           <X className="size-4" aria-hidden />
         </button>

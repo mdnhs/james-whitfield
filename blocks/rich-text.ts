@@ -78,3 +78,25 @@ export const ArticleBodyDoc = z.object({
 })
 export type ArticleBodyDoc = z.infer<typeof ArticleBodyDoc>
 export type ArticleBodyNode = ArticleBodyDoc["content"][number]
+
+// Plain text as a rich text document: a blank line starts a new paragraph.
+// For fields that were plain text before they moved to the editor.
+export function docFromText(value: string): RichTextDoc {
+  return {
+    type: "doc",
+    content: value
+      .split(/\n\s*\n/)
+      .map((p) => p.trim())
+      .filter(Boolean)
+      .map((text) => ({
+        type: "paragraph",
+        content: [{ type: "text", text }],
+      })),
+  }
+}
+
+// A rich text field that still accepts the plain text it replaced.
+export const RichTextFromText = z.preprocess(
+  (value) => (typeof value === "string" ? docFromText(value) : value),
+  RichTextDoc
+)

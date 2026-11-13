@@ -1,4 +1,5 @@
 // blocks/service-template.ts
+import { docFromText } from "./rich-text"
 import type { PageDocument } from "./page"
 import type { BlockInstance } from "./registry"
 
@@ -62,7 +63,9 @@ export function serviceTemplate(
         data: {
           eyebrow: "What it is",
           title: fit(`What ${name} is`, 80),
-          body: `${fit(service.body || service.title, 900)}\n\nDescribe how sessions for ${name} work, what clients notice and what makes this approach different.`,
+          body: docFromText(
+            `${fit(service.body || service.title, 900)}\n\nDescribe how sessions for ${name} work, what clients notice and what makes this approach different.`
+          ),
           forYouHeading: "This is for you if",
           forYou: [
             "You want practical change, not just talk",

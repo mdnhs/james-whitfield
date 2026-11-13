@@ -43,7 +43,7 @@ export const BLOCK_FIELD_UI: Partial<Record<BlockType, FieldOverrides>> = {
     cta: { label: "Button", description: "Leave empty for no button." },
   },
   "service.intro": {
-    body: { description: "A blank line starts a new paragraph." },
+    body: { label: "Description" },
     forYouHeading: { label: "List heading" },
     forYou: { label: "This is for you if" },
   },

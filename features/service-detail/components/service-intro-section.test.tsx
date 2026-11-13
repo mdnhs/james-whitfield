@@ -9,7 +9,22 @@ import { ServiceIntroSection } from "./service-intro-section"
 const content: BlockView<"service.intro"> = {
   eyebrow: "What it is",
   title: "Hypnotherapy for anxiety",
-  body: "First paragraph.\n\nSecond paragraph.",
+  body: {
+    type: "doc",
+    content: [
+      {
+        type: "paragraph",
+        content: [{ type: "text", text: "First paragraph." }],
+      },
+      {
+        type: "paragraph",
+        content: [
+          { type: "text", text: "Second " },
+          { type: "text", text: "paragraph.", marks: [{ type: "bold" }] },
+        ],
+      },
+    ],
+  },
   forYouHeading: "This is for you if",
   forYou: ["You overthink at night", "You avoid busy places", "You want tools"],
 }
@@ -21,7 +36,8 @@ describe("ServiceIntroSection", () => {
     expect(heading.textContent).toBe(content.title)
     expect(heading.id).toBe("about-heading")
     expect(screen.getByText("First paragraph.")).toBeTruthy()
-    expect(screen.getByText("Second paragraph.")).toBeTruthy()
+    // Rich text from the editor: marks render too.
+    expect(screen.getByText("paragraph.").tagName).toBe("STRONG")
     expect(
       screen.getByRole("heading", { level: 3, name: content.forYouHeading })
     ).toBeTruthy()

@@ -3,6 +3,7 @@ import * as z from "zod"
 
 import { defineBlock } from "./define-block"
 import { IconField, text } from "./fields"
+import { RichTextFromText } from "./rich-text"
 
 // The sections only a service detail page (/services/<slug>) carries. Their
 // lists are inline: each service writes its own, unshared with other pages.
@@ -14,8 +15,9 @@ export const serviceIntro = defineBlock({
   schema: z.object({
     eyebrow: text(40),
     title: text(80),
-    // Plain text; a blank line starts a new paragraph.
-    body: text(1200),
+    // Edited in the rich text editor (Tiptap). Bodies saved as plain text
+    // before the editor read as one paragraph per blank line.
+    body: RichTextFromText,
     forYouHeading: text(60),
     forYou: z.array(text(120)).min(2).max(6),
   }),

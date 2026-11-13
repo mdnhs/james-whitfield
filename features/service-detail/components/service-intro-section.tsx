@@ -3,6 +3,7 @@ import Image from "next/image"
 import type { BlockView } from "@/blocks/media-refs"
 import { Eyebrow } from "@/components/eyebrow"
 import { Container } from "@/components/layout/container"
+import { RichText } from "@/features/insights/components/rich-text"
 
 // "What it is & who it's for": the service in the editor's words on the
 // left, and on the right the "this is for you if" list as a pine card (the
@@ -15,10 +16,6 @@ export function ServiceIntroSection({
   content: BlockView<"service.intro">
 }) {
   const { eyebrow, title, body, forYouHeading, forYou } = content
-  const paragraphs = body
-    .split(/\n\s*\n/)
-    .map((p) => p.trim())
-    .filter(Boolean)
 
   return (
     <section
@@ -38,15 +35,11 @@ export function ServiceIntroSection({
           >
             {title}
           </h2>
-          <div data-motion="rise" className="flex max-w-152 flex-col gap-4">
-            {paragraphs.map((paragraph, i) => (
-              <p
-                key={i}
-                className="text-[15px] leading-5.75 text-[#686561] sm:text-lg sm:leading-[1.6] sm:text-text-muted"
-              >
-                {paragraph}
-              </p>
-            ))}
+          <div
+            data-motion="rise"
+            className="flex max-w-152 flex-col gap-4 text-[15px] leading-5.75 text-[#686561] sm:text-lg sm:leading-[1.6] sm:text-text-muted"
+          >
+            <RichText doc={body} />
           </div>
         </div>
 

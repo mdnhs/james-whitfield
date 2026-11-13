@@ -5,6 +5,7 @@ import { serviceFormatNodes } from "@/lib/seo/json-ld"
 
 import { pageDocumentFor } from "./page"
 import { BlockInstance } from "./registry"
+import { serviceIntro } from "./service"
 import { serviceTemplate } from "./service-template"
 
 const BAND = "00000000-0000-4000-8000-0000000000b1"
@@ -109,5 +110,34 @@ describe("hero.page cta", () => {
     expect(result.success).toBe(true)
     if (result.success && result.data.type === "hero.page")
       expect(result.data.data.cta).toBeNull()
+  })
+})
+
+describe("service.intro body", () => {
+  it("is a rich text document in the template", () => {
+    const doc = serviceTemplate(
+      { slug: "x", title: "X", body: "Hello." },
+      "00000000-0000-4000-8000-000000000001",
+      "00000000-0000-4000-8000-000000000002"
+    )
+    const intro = doc.blocks.find((b) => b.type === "service.intro")!
+    expect((intro.data as { body: { type: string } }).body.type).toBe("doc")
+  })
+
+  it("still reads a body saved as plain text, one paragraph per blank line", () => {
+    const parsed = serviceIntro.schema.parse({
+      eyebrow: "E",
+      title: "T",
+      body: "One.\n\nTwo.",
+      forYouHeading: "H",
+      forYou: ["a", "b"],
+    })
+    expect(parsed.body).toEqual({
+      type: "doc",
+      content: [
+        { type: "paragraph", content: [{ type: "text", text: "One." }] },
+        { type: "paragraph", content: [{ type: "text", text: "Two." }] },
+      ],
+    })
   })
 })

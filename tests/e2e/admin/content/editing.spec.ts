@@ -27,7 +27,6 @@ test("edit, preview, publish", async ({ page, browser }) => {
   ).toBeVisible()
 
   await page.goto(`/admin/pages/${id}`)
-  await page.getByRole("button", { name: /^Page hero/ }).click()
   await page
     .getByRole("group", { name: "Page hero" })
     .getByLabel("Title", { exact: true })
@@ -140,7 +139,7 @@ test("reopening a page after editing it saves without a conflict", async ({
     .getByRole("group", { name: "Page hero" })
     .getByLabel("Subtitle", { exact: true })
   async function openHero() {
-    await page.getByRole("button", { name: /^Page hero/ }).click()
+    // Every section's form is on the page; no outline to pick from.
     await expect(subtitle).toBeVisible()
   }
   await page.goto(`/admin/pages/${a.id}`)

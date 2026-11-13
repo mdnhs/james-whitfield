@@ -32,14 +32,18 @@ test("turn on a service's details page, edit its hero, publish", async ({
   await expect(page).toHaveURL(/\/admin\/pages\/[0-9a-f-]{36}$/)
 
   // Seven fixed sections and nothing that adds, removes, hides or moves one.
-  const outline = page.getByRole("list", { name: "Blocks" })
-  await expect(outline.getByRole("listitem")).toHaveCount(7)
-  await expect(
-    page.getByRole("button", { name: /^(Add|Remove|Hide|Show|Reorder)\b/ })
-  ).toHaveCount(0)
+  await expect(page.locator("[data-block-card]")).toHaveCount(7)
+  await expect(page.getByRole("button", { name: "Add block" })).toHaveCount(0)
+  for (const label of await page
+    .locator("[data-block-card] h2")
+    .allTextContents()) {
+    for (const verb of ["Remove", "Hide", "Show", "Reorder"])
+      await expect(
+        page.getByRole("button", { name: `${verb} ${label}`, exact: true })
+      ).toHaveCount(0)
+  }
 
   const title = `Calmer ${Date.now()}`
-  await outline.getByRole("button", { name: /^Page hero/ }).click()
   await page
     .getByRole("group", { name: "Page hero" })
     .getByLabel("Title", { exact: true })

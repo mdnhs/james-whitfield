@@ -29,7 +29,7 @@ export function SectionTabs({ children }: { children: React.ReactNode }) {
     <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
       <nav
         aria-label={section.label}
-        className="-mx-1 shrink-0 overflow-x-auto lg:mx-0 lg:w-52 lg:overflow-visible"
+        className="-mx-1 shrink-0 overflow-x-auto lg:sticky lg:top-0 lg:mx-0 lg:max-h-[var(--content-h)] lg:w-52 lg:self-start lg:overflow-y-auto"
       >
         <p className="mb-2 hidden px-3 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase lg:block">
           {section.label}

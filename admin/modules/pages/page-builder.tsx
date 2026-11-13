@@ -5,7 +5,6 @@ import {
   ArrowLeftIcon,
   EyeIcon,
   HistoryIcon,
-  LayersIcon,
   LockIcon,
   RotateCwIcon,
   TriangleAlertIcon,
@@ -41,7 +40,6 @@ import { AddressForm } from "./address-form"
 import { BlockForm } from "./block-form"
 import { BLOCK_ICONS } from "./block-icons"
 import { BlockMeta } from "./block-meta"
-import { BlockOutline } from "./block-outline"
 import {
   docReducer,
   errorsByBlock,
@@ -123,9 +121,6 @@ function Builder({
   const readOnly = !canEdit
   const [doc, setDoc] = useState(() => toDraft(page.draft))
   const docRef = useRef(doc)
-  const [selectedId, setSelectedId] = useState<string | null>(
-    doc.blocks.find((block) => !block.hidden)?.id ?? null
-  )
   // Keyed by block id when publish fails, so a later reorder cannot move
   // the markers; a block's own edit clears them.
   const [blockErrors, setBlockErrors] = useState<
@@ -198,13 +193,10 @@ function Builder({
     void reload()
   }, [getVersion, reload, reset])
 
-  const selected = doc.blocks.find((block) => block.id === selectedId) ?? null
-  const invalidIds = useMemo(() => new Set(blockErrors.keys()), [blockErrors])
-  const onData = useCallback(
-    (data: Record<string, unknown>) => {
-      if (selectedId) apply({ type: "data", id: selectedId, data })
-    },
-    [apply, selectedId]
+  // Sections are fixed: every visible one is edited in place, top to bottom.
+  const visibleBlocks = useMemo(
+    () => doc.blocks.filter((block) => !block.hidden),
+    [doc.blocks]
   )
 
   // ⌘S / Ctrl+S saves now (a modifier shortcut, not a single-key hotkey).
@@ -229,7 +221,10 @@ function Builder({
       setBlockErrors(errors)
       setProblems(publishProblems(error.fieldErrors, docRef.current))
       const first = firstVisibleErrorBlock(errors, docRef.current)
-      if (first) setSelectedId(first)
+      if (first)
+        document
+          .getElementById(`block-${first}`)
+          ?.scrollIntoView({ behavior: "smooth", block: "start" })
     }
     toast.error(error.message)
   }
@@ -286,9 +281,6 @@ function Builder({
     state.status === "conflict" &&
     state.conflict !== null &&
     state.conflict !== dismissed
-  const SelectedIcon = selected
-    ? BLOCK_ICONS[BLOCK_BY_TYPE[selected.type].icon]
-    : null
 
   const back = backLinkForPage(page)
 
@@ -438,91 +430,64 @@ function Builder({
           </TabsTrigger>
         </TabsList>
         <TabsContent value="content">
-          <div className="grid items-start gap-5 xl:grid-cols-[272px_minmax(0,1fr)_minmax(0,1.1fr)]">
-            <nav
-              aria-label="Page outline"
-              className="rounded-card flex flex-col gap-4 bg-card p-4 xl:sticky xl:top-4 xl:max-h-[calc(var(--content-h)-2rem)] xl:overflow-y-auto"
-            >
-              <div className="flex items-center justify-between gap-2 px-1">
-                <h2 className="text-card-title">Blocks</h2>
-                <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-semibold text-muted-foreground tabular-nums">
-                  {doc.blocks.length}
-                </span>
-              </div>
-              {doc.blocks.length === 0 ? (
-                <p className="rounded-xl border border-dashed p-4 text-center text-sm text-muted-foreground">
-                  No blocks yet.
-                </p>
-              ) : (
-                <BlockOutline
-                  blocks={doc.blocks}
-                  selectedId={selectedId}
-                  invalidIds={invalidIds}
-                  readOnly={readOnly}
-                  onSelect={setSelectedId}
-                />
-              )}
-            </nav>
-            <section
-              aria-label="Block settings"
-              className="rounded-card flex min-w-0 flex-col gap-6 bg-card p-5 sm:p-6"
-            >
-              {selected ? (
-                <>
-                  <div className="flex items-center gap-3">
-                    <span
-                      aria-hidden
-                      className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground"
-                    >
-                      {SelectedIcon ? (
-                        <SelectedIcon className="size-5" />
-                      ) : null}
-                    </span>
-                    <div className="min-w-0">
-                      <h2 className="text-card-title truncate">
-                        {BLOCK_BY_TYPE[selected.type].label}
-                      </h2>
-                      <p className="truncate font-mono text-xs text-muted-foreground">
-                        #{selected.anchor}
-                      </p>
+          <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
+            <div className="flex min-w-0 flex-col gap-5">
+              {visibleBlocks.map((block) => {
+                const Icon = BLOCK_ICONS[BLOCK_BY_TYPE[block.type].icon]
+                const label = BLOCK_BY_TYPE[block.type].label
+                return (
+                  <section
+                    key={block.id}
+                    id={`block-${block.id}`}
+                    aria-labelledby={`block-${block.id}-title`}
+                    data-block-card
+                    data-invalid={blockErrors.has(block.id) || undefined}
+                    className="rounded-card flex min-w-0 scroll-mt-4 flex-col gap-6 bg-card p-5 data-invalid:ring-2 data-invalid:ring-destructive/60 sm:p-6"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span
+                        aria-hidden
+                        className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground"
+                      >
+                        {Icon ? <Icon className="size-5" /> : null}
+                      </span>
+                      <div className="min-w-0">
+                        <h2
+                          id={`block-${block.id}-title`}
+                          className="text-card-title truncate"
+                        >
+                          {label}
+                        </h2>
+                        <p className="truncate font-mono text-xs text-muted-foreground">
+                          #{block.anchor}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                  <BlockForm
-                    key={selected.id}
-                    block={selected}
-                    errors={blockErrors.get(selected.id)}
-                    readOnly={readOnly}
-                    pageTitle={page.title}
-                    onChange={onData}
-                  />
-                  <div className="flex flex-col gap-4 border-t pt-6">
-                    <h3 className="text-[15px] font-semibold">
-                      Section settings
-                    </h3>
-                    <BlockMeta
-                      block={selected}
+                    <BlockForm
+                      block={block}
+                      errors={blockErrors.get(block.id)}
                       readOnly={readOnly}
-                      onChange={(patch) =>
-                        apply({ type: "meta", id: selected.id, patch })
+                      pageTitle={page.title}
+                      onChange={(data) =>
+                        apply({ type: "data", id: block.id, data })
                       }
                     />
-                  </div>
-                </>
-              ) : (
-                <div className="flex flex-col items-center gap-3 py-16 text-center">
-                  <span
-                    aria-hidden
-                    className="flex size-12 items-center justify-center rounded-2xl bg-accent text-accent-foreground"
-                  >
-                    <LayersIcon className="size-6" />
-                  </span>
-                  <p className="font-semibold">Choose a block to edit it</p>
-                  <p className="max-w-xs text-sm text-muted-foreground">
-                    Pick one from the outline to change its content.
-                  </p>
-                </div>
-              )}
-            </section>
+                    <div className="flex flex-col gap-4 border-t pt-6">
+                      <h3 className="text-[15px] font-semibold">
+                        Section settings
+                      </h3>
+                      <BlockMeta
+                        block={block}
+                        readOnly={readOnly}
+                        onChange={(patch) =>
+                          apply({ type: "meta", id: block.id, patch })
+                        }
+                      />
+                    </div>
+                  </section>
+                )
+              })}
+            </div>
             <PreviewPane
               path={page.path}
               refreshKey={state.savedAt}

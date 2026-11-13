@@ -11,11 +11,9 @@ test("add a hidden FAQ from the Home page's FAQ section, then remove it", async 
 }) => {
   const question = `E2E question ${Date.now()}?`
   await page.goto("/admin/website/home")
-  await page
-    .getByRole("list", { name: "Blocks" })
-    .getByRole("button", { name: /^FAQ\s*#faq/ })
-    .click()
-  const panel = page.getByRole("region", { name: "FAQs" })
+  const panel = page
+    .getByRole("region", { name: "FAQ", exact: true })
+    .getByRole("region", { name: "FAQs" })
   await panel.getByRole("button", { name: "Add FAQ" }).click()
   const sheet = page.getByRole("dialog")
   await sheet.getByLabel("Question").fill(question)

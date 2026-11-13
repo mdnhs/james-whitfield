@@ -89,11 +89,20 @@ function GroupWidget({ field, control }: Props) {
       {field.description ? (
         <FieldDescription>{field.description}</FieldDescription>
       ) : null}
-      <FieldGroup>
-        {(field.fields ?? []).map((child) => (
-          <FieldWidget key={child.name} field={child} control={control} />
-        ))}
-      </FieldGroup>
+      {compactColumns(field) ? (
+        // A few short text fields (a button's label and link) side by side.
+        <div className="grid gap-4 sm:grid-cols-2">
+          {(field.fields ?? []).map((child) => (
+            <FieldWidget key={child.name} field={child} control={control} />
+          ))}
+        </div>
+      ) : (
+        <FieldGroup>
+          {(field.fields ?? []).map((child) => (
+            <FieldWidget key={child.name} field={child} control={control} />
+          ))}
+        </FieldGroup>
+      )}
     </FieldSet>
   )
 }
@@ -203,11 +212,11 @@ function ListWidget({ field, control }: Props) {
     (fieldState.error as { root?: { message?: string } } | undefined)?.root
       ?.message
   const controls = (index: number) => (
-    <div className="flex gap-1">
+    <div className="flex shrink-0 gap-0.5">
       <Button
         type="button"
-        variant="outline"
-        size="icon"
+        variant="ghost"
+        size="icon-sm"
         aria-label={`Move ${field.label} ${index + 1} up`}
         disabled={index === 0}
         onClick={() => move(index, index - 1)}
@@ -216,8 +225,8 @@ function ListWidget({ field, control }: Props) {
       </Button>
       <Button
         type="button"
-        variant="outline"
-        size="icon"
+        variant="ghost"
+        size="icon-sm"
         aria-label={`Move ${field.label} ${index + 1} down`}
         disabled={index === items.length - 1}
         onClick={() => move(index, index + 1)}
@@ -227,7 +236,8 @@ function ListWidget({ field, control }: Props) {
       <Button
         type="button"
         variant="ghost"
-        size="icon"
+        size="icon-sm"
+        className="hover:bg-danger-soft hover:text-danger text-muted-foreground"
         aria-label={`Remove ${field.label} ${index + 1}`}
         disabled={items.length <= min}
         onClick={() => set(items.filter((_, i) => i !== index))}
@@ -237,10 +247,26 @@ function ListWidget({ field, control }: Props) {
     </div>
   )
   const inline = item.widget === "text"
+  // A small item of a few short text fields (a link's label and address)
+  // is one row: its inputs side by side, column names once above the list.
+  const columns = compactColumns(item)
   return (
     <FieldSet data-invalid={error ? true : undefined}>
       <FieldLegend variant="label">{field.label}</FieldLegend>
-      <ol className="flex flex-col gap-3">
+      {columns && items.length > 0 ? (
+        <div
+          aria-hidden
+          className="grid gap-2 pr-24 text-xs font-medium text-muted-foreground"
+          style={{
+            gridTemplateColumns: `repeat(${columns.length}, minmax(0, 1fr))`,
+          }}
+        >
+          {columns.map((column) => (
+            <span key={column.name}>{columnLabel(column)}</span>
+          ))}
+        </div>
+      ) : null}
+      <ol className={columns ? "flex flex-col gap-2" : "flex flex-col gap-3"}>
         {items.map((_, index) => {
           const child = {
             ...rebase(item, `${field.name}.$`, `${field.name}.${index}`),
@@ -248,7 +274,14 @@ function ListWidget({ field, control }: Props) {
           }
           return (
             <li key={index}>
-              {inline ? (
+              {columns ? (
+                <CompactGroupItem
+                  label={child.label}
+                  fields={child.fields ?? []}
+                  control={control}
+                  actions={controls(index)}
+                />
+              ) : inline ? (
                 <InlineTextItem
                   field={child}
                   control={control}
@@ -303,6 +336,72 @@ function ListWidget({ field, control }: Props) {
       ) : null}
       {error ? <FieldError>{error}</FieldError> : null}
     </FieldSet>
+  )
+}
+
+// An item that fits on one row: a group of at most three short text fields.
+function compactColumns(item: FormField): FormField[] | null {
+  if (item.widget !== "group") return null
+  const fields = item.fields ?? []
+  if (fields.length === 0 || fields.length > 3) return null
+  return fields.every((f) => f.widget === "text" && !f.description)
+    ? fields
+    : null
+}
+
+const columnLabel = (field: FormField) => field.label
+
+function CompactGroupItem({
+  label,
+  fields,
+  control,
+  actions,
+}: {
+  label: string
+  fields: FormField[]
+  control: Control<FieldValues>
+  actions: React.ReactNode
+}) {
+  return (
+    <fieldset aria-label={label} className="flex items-start gap-2">
+      <div
+        className="grid min-w-0 flex-1 gap-2"
+        style={{
+          gridTemplateColumns: `repeat(${fields.length}, minmax(0, 1fr))`,
+        }}
+      >
+        {fields.map((inner) => (
+          <Controller
+            key={inner.name}
+            name={inner.name}
+            control={control}
+            render={({ field: { ref, ...input }, fieldState }) => (
+              <div className="flex min-w-0 flex-col gap-1">
+                <Input
+                  ref={ref}
+                  name={input.name}
+                  aria-label={inner.label}
+                  placeholder={
+                    /(^|\.)href$/.test(inner.name)
+                      ? "/contact, #faq or https://…"
+                      : columnLabel(inner)
+                  }
+                  maxLength={inner.maxLength}
+                  aria-invalid={fieldState.error ? true : undefined}
+                  value={input.value ?? ""}
+                  onBlur={input.onBlur}
+                  onChange={(event) => input.onChange(event.target.value)}
+                />
+                {fieldState.error?.message ? (
+                  <FieldError>{fieldState.error.message}</FieldError>
+                ) : null}
+              </div>
+            )}
+          />
+        ))}
+      </div>
+      {actions}
+    </fieldset>
   )
 }
 

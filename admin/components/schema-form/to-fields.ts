@@ -80,12 +80,21 @@ function unwrap(node: JsonNode): { node: JsonNode; nullable: boolean } {
   return { node, nullable: false }
 }
 
+// Field names an editor would not say: shown in plain words instead.
+const PLAIN_LABELS: Record<string, string> = {
+  href: "Link",
+  cta: "Button",
+  url: "URL",
+}
+
 const humanise = (name: string) => {
   const last =
     name
       .split(".")
       .filter((part) => part !== "$")
       .at(-1) ?? ""
+  const plain = PLAIN_LABELS[last]
+  if (plain) return plain
   const words = last
     .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
     .replace(/[-_]/g, " ")

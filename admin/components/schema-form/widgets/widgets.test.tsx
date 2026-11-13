@@ -1,6 +1,13 @@
 // @vitest-environment jsdom
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { useState } from "react"
 import * as z from "zod"
@@ -306,7 +313,9 @@ describe("media widget", () => {
     await waitFor(() =>
       expect(onSubmit).toHaveBeenCalledWith({ image: { mediaId: ID } })
     )
-    await user.click(await screen.findByRole("button", { name: "Remove image" }))
+    await user.click(
+      await screen.findByRole("button", { name: "Remove image" })
+    )
     await user.click(screen.getByRole("button", { name: "Save" }))
     await waitFor(() =>
       expect(onSubmit).toHaveBeenLastCalledWith({ image: null })
@@ -372,5 +381,39 @@ describe("media picker upload", () => {
 describe("selection schema", () => {
   it("rejects chosen with no ids (the widget keeps the mode and the form says so)", () => {
     expect(Selection.safeParse({ mode: "chosen", ids: [] }).success).toBe(false)
+  })
+})
+
+describe("compact list rows", () => {
+  it("shows a link list as one row per link, with plain column names", () => {
+    wrap(
+      <SchemaForm
+        schema={z.object({
+          links: z.array(
+            z.object({ label: z.string().max(60), href: z.string().max(120) })
+          ),
+        })}
+        defaultValues={{
+          links: [
+            { label: "About", href: "/about" },
+            { label: "Contact", href: "/contact" },
+          ],
+        }}
+        onSubmit={vi.fn()}
+        submitLabel="Save"
+      />
+    )
+    // Column names once, in plain words ("href" reads "Link").
+    expect(screen.getAllByText("Link")).toHaveLength(1)
+    const first = screen.getByRole("group", { name: "Links 1" })
+    expect(
+      within(first).getByRole("textbox", { name: "Label" })
+    ).toHaveProperty("value", "About")
+    expect(within(first).getByRole("textbox", { name: "Link" })).toHaveProperty(
+      "value",
+      "/about"
+    )
+    // No per-item heading text on screen.
+    expect(screen.queryByText("Links 1")).toBeNull()
   })
 })

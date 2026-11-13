@@ -23,6 +23,7 @@ import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import type { ArticleDraft } from "@/lib/content/article"
 import { plainText, readingMinutes } from "@/lib/content/reading-time"
+import { cn } from "@/lib/utils"
 
 import { authorsQuery, categoriesQuery, type ArticleDetail } from "./queries"
 import { formatDublin } from "./schedule-time"
@@ -111,17 +112,20 @@ export function ArticleSidebar({
           onBlur={() => setExcerptFocused(false)}
           onChange={(event) => patch({ excerpt: event.target.value })}
         />
-        {showExcerptCount ? (
-          <p
-            className={
-              draft.excerpt.length > EXCERPT_MAX
-                ? "text-xs text-destructive tabular-nums"
-                : "text-xs text-muted-foreground tabular-nums"
-            }
-          >
-            {draft.excerpt.length}/{EXCERPT_MAX}
-          </p>
-        ) : null}
+        {/* Always laid out: removing it on blur moved the controls below
+            between mousedown and mouseup, so a click on them was lost. */}
+        <p
+          aria-hidden={showExcerptCount ? undefined : true}
+          className={cn(
+            "text-xs tabular-nums",
+            draft.excerpt.length > EXCERPT_MAX
+              ? "text-destructive"
+              : "text-muted-foreground",
+            !showExcerptCount && "invisible"
+          )}
+        >
+          {draft.excerpt.length}/{EXCERPT_MAX}
+        </p>
         {excerptError ? <FieldError>{excerptError}</FieldError> : null}
       </Field>
       <MediaWidget

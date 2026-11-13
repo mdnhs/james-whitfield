@@ -8,6 +8,7 @@ import { Turnstile } from "@/features/contact/components/turnstile"
 import type { ChatStatus, VisitorMessage } from "@/lib/chat/schema"
 import { cn } from "@/lib/utils"
 
+import { linkify } from "./linkify"
 import { TypingIndicator } from "./typing-indicator"
 import { usePanelMoments } from "./use-chat-moments"
 import type { ChatApi } from "./use-chat"
@@ -32,7 +33,8 @@ const bubble =
   "max-w-[85%] rounded-2xl px-4 py-2.5 text-base leading-6 break-words whitespace-pre-wrap"
 const theirs = "rounded-bl-md bg-white/12 text-white"
 
-// Plain text only: bodies render as React text, never as markup or links.
+// Bodies render as React text, never as markup. Staff/AI replies get their
+// emails and phone/WhatsApp numbers turned into links (see linkify).
 function Bubble({ m, botName }: { m: VisitorMessage; botName: string }) {
   if (m.sender === "system") {
     return (
@@ -73,7 +75,7 @@ function Bubble({ m, botName }: { m: VisitorMessage; botName: string }) {
               : "rounded-bl-md bg-white/18 text-white"
         )}
       >
-        {m.body}
+        {mine ? m.body : linkify(m.body)}
       </p>
     </li>
   )
@@ -196,16 +198,22 @@ export function ChatPanel({
     log: scroller,
   })
 
-  // A new preset fills the composer and queues it: adjust during render, not
-  // in an effect. An ended chat has no composer, so it only opens.
+  // A new preset only fills the composer, so the visitor can edit it and send
+  // it themselves: adjust during render, not in an effect. An ended chat has
+  // no composer, so it only opens.
   const [presetSeen, setPresetSeen] = useState(0)
   if (preset && preset.id !== presetSeen) {
     setPresetSeen(preset.id)
-    if (preset.text && !ended) {
-      setDraft(preset.text)
-      setQueued(true)
-    }
+    if (preset.text && !ended) setDraft(preset.text)
   }
+
+  // Put the caret after a preset, ready to edit or add to it.
+  useEffect(() => {
+    const el = composer.current
+    if (!open || !presetSeen || !el) return
+    el.focus({ preventScroll: true })
+    el.setSelectionRange(el.value.length, el.value.length)
+  }, [presetSeen, open])
 
   // Focus the composer on open (or Start a new chat once a chat ended), and
   // again when the view swaps between the two.
@@ -362,7 +370,7 @@ export function ChatPanel({
       inert={!open}
       tabIndex={-1}
       onKeyDown={onKeyDown}
-      className="fixed inset-0 z-80 flex h-svh w-full flex-col overflow-hidden bg-[rgba(18,52,51,0.72)] text-white shadow-[0_24px_60px_-18px_rgb(0_0_0/0.6)] outline-none backdrop-blur-xl backdrop-saturate-150 sm:inset-auto sm:right-4 sm:bottom-[calc(max(1rem,env(safe-area-inset-bottom))+4.75rem)] sm:h-[min(560px,calc(100svh-7rem))] sm:w-95 sm:rounded-3xl sm:right-6"
+      className="fixed inset-0 z-80 flex h-svh w-full flex-col overflow-hidden bg-[rgba(18,52,51,0.72)] text-white shadow-[0_24px_60px_-18px_rgb(0_0_0/0.6)] backdrop-blur-xl backdrop-saturate-150 outline-none sm:inset-auto sm:right-4 sm:right-6 sm:bottom-[calc(max(1rem,env(safe-area-inset-bottom))+4.75rem)] sm:h-[min(560px,calc(100svh-7rem))] sm:w-95 sm:rounded-3xl"
     >
       <header
         data-chat-part
@@ -394,7 +402,10 @@ export function ChatPanel({
           >
             Chat with us
           </h2>
-          <p ref={statusLine} className="truncate text-sm leading-5 text-white/75">
+          <p
+            ref={statusLine}
+            className="truncate text-sm leading-5 text-white/75"
+          >
             {statusText}
           </p>
         </div>
@@ -491,7 +502,10 @@ export function ChatPanel({
                   }
                 }}
                 data-lenis-prevent
-                className={cn(field, "max-h-28 min-h-11 min-w-0 flex-1 resize-none")}
+                className={cn(
+                  field,
+                  "max-h-28 min-h-11 min-w-0 flex-1 resize-none"
+                )}
               />
               <button
                 type="submit"

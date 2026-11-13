@@ -1,11 +1,5 @@
 // @vitest-environment jsdom
-import {
-  act,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-} from "@testing-library/react"
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { StrictMode, useEffect, useState } from "react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
@@ -200,27 +194,37 @@ describe("no start form", () => {
     expect(screen.queryByTestId("turnstile")).toBeNull()
   })
 
-  it("sends a preset as the first message", async () => {
+  it("fills the composer with a preset but leaves sending to the visitor", async () => {
     queue = [
       { status: 404, body: {} },
       { status: 201, body: view([msg(1, "visitor")]) },
     ]
-    render(
-      <Harness preset={{ id: 1, text: "How does hypnotherapy work?" }} />
-    )
+    render(<Harness preset={{ id: 1, text: "How does hypnotherapy work?" }} />)
+    await flush()
+    await flush()
+    expect(posts).toHaveLength(0)
+    const composer = screen.getByRole("textbox", {
+      name: "Your message",
+    }) as HTMLTextAreaElement
+    expect(composer.value).toBe("How does hypnotherapy work?")
+    expect(document.activeElement).toBe(composer)
+    fireEvent.change(composer, {
+      target: { value: "How does hypnotherapy work for sleep?" },
+    })
+    fireEvent.click(screen.getByRole("button", { name: "Send message" }))
     await flush()
     await flush()
     expect(posts).toHaveLength(1)
     expect(posts[0]!.body).toMatchObject({
-      message: "How does hypnotherapy work?",
+      message: "How does hypnotherapy work for sleep?",
       consent: true,
     })
   })
 
   // As on the site: the launcher's lookup has finished before the panel
-  // mounts with a preset, so the queued send is ready on the very first
-  // effect, and dev React (StrictMode) runs that effect twice.
-  it("sends a preset exactly once when the panel mounts ready under StrictMode", async () => {
+  // mounts with a preset, and dev React (StrictMode) runs effects twice.
+  // Still nothing goes until the visitor sends it.
+  it("never sends a preset on its own when the panel mounts ready under StrictMode", async () => {
     queue = [
       { status: 404, body: {} },
       { status: 201, body: view([msg(1, "visitor")]) },
@@ -256,7 +260,7 @@ describe("no start form", () => {
     fireEvent.click(screen.getByRole("button", { name: "show" }))
     await flush()
     await flush()
-    expect(posts).toHaveLength(1)
+    expect(posts).toHaveLength(0)
   })
 })
 

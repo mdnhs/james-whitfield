@@ -1,11 +1,5 @@
 // @vitest-environment jsdom
-import {
-  act,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-} from "@testing-library/react"
+import { act, fireEvent, render, screen } from "@testing-library/react"
 import { useEffect, useState, type ComponentType } from "react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
@@ -86,23 +80,20 @@ const settle = async () => {
 }
 
 describe("chat widget", () => {
-  it("a preset click opens the panel and sends that preset as the first message", async () => {
+  it("a preset click opens the panel with that preset ready to edit, unsent", async () => {
     render(<ChatLauncher botName="Aoife" welcome="Hello there" />)
     await settle()
     fireEvent.click(screen.getByRole("button", { name: "How can we help?" }))
     fireEvent.click(
       screen.getByRole("button", { name: "What can it help with?" })
     )
-    await waitFor(() => expect(posts).toHaveLength(1))
+    const composer = (await screen.findByRole("textbox", {
+      name: "Your message",
+    })) as HTMLTextAreaElement
     await settle()
     expect(screen.getByRole("dialog")).toBeTruthy()
-    expect(posts[0]!.url).toBe("/api/v1/public/chat/start")
-    expect(posts[0]!.body).toMatchObject({
-      message: "What can hypnotherapy help with?",
-      consent: true,
-    })
-    expect(posts[0]!.body).not.toHaveProperty("name")
-    expect(screen.getByText("What can hypnotherapy help with?")).toBeTruthy()
+    expect(composer.value).toBe("What can hypnotherapy help with?")
+    expect(posts.filter((p) => p.url.endsWith("/chat/start"))).toHaveLength(0)
   })
 
   it("Ask something else opens with an empty, focused composer", async () => {

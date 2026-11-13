@@ -25,10 +25,10 @@ async function expectLinks(nav: Locator, labels: string[]) {
 test.describe("as intake", () => {
   test.use({ storageState: STORAGE.intake })
 
-  test("sees only the dashboard and enquiries", async ({ page }) => {
+  test("sees only the dashboard, enquiries and live chat", async ({ page }) => {
     await page.goto("/admin")
     const nav = await mainNav(page)
-    await expectLinks(nav, ["Dashboard", "Enquiries"])
+    await expectLinks(nav, ["Dashboard", "Enquiries", "Live chat"])
     await expect(nav.getByText("Growth", { exact: true })).toHaveCount(0)
   })
 

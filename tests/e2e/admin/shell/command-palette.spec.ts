@@ -56,6 +56,7 @@ test.describe("as intake", () => {
     await expect(goTo.getByRole("option")).toHaveText([
       "Dashboard",
       "Enquiries",
+      "Live chat",
       "Help",
       "Account",
     ])

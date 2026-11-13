@@ -55,6 +55,10 @@ test.describe("signed in as an owner", () => {
   for (const colorScheme of ["light", "dark"] as const) {
     for (const path of PANEL) {
       test(`${path} in ${colorScheme}`, async ({ page }) => {
+        // The page builder embeds a live preview of the public site: the load
+        // never goes idle (5 s wait) and axe walks ~2,500 nodes beside it.
+        // That takes ~12 s on a laptop and overran 30 s on a CI runner.
+        test.setTimeout(90_000)
         await page.emulateMedia({ colorScheme })
         await page.goto(path)
         expect(await blocking(page)).toEqual([])

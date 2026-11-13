@@ -92,8 +92,30 @@ export const NavigationGlobal = z.object({
   cta: Link.prefault({}),
 })
 
+// The networks the footer has an icon for (features/footer/components/
+// social-icons.tsx). Each profile is a full https address.
+export const SOCIAL_PLATFORMS = [
+  "instagram",
+  "facebook",
+  "linkedin",
+  "youtube",
+  "x",
+  "tiktok",
+  "whatsapp",
+] as const
+export type SocialPlatform = (typeof SOCIAL_PLATFORMS)[number]
+
 export const FooterGlobal = z.object({
   blurb: s(300),
+  social: z
+    .array(
+      z.object({
+        platform: z.enum(SOCIAL_PLATFORMS).default("instagram"),
+        url: HttpsUrl,
+      })
+    )
+    .max(8)
+    .default([]),
   columns: z
     .array(
       z.object({

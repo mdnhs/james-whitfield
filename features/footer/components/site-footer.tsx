@@ -8,6 +8,7 @@ import type { GlobalValue } from "@/lib/content/globals"
 import type { MediaAsset } from "@/lib/media"
 
 import { CookieSettingsButton } from "./cookie-settings-button"
+import { SOCIAL_NAMES, SocialIcon } from "./social-icons"
 
 // Clay itself is 1.9:1 on pine; lifted toward white it reads as clay and
 // clears 4.5:1 (axe, Phase 11).
@@ -95,6 +96,26 @@ export function SiteFooter({
             <p className="text-[15px] leading-5.75 text-mist sm:leading-[1.6]">
               {footer.blurb}
             </p>
+            {footer.social.length ? (
+              <ul
+                aria-label="Social media"
+                className="mt-1 flex flex-wrap gap-2.5"
+              >
+                {footer.social.map(({ platform, url }) => (
+                  <li key={`${platform}-${url}`}>
+                    <a
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`${site.name} on ${SOCIAL_NAMES[platform]}`}
+                      className="grid size-10 place-items-center rounded-full border border-white/12 bg-white/6 text-cream backdrop-blur-sm transition-colors hover:bg-white/14 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cream"
+                    >
+                      <SocialIcon platform={platform} className="size-[18px]" />
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
           </div>
 
           <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:flex sm:gap-20">

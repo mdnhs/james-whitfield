@@ -28,6 +28,26 @@ export const GLOBAL_FIELD_UI: Partial<
     },
   },
   footer: {
+    social: {
+      label: "Social media",
+      description: "Icons under the footer text, in this order.",
+    },
+    "social.$.platform": {
+      label: "Platform",
+      options: [
+        { value: "instagram", label: "Instagram" },
+        { value: "facebook", label: "Facebook" },
+        { value: "linkedin", label: "LinkedIn" },
+        { value: "youtube", label: "YouTube" },
+        { value: "x", label: "X (Twitter)" },
+        { value: "tiktok", label: "TikTok" },
+        { value: "whatsapp", label: "WhatsApp" },
+      ],
+    },
+    "social.$.url": {
+      label: "Profile address",
+      description: "The full link, starting with https://",
+    },
     "columns.$.source": {
       label: "Links",
       description: '"Navigation" appends the header links (auto sitemap).',

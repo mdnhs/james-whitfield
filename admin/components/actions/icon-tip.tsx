@@ -20,12 +20,17 @@ export function IconTip({
 }: {
   label: React.ReactNode
   children: ReactElement
-  hideAt?: "xl"
+  hideAt?: "sm" | "xl"
 }) {
   return (
     <Tooltip>
       <TooltipTrigger render={children} />
-      <TooltipContent className={cn(hideAt === "xl" && "xl:hidden")}>
+      <TooltipContent
+        className={cn(
+          hideAt === "sm" && "sm:hidden",
+          hideAt === "xl" && "xl:hidden"
+        )}
+      >
         {label}
       </TooltipContent>
     </Tooltip>

@@ -537,3 +537,33 @@ describe("list item headers", () => {
     expect(within(item).getByRole("textbox", { name: "Notes 1" })).toBeTruthy()
   })
 })
+
+describe("long item titles", () => {
+  it("cuts a paragraph to a short title that cannot widen the page", () => {
+    const long =
+      "James works with individuals, professionals and organisations across Ireland to build calmer, steadier routines.\nSecond line"
+    wrap(
+      <SchemaForm
+        schema={z.object({
+          quotes: z.array(
+            z.object({ text: z.string().max(400), by: z.string().max(400) })
+          ),
+        })}
+        defaultValues={{ quotes: [{ text: long, by: "" }] }}
+        onSubmit={vi.fn()}
+        submitLabel="Save"
+      />
+    )
+    const item = screen.getByRole("group", { name: "Quotes 1" })
+    const title = item.querySelector("[data-item-title]")!
+    expect(title.textContent!.length).toBeLessThanOrEqual(61)
+    expect(title.textContent!.endsWith("…")).toBe(true)
+    expect(title.textContent).not.toContain("Second line")
+    expect(title.className).toContain("truncate")
+    // Fieldsets default to min-content width: both must allow shrinking.
+    expect(item.className).toContain("min-w-0")
+    expect(screen.getByRole("group", { name: "Quotes" }).className).toContain(
+      "min-w-0"
+    )
+  })
+})

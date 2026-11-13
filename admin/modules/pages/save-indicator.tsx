@@ -1,6 +1,9 @@
 "use client"
 
+import { CheckIcon } from "lucide-react"
 import { useEffect, useState } from "react"
+
+import { IconTip } from "@/admin/components/actions/icon-tip"
 
 import { cn } from "@/lib/utils"
 
@@ -18,7 +21,7 @@ const DOT: Record<AutosaveState["status"], string> = {
 function label(state: AutosaveState, now: number) {
   switch (state.status) {
     case "idle":
-      return "No changes yet"
+      return "Saved"
     case "pending":
       return "Unsaved changes"
     case "saving":
@@ -51,24 +54,32 @@ export function SaveIndicator({
     return () => clearInterval(timer)
   }, [])
   const text = label(state, now)
-  // Nothing to save: just the dot, its words for screen readers and on hover.
-  const quiet = state.status === "idle"
-  return (
+  // Nothing to save: a muted check and "Saved". Unsaved changes: the dot,
+  // its words from sm up (icon-only below, named and in a tooltip).
+  const idle = state.status === "idle"
+  const pending = state.status === "pending"
+  const pill = (
     <p
       aria-live="polite"
-      title={quiet ? text : undefined}
+      tabIndex={pending ? 0 : undefined}
       className={cn(
-        "inline-flex h-9 max-w-full items-center gap-2 rounded-full bg-card px-3.5 text-[13px] font-medium text-muted-foreground",
-        quiet && "px-3",
+        "inline-flex h-9 max-w-full items-center gap-2 rounded-full bg-card px-3.5 text-[13px] font-medium text-muted-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
+        pending && "max-sm:px-3",
         (state.status === "error" || state.status === "conflict") &&
           "text-danger"
       )}
     >
-      <span
-        aria-hidden
-        className={cn("size-2 shrink-0 rounded-full", DOT[state.status])}
-      />
-      <span className={quiet ? "sr-only" : "truncate"}>{text}</span>
+      {idle ? (
+        <CheckIcon aria-hidden className="size-3.5 shrink-0" />
+      ) : (
+        <span
+          aria-hidden
+          className={cn("size-2 shrink-0 rounded-full", DOT[state.status])}
+        />
+      )}
+      <span className={pending ? "truncate max-sm:sr-only" : "truncate"}>
+        {text}
+      </span>
       {onResolve ? (
         <button
           type="button"
@@ -79,5 +90,12 @@ export function SaveIndicator({
         </button>
       ) : null}
     </p>
+  )
+  return pending ? (
+    <IconTip label={text} hideAt="sm">
+      {pill}
+    </IconTip>
+  ) : (
+    pill
   )
 }

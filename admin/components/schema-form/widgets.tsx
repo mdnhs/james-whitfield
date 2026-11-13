@@ -92,7 +92,7 @@ export function FieldWidget({ field, control }: Props) {
 function GroupWidget({ field, control }: Props) {
   const id = useId()
   return (
-    <FieldSet {...legendName(id, field)}>
+    <FieldSet className="min-w-0" {...legendName(id, field)}>
       <HintedLegend id={id} field={field} />
       <FieldNote id={id} field={field} />
       {compactColumns(field) ? (
@@ -259,6 +259,9 @@ function ListWidget({ field, control }: Props) {
   return (
     <FieldSet
       data-invalid={error ? true : undefined}
+      // A fieldset is min-content wide by default: a long item would widen
+      // the page instead of truncating.
+      className="w-full min-w-0"
       {...legendName(id, field)}
     >
       <HintedLegend id={id} field={field} variant="label" />
@@ -309,12 +312,12 @@ function ListWidget({ field, control }: Props) {
               ) : (
                 <fieldset
                   aria-label={child.label}
-                  className="flex flex-col gap-3 rounded-xl border p-3"
+                  className="flex w-full min-w-0 flex-col gap-3 rounded-xl border p-3"
                 >
-                  <div className="flex items-center justify-between gap-2">
+                  <div className="flex min-w-0 items-center justify-between gap-2">
                     <span
                       data-item-title
-                      className="min-w-0 truncate text-sm font-medium"
+                      className="min-w-0 flex-1 truncate text-sm font-medium"
                     >
                       {itemTitle(item, value, index)}
                     </span>
@@ -372,7 +375,7 @@ export function itemTitle(
   index: number
 ): string {
   const fallback = `Item ${index + 1}`
-  if (typeof value === "string") return value.trim() || fallback
+  if (typeof value === "string") return shortTitle(value) || fallback
   if (item.widget !== "group" || !value || typeof value !== "object")
     return fallback
   const record = value as Record<string, unknown>
@@ -380,11 +383,20 @@ export function itemTitle(
     const key = f.name.split(".").at(-1) ?? ""
     const raw = record[key]
     if (typeof raw !== "string" || !raw.trim()) continue
-    if (f.widget === "text" || f.widget === "textarea") return raw.trim()
+    if (f.widget === "text" || f.widget === "textarea") return shortTitle(raw)
     if (f.widget === "select" || f.widget === "radio")
       return f.options?.find((o) => o.value === raw)?.label ?? raw
   }
   return fallback
+}
+
+// A header, not a paragraph: the first line, cut at ITEM_TITLE_MAX.
+export const ITEM_TITLE_MAX = 60
+function shortTitle(text: string): string {
+  const line = text.trim().split(/\r?\n/)[0]!.trim()
+  return line.length > ITEM_TITLE_MAX
+    ? `${line.slice(0, ITEM_TITLE_MAX).trimEnd()}…`
+    : line
 }
 
 // 90% of a limit: from here the counter stays on screen.
@@ -414,7 +426,10 @@ function CompactGroupItem({
   actions: React.ReactNode
 }) {
   return (
-    <fieldset aria-label={label} className="flex items-start gap-2">
+    <fieldset
+      aria-label={label}
+      className="flex w-full min-w-0 items-start gap-2"
+    >
       <div
         className="grid min-w-0 flex-1 gap-2"
         style={{

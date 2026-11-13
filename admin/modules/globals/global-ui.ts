@@ -8,23 +8,27 @@ export const GLOBAL_FIELD_UI: Partial<
     logo: { label: "Logo" },
     portrait: {
       label: "Portrait",
-      description: "Used for search engines' structured data, not shown.",
+      description: "For search engines only; not shown.",
     },
     icon: { label: "Favicon" },
     social: { label: "Social profiles" },
   },
   contact: {
     "phone.e164": {
-      label: "Phone for links (E.164)",
+      label: "Phone for links",
+      description: "International format, as tapped on phones.",
       placeholder: "+35312345678",
     },
     "hours.weekly": { label: "Opening hours" },
-    "hours.weekly.$.days": { label: "Days (1 = Monday … 7 = Sunday)" },
+    "hours.weekly.$.days": {
+      label: "Days",
+      description: "1 = Monday … 7 = Sunday",
+    },
     "hours.summary": { description: "How the site prints the hours." },
     // Phase 3 ruling: the Clinic block's own photo is the single source.
     "clinic.photo": {
       description:
-        "Not shown on the site: the Clinic block's photo is used. Also sent to search engines as the practice image.",
+        "Not shown: the Clinic block's photo is used. Sent to search engines.",
     },
   },
   footer: {
@@ -66,9 +70,8 @@ export const GLOBAL_FIELD_UI: Partial<
   notifications: {
     recipients: { label: "Recipients" },
     includeMessage: {
-      label: "Include the message in notification emails",
-      description:
-        "Off by default: enquiries can contain health information, and email copies leave the admin.",
+      label: "Include the message in emails",
+      description: "Off by default: enquiries can hold health details.",
       warning: true,
     },
   },
@@ -76,8 +79,7 @@ export const GLOBAL_FIELD_UI: Partial<
     enabled: { label: "Show the chat on the site" },
     "bot.enabled": {
       label: "AI assistant answers first",
-      description:
-        "Needs an AI provider key in AI assistant settings. Chats are sent to that provider.",
+      description: "Needs an AI provider key. Chats go to that provider.",
       warning: true,
     },
     "bot.maxAiReplies": { label: "Assistant replies per chat" },

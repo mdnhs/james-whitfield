@@ -1,5 +1,9 @@
 import {
+  BellIcon,
+  BotIcon,
   CircleHelpIcon,
+  ClipboardListIcon,
+  FingerprintIcon,
   GlobeIcon,
   HeartHandshakeIcon,
   HistoryIcon,
@@ -9,13 +13,17 @@ import {
   LayoutDashboardIcon,
   MailIcon,
   MegaphoneIcon,
+  MessageCircleIcon,
   MessagesSquareIcon,
   NewspaperIcon,
+  PaletteIcon,
   PanelsTopLeftIcon,
+  PhoneIcon,
   RouteIcon,
   ScaleIcon,
   SearchCheckIcon,
   SettingsIcon,
+  ShieldCheckIcon,
   UserRoundIcon,
   UsersIcon,
   type LucideIcon,
@@ -38,8 +46,8 @@ export const NAV_ICONS: Record<string, LucideIcon> = {
   help: CircleHelpIcon,
 }
 
-// The Website sub-pages, keyed by their nav id. The same icon leads the
-// sub-nav item and the page's own title.
+// The Website and Site settings sub-pages, keyed by their nav id. The same
+// icon leads the sub-nav item and the page's own title.
 export const SUBNAV_ICONS: Record<string, LucideIcon> = {
   "website-home": HouseIcon,
   "website-about": UserRoundIcon,
@@ -49,6 +57,20 @@ export const SUBNAV_ICONS: Record<string, LucideIcon> = {
   "website-insights": NewspaperIcon,
   "website-legal": ScaleIcon,
   "website-header-footer": PanelsTopLeftIcon,
+  "settings-identity": FingerprintIcon,
+  "settings-contact": PhoneIcon,
+  "settings-forms": ClipboardListIcon,
+  "settings-notifications": BellIcon,
+  "settings-privacy": ShieldCheckIcon,
+  "settings-chat": MessageCircleIcon,
+  "settings-appearance": PaletteIcon,
+  "settings-ai-assistant": BotIcon,
+}
+
+// A sub-page's icon for its title (PageHeader `icon`), by nav id.
+export function subnavIcon(id: string): ReactNode {
+  const Icon = SUBNAV_ICONS[id]
+  return Icon ? createElement(Icon) : null
 }
 
 // The icon of the Website screen an href belongs to (a service's editor

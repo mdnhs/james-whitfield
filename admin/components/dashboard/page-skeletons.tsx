@@ -162,6 +162,24 @@ export const SeoDefaultsSkeleton = () => (
 
 export const GlobalEditorPageSkeleton = () => <FormPageSkeleton fields={6} />
 
+// The AI assistant form: the on/off row, then Provider, Access and Answers.
+export const AiSettingsCardsSkeleton = () => (
+  <div aria-hidden className="flex max-w-3xl flex-col gap-6">
+    <div className="rounded-card bg-card p-5 sm:px-6">
+      <div className="bg-skeleton h-6 w-56 rounded-md" />
+    </div>
+    <FormCardSkeleton fields={3} />
+    <FormCardSkeleton fields={2} />
+    <FormCardSkeleton fields={2} />
+  </div>
+)
+
+export const AiSettingsPageSkeleton = () => (
+  <PageSkeleton header={<PageHeaderSkeleton icon actions={0} />}>
+    <AiSettingsCardsSkeleton />
+  </PageSkeleton>
+)
+
 export const ServiceEditorSkeleton = () => (
   <div
     aria-hidden
@@ -238,7 +256,7 @@ export const AppearancePageSkeleton = () => (
     header={
       <>
         <PageHeaderSkeleton icon actions={1} />
-        <SegmentedSkeleton count={3} />
+        <SegmentedSkeleton count={2} />
       </>
     }
   >

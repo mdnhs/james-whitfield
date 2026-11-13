@@ -3,14 +3,18 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { formatDistanceToNow } from "date-fns"
 import {
+  ClipboardListIcon,
   HistoryIcon,
+  MailPlusIcon,
   MenuIcon,
   PanelBottomIcon,
+  TypeIcon,
   type LucideIcon,
 } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
 
+import { IconTip } from "@/admin/components/actions/icon-tip"
 import { PageHeader } from "@/admin/components/dashboard/page-header"
 import { SchemaForm } from "@/admin/components/schema-form/schema-form"
 import { usePermission } from "@/admin/lib/actor-context"
@@ -42,16 +46,19 @@ import {
   ListRowsSkeleton,
 } from "@/admin/components/dashboard/skeletons"
 
-// Tab icons for the keys edited side by side (Header & footer).
+// Tab icons for the keys edited side by side (Header & footer, Forms).
 const TAB_ICONS: Partial<Record<EditableGlobalKey, LucideIcon>> = {
   navigation: MenuIcon,
   footer: PanelBottomIcon,
+  contactForm: ClipboardListIcon,
+  newsletter: MailPlusIcon,
+  microcopy: TypeIcon,
 }
 
 export function GlobalEditor({
   title,
   icon,
-  description = "Changes go live as soon as you save.",
+  description = "Live as soon as you save.",
   keys,
   onValuesChange,
 }: {
@@ -125,15 +132,23 @@ function GlobalForm({
   if (!doc.data) return <FormCardSkeleton fields={6} title={false} />
   const { version, value } = doc.data
   return (
-    <section aria-label={label} className="flex flex-col gap-4">
-      <Button
-        variant="outline"
-        className="self-end"
-        onClick={() => setHistoryOpen(true)}
-      >
-        <HistoryIcon data-icon="inline-start" />
-        History
-      </Button>
+    // One card per document, its History icon in the corner (as a page
+    // section's card in the builder).
+    <section
+      aria-label={label}
+      className="rounded-card relative flex flex-col gap-4 bg-card p-5 sm:p-6"
+    >
+      <IconTip label="History">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute top-3 right-3 text-muted-foreground hover:text-foreground"
+          onClick={() => setHistoryOpen(true)}
+        >
+          <HistoryIcon aria-hidden />
+          <span className="sr-only">History</span>
+        </Button>
+      </IconTip>
       <fieldset disabled={!canUpdate} className="min-w-0">
         <SchemaForm
           key={version}
@@ -230,7 +245,7 @@ function GlobalHistory({
             {GLOBAL_LABELS[settingKey]} history
           </SheetTitle>
           <SheetDescription>
-            Every save is kept (the latest 20). Pick one to bring it back.
+            The latest 20 saves. Restore any of them.
           </SheetDescription>
         </SheetHeader>
         <div className="flex-1 overflow-y-auto p-5">

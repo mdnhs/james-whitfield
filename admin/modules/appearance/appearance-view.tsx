@@ -1,13 +1,26 @@
 "use client"
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import {
+  EyeIcon,
+  GlobeIcon,
+  LayoutDashboardIcon,
+  MonitorIcon,
+  MoonIcon,
+  RotateCcwIcon,
+  SendIcon,
+  SunIcon,
+  Undo2Icon,
+} from "lucide-react"
 import { useCallback, useState } from "react"
 import { toast } from "sonner"
 
+import { IconTip } from "@/admin/components/actions/icon-tip"
 import {
   FORM_ACTION,
   PageHeader,
 } from "@/admin/components/dashboard/page-header"
+import { subnavIcon } from "@/admin/components/shell/nav-icons"
 import { usePermission } from "@/admin/lib/actor-context"
 import { ApiError } from "@/admin/lib/api-error"
 import { parseResponse, themeApi } from "@/admin/lib/api"
@@ -50,6 +63,7 @@ import {
 } from "@/lib/theme/schema"
 import { presetSiteTheme, resolveSiteTokens } from "@/lib/theme/site"
 import { SITE_TOKENS } from "@/lib/theme/tokens"
+import { cn } from "@/lib/utils"
 
 import { AdminPreview, useLiveAdmin } from "./admin-preview"
 import { BrandAssets } from "./brand-assets"
@@ -64,6 +78,10 @@ import { AppearancePageSkeleton } from "@/admin/components/dashboard/page-skelet
 const RADII: readonly number[] = ADMIN_RADII
 const CARD = "rounded-card flex flex-col gap-4 bg-card p-5"
 const BLOCKED = "Publishing is blocked until every pair passes."
+// Preview, Discard and Reset: a square icon button below xl (the words stay
+// as the accessible name and show in a tooltip), icon and words above, as
+// the page builder's toolbar.
+const ICON_UNTIL_XL = "max-xl:w-11 max-xl:gap-0 max-xl:px-0"
 
 // The loader hands the editor a copy fetched for this mount; Review and a
 // stale publish remount it on the server's version.
@@ -256,6 +274,7 @@ function Editor({
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Appearance"
+        icon={subnavIcon("settings-appearance")}
         description={
           <span role="status" aria-live="polite">
             {statusText(state, doc.hasDraft)}
@@ -263,29 +282,38 @@ function Editor({
         }
         actions={
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-            <Button
-              variant="outline"
-              className={FORM_ACTION}
-              onClick={() => void previewOnSite()}
-            >
-              Preview on site
-            </Button>
-            <Button
-              variant="outline"
-              className={FORM_ACTION}
-              disabled={!canUpdate || !doc.hasDraft || busy}
-              onClick={() => discard.mutate()}
-            >
-              Discard draft
-            </Button>
-            <Button
-              variant="outline"
-              className={FORM_ACTION}
-              disabled={!canUpdate || busy}
-              onClick={() => setResetOpen(true)}
-            >
-              Reset to preset…
-            </Button>
+            <IconTip label="Preview on site" hideAt="xl">
+              <Button
+                variant="outline"
+                className={cn(FORM_ACTION, ICON_UNTIL_XL)}
+                onClick={() => void previewOnSite()}
+              >
+                <EyeIcon data-icon="inline-start" />
+                <span className="max-xl:sr-only">Preview on site</span>
+              </Button>
+            </IconTip>
+            <IconTip label="Discard draft" hideAt="xl">
+              <Button
+                variant="outline"
+                className={cn(FORM_ACTION, ICON_UNTIL_XL)}
+                disabled={!canUpdate || !doc.hasDraft || busy}
+                onClick={() => discard.mutate()}
+              >
+                <Undo2Icon data-icon="inline-start" />
+                <span className="max-xl:sr-only">Discard draft</span>
+              </Button>
+            </IconTip>
+            <IconTip label="Reset to preset" hideAt="xl">
+              <Button
+                variant="outline"
+                className={cn(FORM_ACTION, ICON_UNTIL_XL)}
+                disabled={!canUpdate || busy}
+                onClick={() => setResetOpen(true)}
+              >
+                <RotateCcwIcon data-icon="inline-start" />
+                <span className="max-xl:sr-only">Reset to preset</span>
+              </Button>
+            </IconTip>
             {canPublish ? (
               <Button
                 className={FORM_ACTION}
@@ -299,7 +327,9 @@ function Editor({
               >
                 {publish.isPending ? (
                   <Spinner data-icon="inline-start" />
-                ) : null}
+                ) : (
+                  <SendIcon data-icon="inline-start" />
+                )}
                 Publish
               </Button>
             ) : null}
@@ -319,8 +349,14 @@ function Editor({
 
       <Tabs value={tab} onValueChange={(next) => setTab(String(next))}>
         <TabsList>
-          <TabsTrigger value="site">Site</TabsTrigger>
-          <TabsTrigger value="admin">Admin</TabsTrigger>
+          <TabsTrigger value="site" className="gap-2 px-3">
+            <GlobeIcon aria-hidden />
+            Site
+          </TabsTrigger>
+          <TabsTrigger value="admin" className="gap-2 px-3">
+            <LayoutDashboardIcon aria-hidden />
+            Admin
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="site">
           <div className="grid gap-5 xl:grid-cols-2">
@@ -445,9 +481,9 @@ const TINTS = [
   ["primary", "Primary"],
 ] as const
 const MODES = [
-  ["system", "System"],
-  ["light", "Light"],
-  ["dark", "Dark"],
+  ["system", "System", MonitorIcon],
+  ["light", "Light", SunIcon],
+  ["dark", "Dark", MoonIcon],
 ] as const
 
 function AdminControls({
@@ -539,9 +575,11 @@ function AdminControls({
           }
           className="flex flex-wrap gap-4"
         >
-          {MODES.map(([value, text]) => (
+          {MODES.map(([value, text, Icon]) => (
             <label key={value} className="flex items-center gap-2 text-sm">
-              <RadioGroupItem value={value} /> {text}
+              <RadioGroupItem value={value} />
+              <Icon aria-hidden className="size-4 text-muted-foreground" />
+              {text}
             </label>
           ))}
         </RadioGroup>
@@ -574,8 +612,8 @@ function ResetDialog({
         <DialogHeader>
           <DialogTitle>Reset to preset</DialogTitle>
           <DialogDescription>
-            Replaces the draft colours with a preset. Corner radius and default
-            mode stay. Nothing goes live until you publish.
+            Replaces the draft colours. Radius and mode stay; nothing goes live
+            until you publish.
           </DialogDescription>
         </DialogHeader>
         <Field>

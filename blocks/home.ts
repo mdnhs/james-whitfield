@@ -31,9 +31,17 @@ export const heroHome = defineBlock({
       label: text(30),
       avatars: z.array(MediaRef).length(3),
     }),
+    // Unset (the default, and every row saved before this field) keeps the
+    // bundled photo with its hand-made depth and hair maps and the full
+    // WebGL scene (D13). A custom photo gets parallax from `depth`, which the
+    // admin builds in the browser; its photo-specific effects stay off.
+    background: z
+      .object({
+        image: MediaRef.nullable().default(null),
+        depth: MediaRef.nullable().default(null),
+      })
+      .default({ image: null, depth: null }),
   }),
-  // The WebGL background is bound to its depth and hair maps (D13): only the
-  // copy is editable.
   allowedOn: ["home"],
   first: true,
   max: 1,

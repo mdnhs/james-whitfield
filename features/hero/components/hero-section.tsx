@@ -8,7 +8,7 @@ import { MemberBadge } from "./member-badge"
 export function HeroSection({ content }: { content: BlockView<"hero.home"> }) {
   return (
     <HeroMotion className="relative flex min-h-svh w-full flex-col overflow-clip bg-[#888] lg:h-svh lg:min-h-190">
-      <HeroBackground />
+      <HeroBackground background={content.background} />
 
       {/* Copy sits low on desktop, ending 60px above the member badge
           (badge: 56px from the bottom + 72px tall + 60px = 188px). Top padding

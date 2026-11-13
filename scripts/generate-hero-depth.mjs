@@ -4,8 +4,8 @@
 //
 //   pnpm hero:depth
 //
-// @huggingface/transformers is not a project dependency (docs/brief.md §17:
-// it stays out of the image build). The script installs it on demand into
+// The project's own @huggingface/transformers is browser-only (the admin's
+// hero depth-map tool, same model). This Node script installs it on demand into
 // node_modules/.cache/hero-depth and runs a copy from there, so Node resolves
 // it next to the script. Paths below are relative to the repo root (the cwd).
 //

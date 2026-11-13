@@ -6,6 +6,7 @@ import {
   PlusIcon,
   TrashIcon,
 } from "lucide-react"
+import dynamic from "next/dynamic"
 import { useId, useState } from "react"
 import {
   Controller,
@@ -57,6 +58,13 @@ import { MediaWidget } from "./widgets/media-widget"
 import { RichTextWidget } from "./widgets/rich-text-widget"
 import { StatWidget } from "./widgets/stat-widget"
 
+// Browser only, loaded when a form has a depth field: it pulls in
+// transformers.js on use, which must stay out of every other bundle.
+const DepthWidget = dynamic(
+  () => import("./widgets/depth-widget").then((m) => m.DepthWidget),
+  { ssr: false }
+)
+
 type Controlled = ControllerRenderProps<FieldValues, string>
 // The ref travels separately: React's lint treats any object carrying `ref`
 // as a ref, and reading `value` from it during render as a ref read.
@@ -84,6 +92,8 @@ export function FieldWidget({ field, control }: Props) {
       return <LinkWidget field={field} control={control} />
     case "frame":
       return <FrameWidget field={field} control={control} />
+    case "depth":
+      return <DepthWidget field={field} control={control} />
     default:
       return <LeafWidget field={field} control={control} />
   }

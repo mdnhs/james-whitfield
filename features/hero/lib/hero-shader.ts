@@ -12,7 +12,12 @@ export const heroVertexShader = /* glsl */ `
 // uLive so the first frame matches the static <img> underneath exactly.
 //
 // Coordinates: coverUv() returns un-flipped image space (y up, window on the
-// right at x > ~0.5). The page shows the photo mirrored.
+// right at x > ~0.5). The page shows the bundled photo mirrored.
+//
+// uScene = 1 is the bundled photo with its hand-made depth and hair maps.
+// A custom photo (uScene = 0) keeps the camera (parallax from its own depth
+// map, breathing, sway, scroll zoom), passing-cloud light, vignette and grain;
+// the effects drawn for this photo's window, fields and hair stay off.
 export const heroFragmentShader = /* glsl */ `
   precision highp float;
 
@@ -29,19 +34,22 @@ export const heroFragmentShader = /* glsl */ `
   uniform float uSun;   // 0..1, passing clouds (1 = full sun)
   uniform float uGust;  // 0..1, wind strength
   uniform float uDpr;
+  uniform float uScene;      // 1 = bundled photo and its full scene
+  uniform float uMirror;     // 1 = photo shown mirrored
+  uniform vec2 uAlign;       // object-position, y up
 
   varying vec2 vUv;
 
-  // object-cover + horizontal flip + vertical positioning (matching CSS object-position: center 48%)
+  // object-cover + optional horizontal flip + CSS object-position (the
+  // bundled photo: mirrored, center 48%)
   float coverScale() {
     return max(uResolution.x / uImageSize.x, uResolution.y / uImageSize.y);
   }
 
   vec2 coverUv(vec2 uv) {
     vec2 size = uImageSize * coverScale();
-    vec2 align = vec2(0.5, 0.52);
-    vec2 cover = (uv * uResolution - (uResolution - size) * align) / size;
-    cover.x = 1.0 - cover.x;
+    vec2 cover = (uv * uResolution - (uResolution - size) * uAlign) / size;
+    if (uMirror > 0.5) cover.x = 1.0 - cover.x;
     return cover;
   }
 
@@ -121,7 +129,7 @@ export const heroFragmentShader = /* glsl */ `
     // strands move unevenly and settle between gusts. Face stays locked.
     float hairWeight = texture2D(uHairMask, baseCoverUv).r;
     vec2 finalCoverUv = baseCoverUv;
-    if (hairWeight > 0.05) {
+    if (uScene > 0.5 && hairWeight > 0.05) {
       vec2 q = baseCoverUv * vec2(9.0, 15.0);
       vec2 flow = vec2(
         fbm(q + vec2(t * 0.9, -t * 0.3)),
@@ -141,7 +149,7 @@ export const heroFragmentShader = /* glsl */ `
     // so the sharp phone photo reads like a lens with real depth of field.
     vec2 px = 1.0 / (uImageSize * coverScale());
     float coc = max(smoothstep(0.1, 0.02, depth) * 1.8, smoothstep(0.52, 0.72, depth) * 1.4) * uLive;
-    if (coc > 0.05) {
+    if (uScene > 0.5 && coc > 0.05) {
       vec3 acc = col;
       for (int i = 0; i < 8; i++) {
         float a = float(i) * 2.39996;
@@ -156,7 +164,7 @@ export const heroFragmentShader = /* glsl */ `
     float room = 1.0 - outside;
 
     // 4. Cloud shadows drifting over the fields outside.
-    if (outside > 0.01 && baseCoverUv.y < 0.72) {
+    if (uScene > 0.5 && outside > 0.01 && baseCoverUv.y < 0.72) {
       float green = smoothstep(0.0, 0.08, col.g - max(col.r, col.b) * 0.92);
       float shade = smoothstep(0.45, 0.75, fbm(baseCoverUv * vec2(2.5, 7.0) + vec2(t * 0.018, t * 0.004)));
       col *= 1.0 - shade * 0.16 * green * outside * uLive;
@@ -168,24 +176,26 @@ export const heroFragmentShader = /* glsl */ `
     col *= mix(1.0, sun, lit * uLive);
 
     // 6. Volumetric sunbeams through the window, slanting down into the room.
-    vec2 aspect = vec2(uImageSize.x / uImageSize.y, 1.0);
-    vec2 ip = baseCoverUv * aspect;
-    vec2 L = normalize(vec2(-0.72, -0.69));
-    float across = dot(ip, vec2(-L.y, L.x));
-    float beam = fbm(vec2(across * 6.0 + t * 0.012, t * 0.025));
-    beam = smoothstep(0.42, 0.78, beam);
-    float fromWindow = smoothstep(0.02, 0.5, baseCoverUv.x) * smoothstep(0.98, 0.55, baseCoverUv.y);
-    float haze = beam * fromWindow * room * mix(0.25, 1.0, uSun);
-    vec3 warm = vec3(1.0, 0.86, 0.66);
-    col = 1.0 - (1.0 - col) * (1.0 - warm * haze * 0.11 * uLive);
-
     // 7. Dust motes, only visible where light catches them. Two layers at
     // different scales and parallax read as a volume of air.
-    vec2 sp = vUv * vec2(uResolution.x / uResolution.y, 1.0);
-    vec2 drift = vec2(0.006, 0.012) * t;
-    float dust = motes(sp + drift + uOffset * 0.35, 26.0, 1.0);
-    dust += motes(sp + drift * 1.6 + uOffset * 0.7, 15.0, 7.0) * 0.8;
-    col += warm * dust * (haze * 0.7 + 0.08 * room) * 0.55 * uLive;
+    if (uScene > 0.5) {
+      vec2 aspect = vec2(uImageSize.x / uImageSize.y, 1.0);
+      vec2 ip = baseCoverUv * aspect;
+      vec2 L = normalize(vec2(-0.72, -0.69));
+      float across = dot(ip, vec2(-L.y, L.x));
+      float beam = fbm(vec2(across * 6.0 + t * 0.012, t * 0.025));
+      beam = smoothstep(0.42, 0.78, beam);
+      float fromWindow = smoothstep(0.02, 0.5, baseCoverUv.x) * smoothstep(0.98, 0.55, baseCoverUv.y);
+      float haze = beam * fromWindow * room * mix(0.25, 1.0, uSun);
+      vec3 warm = vec3(1.0, 0.86, 0.66);
+      col = 1.0 - (1.0 - col) * (1.0 - warm * haze * 0.11 * uLive);
+
+      vec2 sp = vUv * vec2(uResolution.x / uResolution.y, 1.0);
+      vec2 drift = vec2(0.006, 0.012) * t;
+      float dust = motes(sp + drift + uOffset * 0.35, 26.0, 1.0);
+      dust += motes(sp + drift * 1.6 + uOffset * 0.7, 15.0, 7.0) * 0.8;
+      col += warm * dust * (haze * 0.7 + 0.08 * room) * 0.55 * uLive;
+    }
 
     // 8. Lens vignette and 24fps film grain, strongest in the midtones.
     vec2 vc = (vUv - 0.5) * vec2(uResolution.x / uResolution.y, 1.0);

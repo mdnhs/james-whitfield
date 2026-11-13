@@ -1,6 +1,9 @@
-import Image from "next/image"
+import Image, { getImageProps } from "next/image"
 
+import { MediaImage } from "@/components/media-image"
+import { servedAsIs, type MediaAsset } from "@/lib/media"
 import heroBg from "@/public/images/hero/hero-bg.png"
+import { heroBackgroundPlan, type HeroBackgroundValue } from "../lib/background"
 import { HeroWebGL } from "./hero-webgl"
 
 // Rotated (19.55deg) left-side shade, stacked three times as in the design.
@@ -9,24 +12,67 @@ import { HeroWebGL } from "./hero-webgl"
 const SHADE =
   "linear-gradient(to left, rgba(0,0,0,0) 0px, rgba(0,0,0,0.4) 1140.9px)"
 
-export function HeroBackground() {
+// The depth map as a same-origin URL (the optimizer proxies remote media),
+// so WebGL and the focus read can use its pixels. Quality 90: compression
+// noise in a depth map reads as wobble.
+function depthUrl(depth: MediaAsset) {
+  if (servedAsIs(depth.src)) return depth.src
+  return getImageProps({
+    src: depth.src,
+    alt: "",
+    width: depth.width,
+    height: depth.height,
+    quality: 90,
+  }).props.src
+}
+
+export function HeroBackground({
+  background,
+}: {
+  background?: HeroBackgroundValue
+}) {
+  const plan = heroBackgroundPlan(background)
   return (
     <div aria-hidden data-hero="bg" className="absolute inset-0">
       <div className="absolute inset-0 bg-black">
         {/* Inner layer takes the intro zoom and pointer drift. */}
         <div data-hero="bg-image" className="absolute inset-0">
-          <Image
-            src={heroBg}
-            alt=""
-            fill
-            priority
-            fetchPriority="high"
-            placeholder="blur"
-            sizes="100vw"
-            style={{ objectPosition: "center 48%" }}
-            className="-scale-x-100 object-cover"
-          />
-          <HeroWebGL />
+          {plan.kind === "default" ? (
+            <>
+              <Image
+                src={heroBg}
+                alt=""
+                fill
+                priority
+                fetchPriority="high"
+                placeholder="blur"
+                sizes="100vw"
+                style={{ objectPosition: "center 48%" }}
+                className="-scale-x-100 object-cover"
+              />
+              <HeroWebGL />
+            </>
+          ) : (
+            <>
+              {/* The CMS photo, framed by its focal point, unmirrored. */}
+              <MediaImage
+                media={plan.image}
+                alt=""
+                fill
+                priority
+                fetchPriority="high"
+                blur
+                sizes="100vw"
+                className="object-cover"
+              />
+              <HeroWebGL
+                photo={{ src: plan.image.src }}
+                depthSrc={plan.depth ? depthUrl(plan.depth) : undefined}
+                scene={false}
+                align={plan.align}
+              />
+            </>
+          )}
           <div className="absolute inset-0 bg-black/30" />
         </div>
       </div>

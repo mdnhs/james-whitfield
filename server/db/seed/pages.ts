@@ -125,6 +125,9 @@ export const SYSTEM_PAGES: PageSeed[] = [
             ...HERO_CONTENT.members,
             avatars: HERO_CONTENT.members.avatars.map(mediaRef),
           },
+          // Fresh databases only (inserts skip existing rows): the bundled
+          // photo, as the schema default.
+          background: { image: null, depth: null },
         },
       },
       {

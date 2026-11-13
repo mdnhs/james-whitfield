@@ -6,6 +6,7 @@ import type { Texture, WebGLRenderer } from "three"
 import { gsap, ScrollTrigger } from "@/lib/gsap"
 import heroDepth from "@/public/images/hero/hero-depth.png"
 import heroHair from "@/public/images/hero/hero-hair.png"
+import { FLAT_DEPTH, focusFromDepth } from "../lib/background"
 import { heroFragmentShader, heroVertexShader } from "../lib/hero-shader"
 
 // Depth of the woman's torso in hero-depth.png (head ≈ 0.27, torso ≈ 0.33,
@@ -51,8 +52,58 @@ const smoothstep = (a: number, b: number, x: number) => {
   return k * k * (3 - 2 * k)
 }
 
-export function HeroWebGL() {
+// The plane a custom depth map keeps still: the median depth of its centre,
+// read once from a small copy (the map is same-origin, so readable).
+function focusOf(image: CanvasImageSource): number {
+  const size = 64
+  const canvas = document.createElement("canvas")
+  canvas.width = canvas.height = size
+  const ctx = canvas.getContext("2d", { willReadFrequently: true })
+  if (!ctx) return FLAT_DEPTH.focus
+  ctx.drawImage(image, 0, 0, size, size)
+  return focusFromDepth(ctx.getImageData(0, 0, size, size).data, size, size)
+}
+
+// A 1x1 texture of one gray level: a flat depth map or an empty hair mask.
+function solid(level: number) {
+  const canvas = document.createElement("canvas")
+  canvas.width = canvas.height = 1
+  const ctx = canvas.getContext("2d")
+  if (ctx) {
+    const v = Math.round(level * 255)
+    ctx.fillStyle = `rgb(${v},${v},${v})`
+    ctx.fillRect(0, 0, 1, 1)
+  }
+  return canvas
+}
+
+export type HeroWebGLProps = {
+  // "default": the bundled photo, its maps and the full scene. Otherwise the
+  // CMS photo the <img> beside this layer shows (the canvas reads that img).
+  photo?: "default" | { src: string }
+  // Same-origin URLs. A custom photo with no depth map gets a flat one.
+  depthSrc?: string
+  hairSrc?: string
+  // The photo-specific effects (window light, fields, hair).
+  scene?: boolean
+  // CSS object-position of the photo, in shader space (y up).
+  align?: { x: number; y: number }
+}
+
+export function HeroWebGL({
+  photo = "default",
+  depthSrc,
+  hairSrc,
+  scene,
+  align,
+}: HeroWebGLProps = {}) {
   const containerRef = useRef<HTMLDivElement>(null)
+  const custom = photo !== "default"
+  const depthUrl = custom ? depthSrc : (depthSrc ?? heroDepth.src)
+  const hairUrl = custom ? hairSrc : (hairSrc ?? heroHair.src)
+  const fullScene = scene ?? !custom
+  const alignX = align?.x ?? 0.5
+  const alignY = align?.y ?? (custom ? 0.5 : 0.52)
 
   useEffect(() => {
     const container = containerRef.current
@@ -122,12 +173,15 @@ export function HeroWebGL() {
         uImageSize: { value: new THREE.Vector2(1, 1) },
         uOffset: { value: new THREE.Vector2(0, 0) },
         uZoom: { value: 0 },
-        uFocus: { value: FOCUS },
+        uFocus: { value: custom ? FLAT_DEPTH.focus : FOCUS },
         uTime: { value: 0 },
         uLive: { value: 0 },
         uSun: { value: 1 },
         uGust: { value: 0 },
         uDpr: { value: renderer.getPixelRatio() },
+        uScene: { value: fullScene ? 1 : 0 },
+        uMirror: { value: custom ? 0 : 1 },
+        uAlign: { value: new THREE.Vector2(alignX, alignY) },
       }
 
       const material = new THREE.ShaderMaterial({
@@ -200,15 +254,34 @@ export function HeroWebGL() {
         },
       })
 
-      // Load photo, depth, and hair textures
+      // Load photo, depth, and hair textures. The bundled maps always exist.
+      // A custom photo with no depth map, or one that fails to load, gets a
+      // flat one; it has no hair mask (black: no breeze).
+      const flat = (level: number) => new THREE.CanvasTexture(solid(level))
+      const load = async (url: string | undefined, fallback: number) => {
+        if (!url) return { texture: flat(fallback), loaded: false }
+        if (!custom)
+          return {
+            texture: await new THREE.TextureLoader().loadAsync(url),
+            loaded: true,
+          }
+        try {
+          const texture = await new THREE.TextureLoader().loadAsync(url)
+          return { texture, loaded: true }
+        } catch {
+          return { texture: flat(fallback), loaded: false }
+        }
+      }
       const source = new Image()
       source.src = image.currentSrc || image.src
       try {
-        const [, depth, hair] = await Promise.all([
+        const [, depthMap, hairMap] = await Promise.all([
           source.decode(),
-          new THREE.TextureLoader().loadAsync(heroDepth.src),
-          new THREE.TextureLoader().loadAsync(heroHair.src),
+          load(depthUrl, FLAT_DEPTH.depth),
+          load(hairUrl, 0),
         ])
+        const depth = depthMap.texture
+        const hair = hairMap.texture
         if (cancelled) {
           depth.dispose()
           hair.dispose()
@@ -216,6 +289,9 @@ export function HeroWebGL() {
         }
         uniforms.uDepth.value = configure(depth)
         uniforms.uHairMask.value = configure(hair)
+        if (custom && depthMap.loaded) {
+          uniforms.uFocus.value = focusOf(depth.image as CanvasImageSource)
+        }
       } catch {
         return
       }
@@ -298,7 +374,7 @@ export function HeroWebGL() {
       image.removeEventListener("load", begin)
       cleanupFn?.()
     }
-  }, [])
+  }, [custom, depthUrl, hairUrl, fullScene, alignX, alignY])
 
   return (
     <div

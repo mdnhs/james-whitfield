@@ -15,16 +15,31 @@ const GOOGLE = [
 ]
 const META = ["https://www.facebook.com"]
 
+// Admin only: the hero depth-map tool runs Depth Anything in the browser with
+// @huggingface/transformers. Model files come from the Hub, which redirects
+// to its CDN (cdn-lfs*.hf.co, cas-bridge.xethub.hf.co); the onnxruntime-web
+// wasm and its loader come from jsdelivr, pinned to the installed version.
+// 'wasm-unsafe-eval' lets the page compile WebAssembly (not JS eval).
+export const DEPTH_MODEL_HOSTS = [
+  "https://huggingface.co",
+  "https://*.huggingface.co",
+  "https://*.hf.co",
+]
+export const ORT_ASSET_HOST = "https://cdn.jsdelivr.net"
+
 type Opts = {
   dev: boolean
   mediaOrigin: string | null
   customHosts?: readonly string[]
+  // The admin's policy: the public one plus the depth-map tool's hosts.
+  admin?: boolean
 }
 
 export function buildCsp({
   dev,
   mediaOrigin,
   customHosts = CUSTOM_SCRIPT_HOSTS,
+  admin = false,
 }: Opts) {
   const custom = customHosts.map((h) => `https://${h}`)
   const media = mediaOrigin ? [mediaOrigin] : []
@@ -34,6 +49,7 @@ export function buildCsp({
       "'self'",
       "'unsafe-inline'",
       ...(dev ? ["'unsafe-eval'"] : []),
+      ...(admin ? ["'wasm-unsafe-eval'", ORT_ASSET_HOST] : []),
       "https://www.googletagmanager.com",
       "https://connect.facebook.net",
       "https://challenges.cloudflare.com",
@@ -52,6 +68,7 @@ export function buildCsp({
       "https://cloudflareinsights.com",
       ...media,
       ...custom,
+      ...(admin ? [...DEPTH_MODEL_HOSTS, ORT_ASSET_HOST] : []),
     ],
     "frame-src": [
       "'self'",
@@ -87,6 +104,17 @@ export function securityHeaders(opts: Opts) {
         {
           key: "Permissions-Policy",
           value: "camera=(), microphone=(), geolocation=()",
+        },
+      ],
+    },
+    {
+      // Later rules win for the same key (next.config headers): the admin
+      // gets its own policy, every other path keeps the public one.
+      source: "/admin/:path*",
+      headers: [
+        {
+          key: "Content-Security-Policy",
+          value: buildCsp({ ...opts, admin: true }),
         },
       ],
     },

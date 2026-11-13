@@ -59,6 +59,24 @@ export const BLOCK_FIELD_UI: Partial<Record<BlockType, FieldOverrides>> = {
       description: "Leave empty to use the band's own tint.",
     },
   },
+  "hero.home": {
+    background: {
+      label: "Background",
+      description:
+        "Leave the photo empty to keep the original photo and its full animation.",
+    },
+    "background.image": {
+      label: "Background photo",
+      description:
+        "Replaces the original photo. A new photo gets depth parallax, camera drift and film grain; the window light, hair breeze and field shadows belong to the original photo only.",
+    },
+    "background.depth": {
+      widget: "depth",
+      label: "Depth map",
+      description:
+        "Built in your browser from the photo when you choose it, with a small AI model (Depth Anything V2). The first run downloads the model (about 25 MB); the browser caches it after that. Lighter areas move as nearer.",
+    },
+  },
   "hero.page": {
     tint: { step: 0.01 },
     focal: { label: "Focal point override" },

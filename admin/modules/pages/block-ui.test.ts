@@ -25,6 +25,8 @@ describe("block widgets (the checklist in the plan)", () => {
     ["hero.home", "primaryCta", "link"],
     ["hero.home", "members.count", "stat"],
     ["hero.home", "members.avatars.$", "media"],
+    ["hero.home", "background.image", "media"],
+    ["hero.home", "background.depth", "depth"],
     ["hero.page", "image", "media"],
     ["hero.page", "focal", "focal"],
     ["hero.page", "cta", "link"],

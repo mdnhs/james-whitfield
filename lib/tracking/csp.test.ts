@@ -78,6 +78,63 @@ describe("buildCsp (brief §12.6, Ruling R1)", () => {
   })
 })
 
+describe("admin CSP (hero depth-map tool)", () => {
+  const opts = { dev: false, mediaOrigin: "https://media.example.com" }
+  const publicCsp = buildCsp(opts)
+  const adminCsp = buildCsp({ ...opts, admin: true })
+
+  it("lets the admin compile wasm and fetch the model and the ORT runtime", () => {
+    const sorted = (values: string[]) => [...values].sort()
+    expect(sorted(directive(adminCsp, "script-src"))).toEqual(
+      sorted([
+        ...directive(publicCsp, "script-src"),
+        "'wasm-unsafe-eval'",
+        "https://cdn.jsdelivr.net",
+      ])
+    )
+    expect(directive(adminCsp, "connect-src")).toEqual([
+      ...directive(publicCsp, "connect-src"),
+      "https://huggingface.co",
+      "https://*.huggingface.co",
+      "https://*.hf.co",
+      "https://cdn.jsdelivr.net",
+    ])
+    expect(adminCsp).not.toMatch(/'unsafe-eval'/)
+  })
+
+  it("changes nothing else in the admin, and nothing at all for the site", () => {
+    for (const name of [
+      "default-src",
+      "style-src",
+      "img-src",
+      "font-src",
+      "frame-src",
+      "worker-src",
+      "object-src",
+      "base-uri",
+      "form-action",
+      "frame-ancestors",
+      "report-uri",
+    ])
+      expect(directive(adminCsp, name)).toEqual(directive(publicCsp, name))
+    expect(publicCsp).not.toMatch(
+      /wasm-unsafe-eval|huggingface|hf\.co|jsdelivr/
+    )
+  })
+
+  it("serves the admin policy under /admin, after the site-wide one", () => {
+    const rules = securityHeaders(opts)
+    const csp = rules.filter((r) =>
+      r.headers.some((h) => h.key === "Content-Security-Policy")
+    )
+    expect(csp.map((r) => r.source)).toEqual(["/:path*", "/admin/:path*"])
+    expect(csp[0]!.headers[0]!.value).toBe(publicCsp)
+    expect(
+      csp[1]!.headers.find((h) => h.key === "Content-Security-Policy")!.value
+    ).toBe(adminCsp)
+  })
+})
+
 describe("securityHeaders (Ruling R20)", () => {
   const rules = securityHeaders({ dev: false, mediaOrigin: null })
   const find = (key: string) =>

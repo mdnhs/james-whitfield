@@ -16,8 +16,8 @@ export const SERVICES = {
   title: "Six ways we can work together.",
   intro:
     "Most clients arrive with one presenting issue and leave with a clearer understanding of the pattern underneath it. Each service follows the same four-step process, tailored to you.",
-  // "Learn more" leads to the formats below until each service has its own page.
-  more: { label: "Learn more  →", href: "#formats" },
+  // Each card's "Learn more" leads to that service's own page.
+  more: { label: "Learn more  →" },
   items: [
     {
       icon: "anxiety",

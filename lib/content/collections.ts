@@ -30,9 +30,10 @@ const Frame = z.object({
 const isVisible = z.boolean()
 
 export const COLLECTION_SCHEMAS = {
+  // Title before slug: the form fills the slug in from the title.
   services: z.object({
-    slug: Slug,
     title: text(60),
+    slug: Slug,
     body: text(400),
     icon: IconField,
     // pagePath is not here: the service's detail page sets it
@@ -40,8 +41,8 @@ export const COLLECTION_SCHEMAS = {
     isVisible,
   }),
   plans: z.object({
-    slug: Slug,
     name: text(40),
+    slug: Slug,
     priceLabel: text(20),
     priceCents: z.number().int().min(0).max(10_000_000).nullable(),
     unit: text(40),

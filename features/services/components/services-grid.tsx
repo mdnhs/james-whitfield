@@ -69,16 +69,19 @@ export function ServicesGrid({
                   {body}
                 </p>
               </div>
-              {/* The link covers the card so the whole tile is clickable. */}
-              <Link
-                href={pagePath || more.href}
-                aria-label={`${more.label.replace("→", "").trim()} about ${title}`}
-                className="col-start-2 pt-2.5 text-[13px] leading-4.75 font-semibold whitespace-pre text-clay outline-none after:absolute after:inset-0 after:rounded-[20px] focus-visible:after:ring-3 focus-visible:after:ring-clay/50 sm:pt-0 sm:text-[15px] sm:leading-[1.5]"
-              >
-                <span className="inline-block transition-transform duration-500 ease-out group-hover:translate-x-1">
-                  {more.label}
-                </span>
-              </Link>
+              {/* The link covers the card so the whole tile is clickable;
+                  a card whose page is not live has none. */}
+              {pagePath ? (
+                <Link
+                  href={pagePath}
+                  aria-label={`${more.label.replace("→", "").trim()} about ${title}`}
+                  className="col-start-2 pt-2.5 text-[13px] leading-4.75 font-semibold whitespace-pre text-clay outline-none after:absolute after:inset-0 after:rounded-[20px] focus-visible:after:ring-3 focus-visible:after:ring-clay/50 sm:pt-0 sm:text-[15px] sm:leading-[1.5]"
+                >
+                  <span className="inline-block transition-transform duration-500 ease-out group-hover:translate-x-1">
+                    {more.label}
+                  </span>
+                </Link>
+              ) : null}
             </li>
           ))}
         </ul>

@@ -13,7 +13,7 @@ export const COLLECTION_FIELD_UI: Record<CollectionSlug, FieldOverrides> = {
     ...visible,
     slug: {
       description:
-        "Fills in from the title; edit it if you like. It is the details page address (/services/<slug>) and the contact link topic.",
+        "Made from the title; edit it if you like. The service's page lives at /services/<slug> and its card's link goes there. Changing it moves the page; the old address redirects.",
     },
   },
   plans: {

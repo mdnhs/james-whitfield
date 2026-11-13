@@ -55,6 +55,14 @@ export function ItemSheet({
   const schema = COLLECTION_SCHEMAS[name]
   const isNew = item === "new"
   const derive = useMemo(() => slugFromTitle(schema), [schema])
+  // A new item's slug follows its title; so does an existing one whose slug
+  // was never picked by hand (it still equals the title's slug).
+  const followsTitle =
+    derive !== undefined &&
+    (isNew ||
+      (item !== null &&
+        item.values[derive.to] ===
+          derive.transform(String(item.values[derive.from] ?? ""))))
   const defaults = isNew
     ? { ...(emptyValueFor(schema) as Record<string, unknown>), isVisible: true }
     : item?.values
@@ -75,7 +83,7 @@ export function ItemSheet({
               schema={schema}
               overrides={COLLECTION_FIELD_UI[name]}
               defaultValues={defaults as never}
-              derive={isNew ? derive : undefined}
+              derive={followsTitle ? derive : undefined}
               submitLabel="Save"
               onSubmit={async (values) => {
                 try {

@@ -66,9 +66,11 @@ export function SchemaForm<S extends z.ZodObject>({
 
   useEffect(() => {
     if (!derive) return
-    const sub = form.watch((values, { name }) => {
-      if (name !== derive.from) return
-      if (form.getFieldState(derive.to).isDirty) return
+    // Typed by the person (type "change"), not set by us: stop following.
+    let edited = false
+    const sub = form.watch((values, { name, type }) => {
+      if (name === derive.to && type === "change") edited = true
+      if (name !== derive.from || edited) return
       form.setValue(
         derive.to,
         derive.transform(String(values[derive.from] ?? ""))

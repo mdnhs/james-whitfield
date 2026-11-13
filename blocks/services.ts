@@ -2,7 +2,7 @@
 import * as z from "zod"
 
 import { defineBlock } from "./define-block"
-import { LinkValue, optionalText, text } from "./fields"
+import { optionalText, text } from "./fields"
 
 export const servicesGrid = defineBlock({
   type: "services.grid",
@@ -12,7 +12,8 @@ export const servicesGrid = defineBlock({
     eyebrow: text(40),
     title: text(120),
     intro: text(400),
-    more: LinkValue,
+    // Each card's link text; it always leads to that service's own page.
+    more: z.object({ label: text(60) }),
   }),
   allowedOn: ["services"],
   max: 1,

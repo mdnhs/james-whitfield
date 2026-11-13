@@ -12,7 +12,9 @@ vi.mock("@/admin/lib/api", () => ({
 
 import { ItemSheet } from "./item-sheet"
 
-function open(item: "new" | null = "new") {
+type Item = Parameters<typeof ItemSheet>[0]["item"]
+
+function open(item: Item = "new") {
   render(
     <QueryClientProvider client={new QueryClient()}>
       <ItemSheet
@@ -42,5 +44,48 @@ describe("ItemSheet slug", () => {
     await userEvent.type(slug, "rest-well")
     await userEvent.type(screen.getByLabelText("Title"), " better")
     expect(slug.value).toBe("rest-well")
+  })
+
+  it("puts Title before Slug", () => {
+    open()
+    const labels = [...document.querySelectorAll("label")].map((l) =>
+      l.textContent?.trim()
+    )
+    expect(labels.indexOf("Title")).toBeLessThan(labels.indexOf("Slug"))
+  })
+
+  const existing = (slug: string) =>
+    ({
+      id: "s1",
+      sort: 0,
+      version: 1,
+      updatedAt: "2026-11-13T00:00:00.000Z",
+      title: "Sleep",
+      usedOn: [],
+      values: {
+        slug,
+        title: "Sleep",
+        body: "Rest.",
+        icon: "mind",
+        isVisible: true,
+      },
+    }) as unknown as Item
+
+  it("keeps an untouched slug following the title when editing", async () => {
+    open(existing("sleep"))
+    const title = screen.getByLabelText("Title")
+    await userEvent.clear(title)
+    await userEvent.type(title, "Sleep & Rest")
+    expect((screen.getByLabelText("Slug") as HTMLInputElement).value).toBe(
+      "sleep-rest"
+    )
+  })
+
+  it("leaves a hand-picked slug alone when the title changes", async () => {
+    open(existing("better-nights"))
+    await userEvent.type(screen.getByLabelText("Title"), " well")
+    expect((screen.getByLabelText("Slug") as HTMLInputElement).value).toBe(
+      "better-nights"
+    )
   })
 })

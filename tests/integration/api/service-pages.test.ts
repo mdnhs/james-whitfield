@@ -449,14 +449,34 @@ describe("automatic service pages", () => {
     const cookie = await cookieFor("editor")
     const first = await ensure(cookie)
     expect(first.status).toBe(200)
-    expect(await first.json()).toEqual({ created: 2, failed: [] })
+    expect(await first.json()).toEqual({ created: 2, published: 0, failed: [] })
     expect((await linked(service.id))?.path).toBe("/services/a")
     expect((await linked(second!.id))?.status).toBe("published")
     // Idempotent: a second call creates nothing.
     expect(await (await ensure(cookie)).json()).toEqual({
       created: 0,
+      published: 0,
       failed: [],
     })
+  })
+
+  it("publishes a service page that was never published", async () => {
+    const { asset, service } = await setup()
+    // A page made as a draft before pages went live on creation.
+    const old = await insertPage({
+      path: "/services/a",
+      document: heroDocument(asset.id, "Old draft"),
+      published: false,
+    })
+    await getDb()
+      .update(pages)
+      .set({ serviceId: service.id })
+      .where(eq(pages.id, old.id))
+    const res = await ensure(await cookieFor("editor"))
+    expect(await res.json()).toEqual({ created: 0, published: 1, failed: [] })
+    const page = (await findPage(old.id))!
+    expect(page.status).toBe("published")
+    expect(await getPublishedPage("/services/a")).not.toBeNull()
   })
 
   it("reports why a page could not be made", async () => {
@@ -464,6 +484,7 @@ describe("automatic service pages", () => {
     const res = await ensure(await cookieFor("editor"))
     expect(await res.json()).toEqual({
       created: 0,
+      published: 0,
       failed: [
         { serviceId: service.id, message: "Add a call-to-action band first" },
       ],

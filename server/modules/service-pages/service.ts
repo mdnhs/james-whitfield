@@ -10,7 +10,11 @@ import { getDb, type DbLike } from "@/server/db/client"
 import { ctaBands, pages, services } from "@/server/db/schema"
 import { audit } from "@/server/lib/audit"
 import { invalidate, REDIRECT_TAGS, tags } from "@/server/lib/cache"
-import { insertPage, removePage } from "@/server/modules/pages/service"
+import {
+  insertPage,
+  publishPage,
+  removePage,
+} from "@/server/modules/pages/service"
 import {
   recordPathChange,
   releasePath,
@@ -107,6 +111,7 @@ export async function enableServicePage(actor: Actor, serviceId: string) {
 // Idempotent; a service whose page can't be made yet is reported, not thrown.
 export async function ensureServicePages(actor: Actor): Promise<{
   created: number
+  published: number
   failed: { serviceId: string; message: string }[]
 }> {
   const missing = await getDb()
@@ -128,7 +133,28 @@ export async function ensureServicePages(actor: Actor): Promise<{
       failed.push({ serviceId: id, message: error.message })
     }
   }
-  return { created, failed }
+  // Service pages go live when made. One made as a draft before that rule
+  // (never published) is published now; a page that has been live keeps
+  // its unpublished edits as a draft.
+  const neverLive = await getDb()
+    .select({
+      id: pages.id,
+      version: pages.version,
+      serviceId: pages.serviceId,
+    })
+    .from(pages)
+    .where(and(isNotNull(pages.serviceId), isNull(pages.publishedAt)))
+  let published = 0
+  for (const page of neverLive) {
+    try {
+      await publishPage(actor, page.id, page.version)
+      published++
+    } catch (error) {
+      if (!(error instanceof ApiError)) throw error
+      failed.push({ serviceId: page.serviceId!, message: error.message })
+    }
+  }
+  return { created, published, failed }
 }
 
 export async function disableServicePage(actor: Actor, serviceId: string) {

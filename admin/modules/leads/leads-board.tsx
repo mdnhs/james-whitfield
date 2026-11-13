@@ -10,7 +10,7 @@ import {
   useSensors,
   type DragEndEvent,
 } from "@dnd-kit/core"
-import { GripVerticalIcon } from "lucide-react"
+import { GripVerticalIcon, TableIcon } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
 
@@ -20,6 +20,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { BOARD_STATUSES, type LeadStatus } from "@/lib/leads/schema"
 import { cn } from "@/lib/utils"
 
+import { LEAD_STATUS_ICONS } from "./lead-status-pill"
 import { statusLabel, topicLabel } from "./present"
 import type { LeadRow } from "./queries"
 import { useUpdateLead } from "./use-update-lead"
@@ -110,6 +111,7 @@ function Column({
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: status })
   const heading = `${status}-heading`
+  const StatusIcon = LEAD_STATUS_ICONS[status]
   return (
     <div
       className={cn(
@@ -121,7 +123,10 @@ function Column({
         id={heading}
         className="flex items-center justify-between text-sm font-semibold"
       >
-        <span>{statusLabel(status)}</span>
+        <span className="flex items-center gap-1.5">
+          <StatusIcon aria-hidden className="size-4 text-muted-foreground" />
+          {statusLabel(status)}
+        </span>
         <span className="text-muted-foreground tabular-nums">
           {total ?? leads.length}
         </span>
@@ -143,12 +148,13 @@ function Column({
         ))}
       </ul>
       {total !== undefined && total > leads.length ? (
-        <p className="text-xs text-muted-foreground">
+        <p className="flex items-center gap-1 text-xs text-muted-foreground">
           Showing {leads.length} of {total} ·{" "}
           <Link
-            className="underline"
+            className="inline-flex items-center gap-1 underline"
             href={`/admin/leads?view=table&status=${status}`}
           >
+            <TableIcon aria-hidden className="size-3.5" />
             open table view
           </Link>
         </p>

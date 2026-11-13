@@ -12,7 +12,16 @@ import {
   tableFeatures,
   useTable,
 } from "@tanstack/react-table"
-import { DownloadIcon, MailIcon, Trash2Icon } from "lucide-react"
+import {
+  CircleCheckIcon,
+  ClockIcon,
+  DownloadIcon,
+  ListIcon,
+  MailIcon,
+  MailXIcon,
+  Trash2Icon,
+  type LucideIcon,
+} from "lucide-react"
 import {
   parseAsInteger,
   parseAsString,
@@ -24,14 +33,11 @@ import { toast } from "sonner"
 
 import { DeleteIconButton } from "@/admin/components/actions/icon-actions"
 import { EmptyState } from "@/admin/components/dashboard/empty-state"
-import {
-  PageHeader,
-  SECONDARY_ACTION,
-} from "@/admin/components/dashboard/page-header"
-import {
-  StatusPill,
-  type StatusTone,
-} from "@/admin/components/dashboard/status-pill"
+import { IconTip } from "@/admin/components/actions/icon-tip"
+import { IconPill } from "@/admin/components/dashboard/icon-pill"
+import { PageHeader } from "@/admin/components/dashboard/page-header"
+import { SectionIcon } from "@/admin/components/dashboard/section-icon"
+import type { StatusTone } from "@/admin/components/dashboard/status-pill"
 import { DataTable } from "@/admin/components/data-table/data-table"
 import { DataTablePagination } from "@/admin/components/data-table/data-table-pagination"
 import { usePermission } from "@/admin/lib/actor-context"
@@ -77,6 +83,23 @@ const LABELS: Record<string, string> = {
   pending: "Pending",
   unsubscribed: "Unsubscribed",
 }
+const ICONS: Record<string, LucideIcon> = {
+  confirmed: CircleCheckIcon,
+  pending: ClockIcon,
+  unsubscribed: MailXIcon,
+  all: ListIcon,
+}
+
+function SubscriberPill({ status }: { status: string }) {
+  return (
+    <IconPill
+      tone={TONES[status] ?? "neutral"}
+      icon={ICONS[status] ?? MailIcon}
+    >
+      {LABELS[status] ?? status}
+    </IconPill>
+  )
+}
 
 const features = tableFeatures({ rowPaginationFeature })
 const helper = createColumnHelper<typeof features, SubscriberRow>()
@@ -117,11 +140,7 @@ export function NewsletterView() {
     helper.accessor("email", { header: "Email" }),
     helper.accessor("status", {
       header: "Status",
-      cell: (info) => (
-        <StatusPill tone={TONES[info.getValue()] ?? "neutral"}>
-          {LABELS[info.getValue()] ?? info.getValue()}
-        </StatusPill>
-      ),
+      cell: (info) => <SubscriberPill status={info.getValue()} />,
     }),
     helper.accessor("sourcePath", { header: "Source" }),
     helper.accessor((row) => row.confirmedAt ?? row.createdAt, {
@@ -168,19 +187,22 @@ export function NewsletterView() {
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Newsletter"
-        description="People who signed up to the monthly letter. Times are Irish time."
+        icon={<SectionIcon id="newsletter" />}
+        description="Monthly letter sign-ups, in Irish time."
         actions={
           canExport ? (
-            <a
-              href={exportHref(state.tab === "all")}
-              className={cn(
-                buttonVariants({ variant: "outline" }),
-                SECONDARY_ACTION
-              )}
-            >
-              <DownloadIcon aria-hidden />
-              Export CSV
-            </a>
+            <IconTip label="Export CSV">
+              <a
+                aria-label="Export CSV"
+                href={exportHref(state.tab === "all")}
+                className={cn(
+                  buttonVariants({ variant: "outline", size: "icon-lg" }),
+                  "rounded-xl"
+                )}
+              >
+                <DownloadIcon aria-hidden />
+              </a>
+            </IconTip>
           ) : null
         }
       />
@@ -192,10 +214,15 @@ export function NewsletterView() {
           }
         >
           <TabsList>
-            <TabsTrigger value="confirmed">Confirmed</TabsTrigger>
-            <TabsTrigger value="pending">Pending</TabsTrigger>
-            <TabsTrigger value="unsubscribed">Unsubscribed</TabsTrigger>
-            <TabsTrigger value="all">All</TabsTrigger>
+            {TABS.map((tab) => {
+              const Icon = ICONS[tab] ?? ListIcon
+              return (
+                <TabsTrigger key={tab} value={tab}>
+                  <Icon aria-hidden />
+                  {LABELS[tab] ?? "All"}
+                </TabsTrigger>
+              )
+            })}
           </TabsList>
         </Tabs>
         <Input
@@ -225,7 +252,7 @@ export function NewsletterView() {
               <EmptyState
                 icon={MailIcon}
                 title="No subscribers"
-                description="Sign-ups from the newsletter band appear here."
+                description="Sign-ups appear here."
               />
             }
             renderCard={(row) => (
@@ -234,9 +261,7 @@ export function NewsletterView() {
                   {row.original.email}
                 </span>
                 <span className="flex items-center gap-2">
-                  <StatusPill tone={TONES[row.original.status] ?? "neutral"}>
-                    {LABELS[row.original.status] ?? row.original.status}
-                  </StatusPill>
+                  <SubscriberPill status={row.original.status} />
                   <span className="text-xs text-muted-foreground">
                     {formatWhen(
                       row.original.confirmedAt ?? row.original.createdAt

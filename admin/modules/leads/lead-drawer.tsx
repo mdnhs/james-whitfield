@@ -1,10 +1,17 @@
 "use client"
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import {
+  BanIcon,
+  MailIcon,
+  PhoneIcon,
+  StickyNoteIcon,
+  Trash2Icon,
+  UndoIcon,
+} from "lucide-react"
 import { useId, useState } from "react"
 import { toast } from "sonner"
 
-import { StatusPill } from "@/admin/components/dashboard/status-pill"
 import { usePermission } from "@/admin/lib/actor-context"
 import { leadsApi, parseResponse } from "@/admin/lib/api"
 import { queryKeys } from "@/admin/lib/query-keys"
@@ -40,13 +47,13 @@ import {
 } from "@/lib/leads/schema"
 import { cn } from "@/lib/utils"
 
+import { LeadStatusPill } from "./lead-status-pill"
 import { LeadTimeline } from "./lead-timeline"
 import {
   formatWhen,
   isLeadStatus,
   spamReasonLabel,
   statusLabel,
-  statusTone,
   topicLabel,
 } from "./present"
 import { assigneesQuery, leadDetailQuery, type LeadDetail } from "./queries"
@@ -147,11 +154,7 @@ function Detail({ lead, onClose }: { lead: LeadDetail; onClose(): void }) {
       <SheetHeader>
         <SheetTitle className="text-lg font-semibold">{lead.name}</SheetTitle>
         <SheetDescription className="flex flex-wrap items-center gap-2">
-          <StatusPill
-            tone={statusTone(isLeadStatus(lead.status) ? lead.status : "new")}
-          >
-            {isLeadStatus(lead.status) ? statusLabel(lead.status) : lead.status}
-          </StatusPill>
+          <LeadStatusPill status={lead.status} />
           <span>
             {topicLabel(lead.topicSlug)} · received {formatWhen(lead.createdAt)}
           </span>
@@ -159,7 +162,8 @@ function Detail({ lead, onClose }: { lead: LeadDetail; onClose(): void }) {
       </SheetHeader>
       <div className="flex flex-col gap-6 p-4">
         {isSpam ? (
-          <p className="bg-danger-soft text-danger rounded-xl p-3 text-sm">
+          <p className="bg-danger-soft text-danger flex items-center gap-2 rounded-xl p-3 text-sm">
+            <BanIcon aria-hidden className="size-4 shrink-0" />
             Held as spam: {spamReasonLabel(lead.spamReason)}.
           </p>
         ) : null}
@@ -181,6 +185,7 @@ function Detail({ lead, onClose }: { lead: LeadDetail; onClose(): void }) {
           ) : null}
           <div className="flex flex-wrap gap-2">
             <a className={ACTION_LINK} href={`mailto:${lead.email}`}>
+              <MailIcon aria-hidden />
               Email
             </a>
             {lead.phone ? (
@@ -188,6 +193,7 @@ function Detail({ lead, onClose }: { lead: LeadDetail; onClose(): void }) {
                 className={ACTION_LINK}
                 href={`tel:${lead.phone.replace(/[^+\d]/g, "")}`}
               >
+                <PhoneIcon aria-hidden />
                 Call
               </a>
             ) : null}
@@ -210,6 +216,7 @@ function Detail({ lead, onClose }: { lead: LeadDetail; onClose(): void }) {
                     update.mutate({ id: lead.id, patch: { status: "new" } })
                   }
                 >
+                  <UndoIcon data-icon="inline-start" aria-hidden />
                   Not spam
                 </Button>
               </Section>
@@ -351,6 +358,7 @@ function NoteForm({ leadId }: { leadId: string }) {
         className="w-fit"
         disabled={add.isPending || !body.trim()}
       >
+        <StickyNoteIcon data-icon="inline-start" aria-hidden />
         Add note
       </Button>
     </form>
@@ -385,6 +393,7 @@ function EraseButton({
         className="w-fit"
         onClick={() => setOpen(true)}
       >
+        <Trash2Icon data-icon="inline-start" aria-hidden />
         Erase
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>

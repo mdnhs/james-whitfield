@@ -1,9 +1,16 @@
 "use client"
 
 import { useQuery, useQueryClient } from "@tanstack/react-query"
+import {
+  ExternalLinkIcon,
+  ReplaceIcon,
+  SaveIcon,
+  Trash2Icon,
+} from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
 
+import { InfoHint } from "@/admin/components/actions/icon-tip"
 import { useActor } from "@/admin/lib/actor-context"
 import { mediaApi, parseResponse } from "@/admin/lib/api"
 import { ApiError } from "@/admin/lib/api-error"
@@ -156,8 +163,9 @@ function DetailsBody({ item, onClose }: { item: MediaItem; onClose(): void }) {
         href={item.url}
         target="_blank"
         rel="noreferrer"
-        className="text-sm font-medium underline underline-offset-4"
+        className="inline-flex items-center gap-1.5 self-start text-sm font-medium underline underline-offset-4"
       >
+        <ExternalLinkIcon aria-hidden className="size-4" />
         Open file
       </a>
 
@@ -181,9 +189,10 @@ function DetailsBody({ item, onClose }: { item: MediaItem; onClose(): void }) {
                 checked={decorative}
                 onCheckedChange={setDecorative}
               />
-              <Label htmlFor="media-decorative">
-                Decorative (screen readers skip it)
-              </Label>
+              <Label htmlFor="media-decorative">Decorative</Label>
+              <InfoHint id="media-decorative-help">
+                Screen readers skip it.
+              </InfoHint>
             </div>
           </>
         ) : null}
@@ -199,6 +208,7 @@ function DetailsBody({ item, onClose }: { item: MediaItem; onClose(): void }) {
         {canEdit ? (
           <div>
             <Button type="button" onClick={save} disabled={saving}>
+              <SaveIcon data-icon="inline-start" aria-hidden />
               Save details
             </Button>
           </div>
@@ -228,9 +238,13 @@ function DetailsBody({ item, onClose }: { item: MediaItem; onClose(): void }) {
 
       {canEdit ? (
         <div className="flex flex-col gap-2">
-          <Label htmlFor="media-replace">
-            Replace file (keeps every reference)
-          </Label>
+          <div className="flex items-center gap-1">
+            <Label htmlFor="media-replace">
+              <ReplaceIcon aria-hidden className="size-4" />
+              Replace file
+            </Label>
+            <InfoHint id="media-replace-help">Keeps every reference.</InfoHint>
+          </div>
           <Input
             id="media-replace"
             type="file"
@@ -259,6 +273,7 @@ function DetailsBody({ item, onClose }: { item: MediaItem; onClose(): void }) {
       {canDelete ? (
         <div>
           <Button type="button" variant="destructive" onClick={remove}>
+            <Trash2Icon data-icon="inline-start" aria-hidden />
             Delete file
           </Button>
         </div>

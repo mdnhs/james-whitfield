@@ -1,10 +1,30 @@
 "use client"
 
-import { MoreHorizontalIcon, ShieldCheckIcon } from "lucide-react"
+import {
+  BanIcon,
+  CircleCheckIcon,
+  ClockIcon,
+  CrownIcon,
+  EyeIcon,
+  FeatherIcon,
+  InboxIcon,
+  LinkIcon,
+  LogOutIcon,
+  MegaphoneIcon,
+  MoreHorizontalIcon,
+  PenLineIcon,
+  SendIcon,
+  ShieldCheckIcon,
+  ShieldIcon,
+  ShieldOffIcon,
+  Trash2Icon,
+  UserCogIcon,
+  type LucideIcon,
+} from "lucide-react"
 
-import { StatusPill } from "@/admin/components/dashboard/status-pill"
+import { TipButton } from "@/admin/components/actions/tip-button"
+import { IconPill } from "@/admin/components/dashboard/icon-pill"
 import { useActor } from "@/admin/lib/actor-context"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -13,6 +33,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import type { RoleName } from "@/lib/auth/permissions"
 import { ROLE_LABELS } from "@/lib/auth/role-labels"
 import type { UserDto } from "@/server/modules/users/manage"
 
@@ -29,6 +50,37 @@ const LABELS: Record<UserAction, string> = {
   revoke: "Sign out everywhere",
   delete: "Delete",
 }
+const ACTION_ICONS: Record<UserAction, LucideIcon> = {
+  roles: UserCogIcon,
+  author: LinkIcon,
+  resend: SendIcon,
+  "view-as": EyeIcon,
+  ban: BanIcon,
+  unban: CircleCheckIcon,
+  revoke: LogOutIcon,
+  delete: Trash2Icon,
+}
+const ROLE_ICONS: Record<RoleName, LucideIcon> = {
+  owner: CrownIcon,
+  admin: ShieldCheckIcon,
+  editor: PenLineIcon,
+  author: FeatherIcon,
+  marketer: MegaphoneIcon,
+  intake: InboxIcon,
+  viewer: EyeIcon,
+}
+const STATUS_ICONS = {
+  success: CircleCheckIcon,
+  info: ClockIcon,
+  danger: BanIcon,
+} as Record<string, LucideIcon>
+function ActionIcon({ action }: { action: UserAction }) {
+  const Icon = ACTION_ICONS[action]
+  return <Icon aria-hidden />
+}
+
+// Shown as icons before the overflow menu (which still lists everything).
+const INLINE: UserAction[] = ["roles", "resend"]
 const DESTRUCTIVE = new Set<UserAction>(["ban", "revoke", "delete"])
 
 // One list for every width: a row wraps into a card on narrow screens.
@@ -72,24 +124,50 @@ export function UsersTable({
             </div>
             <div className="flex flex-wrap items-center gap-1.5">
               {user.roles.map((role) => (
-                <Badge key={role} variant="secondary">
+                <IconPill
+                  key={role}
+                  tone="neutral"
+                  icon={ROLE_ICONS[role] ?? ShieldIcon}
+                >
                   {ROLE_LABELS[role]}
-                </Badge>
+                </IconPill>
               ))}
             </div>
             <div className="flex flex-wrap items-center gap-3 text-sm">
-              <StatusPill tone={status.tone}>{status.label}</StatusPill>
-              <span className="flex items-center gap-1 text-muted-foreground">
-                <ShieldCheckIcon aria-hidden className="size-4" />
+              <IconPill
+                tone={status.tone}
+                icon={STATUS_ICONS[status.tone] ?? CircleCheckIcon}
+              >
+                {status.label}
+              </IconPill>
+              <IconPill
+                tone={user.twoFactorEnabled ? "success" : "warning"}
+                icon={user.twoFactorEnabled ? ShieldCheckIcon : ShieldOffIcon}
+              >
                 {user.twoFactorEnabled ? "2FA on" : "2FA off"}
-              </span>
+              </IconPill>
               <span className="text-xs text-muted-foreground">
                 {user.lastActiveAt
                   ? `Active ${formatWhen(user.lastActiveAt)}`
                   : "Never active"}
               </span>
             </div>
-            <div className="ml-auto flex size-9 items-center justify-center">
+            <div className="ml-auto flex items-center gap-1">
+              {actions
+                .filter((action) => INLINE.includes(action))
+                .map((action) => (
+                  <TipButton
+                    key={action}
+                    label={
+                      action === "resend"
+                        ? `Resend invite to ${user.name}`
+                        : `Change roles for ${user.name}`
+                    }
+                    icon={ACTION_ICONS[action]}
+                    size="icon"
+                    onClick={() => onAction(action, user)}
+                  />
+                ))}
               {actions.length > 0 ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger
@@ -115,6 +193,7 @@ export function UsersTable({
                           }
                           onClick={() => onAction(action, user)}
                         >
+                          <ActionIcon action={action} />
                           {LABELS[action]}
                         </DropdownMenuItem>
                       </div>

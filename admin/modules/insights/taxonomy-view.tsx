@@ -7,6 +7,8 @@ import {
   useTable,
 } from "@tanstack/react-table"
 import {
+  EyeIcon,
+  EyeOffIcon,
   NewspaperIcon,
   PlusIcon,
   TagsIcon,
@@ -26,7 +28,7 @@ import {
   PageHeader,
   PRIMARY_ACTION,
 } from "@/admin/components/dashboard/page-header"
-import { StatusPill } from "@/admin/components/dashboard/status-pill"
+import { IconPill } from "@/admin/components/dashboard/icon-pill"
 import { DataTable } from "@/admin/components/data-table/data-table"
 import { SchemaForm } from "@/admin/components/schema-form/schema-form"
 import { Thumb } from "@/admin/components/schema-form/widgets/media-picker-dialog"
@@ -219,9 +221,12 @@ export function TaxonomyView({ name }: { name: Taxonomy }) {
         helper.accessor("isVisible", {
           header: "Visible",
           cell: (info) => (
-            <StatusPill tone={info.getValue() ? "success" : "neutral"}>
+            <IconPill
+              tone={info.getValue() ? "success" : "neutral"}
+              icon={info.getValue() ? EyeIcon : EyeOffIcon}
+            >
               {info.getValue() ? "Visible" : "Hidden"}
-            </StatusPill>
+            </IconPill>
           ),
         }),
         ...(canManage
@@ -292,7 +297,7 @@ export function TaxonomyView({ name }: { name: Taxonomy }) {
             <EmptyState
               icon={TagsIcon}
               title={`No ${noun.title.toLowerCase()} yet`}
-              description="They appear here once they are created."
+              description="New ones appear here."
             />
           }
           renderCard={(row) => (

@@ -1,9 +1,19 @@
 "use client"
 
 import { useQuery } from "@tanstack/react-query"
-import { ArrowLeftIcon } from "lucide-react"
+import {
+  ArrowLeftIcon,
+  BotIcon,
+  CircleCheckIcon,
+  HandIcon,
+  SendIcon,
+  Trash2Icon,
+  UserCheckIcon,
+  UserMinusIcon,
+} from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 
+import { TipButton } from "@/admin/components/actions/tip-button"
 import { useActor, usePermission } from "@/admin/lib/actor-context"
 import { ConfirmDialog } from "@/admin/modules/users/confirm-dialog"
 import { Badge } from "@/components/ui/badge"
@@ -170,6 +180,7 @@ export function ChatThread({
               disabled={actions.takeover.isPending}
               onClick={() => actions.takeover.mutate()}
             >
+              <HandIcon data-icon="inline-start" aria-hidden />
               Take over
             </Button>
           ) : (
@@ -179,38 +190,34 @@ export function ChatThread({
               disabled={actions.handback.isPending}
               onClick={() => actions.handback.mutate()}
             >
+              <BotIcon data-icon="inline-start" aria-hidden />
               Hand back to AI
             </Button>
           )
         ) : null}
         {canManage && !closed ? (
-          <Button
-            size="sm"
-            variant="outline"
+          <TipButton
+            label={mineAssigned ? "Unassign" : "Assign to me"}
+            icon={mineAssigned ? UserMinusIcon : UserCheckIcon}
             disabled={actions.assign.isPending}
             onClick={() => actions.assign.mutate(mineAssigned ? null : user.id)}
-          >
-            {mineAssigned ? "Unassign" : "Assign to me"}
-          </Button>
+          />
         ) : null}
         {canReply && !closed ? (
-          <Button
-            size="sm"
-            variant="outline"
+          <TipButton
+            label="Close"
+            icon={CircleCheckIcon}
             disabled={actions.close.isPending}
             onClick={() => actions.close.mutate()}
-          >
-            Close
-          </Button>
+          />
         ) : null}
         {canManage ? (
-          <Button
-            size="sm"
-            variant="destructive"
+          <TipButton
+            label="Delete"
+            icon={Trash2Icon}
+            tone="danger"
             onClick={() => setConfirmDelete(true)}
-          >
-            Delete
-          </Button>
+          />
         ) : null}
       </header>
 
@@ -252,6 +259,7 @@ export function ChatThread({
               disabled={!draft.trim() || actions.reply.isPending}
               onClick={send}
             >
+              <SendIcon data-icon="inline-start" aria-hidden />
               Send
             </Button>
           </div>

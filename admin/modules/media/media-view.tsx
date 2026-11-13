@@ -5,7 +5,16 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query"
-import { FileTextIcon, ImageIcon } from "lucide-react"
+import {
+  ChevronRightIcon,
+  FileJsonIcon,
+  FileTextIcon,
+  ImageIcon,
+  ImageOffIcon,
+  LayersIcon,
+  RotateCwIcon,
+  UploadIcon,
+} from "lucide-react"
 import Image from "next/image"
 import {
   parseAsBoolean,
@@ -18,7 +27,11 @@ import { useState } from "react"
 import { toast } from "sonner"
 
 import { EmptyState } from "@/admin/components/dashboard/empty-state"
+import { InfoHint } from "@/admin/components/actions/icon-tip"
+import { TipButton } from "@/admin/components/actions/tip-button"
+import { IconPill } from "@/admin/components/dashboard/icon-pill"
 import { PageHeader } from "@/admin/components/dashboard/page-header"
+import { SectionIcon } from "@/admin/components/dashboard/section-icon"
 import { usePermission } from "@/admin/lib/actor-context"
 import { ApiError } from "@/admin/lib/api-error"
 import { queryKeys } from "@/admin/lib/query-keys"
@@ -104,6 +117,7 @@ export function MediaView() {
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Media"
+        icon={<SectionIcon id="media" />}
         description="Images and PDFs used across the site."
       />
       {canUpload ? (
@@ -115,10 +129,13 @@ export function MediaView() {
             void upload([...e.dataTransfer.files])
           }}
         >
-          <span className="font-medium">Drop files here or choose them</span>
-          <span className="text-muted-foreground">
-            JPEG, PNG, WebP, AVIF, SVG, ICO, PDF or Lottie JSON, up to 20 MB
-            each
+          <UploadIcon aria-hidden className="size-6 text-muted-foreground" />
+          <span className="flex items-center gap-1 font-medium">
+            Drop files here or choose them
+            <InfoHint id="media-upload-types">
+              JPEG, PNG, WebP, AVIF, SVG, ICO, PDF or Lottie JSON, up to 20 MB
+              each
+            </InfoHint>
           </span>
           <input
             type="file"
@@ -148,17 +165,14 @@ export function MediaView() {
               <span className="text-destructive">
                 {file.name}: {message}
               </span>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
+              <TipButton
+                label="Retry"
+                icon={RotateCwIcon}
                 onClick={() => {
                   setFailed((all) => all.filter((f) => f.id !== id))
                   void upload([file])
                 }}
-              >
-                Retry
-              </Button>
+              />
             </div>
           ))}
         </div>
@@ -176,12 +190,12 @@ export function MediaView() {
         <div className="flex gap-1">
           {(
             [
-              [null, "All"],
-              ["image", "Images"],
-              ["pdf", "PDFs"],
-              ["lottie", "Lottie"],
+              [null, "All", LayersIcon],
+              ["image", "Images", ImageIcon],
+              ["pdf", "PDFs", FileTextIcon],
+              ["lottie", "Lottie", FileJsonIcon],
             ] as const
-          ).map(([value, label]) => (
+          ).map(([value, label, Icon]) => (
             <Button
               key={label}
               type="button"
@@ -190,6 +204,7 @@ export function MediaView() {
               aria-pressed={state.type === value}
               onClick={() => filter({ type: value })}
             >
+              <Icon data-icon="inline-start" aria-hidden />
               {label}
             </Button>
           ))}
@@ -200,7 +215,13 @@ export function MediaView() {
             checked={state.missingAlt}
             onCheckedChange={(missingAlt) => filter({ missingAlt })}
           />
-          <Label htmlFor="media-missing-alt">Missing alt text</Label>
+          <Label htmlFor="media-missing-alt">
+            <ImageOffIcon
+              aria-hidden
+              className="size-4 text-muted-foreground"
+            />
+            Missing alt text
+          </Label>
         </div>
       </div>
 
@@ -216,7 +237,7 @@ export function MediaView() {
         <EmptyState
           icon={ImageIcon}
           title="No files found"
-          description="Uploaded images and PDFs appear here."
+          description="Uploads appear here."
         />
       ) : (
         <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
@@ -235,6 +256,7 @@ export function MediaView() {
             onClick={() => setState({ page: state.page + 1 })}
           >
             Next page
+            <ChevronRightIcon data-icon="inline-end" aria-hidden />
           </Button>
         </div>
       ) : null}
@@ -274,9 +296,9 @@ function MediaCard({ item, onOpen }: { item: MediaItem; onOpen(): void }) {
       </span>
       <span className="truncate font-medium">{item.filename}</span>
       {needsAlt ? (
-        <span className="text-xs text-amber-700 dark:text-amber-400">
+        <IconPill tone="warning" icon={ImageOffIcon} className="self-start">
           Needs alt text
-        </span>
+        </IconPill>
       ) : null}
     </button>
   )

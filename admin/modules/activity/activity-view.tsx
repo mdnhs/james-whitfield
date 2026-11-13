@@ -8,15 +8,25 @@ import {
   tableFeatures,
   useTable,
 } from "@tanstack/react-table"
-import { DownloadIcon, HistoryIcon } from "lucide-react"
+import {
+  CalendarIcon,
+  DownloadIcon,
+  FileDiffIcon,
+  FileTextIcon,
+  FilterXIcon,
+  SearchXIcon,
+  TagIcon,
+  UserIcon,
+  ZapIcon,
+} from "lucide-react"
 import { useQueryStates } from "nuqs"
 import { useEffect, useMemo, useState } from "react"
 
 import { EmptyState } from "@/admin/components/dashboard/empty-state"
-import {
-  PageHeader,
-  SECONDARY_ACTION,
-} from "@/admin/components/dashboard/page-header"
+import { IconTip } from "@/admin/components/actions/icon-tip"
+import { TipButton } from "@/admin/components/actions/tip-button"
+import { PageHeader } from "@/admin/components/dashboard/page-header"
+import { SectionIcon } from "@/admin/components/dashboard/section-icon"
 import { DataTable } from "@/admin/components/data-table/data-table"
 import { DataTablePagination } from "@/admin/components/data-table/data-table-pagination"
 import { Button, buttonVariants } from "@/components/ui/button"
@@ -72,14 +82,12 @@ function DetailsButton({
   onOpen: (id: string) => void
 }) {
   return (
-    <Button
-      variant="ghost"
-      size="sm"
+    <TipButton
+      label={`Details of ${row.summary}`}
+      tip={row.hasDiff ? "Changes" : "Details"}
+      icon={row.hasDiff ? FileDiffIcon : FileTextIcon}
       onClick={() => onOpen(row.id)}
-      aria-label={`Details of ${row.summary}`}
-    >
-      {row.hasDiff ? "Changes" : "Details"}
-    </Button>
+    />
   )
 }
 
@@ -118,7 +126,7 @@ export function ActivityView() {
         helper.accessor("summary", { header: "What" }),
         helper.display({
           id: "details",
-          header: "Details",
+          header: () => <span className="sr-only">Details</span>,
           cell: (info) => (
             <DetailsButton row={info.row.original} onOpen={setDetail} />
           ),
@@ -187,19 +195,22 @@ export function ActivityView() {
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Activity log"
-        description="Who changed what, and when. Times are Irish time."
+        icon={<SectionIcon id="activity" />}
+        description="Who changed what, and when, in Irish time."
         actions={
-          <a
-            href={exportHref(params)}
-            download
-            className={cn(
-              buttonVariants({ variant: "outline" }),
-              SECONDARY_ACTION
-            )}
-          >
-            <DownloadIcon aria-hidden />
-            Export CSV
-          </a>
+          <IconTip label="Export CSV">
+            <a
+              aria-label="Export CSV"
+              href={exportHref(params)}
+              download
+              className={cn(
+                buttonVariants({ variant: "outline", size: "icon-lg" }),
+                "rounded-xl"
+              )}
+            >
+              <DownloadIcon aria-hidden />
+            </a>
+          </IconTip>
         }
       />
       <div
@@ -208,7 +219,10 @@ export function ActivityView() {
         className="flex flex-wrap items-end gap-3"
       >
         <Field className="w-full sm:w-56">
-          <FieldLabel htmlFor="activity-action">Action</FieldLabel>
+          <FieldLabel htmlFor="activity-action">
+            <ZapIcon aria-hidden className="size-3.5" />
+            Action
+          </FieldLabel>
           <Select
             items={actionItems}
             value={state.action ?? ALL}
@@ -229,7 +243,10 @@ export function ActivityView() {
           </Select>
         </Field>
         <Field className="w-full sm:w-48">
-          <FieldLabel htmlFor="activity-entity">Entity</FieldLabel>
+          <FieldLabel htmlFor="activity-entity">
+            <TagIcon aria-hidden className="size-3.5" />
+            Entity
+          </FieldLabel>
           <Select
             items={entityItems}
             value={state.entityType ?? ALL}
@@ -250,7 +267,10 @@ export function ActivityView() {
           </Select>
         </Field>
         <Field className="w-full sm:w-64">
-          <FieldLabel htmlFor="activity-actor">Person</FieldLabel>
+          <FieldLabel htmlFor="activity-actor">
+            <UserIcon aria-hidden className="size-3.5" />
+            Person
+          </FieldLabel>
           <Select
             items={actorItems}
             value={state.actor ?? ALL}
@@ -271,7 +291,10 @@ export function ActivityView() {
           </Select>
         </Field>
         <Field className="w-[calc(50%-0.375rem)] sm:w-44">
-          <FieldLabel htmlFor="activity-from">From</FieldLabel>
+          <FieldLabel htmlFor="activity-from">
+            <CalendarIcon aria-hidden className="size-3.5" />
+            From
+          </FieldLabel>
           <Input
             id="activity-from"
             type="date"
@@ -282,7 +305,10 @@ export function ActivityView() {
           />
         </Field>
         <Field className="w-[calc(50%-0.375rem)] sm:w-44">
-          <FieldLabel htmlFor="activity-to">To</FieldLabel>
+          <FieldLabel htmlFor="activity-to">
+            <CalendarIcon aria-hidden className="size-3.5" />
+            To
+          </FieldLabel>
           <Input
             id="activity-to"
             type="date"
@@ -292,9 +318,11 @@ export function ActivityView() {
             onChange={(event) => filter({ to: parseDay(event.target.value) })}
           />
         </Field>
-        <Button
-          variant="ghost"
-          className="h-9"
+        <TipButton
+          label="Reset filters"
+          icon={FilterXIcon}
+          size="icon"
+          className="h-9 w-9"
           onClick={() =>
             filter({
               action: null,
@@ -304,9 +332,7 @@ export function ActivityView() {
               to: null,
             })
           }
-        >
-          Reset filters
-        </Button>
+        />
       </div>
       {list.isPending ? (
         <TableSkeleton columns={5} actions={0} />
@@ -324,9 +350,9 @@ export function ActivityView() {
             isFetching={list.isFetching}
             empty={
               <EmptyState
-                icon={HistoryIcon}
+                icon={SearchXIcon}
                 title="Nothing matches these filters"
-                description="Try a wider date range or reset the filters."
+                description="Widen the dates or reset the filters."
               />
             }
             renderCard={(row) => (

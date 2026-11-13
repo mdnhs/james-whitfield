@@ -19,6 +19,7 @@ import {
 type TableScreen = {
   icon?: boolean
   actions?: number
+  iconActions?: boolean
   controls?: number
   search?: boolean
   rows?: number
@@ -31,6 +32,7 @@ type TableScreen = {
 export function TableScreenSkeleton({
   icon = false,
   actions = 1,
+  iconActions = false,
   controls = 1,
   search = true,
   rows = 6,
@@ -44,7 +46,11 @@ export function TableScreenSkeleton({
       header={
         <>
           {insightsTabs ? <TabBarSkeleton /> : null}
-          <PageHeaderSkeleton icon={icon} actions={actions} />
+          <PageHeaderSkeleton
+            icon={icon}
+            actions={actions}
+            iconActions={iconActions}
+          />
           {segmented ? <SegmentedSkeleton /> : null}
           {controls > 0 || search ? (
             <ToolbarSkeleton controls={controls} search={search} />
@@ -59,7 +65,9 @@ export function TableScreenSkeleton({
 
 export const LeadsPageSkeleton = () => (
   <TableScreenSkeleton
+    icon
     actions={2}
+    iconActions
     segmented
     controls={2}
     search
@@ -91,15 +99,36 @@ export const PagesListSkeleton = () => (
 )
 
 export const UsersPageSkeleton = () => (
-  <TableScreenSkeleton actions={1} controls={2} columns={5} rowActions={3} />
+  <TableScreenSkeleton
+    icon
+    actions={1}
+    segmented
+    controls={2}
+    columns={5}
+    rowActions={3}
+  />
 )
 
 export const NewsletterPageSkeleton = () => (
-  <TableScreenSkeleton actions={1} controls={1} columns={4} rowActions={1} />
+  <TableScreenSkeleton
+    icon
+    actions={1}
+    iconActions
+    controls={1}
+    columns={4}
+    rowActions={1}
+  />
 )
 
 export const ActivityPageSkeleton = () => (
-  <TableScreenSkeleton actions={0} controls={3} columns={5} rowActions={0} />
+  <TableScreenSkeleton
+    icon
+    actions={1}
+    iconActions
+    controls={3}
+    columns={5}
+    rowActions={1}
+  />
 )
 
 export const RedirectsPageSkeleton = () => (
@@ -128,7 +157,7 @@ export const CollectionPageSkeleton = () => (
 )
 
 export const ChatPageSkeleton = () => (
-  <PageSkeleton>
+  <PageSkeleton header={<PageHeaderSkeleton icon actions={0} />}>
     <TwoPaneSkeleton />
   </PageSkeleton>
 )
@@ -252,7 +281,7 @@ export const AccountPageSkeleton = () => (
   <PageSkeleton
     header={
       <>
-        <PageHeaderSkeleton icon={false} actions={0} />
+        <PageHeaderSkeleton icon actions={0} />
         <SegmentedSkeleton count={3} />
       </>
     }

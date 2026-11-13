@@ -36,10 +36,13 @@ export function PageHeaderSkeleton({
   icon = true,
   description = true,
   actions = 0,
+  iconActions = false,
 }: {
   icon?: boolean
   description?: boolean
   actions?: number
+  // Icon-only header actions (Export CSV, Privacy request) are small squares.
+  iconActions?: boolean
 }) {
   return (
     <header
@@ -54,9 +57,12 @@ export function PageHeaderSkeleton({
         {description ? <Bone className="h-4 w-72 max-w-full" /> : null}
       </div>
       {actions > 0 ? (
-        <div className="flex flex-wrap gap-3">
+        <div className={cn("flex flex-wrap", iconActions ? "gap-1" : "gap-3")}>
           {Array.from({ length: actions }, (_, i) => (
-            <Bone key={i} className="h-12 w-36 rounded-xl" />
+            <Bone
+              key={i}
+              className={cn("rounded-xl", iconActions ? "size-9" : "h-12 w-36")}
+            />
           ))}
         </div>
       ) : null}
@@ -224,7 +230,7 @@ export function TwoPaneSkeleton() {
   return (
     <div
       aria-hidden
-      className="rounded-card grid h-[calc(var(--content-h)-4rem)] min-h-96 overflow-hidden border bg-card lg:grid-cols-[22rem_1fr]"
+      className="rounded-card grid h-[calc(var(--content-h)-10rem)] min-h-96 overflow-hidden border bg-card lg:grid-cols-[22rem_1fr]"
     >
       <div className="flex min-h-0 flex-col border-r">
         <div className="border-b p-3">

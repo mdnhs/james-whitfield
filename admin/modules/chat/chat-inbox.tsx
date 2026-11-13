@@ -1,13 +1,24 @@
 "use client"
 
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query"
-import { MessagesSquareIcon } from "lucide-react"
+import {
+  ArchiveIcon,
+  BotIcon,
+  ChevronDownIcon,
+  HandIcon,
+  MessageCircleIcon,
+  MessagesSquareIcon,
+  MousePointerClickIcon,
+  UserCheckIcon,
+} from "lucide-react"
 import { parseAsString, parseAsStringLiteral, useQueryStates } from "nuqs"
 import { useEffect } from "react"
 
 import { EmptyState } from "@/admin/components/dashboard/empty-state"
+import { IconPill } from "@/admin/components/dashboard/icon-pill"
+import { PageHeader } from "@/admin/components/dashboard/page-header"
+import { SectionIcon } from "@/admin/components/dashboard/section-icon"
 import { useActor } from "@/admin/lib/actor-context"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
@@ -71,15 +82,19 @@ function Row({
         </span>
         <span className="flex flex-wrap gap-1">
           {chat.needsHuman ? (
-            <Badge variant="destructive">Needs a person</Badge>
+            <IconPill tone="danger" icon={HandIcon}>
+              Needs a person
+            </IconPill>
           ) : null}
           {chat.status === "open" && chat.aiEnabled ? (
-            <Badge variant="secondary">AI</Badge>
+            <IconPill tone="info" icon={BotIcon}>
+              AI
+            </IconPill>
           ) : null}
           {chat.assignedTo ? (
-            <Badge variant="outline">
+            <IconPill tone="neutral" icon={UserCheckIcon}>
               {mine ? "Assigned to you" : "Assigned"}
-            </Badge>
+            </IconPill>
           ) : null}
         </span>
       </button>
@@ -110,89 +125,106 @@ export function ChatInbox() {
   }, [unread])
 
   return (
-    <div className="rounded-card grid h-[calc(var(--content-h)-4rem)] min-h-96 overflow-hidden border bg-card lg:grid-cols-[22rem_1fr]">
-      <section
-        aria-label="Chats"
-        className={cn(
-          "min-h-0 flex-col border-r",
-          selected ? "hidden lg:flex" : "flex"
-        )}
-      >
-        <div className="border-b p-3">
-          <Tabs
-            value={status}
-            onValueChange={(next) =>
-              void setState({ status: next as "open" | "closed", c: null })
-            }
-          >
-            <TabsList>
-              <TabsTrigger value="open">Open</TabsTrigger>
-              <TabsTrigger value="closed">Closed</TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </div>
-        <div className="min-h-0 flex-1 overflow-y-auto">
-          {list.isPending ? (
-            <ChatRowsSkeleton />
-          ) : list.isError ? (
-            <div role="alert" className="flex flex-col items-start gap-3 p-4">
-              <p className="text-sm">{list.error.message}</p>
-              <Button variant="outline" onClick={() => void list.refetch()}>
-                Try again
-              </Button>
-            </div>
-          ) : items.length === 0 ? (
-            <div className="p-4">
-              <EmptyState
-                icon={MessagesSquareIcon}
-                title={status === "open" ? "No open chats" : "No closed chats"}
-                description="Conversations from the site's chat appear here."
-              />
-            </div>
-          ) : (
-            <ul>
-              {items.map((chat) => (
-                <Row
-                  key={chat.id}
-                  chat={chat}
-                  selected={chat.id === selected}
-                  mine={chat.assignedTo === user.id}
-                  onSelect={() => void setState({ c: chat.id })}
-                />
-              ))}
-            </ul>
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        title="Live chat"
+        icon={<SectionIcon id="chat" />}
+        description="Conversations from the site's chat bubble."
+      />
+      <div className="rounded-card grid h-[calc(var(--content-h)-10rem)] min-h-96 overflow-hidden border bg-card lg:grid-cols-[22rem_1fr]">
+        <section
+          aria-label="Chats"
+          className={cn(
+            "min-h-0 flex-col border-r",
+            selected ? "hidden lg:flex" : "flex"
           )}
-          {list.hasNextPage ? (
-            <div className="p-3">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={list.isFetchingNextPage}
-                onClick={() => void list.fetchNextPage()}
-              >
-                Load more
-              </Button>
-            </div>
-          ) : null}
-        </div>
-      </section>
-      <section
-        aria-label="Conversation"
-        className={cn("min-h-0", selected ? "block" : "hidden lg:block")}
-      >
-        {selected ? (
-          <ChatThread
-            key={selected}
-            id={selected}
-            onBack={() => void setState({ c: null })}
-            onGone={() => void setState({ c: null })}
-          />
-        ) : (
-          <div className="grid h-full place-items-center p-6 text-sm text-muted-foreground">
-            Pick a chat to read it.
+        >
+          <div className="border-b p-3">
+            <Tabs
+              value={status}
+              onValueChange={(next) =>
+                void setState({ status: next as "open" | "closed", c: null })
+              }
+            >
+              <TabsList>
+                <TabsTrigger value="open">
+                  <MessageCircleIcon aria-hidden />
+                  Open
+                </TabsTrigger>
+                <TabsTrigger value="closed">
+                  <ArchiveIcon aria-hidden />
+                  Closed
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
           </div>
-        )}
-      </section>
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            {list.isPending ? (
+              <ChatRowsSkeleton />
+            ) : list.isError ? (
+              <div role="alert" className="flex flex-col items-start gap-3 p-4">
+                <p className="text-sm">{list.error.message}</p>
+                <Button variant="outline" onClick={() => void list.refetch()}>
+                  Try again
+                </Button>
+              </div>
+            ) : items.length === 0 ? (
+              <div className="p-4">
+                <EmptyState
+                  icon={MessagesSquareIcon}
+                  title={
+                    status === "open" ? "No open chats" : "No closed chats"
+                  }
+                  description="New conversations appear here."
+                />
+              </div>
+            ) : (
+              <ul>
+                {items.map((chat) => (
+                  <Row
+                    key={chat.id}
+                    chat={chat}
+                    selected={chat.id === selected}
+                    mine={chat.assignedTo === user.id}
+                    onSelect={() => void setState({ c: chat.id })}
+                  />
+                ))}
+              </ul>
+            )}
+            {list.hasNextPage ? (
+              <div className="p-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={list.isFetchingNextPage}
+                  onClick={() => void list.fetchNextPage()}
+                >
+                  <ChevronDownIcon data-icon="inline-start" aria-hidden />
+                  Load more
+                </Button>
+              </div>
+            ) : null}
+          </div>
+        </section>
+        <section
+          aria-label="Conversation"
+          className={cn("min-h-0", selected ? "block" : "hidden lg:block")}
+        >
+          {selected ? (
+            <ChatThread
+              key={selected}
+              id={selected}
+              onBack={() => void setState({ c: null })}
+              onGone={() => void setState({ c: null })}
+            />
+          ) : (
+            <div className="flex h-full flex-col items-center justify-center gap-2 p-6 text-sm text-muted-foreground">
+              <MousePointerClickIcon aria-hidden className="size-6" />
+              Pick a chat to read it.
+            </div>
+          )}
+        </section>
+      </div>
     </div>
   )
 }

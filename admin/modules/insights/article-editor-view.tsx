@@ -4,10 +4,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   ArrowLeftIcon,
   CalendarClockIcon,
+  CalendarXIcon,
+  FileTextIcon,
   HistoryIcon,
   LockIcon,
   NewspaperIcon,
   RotateCwIcon,
+  SearchCheckIcon,
   SendIcon,
   TriangleAlertIcon,
   XIcon,
@@ -18,11 +21,10 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 
 import {
-  FORM_ACTION,
   PageHeader,
   PRIMARY_ACTION,
-  SECONDARY_ACTION,
 } from "@/admin/components/dashboard/page-header"
+import { TipButton } from "@/admin/components/actions/tip-button"
 import { ArticleEditorSkeleton } from "@/admin/components/dashboard/page-skeletons"
 import { usePermission } from "@/admin/lib/actor-context"
 import { articlesApi, parseResponse } from "@/admin/lib/api"
@@ -43,7 +45,6 @@ import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import type { ArticleDraft } from "@/lib/content/article"
-import { cn } from "@/lib/utils"
 
 import { ArticleBodyEditor } from "./article-body-editor"
 import { ArticleSeoForm } from "./article-seo-form"
@@ -55,6 +56,9 @@ import {
   articleRevisionsQuery,
   type ArticleDetail,
 } from "./queries"
+
+// History, Schedule and Unpublish as square icons beside Publish.
+const HEADER_ICON = "size-12 rounded-xl bg-card"
 
 const UNSCHEDULED_NOTICE =
   "Your edit moved this article back to draft; an editor must re-schedule it"
@@ -296,33 +300,34 @@ function Editor({
                 }
               />
             )}
-            <Button
+            <TipButton
+              label="History"
+              icon={HistoryIcon}
               variant="outline"
-              className={cn(FORM_ACTION, "h-12 bg-card")}
+              size="icon-lg"
+              className={HEADER_ICON}
               onClick={() => setHistoryOpen(true)}
-            >
-              <HistoryIcon data-icon="inline-start" />
-              History
-            </Button>
+            />
             {canPublish && (status === "draft" || status === "archived") ? (
-              <Button
+              <TipButton
+                label="Schedule"
+                icon={CalendarClockIcon}
                 variant="outline"
-                className={SECONDARY_ACTION}
+                size="icon-lg"
+                className={HEADER_ICON}
                 onClick={() => setScheduleOpen(true)}
-              >
-                <CalendarClockIcon data-icon="inline-start" />
-                Schedule
-              </Button>
+              />
             ) : null}
             {canPublish &&
             (status === "published" || status === "scheduled") ? (
-              <Button
+              <TipButton
+                label="Unpublish"
+                icon={CalendarXIcon}
                 variant="outline"
-                className={SECONDARY_ACTION}
+                size="icon-lg"
+                className={HEADER_ICON}
                 onClick={() => setUnpublishOpen(true)}
-              >
-                Unpublish
-              </Button>
+              />
             ) : null}
             {canPublish ? (
               <Button
@@ -397,9 +402,11 @@ function Editor({
       >
         <TabsList className="h-11 w-fit max-w-full rounded-xl bg-card p-1">
           <TabsTrigger value="content" className="rounded-lg px-5">
+            <FileTextIcon aria-hidden />
             Content
           </TabsTrigger>
           <TabsTrigger value="seo" className="rounded-lg px-5">
+            <SearchCheckIcon aria-hidden />
             SEO
           </TabsTrigger>
         </TabsList>

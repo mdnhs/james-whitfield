@@ -1,15 +1,22 @@
 "use client"
 
 import { keepPreviousData, useQueries, useQuery } from "@tanstack/react-query"
-import { DownloadIcon, ShieldIcon } from "lucide-react"
+import {
+  ColumnsIcon,
+  DownloadIcon,
+  InboxIcon,
+  ShieldAlertIcon,
+  ShieldIcon,
+  TableIcon,
+} from "lucide-react"
 import { useQueryStates } from "nuqs"
 import { useEffect, useState } from "react"
 
 import { EmptyState } from "@/admin/components/dashboard/empty-state"
-import {
-  PageHeader,
-  SECONDARY_ACTION,
-} from "@/admin/components/dashboard/page-header"
+import { IconTip } from "@/admin/components/actions/icon-tip"
+import { TipButton } from "@/admin/components/actions/tip-button"
+import { PageHeader } from "@/admin/components/dashboard/page-header"
+import { SectionIcon } from "@/admin/components/dashboard/section-icon"
 import { TableSkeleton } from "@/admin/components/dashboard/skeletons"
 import { LeadsBoardSkeleton } from "./leads-skeleton"
 import { usePermission } from "@/admin/lib/actor-context"
@@ -119,38 +126,43 @@ export function LeadsView() {
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Enquiries"
-        description="Messages from the contact form. Times are Irish time."
+        icon={<SectionIcon id="leads" />}
+        description="Contact form messages, in Irish time."
         actions={
-          <>
-            {canExport ? (
-              <a
-                href={exportHref({
-                  folder: state.folder,
-                  status:
-                    state.folder === "inbox"
-                      ? (state.status ?? undefined)
-                      : undefined,
-                })}
-                className={cn(
-                  buttonVariants({ variant: "outline" }),
-                  SECONDARY_ACTION
-                )}
-              >
-                <DownloadIcon aria-hidden />
-                Export CSV
-              </a>
-            ) : null}
-            {canPrivacy ? (
-              <Button
-                variant="outline"
-                className={SECONDARY_ACTION}
-                onClick={() => setPrivacyOpen(true)}
-              >
-                <ShieldIcon aria-hidden />
-                Privacy request
-              </Button>
-            ) : null}
-          </>
+          canExport || canPrivacy ? (
+            <div className="flex gap-1">
+              {canExport ? (
+                <IconTip label="Export CSV">
+                  <a
+                    aria-label="Export CSV"
+                    href={exportHref({
+                      folder: state.folder,
+                      status:
+                        state.folder === "inbox"
+                          ? (state.status ?? undefined)
+                          : undefined,
+                    })}
+                    className={cn(
+                      buttonVariants({ variant: "outline", size: "icon-lg" }),
+                      "rounded-xl"
+                    )}
+                  >
+                    <DownloadIcon aria-hidden />
+                  </a>
+                </IconTip>
+              ) : null}
+              {canPrivacy ? (
+                <TipButton
+                  label="Privacy request"
+                  icon={ShieldIcon}
+                  variant="outline"
+                  size="icon-lg"
+                  className="rounded-xl"
+                  onClick={() => setPrivacyOpen(true)}
+                />
+              ) : null}
+            </div>
+          ) : null
         }
       />
       <div className="flex flex-wrap items-center gap-3">
@@ -165,8 +177,14 @@ export function LeadsView() {
           }
         >
           <TabsList>
-            <TabsTrigger value="inbox">Inbox</TabsTrigger>
-            <TabsTrigger value="spam">Spam</TabsTrigger>
+            <TabsTrigger value="inbox">
+              <InboxIcon aria-hidden />
+              Inbox
+            </TabsTrigger>
+            <TabsTrigger value="spam">
+              <ShieldAlertIcon aria-hidden />
+              Spam
+            </TabsTrigger>
           </TabsList>
         </Tabs>
         {state.folder === "inbox" ? (
@@ -180,8 +198,16 @@ export function LeadsView() {
                 void setState({ view: value, page: 1 })
             }}
           >
-            <ToggleGroupItem value="board">Board</ToggleGroupItem>
-            <ToggleGroupItem value="table">Table</ToggleGroupItem>
+            <IconTip label="Board">
+              <ToggleGroupItem value="board" aria-label="Board">
+                <ColumnsIcon aria-hidden />
+              </ToggleGroupItem>
+            </IconTip>
+            <IconTip label="Table">
+              <ToggleGroupItem value="table" aria-label="Table">
+                <TableIcon aria-hidden />
+              </ToggleGroupItem>
+            </IconTip>
           </ToggleGroup>
         ) : null}
         {view === "table" && state.folder === "inbox" ? (

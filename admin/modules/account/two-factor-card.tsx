@@ -1,13 +1,21 @@
 "use client"
 
-import { CopyIcon, DownloadIcon, ShieldCheckIcon } from "lucide-react"
+import {
+  CopyIcon,
+  DownloadIcon,
+  KeyRoundIcon,
+  PowerOffIcon,
+  ShieldCheckIcon,
+  ShieldOffIcon,
+} from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { toast } from "sonner"
 
 import { LINK_FORM } from "@/admin/components/dashboard/page-header"
-import { StatusPill } from "@/admin/components/dashboard/status-pill"
+import { TipButton } from "@/admin/components/actions/tip-button"
+import { IconPill } from "@/admin/components/dashboard/icon-pill"
 import { useActor } from "@/admin/lib/actor-context"
 import { authClient } from "@/admin/lib/auth-client"
 import { Button, buttonVariants } from "@/components/ui/button"
@@ -77,10 +85,11 @@ export function TwoFactorCard() {
   if (!twoFactorEnabled) {
     return (
       <div className="flex flex-col items-start gap-4">
-        <StatusPill tone="warning">Off</StatusPill>
+        <IconPill tone="warning" icon={ShieldOffIcon}>
+          Off
+        </IconPill>
         <p className="text-sm text-muted-foreground">
-          Turn on two-factor authentication: a code from an authenticator app is
-          asked for when you sign in on a new device.
+          An authenticator app code on each new device.
         </p>
         {recommended ? (
           <p className="text-sm text-muted-foreground">
@@ -101,19 +110,27 @@ export function TwoFactorCard() {
 
   return (
     <div className="flex flex-col items-start gap-4">
-      <StatusPill tone="success">On</StatusPill>
-      <p className="text-sm text-muted-foreground">
-        A code from an authenticator app is asked for when you sign in on a new
-        device.
-      </p>
-      <div className="flex flex-wrap gap-2">
-        <Button variant="outline" onClick={() => setMode("codes")}>
-          New backup codes
-        </Button>
-        <Button variant="ghost" onClick={() => setMode("disable")}>
-          Turn off
-        </Button>
+      <div className="flex w-full items-center gap-2">
+        <IconPill tone="success" icon={ShieldCheckIcon} className="mr-auto">
+          On
+        </IconPill>
+        <TipButton
+          label="New backup codes"
+          icon={KeyRoundIcon}
+          size="icon"
+          onClick={() => setMode("codes")}
+        />
+        <TipButton
+          label="Turn off"
+          icon={PowerOffIcon}
+          size="icon"
+          tone="danger"
+          onClick={() => setMode("disable")}
+        />
       </div>
+      <p className="text-sm text-muted-foreground">
+        An authenticator app code on each new device.
+      </p>
       <Dialog
         open={mode !== null}
         onOpenChange={(open) => (open ? null : close())}

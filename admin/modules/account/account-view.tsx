@@ -1,10 +1,17 @@
 "use client"
 
-import { EyeIcon } from "lucide-react"
+import {
+  CircleUserRoundIcon,
+  EyeIcon,
+  LockKeyholeIcon,
+  MonitorSmartphoneIcon,
+  UserRoundIcon,
+} from "lucide-react"
 import { parseAsStringLiteral, useQueryState } from "nuqs"
 
 import { DashboardCard } from "@/admin/components/dashboard/dashboard-card"
 import { EmptyState } from "@/admin/components/dashboard/empty-state"
+import { InfoHint } from "@/admin/components/actions/icon-tip"
 import { PageHeader } from "@/admin/components/dashboard/page-header"
 import { useActor } from "@/admin/lib/actor-context"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -28,26 +35,43 @@ export function AccountView() {
   if (impersonatedBy) {
     return (
       <div className="flex flex-col gap-6">
-        <PageHeader title="Account" description={user.email} />
+        <PageHeader
+          title="Account"
+          icon={<CircleUserRoundIcon />}
+          description={user.email}
+        />
         <EmptyState
           icon={EyeIcon}
           title={`You're viewing as ${user.name}`}
-          description="Their profile, password and devices can only be changed by them. Stop viewing as them to manage your own account."
+          description="Only they can change their account. Stop viewing as them to manage yours."
         />
       </div>
     )
   }
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title="Account" description={user.email} />
+      <PageHeader
+        title="Account"
+        icon={<CircleUserRoundIcon />}
+        description={user.email}
+      />
       <Tabs
         value={tab}
         onValueChange={(value) => void setTab(value as (typeof TABS)[number])}
       >
         <TabsList>
-          <TabsTrigger value="profile">Profile</TabsTrigger>
-          <TabsTrigger value="security">Security</TabsTrigger>
-          <TabsTrigger value="sessions">Devices</TabsTrigger>
+          <TabsTrigger value="profile">
+            <UserRoundIcon aria-hidden />
+            Profile
+          </TabsTrigger>
+          <TabsTrigger value="security">
+            <LockKeyholeIcon aria-hidden />
+            Security
+          </TabsTrigger>
+          <TabsTrigger value="sessions">
+            <MonitorSmartphoneIcon aria-hidden />
+            Devices
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="profile" className="mt-4 grid gap-4 xl:grid-cols-2">
           <DashboardCard title="Profile">
@@ -61,10 +85,14 @@ export function AccountView() {
           value="security"
           className="mt-4 grid gap-4 xl:grid-cols-2"
         >
-          <DashboardCard title="Password">
-            <p className="text-sm text-muted-foreground">
-              You stay signed in here. Every other device is signed out.
-            </p>
+          <DashboardCard
+            title="Password"
+            action={
+              <InfoHint id="account-password-help">
+                You stay signed in here. Every other device is signed out.
+              </InfoHint>
+            }
+          >
             <PasswordForm />
           </DashboardCard>
           <DashboardCard title="Two-factor authentication">

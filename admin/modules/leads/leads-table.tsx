@@ -6,27 +6,18 @@ import {
   tableFeatures,
   useTable,
 } from "@tanstack/react-table"
-import { InboxIcon } from "lucide-react"
+import { InboxIcon, ShieldCheckIcon } from "lucide-react"
 
 import { EmptyState } from "@/admin/components/dashboard/empty-state"
-import { StatusPill } from "@/admin/components/dashboard/status-pill"
 import { DataTable } from "@/admin/components/data-table/data-table"
 import { DataTablePagination } from "@/admin/components/data-table/data-table-pagination"
 
-import {
-  formatWhen,
-  isLeadStatus,
-  statusText,
-  statusTone,
-  topicLabel,
-} from "./present"
+import { LeadStatusPill } from "./lead-status-pill"
+import { formatWhen, topicLabel } from "./present"
 import type { LeadRow } from "./queries"
 
 const features = tableFeatures({ rowPaginationFeature })
 const helper = createColumnHelper<typeof features, LeadRow>()
-
-const tone = (status: string) =>
-  statusTone(isLeadStatus(status) ? status : "new")
 
 export function LeadsTable({
   rows,
@@ -71,11 +62,7 @@ export function LeadsTable({
     }),
     helper.accessor("status", {
       header: "Status",
-      cell: (info) => (
-        <StatusPill tone={tone(info.getValue())}>
-          {statusText(info.getValue())}
-        </StatusPill>
-      ),
+      cell: (info) => <LeadStatusPill status={info.getValue()} />,
     }),
     helper.accessor((row) => row.assignee?.name ?? "Unassigned", {
       id: "assignee",
@@ -114,15 +101,15 @@ export function LeadsTable({
         empty={
           folder === "spam" ? (
             <EmptyState
-              icon={InboxIcon}
+              icon={ShieldCheckIcon}
               title="No spam"
-              description="No spam. Suspicious submissions land here."
+              description="Suspicious submissions land here."
             />
           ) : (
             <EmptyState
               icon={InboxIcon}
               title="No enquiries yet"
-              description="New enquiries from the contact form appear here."
+              description="Contact form messages appear here."
             />
           )
         }
@@ -135,9 +122,7 @@ export function LeadsTable({
             <span className="font-semibold">{row.original.name}</span>
             <span className="text-muted-foreground">{row.original.email}</span>
             <span className="flex items-center gap-2">
-              <StatusPill tone={tone(row.original.status)}>
-                {statusText(row.original.status)}
-              </StatusPill>
+              <LeadStatusPill status={row.original.status} />
               <span className="text-xs text-muted-foreground">
                 {formatWhen(row.original.createdAt)}
               </span>

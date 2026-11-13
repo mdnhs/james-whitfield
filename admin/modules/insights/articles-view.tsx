@@ -6,7 +6,17 @@ import {
   tableFeatures,
   useTable,
 } from "@tanstack/react-table"
-import { NewspaperIcon, PlusIcon, Trash2Icon } from "lucide-react"
+import {
+  ArchiveIcon,
+  CalendarClockIcon,
+  CircleCheckIcon,
+  MessageSquareWarningIcon,
+  NewspaperIcon,
+  PencilLineIcon,
+  PlusIcon,
+  SearchXIcon,
+  Trash2Icon,
+} from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { parseAsString, useQueryState } from "nuqs"
@@ -23,7 +33,7 @@ import {
   PRIMARY_ACTION,
   FORM_ACTION,
 } from "@/admin/components/dashboard/page-header"
-import { StatusPill } from "@/admin/components/dashboard/status-pill"
+import { IconPill } from "@/admin/components/dashboard/icon-pill"
 import { DataTable } from "@/admin/components/data-table/data-table"
 import { DataTablePagination } from "@/admin/components/data-table/data-table-pagination"
 import { usePermission } from "@/admin/lib/actor-context"
@@ -93,18 +103,26 @@ export function ArticleStatus({
   return (
     <span className="flex flex-wrap gap-1.5">
       {status === "published" ? (
-        <StatusPill tone="success">Published</StatusPill>
+        <IconPill tone="success" icon={CircleCheckIcon}>
+          Published
+        </IconPill>
       ) : status === "scheduled" ? (
-        <StatusPill tone="info">
+        <IconPill tone="info" icon={CalendarClockIcon}>
           Scheduled{scheduledFor ? ` · ${formatDublin(scheduledFor)}` : ""}
-        </StatusPill>
+        </IconPill>
       ) : status === "archived" ? (
-        <StatusPill tone="neutral">Archived</StatusPill>
+        <IconPill tone="neutral" icon={ArchiveIcon}>
+          Archived
+        </IconPill>
       ) : (
-        <StatusPill tone="neutral">Draft</StatusPill>
+        <IconPill tone="neutral" icon={PencilLineIcon}>
+          Draft
+        </IconPill>
       )}
       {reviewRequestedAt ? (
-        <StatusPill tone="warning">Review requested</StatusPill>
+        <IconPill tone="warning" icon={MessageSquareWarningIcon}>
+          Review requested
+        </IconPill>
       ) : null}
     </span>
   )
@@ -401,6 +419,7 @@ export function ArticlesView() {
             setPage(1)
           }}
         >
+          <MessageSquareWarningIcon aria-hidden />
           Review requested
         </Toggle>
       </div>
@@ -420,12 +439,12 @@ export function ArticlesView() {
             isFetching={list.isFetching}
             empty={
               <EmptyState
-                icon={NewspaperIcon}
+                icon={filtered ? SearchXIcon : NewspaperIcon}
                 title={filtered ? "No matching articles" : "No articles yet"}
                 description={
                   filtered
-                    ? "Try a different search or clear the filters."
-                    : "Articles you write appear here, with their status."
+                    ? "Try another search or clear the filters."
+                    : "Articles you write appear here."
                 }
                 action={filtered ? undefined : (newButton ?? undefined)}
               />

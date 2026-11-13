@@ -6,7 +6,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query"
-import { PlusIcon, UsersIcon } from "lucide-react"
+import { KeyRoundIcon, PlusIcon, SearchXIcon, UsersIcon } from "lucide-react"
 import {
   parseAsInteger,
   parseAsString,
@@ -21,6 +21,7 @@ import {
   PageHeader,
   PRIMARY_ACTION,
 } from "@/admin/components/dashboard/page-header"
+import { SectionIcon } from "@/admin/components/dashboard/section-icon"
 import { DataTablePagination } from "@/admin/components/data-table/data-table-pagination"
 import { useActor, usePermission } from "@/admin/lib/actor-context"
 import { parseResponse, usersApi } from "@/admin/lib/api"
@@ -182,7 +183,8 @@ export function UsersView() {
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Users & roles"
-        description="Who can sign in, and what each role is allowed to do."
+        icon={<SectionIcon id="users" />}
+        description="Who can sign in, and what each role can do."
         actions={
           canInvite ? (
             <Button
@@ -202,8 +204,14 @@ export function UsersView() {
         }
       >
         <TabsList>
-          <TabsTrigger value="people">People</TabsTrigger>
-          <TabsTrigger value="roles">Roles</TabsTrigger>
+          <TabsTrigger value="people">
+            <UsersIcon aria-hidden />
+            People
+          </TabsTrigger>
+          <TabsTrigger value="roles">
+            <KeyRoundIcon aria-hidden />
+            Roles
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="people" className="flex flex-col gap-6 pt-4">
           <div
@@ -271,9 +279,9 @@ export function UsersView() {
             />
           ) : list.data.items.length === 0 ? (
             <EmptyState
-              icon={UsersIcon}
+              icon={SearchXIcon}
               title="Nobody matches these filters"
-              description="Try a different search or clear the filters."
+              description="Try another search or clear the filters."
             />
           ) : (
             <>

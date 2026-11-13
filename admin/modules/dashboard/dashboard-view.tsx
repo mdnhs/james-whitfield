@@ -1,9 +1,16 @@
 "use client"
 
 import { useQuery } from "@tanstack/react-query"
-import { CircleCheckIcon, CircleIcon, PlusIcon } from "lucide-react"
+import {
+  ArrowRightIcon,
+  CircleCheckIcon,
+  CircleIcon,
+  ExternalLinkIcon,
+  PlusIcon,
+} from "lucide-react"
 import Link from "next/link"
 
+import { IconTip } from "@/admin/components/actions/icon-tip"
 import { ActivityFeed } from "@/admin/components/dashboard/activity-feed"
 import { DashboardCard } from "@/admin/components/dashboard/dashboard-card"
 import { EmptyState } from "@/admin/components/dashboard/empty-state"
@@ -12,13 +19,13 @@ import { Gauge } from "@/admin/components/dashboard/gauge"
 import { KpiCard } from "@/admin/components/dashboard/kpi-card"
 import {
   LINK_PRIMARY,
-  LINK_SECONDARY,
   PageHeader,
   PRIMARY_ACTION,
 } from "@/admin/components/dashboard/page-header"
+import { SectionIcon } from "@/admin/components/dashboard/section-icon"
 import { PillBarChart } from "@/admin/components/dashboard/pill-bar-chart"
 import { useActor, usePermission } from "@/admin/lib/actor-context"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { hasPermission, type Permissions } from "@/lib/auth/permissions"
 import { cn } from "@/lib/utils"
 
@@ -46,6 +53,7 @@ export function DashboardView({
       <PageHeader
         title={greeting}
         titleTestId="greeting"
+        icon={<SectionIcon id="dashboard" />}
         description="Here's what's happening across your admin."
         actions={
           <>
@@ -59,16 +67,21 @@ export function DashboardView({
                 New article
               </Link>
             ) : null}
-            <a
-              href={siteUrl}
-              target="_blank"
-              rel="noreferrer"
-              data-slot="button"
-              className={LINK_SECONDARY}
-            >
-              View site
-              <span className="sr-only"> (opens in a new tab)</span>
-            </a>
+            <IconTip label="View site">
+              <a
+                href={siteUrl}
+                target="_blank"
+                rel="noreferrer"
+                data-slot="button"
+                className={cn(
+                  buttonVariants({ variant: "outline", size: "icon-lg" }),
+                  "size-12 rounded-xl border-primary text-primary hover:bg-accent"
+                )}
+              >
+                <ExternalLinkIcon aria-hidden />
+                <span className="sr-only">View site (opens in a new tab)</span>
+              </a>
+            </IconTip>
           </>
         }
       />
@@ -134,7 +147,7 @@ function DashboardBody({ data }: { data: Dashboard }) {
               <div className="pointer-events-none absolute inset-x-0 top-0 flex h-64 flex-col items-center justify-center gap-1 text-center">
                 <p className="text-base font-semibold">No enquiries yet</p>
                 <p className="max-w-xs text-sm text-muted-foreground">
-                  Each day&apos;s enquiries this week and last will show here.
+                  Daily counts for this week and last.
                 </p>
               </div>
             ) : null}
@@ -185,6 +198,7 @@ function DashboardBody({ data }: { data: Dashboard }) {
                 className={LINK_PRIMARY}
               >
                 {next.cta}
+                <ArrowRightIcon data-icon="inline-end" aria-hidden />
               </Link>
             ) : null}
           </div>

@@ -1,12 +1,13 @@
 "use client"
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { MonitorSmartphoneIcon } from "lucide-react"
+import { LogOutIcon, MonitorSmartphoneIcon, SmartphoneIcon } from "lucide-react"
 import { toast } from "sonner"
 
 import { relativeTime } from "@/admin/components/dashboard/format"
 import { ListRowsSkeleton } from "@/admin/components/dashboard/skeletons"
-import { StatusPill } from "@/admin/components/dashboard/status-pill"
+import { TipButton } from "@/admin/components/actions/tip-button"
+import { IconPill } from "@/admin/components/dashboard/icon-pill"
 import { accountApi, parseResponse } from "@/admin/lib/api"
 import { ApiError } from "@/admin/lib/api-error"
 import { queryKeys } from "@/admin/lib/query-keys"
@@ -86,16 +87,18 @@ export function SessionsList() {
             </div>
             {/* Signing this device out is the user menu's "Sign out". */}
             {session.current ? (
-              <StatusPill tone="success">This device</StatusPill>
+              <IconPill tone="success" icon={SmartphoneIcon}>
+                This device
+              </IconPill>
             ) : (
-              <Button
-                variant="outline"
+              <TipButton
+                label={`Sign out ${session.device}`}
+                tip="Sign out"
+                icon={LogOutIcon}
+                size="icon"
                 disabled={busy}
                 onClick={() => revoke.mutate(session.id)}
-              >
-                Sign out
-                <span className="sr-only"> {session.device}</span>
-              </Button>
+              />
             )}
           </li>
         ))}
@@ -107,6 +110,7 @@ export function SessionsList() {
             disabled={busy}
             onClick={() => revokeOthers.mutate()}
           >
+            <LogOutIcon data-icon="inline-start" aria-hidden />
             Sign out other devices
           </Button>
         </div>

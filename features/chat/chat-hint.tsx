@@ -12,12 +12,18 @@ export const PRESETS = [
     label: "How does hypnotherapy work?",
     message: "How does hypnotherapy work?",
   },
-  { label: "What can it help with?", message: "What can hypnotherapy help with?" },
+  {
+    label: "What can it help with?",
+    message: "What can hypnotherapy help with?",
+  },
   {
     label: "Sessions, length & fees",
     message: "How long are sessions, and what do they cost?",
   },
-  { label: "Book a discovery call", message: "I'd like to book a discovery call." },
+  {
+    label: "Book a free discovery call",
+    message: "I'd like to book a discovery call.",
+  },
   { label: "Ask something else", message: "" },
 ] as const
 

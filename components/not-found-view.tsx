@@ -90,7 +90,7 @@ export function NotFoundView() {
               "border-white bg-transparent text-white hover:bg-white/15 hover:text-white sm:border-white/40 sm:bg-white/5"
             )}
           >
-            Book a discovery call
+            Book a free discovery call
           </Link>
         </div>
 

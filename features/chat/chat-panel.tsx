@@ -95,7 +95,7 @@ function ConsentLine({ quiet }: { quiet: boolean }) {
         rel="noopener"
         className="underline underline-offset-2 hover:text-white"
       >
-        Privacy policy
+        Privacy notice
       </Link>
     </p>
   )
@@ -131,7 +131,7 @@ function EmailAsk({ chat, note }: { chat: ChatApi; note: string }) {
         required
         autoComplete="email"
         maxLength={254}
-        placeholder="you@example.com"
+        placeholder="name@example.com"
         className={field}
       />
       <button type="submit" disabled={pending} className={pill}>
@@ -319,7 +319,7 @@ export function ChatPanel({
           : "We couldn't start the chat. Please try again."
       )
     else if (result.kind === "other" || result.kind === "notfound")
-      setError("Something went wrong. Please try again.")
+      setError("Something went wrong. Please try once more.")
   }
 
   const ready = exists || (loaded && (!siteKey || Boolean(token)))

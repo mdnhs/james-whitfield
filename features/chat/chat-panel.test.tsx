@@ -130,7 +130,7 @@ describe("no start form", () => {
       screen.getByText(/Messages are read by an AI assistant and Magda's team/)
         .textContent
     ).toContain("Please don't share health details here.")
-    const policy = screen.getByRole("link", { name: /privacy policy/i })
+    const policy = screen.getByRole("link", { name: /privacy notice/i })
     expect(policy.getAttribute("href")).toBe("/privacy")
     expect(composer()).toBeTruthy()
   })

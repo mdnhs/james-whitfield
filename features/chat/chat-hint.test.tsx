@@ -40,7 +40,7 @@ describe("ChatHint", () => {
       "How does hypnotherapy work?",
       "What can it help with?",
       "Sessions, length & fees",
-      "Book a discovery call",
+      "Book a free discovery call",
       "Ask something else",
     ])
   })

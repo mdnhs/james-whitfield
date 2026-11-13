@@ -132,7 +132,7 @@ describe("ChatLauncher", () => {
     await settle()
     fireEvent.click(screen.getByRole("button", { name: "How can we help?" }))
     fireEvent.click(
-      screen.getByRole("button", { name: "Book a discovery call" })
+      screen.getByRole("button", { name: "Book a free discovery call" })
     )
     await settle()
     expect(screen.getByRole("dialog")).toBeTruthy()

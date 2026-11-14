@@ -29,3 +29,14 @@ describe("withProcessingSlot", () => {
     await expect(withProcessingSlot(async () => "ok")).resolves.toBe("ok")
   })
 })
+
+describe("processUpload", () => {
+  it("refuses a Lottie file over 2.5 MB", async () => {
+    const { processUpload } = await import("./process")
+    const padding = " ".repeat(2.5 * 1024 * 1024)
+    const big = Buffer.from(
+      `{"v":"5.7.4","fr":30,"ip":0,"op":60,"w":100,"h":100,"layers":[]${padding}}`
+    )
+    await expect(processUpload(big, "logo.json")).rejects.toThrow(/2\.5 MB/)
+  })
+})

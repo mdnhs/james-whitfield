@@ -12,6 +12,9 @@ import { probeImage } from "./probe"
 import { sniff, type Sniffed } from "./sniff"
 
 export const MAX_UPLOAD_BYTES = 20 * 1024 * 1024
+// Lottie files animate the site's logo on every page: kept small so the
+// logo plays quickly.
+export const MAX_LOTTIE_BYTES = 2.5 * 1024 * 1024
 const MAX_EDGE = 4000
 // Decompression-bomb guard: a small file can declare a huge canvas. 50 MP
 // covers phone and most camera photos (a 50 MP decode is ~150 MB); sharp
@@ -72,6 +75,8 @@ export type ProcessedUpload = {
 
 const UNSUPPORTED =
   "Upload a JPEG, PNG, WebP, AVIF, SVG, ICO, PDF or Lottie JSON file"
+
+const LOTTIE_TOO_LARGE = "Lottie files can be up to 2.5 MB"
 
 const refused = (message: string) =>
   new ApiError("VALIDATION_FAILED", message, { file: [message] })
@@ -146,6 +151,10 @@ export async function processUpload(
     dominantColor: null as string | null,
   }
   if (type.ext === "json") {
+    if (input.length > MAX_LOTTIE_BYTES)
+      throw new ApiError("PAYLOAD_TOO_LARGE", LOTTIE_TOO_LARGE, {
+        file: [LOTTIE_TOO_LARGE],
+      })
     const size = lottieSize(input.toString("utf8"))
     if (!size) throw refused("That JSON file is not a Lottie animation")
     probe = { ...probe, ...size }

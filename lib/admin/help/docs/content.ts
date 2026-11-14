@@ -202,7 +202,7 @@ export const CONTENT_DOCS: readonly HelpArticle[] = [
           },
           {
             type: "p",
-            text: "You can upload JPEG, PNG, WebP, AVIF, SVG, ICO, PDF or Lottie files, up to 20 MB each.",
+            text: "You can upload JPEG, PNG, WebP, AVIF, SVG, ICO, PDF or Lottie files, up to 20 MB each. Lottie files can be up to 2.5 MB.",
           },
         ],
       },

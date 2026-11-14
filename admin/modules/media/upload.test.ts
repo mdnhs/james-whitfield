@@ -99,6 +99,10 @@ describe("uploadFile", () => {
         () => {}
       )
     ).rejects.toThrow(/JPEG, PNG/)
+    // Lottie files have their own, smaller cap.
+    const lottie = new File(["x"], "logo.json", { type: "application/json" })
+    Object.defineProperty(lottie, "size", { value: 3 * 1024 * 1024 })
+    await expect(uploadFile("/x", lottie, () => {})).rejects.toThrow(/2\.5 MB/)
     expect(FakeXhr.last).toBeUndefined()
     vi.unstubAllGlobals()
   })

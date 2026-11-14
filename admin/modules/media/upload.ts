@@ -4,6 +4,8 @@ import { ApiError } from "@/admin/lib/api-error"
 import type { MediaItem } from "./queries"
 
 const TOO_LARGE = "That file is over 20 MB. Choose a smaller one."
+const LOTTIE_TOO_LARGE =
+  "That Lottie file is over 2.5 MB. Choose a smaller one."
 const WRONG_TYPE =
   "Upload a JPEG, PNG, WebP, AVIF, SVG, ICO, PDF or Lottie JSON file."
 const BUSY = "The server is busy processing other uploads. Try again shortly."
@@ -11,6 +13,7 @@ const BUSY = "The server is busy processing other uploads. Try again shortly."
 // Mirrors server/lib/media (MAX_UPLOAD_BYTES, sniff.ts); that code is
 // server-only, so the limits are repeated here for an early, byteless refusal.
 export const MAX_UPLOAD_BYTES = 20 * 1024 * 1024
+export const MAX_LOTTIE_BYTES = 2.5 * 1024 * 1024
 export const ACCEPTED_TYPES = [
   "image/jpeg",
   "image/png",
@@ -44,6 +47,8 @@ export function checkFile(file: File): string | null {
     ""
   if (!(ACCEPTED_TYPES as readonly string[]).includes(type)) return WRONG_TYPE
   if (file.size > MAX_UPLOAD_BYTES) return TOO_LARGE
+  if (type === "application/json" && file.size > MAX_LOTTIE_BYTES)
+    return LOTTIE_TOO_LARGE
   return null
 }
 
@@ -59,7 +64,7 @@ export function uploadFile(
     if (refusal) {
       reject(
         new ApiError(
-          file.size > MAX_UPLOAD_BYTES
+          refusal === TOO_LARGE || refusal === LOTTIE_TOO_LARGE
             ? "PAYLOAD_TOO_LARGE"
             : "VALIDATION_FAILED",
           refusal,

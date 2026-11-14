@@ -1,5 +1,6 @@
 "use client"
 
+import { motion } from "motion/react"
 import Link from "next/link"
 
 import {
@@ -33,11 +34,15 @@ export function NavEntry({
   const active = isActiveSection(pathname, item)
   return (
     <SidebarMenuItem>
-      {/* The 4px active bar on the panel's left edge (the group's p-2 away). */}
+      {/* The 4px active bar on the panel's left edge (the group's p-2 away); a
+          shared layoutId makes it slide from the previous item. top/bottom
+          rather than a translate, which motion would overwrite. */}
       {active ? (
-        <span
+        <motion.span
           aria-hidden
-          className="absolute top-1/2 -left-2 h-8 w-1 -translate-y-1/2 rounded-r-full bg-primary"
+          layoutId="admin-nav-active-bar"
+          transition={{ duration: 0.22, ease: "easeOut" }}
+          className="absolute top-1 bottom-1 -left-2 w-1 rounded-r-full bg-primary"
         />
       ) : null}
       <SidebarMenuButton

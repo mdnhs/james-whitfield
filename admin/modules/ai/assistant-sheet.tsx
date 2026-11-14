@@ -172,9 +172,10 @@ export default function AssistantSheet({
         finalFocus={trigger}
         showCloseButton={false}
         // Full screen on phones; a reading-width panel on desktop that can
-        // widen to half the window.
+        // widen to half the window. SheetContent's own transition animates
+        // the width change; only its easing is softened here.
         className={cn(
-          "w-full max-w-none gap-0 overflow-hidden p-0 transition-all data-[side=right]:w-full sm:data-[side=right]:max-w-none",
+          "w-full max-w-none gap-0 overflow-hidden p-0 transition-all ease-out data-[side=right]:w-full motion-reduce:transition-none sm:data-[side=right]:max-w-none",
           expanded
             ? "sm:data-[side=right]:w-[max(33rem,50vw)]"
             : "sm:data-[side=right]:w-[33rem]"

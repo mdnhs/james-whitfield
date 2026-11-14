@@ -2,6 +2,7 @@
 "use client"
 
 import { CheckIcon, CopyIcon, RefreshCwIcon, SearchIcon } from "lucide-react"
+import { motion } from "motion/react"
 import { useId, useLayoutEffect, useRef, useState } from "react"
 
 import { EditIconButton } from "@/admin/components/actions/icon-actions"
@@ -15,6 +16,30 @@ import { Markdown } from "./markdown"
 import type { AssistantScreen } from "./route-context"
 import type { Starter } from "./starters"
 import { useCopy } from "./use-copy"
+
+const ENTER = { duration: 0.2, ease: "easeOut" } as const
+
+// A message that arrives while the panel is open fades in and rises 8px; one
+// that was already there (opening, or restoring a saved conversation) is
+// painted as is. Only `initial` depends on `animate`, so a streaming reply
+// re-rendering per token never replays it.
+export function MessageEnter({
+  animate,
+  children,
+}: {
+  animate: boolean
+  children: React.ReactNode
+}) {
+  return (
+    <motion.div
+      initial={animate ? { opacity: 0, y: 8 } : false}
+      animate={{ opacity: 1, y: 0 }}
+      transition={ENTER}
+    >
+      {children}
+    </motion.div>
+  )
+}
 
 export function UserMessage({
   message,
@@ -176,7 +201,13 @@ export function AssistantMessage({
 // who ask for less motion (the admin's global rule stops them too).
 export function TypingIndicator() {
   return (
-    <div className="flex items-center gap-3">
+    <motion.div
+      className="flex items-center gap-3"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.15, ease: "easeOut" }}
+    >
       <AiAvatar />
       <span className="flex h-7 items-center gap-1" aria-hidden="true">
         {[0, 150, 300].map((delay) => (
@@ -188,7 +219,7 @@ export function TypingIndicator() {
         ))}
       </span>
       <span className="sr-only">The assistant is writing</span>
-    </div>
+    </motion.div>
   )
 }
 
@@ -220,7 +251,12 @@ export function EmptyState({
 }) {
   return (
     <div className="flex flex-col gap-6 pt-2 sm:pt-6">
-      <div className="flex flex-col items-start gap-3">
+      <motion.div
+        className="flex flex-col items-start gap-3"
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={ENTER}
+      >
         <AiAvatar size="lg" />
         <div className="flex flex-col gap-1">
           <p className="text-[1.375rem] leading-tight font-semibold tracking-tight">
@@ -229,12 +265,19 @@ export function EmptyState({
           </p>
           <p className="max-w-[44ch] text-muted-foreground">{LEADS[screen]}</p>
         </div>
-      </div>
+      </motion.div>
       <ul aria-label="Suggestions" className="grid grid-cols-2 gap-2.5">
-        {starters.map((s) => (
-          <li key={s.title} className="flex">
+        {starters.map((s, i) => (
+          // A gentle stagger, 50ms apart, after the greeting.
+          <motion.li
+            key={s.title}
+            className="flex"
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ ...ENTER, delay: 0.08 + i * 0.05 }}
+          >
             <StarterCard starter={s} onPick={onPick} />
-          </li>
+          </motion.li>
         ))}
       </ul>
     </div>

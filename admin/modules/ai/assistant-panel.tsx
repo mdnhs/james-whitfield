@@ -11,6 +11,7 @@ import {
   Trash2Icon,
   XIcon,
 } from "lucide-react"
+import { AnimatePresence } from "motion/react"
 import Link from "next/link"
 import { useLayoutEffect, useRef, useState, type RefObject } from "react"
 import { toast } from "sonner"
@@ -38,6 +39,7 @@ import { Composer } from "./assistant-composer"
 import {
   AssistantMessage,
   EmptyState,
+  MessageEnter,
   TypingIndicator,
   UserMessage,
 } from "./assistant-messages"
@@ -106,6 +108,13 @@ export function AssistantPanel(props: AssistantPanelProps) {
     chatStatus === "submitted" ||
     (chatStatus === "streaming" &&
       (last?.role !== "assistant" || !hasVisibleParts(last)))
+  // Messages already shown, which paint without the enter animation. While a
+  // turn is in flight the set stands still, so what arrives in it animates in;
+  // once idle it absorbs everything, which also covers a restored
+  // conversation and the id swap after a turn (that remounts the message).
+  const [shown, setShown] = useState(() => new Set(messages.map((m) => m.id)))
+  if (!busy && messages.some((m) => !shown.has(m.id)))
+    setShown(new Set(messages.map((m) => m.id)))
   const lastUserIndex = messages.findLastIndex((m) => m.role === "user")
   const canChange = !busy && !viewing && Boolean(props.activeConversationId)
 
@@ -227,40 +236,42 @@ export function AssistantPanel(props: AssistantPanelProps) {
                   }}
                 />
               ) : (
-                messages.map((m, i) =>
-                  m.role === "user" ? (
-                    <UserMessage
-                      key={m.id}
-                      message={m}
-                      canEdit={
-                        canChange &&
-                        i === lastUserIndex &&
-                        Boolean(props.onEdit)
-                      }
-                      onEdit={(text) => {
-                        pinned.current = true
-                        props.onEdit?.(m.id, text)
-                      }}
-                    />
-                  ) : (
-                    <AssistantMessage
-                      key={m.id}
-                      message={m}
-                      canRegenerate={
-                        canChange &&
-                        i === messages.length - 1 &&
-                        i > lastUserIndex &&
-                        Boolean(props.onRegenerate)
-                      }
-                      onRegenerate={() => {
-                        pinned.current = true
-                        props.onRegenerate?.()
-                      }}
-                    />
-                  )
-                )
+                messages.map((m, i) => (
+                  <MessageEnter key={m.id} animate={!shown.has(m.id)}>
+                    {m.role === "user" ? (
+                      <UserMessage
+                        message={m}
+                        canEdit={
+                          canChange &&
+                          i === lastUserIndex &&
+                          Boolean(props.onEdit)
+                        }
+                        onEdit={(text) => {
+                          pinned.current = true
+                          props.onEdit?.(m.id, text)
+                        }}
+                      />
+                    ) : (
+                      <AssistantMessage
+                        message={m}
+                        canRegenerate={
+                          canChange &&
+                          i === messages.length - 1 &&
+                          i > lastUserIndex &&
+                          Boolean(props.onRegenerate)
+                        }
+                        onRegenerate={() => {
+                          pinned.current = true
+                          props.onRegenerate?.()
+                        }}
+                      />
+                    )}
+                  </MessageEnter>
+                ))
               )}
-              {thinking ? <TypingIndicator /> : null}
+              <AnimatePresence initial={false}>
+                {thinking ? <TypingIndicator key="typing" /> : null}
+              </AnimatePresence>
               {errorText ? (
                 <p
                   role="alert"

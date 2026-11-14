@@ -1,5 +1,6 @@
 "use client"
 
+import { motion } from "motion/react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
@@ -12,7 +13,10 @@ import {
 } from "@/lib/admin/nav"
 import { cn } from "@/lib/utils"
 
+import { PageTransition } from "../motion/page-transition"
 import { SUBNAV_ICONS } from "./nav-icons"
+
+const SLIDE = { duration: 0.22, ease: "easeOut" } as const
 
 // A section's sub-pages (Website, SEO, Marketing, Site
 // settings) as vertical tabs inside the content panel, so the sidebar lists
@@ -24,7 +28,7 @@ export function SectionTabs({ children }: { children: React.ReactNode }) {
     (item) =>
       (item.children?.length ?? 0) > 1 && isActiveSection(pathname, item)
   )
-  if (!section?.children) return children
+  if (!section?.children) return <PageTransition>{children}</PageTransition>
 
   const current = currentTab(section.children, pathname)
   return (
@@ -42,18 +46,30 @@ export function SectionTabs({ children }: { children: React.ReactNode }) {
             const Icon = SUBNAV_ICONS[tab.id]
             return (
               <li key={tab.id} className="relative shrink-0">
+                {/* One highlight and bar slide between tabs (shared layoutId)
+                    instead of each tab swapping its own background. */}
                 {active ? (
-                  <span
-                    aria-hidden
-                    className="absolute top-1/2 left-0 hidden h-6 w-1 -translate-y-1/2 rounded-r-full bg-primary lg:block"
-                  />
+                  <>
+                    <motion.span
+                      aria-hidden
+                      layoutId={`section-tab-bg-${section.id}`}
+                      className="absolute inset-0 rounded-md bg-sidebar-accent"
+                      transition={SLIDE}
+                    />
+                    <motion.span
+                      aria-hidden
+                      layoutId={`section-tab-bar-${section.id}`}
+                      className="absolute top-1.5 bottom-1.5 left-0 hidden w-1 rounded-r-full bg-primary lg:block"
+                      transition={SLIDE}
+                    />
+                  </>
                 ) : null}
                 <Link
                   href={tab.href}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "flex h-9 items-center gap-2.5 rounded-md px-3 text-sm whitespace-nowrap text-muted-foreground outline-none hover:bg-sidebar-accent/60 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50",
-                    active && "bg-sidebar-accent font-semibold text-foreground"
+                    "relative flex h-9 items-center gap-2.5 rounded-md px-3 text-sm whitespace-nowrap text-muted-foreground outline-none hover:bg-sidebar-accent/60 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50",
+                    active && "font-semibold text-foreground"
                   )}
                 >
                   {Icon ? (
@@ -72,7 +88,9 @@ export function SectionTabs({ children }: { children: React.ReactNode }) {
           })}
         </ul>
       </nav>
-      <div className="min-w-0 flex-1">{children}</div>
+      <div className="min-w-0 flex-1">
+        <PageTransition>{children}</PageTransition>
+      </div>
     </div>
   )
 }

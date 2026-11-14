@@ -235,7 +235,10 @@ export const NAV: readonly NavItem[] = [
     permission: { globals: ["read"] },
     keywords: ["identity", "contact", "privacy", "theme", "brand"],
     children: [
-      setting("identity", "Identity", "settings"),
+      {
+        ...setting("identity", "Identity", "settings"),
+        keywords: ["logo", "favicon", "lottie", "animated logo", "brand"],
+      },
       setting("contact", "Contact & clinic", "globals"),
       setting("forms", "Forms & microcopy", "globals"),
       setting("notifications", "Notifications", "settings"),
@@ -246,7 +249,7 @@ export const NAV: readonly NavItem[] = [
         label: "Appearance",
         href: "/admin/appearance",
         permission: { appearance: ["read"] },
-        keywords: ["theme", "colours", "colors", "brand", "logo"],
+        keywords: ["theme", "colours", "colors"],
       },
       {
         id: "settings-ai-assistant",

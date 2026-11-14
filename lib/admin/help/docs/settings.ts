@@ -11,6 +11,9 @@ export const SETTINGS_DOCS: readonly HelpArticle[] = [
     keywords: [
       "identity",
       "logo",
+      "favicon",
+      "lottie",
+      "animated logo",
       "phone",
       "address",
       "opening hours",
@@ -33,7 +36,26 @@ export const SETTINGS_DOCS: readonly HelpArticle[] = [
         blocks: [
           {
             type: "p",
-            text: "[Identity](/admin/settings/identity) holds your name, professional title, logo, portrait, favicon and social profiles. Owners and admins only.",
+            text: "[Identity](/admin/settings/identity) holds your name, professional title, logo, animated logo, portrait, favicon and social profiles. Owners and admins only.",
+          },
+        ],
+      },
+      {
+        title: "Animated logo (Lottie)",
+        level: 3,
+        blocks: [
+          {
+            type: "steps",
+            items: [
+              "Open [Identity](/admin/settings/identity).",
+              "Under **Animated logo (Lottie)**, choose or upload a Lottie **.json** file.",
+              "Turn on **Use the animated logo** and press **Save**. It replaces the logo everywhere the site shows it.",
+            ],
+          },
+          {
+            type: "callout",
+            tone: "note",
+            text: "Turn the switch off to go back to the still logo. Visitors who ask for reduced motion see the animation's last frame, held still.",
           },
         ],
       },
@@ -101,18 +123,13 @@ export const SETTINGS_DOCS: readonly HelpArticle[] = [
     slug: "appearance",
     title: "Appearance",
     group: "settings",
-    description: "Colours, logo and the admin's own look.",
+    description: "Colours and the admin's own look.",
     lead: "**Appearance** changes the colours of your website and of the admin. Unlike other settings, it has a draft you publish.",
     permission: { appearance: ["read"] },
     keywords: [
       "theme",
       "colours",
       "colors",
-      "brand",
-      "logo",
-      "lottie",
-      "animated logo",
-      "favicon",
       "dark mode",
     ],
     sections: [
@@ -132,24 +149,6 @@ export const SETTINGS_DOCS: readonly HelpArticle[] = [
             type: "callout",
             tone: "note",
             text: "**Publish** stays blocked until the colours pass the contrast checks, so text stays readable for everyone.",
-          },
-        ],
-      },
-      {
-        title: "Animated logo (Lottie)",
-        blocks: [
-          {
-            type: "steps",
-            items: [
-              "Open [Appearance](/admin/appearance) and find **Brand images**.",
-              "Under **Animated logo (Lottie)**, choose or upload a Lottie **.json** file.",
-              "Turn on **Use the animated logo**. It replaces the logo everywhere the site shows it, straight away.",
-            ],
-          },
-          {
-            type: "callout",
-            tone: "note",
-            text: "Turn the switch off to go back to the still logo. Visitors who ask for reduced motion see the animation's last frame, held still.",
           },
         ],
       },

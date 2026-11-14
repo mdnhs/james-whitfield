@@ -66,7 +66,6 @@ import { SITE_TOKENS } from "@/lib/theme/tokens"
 import { cn } from "@/lib/utils"
 
 import { AdminPreview, useLiveAdmin } from "./admin-preview"
-import { BrandAssets } from "./brand-assets"
 import { ColourField } from "./colour-field"
 import { ContrastPanel } from "./contrast-panel"
 import { PresetGallery } from "./preset-gallery"
@@ -385,7 +384,6 @@ function Editor({
       </Tabs>
 
       <div className="grid gap-5 xl:grid-cols-2">
-        <BrandAssets />
         <ThemeHistory
           canRestore={canUpdate && !busy}
           onLoad={(rev) => restore.mutate(rev)}

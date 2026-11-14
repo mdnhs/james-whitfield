@@ -9,17 +9,22 @@ export const GLOBAL_FIELD_UI: Partial<
     logoLottie: {
       label: "Animated logo (Lottie)",
       description:
-        "A Lottie JSON file. Shown in place of the logo everywhere on the site while the switch below is on.",
+        "A Lottie JSON file, up to 2.5 MB. While the switch below is on, it replaces the logo everywhere on the site.",
     },
     logoLottieEnabled: {
       label: "Use the animated logo",
-      description: "Off: the site shows the logo above.",
+      description:
+        "Off: the site shows the logo above. Needs an animated logo chosen.",
     },
     portrait: {
       label: "Portrait",
       description: "For search engines only; not shown.",
     },
-    icon: { label: "Favicon" },
+    icon: {
+      label: "Favicon",
+      description:
+        "Square PNG, JPEG or WebP, at least 512 × 512. SVG uploads are not accepted.",
+    },
     social: { label: "Social profiles" },
   },
   contact: {

@@ -1,14 +1,16 @@
 import { BrandMark } from "@/admin/components/brand-mark"
 import { NOISE } from "@/admin/components/noise"
 import { Swirl } from "@/admin/components/swirl"
+import { getAdminBrand } from "@/server/modules/theme/admin-brand"
 
 // Split layout (docs/brief.md §9.3): brand panel left, form panel right.
 // Below 1024px only the form panel shows.
-export default function AuthLayout({
+export default async function AuthLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const brand = await getAdminBrand()
   return (
     <main className="grid min-h-svh gap-4 bg-background p-3 sm:p-4 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)]">
       <section
@@ -21,7 +23,7 @@ export default function AuthLayout({
           style={{ backgroundImage: NOISE }}
         />
         <div className="absolute -top-32 -left-24 -z-10 size-96 rounded-full bg-primary/30 blur-3xl" />
-        <BrandMark tone="inverse" />
+        <BrandMark brand={brand} tone="inverse" />
         <div className="flex max-w-lg flex-col gap-5">
           <p className="text-[2.5rem] leading-[1.1] font-semibold tracking-tight text-balance">
             Your website, beautifully under control.
@@ -43,7 +45,7 @@ export default function AuthLayout({
         </div>
       </section>
       <section className="flex flex-col rounded-[28px] bg-sidebar px-6 py-8 sm:px-10 lg:px-12">
-        <BrandMark className="lg:hidden" />
+        <BrandMark brand={brand} className="lg:hidden" />
         <div className="flex flex-1 items-center justify-center py-12">
           <div className="w-full max-w-[400px]">{children}</div>
         </div>

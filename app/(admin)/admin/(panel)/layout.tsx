@@ -9,6 +9,7 @@ import { ViewAsBanner } from "@/admin/modules/users/view-as-banner"
 import { toMePayload } from "@/lib/auth/me"
 import { requireActor } from "@/server/auth/session"
 import { getEnv } from "@/server/env"
+import { getAdminBrand } from "@/server/modules/theme/admin-brand"
 
 // The session read is request-time data, so it sits behind Suspense (Cache
 // Components). requireActor also sends an owner or admin without 2FA to
@@ -30,10 +31,15 @@ async function Guarded({ children }: { children: React.ReactNode }) {
   const actor = await requireActor()
   // Only an explicit "false" collapses; a first visit starts open.
   const sidebarOpen = (await cookies()).get(SIDEBAR_COOKIE)?.value !== "false"
+  const brand = await getAdminBrand()
   return (
     <AdminActorProvider value={toMePayload(actor)}>
       <AdminQueryProvider>
-        <AdminShell defaultOpen={sidebarOpen} siteUrl={getEnv().SITE_URL}>
+        <AdminShell
+          defaultOpen={sidebarOpen}
+          siteUrl={getEnv().SITE_URL}
+          brand={brand}
+        >
           {children}
         </AdminShell>
         <ViewAsBanner />

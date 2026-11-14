@@ -8,6 +8,8 @@ import { useNewLeadsCount } from "@/admin/modules/leads/use-new-leads-count"
 import { SidebarProvider } from "@/components/ui/sidebar"
 import { TooltipProvider } from "@/components/ui/tooltip"
 
+import type { AdminBrand } from "@/admin/components/brand-mark"
+
 import { AppSidebar } from "./app-sidebar"
 import { SectionTabs } from "./section-tabs"
 import { Topbar } from "./topbar"
@@ -18,10 +20,12 @@ import { Topbar } from "./topbar"
 export function AdminShell({
   defaultOpen,
   siteUrl,
+  brand,
   children,
 }: {
   defaultOpen: boolean
   siteUrl: string
+  brand: AdminBrand
   children: React.ReactNode
 }) {
   const newLeads = useNewLeadsCount(usePermission({ lead: ["read"] }))
@@ -41,6 +45,7 @@ export function AdminShell({
           </a>
           <AppSidebar
             siteUrl={siteUrl}
+            brand={brand}
             badges={{ "new-leads": newLeads, "chat-unread": chatUnread }}
           />
           {/* The content panel scrolls inside its own rounded corners, below a

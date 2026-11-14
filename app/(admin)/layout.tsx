@@ -1,11 +1,15 @@
 import type { Metadata } from "next"
 import { Geist_Mono, Plus_Jakarta_Sans } from "next/font/google"
 
+import { io } from "next/cache"
 import { Suspense } from "react"
 
 import "./admin.css"
 import { cn } from "@/lib/utils"
 import { ThemeProvider } from "@/components/theme-provider"
+import { iconVersion } from "@/lib/seo/icons"
+import { siteIcons } from "@/lib/seo/metadata"
+import { getMedia, getSetting } from "@/server/modules/content/queries"
 import { AdminFrame } from "./_frame/admin-frame"
 
 const sans = Plus_Jakarta_Sans({
@@ -20,9 +24,18 @@ const mono = Geist_Mono({
   display: "swap",
 })
 
-export const metadata: Metadata = {
-  title: { template: "%s · Admin", default: "Admin" },
-  robots: { index: false, follow: false },
+// The tab shows the site's own favicon (Identity), as the site does.
+export async function generateMetadata(): Promise<Metadata> {
+  await io()
+  const site = await getSetting("site")
+  const icon = site.icon
+    ? (await getMedia([site.icon.mediaId])).get(site.icon.mediaId)
+    : undefined
+  return {
+    title: { template: "%s · Admin", default: "Admin" },
+    robots: { index: false, follow: false },
+    ...(icon ? { icons: siteIcons(iconVersion(icon.src)) } : {}),
+  }
 }
 
 // Separate root layout: no Lenis, GSAP or site chrome, and its own tokens.

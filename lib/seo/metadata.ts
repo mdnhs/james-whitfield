@@ -121,6 +121,20 @@ export type RootMetadataInput = {
   defaultOgImage: MediaAsset | null
 }
 
+// The favicon and app icons from the library icon (Ruling R13), for the
+// site and the admin alike.
+export function siteIcons(version: string): NonNullable<Metadata["icons"]> {
+  return {
+    icon: [
+      { url: iconHref(32, version), sizes: "32x32", type: "image/png" },
+      { url: iconHref(192, version), sizes: "192x192", type: "image/png" },
+    ],
+    apple: [
+      { url: iconHref(180, version), sizes: "180x180", type: "image/png" },
+    ],
+  }
+}
+
 // The site root generateMetadata (docs/brief.md §11).
 export function rootMetadata(i: RootMetadataInput): Metadata {
   const { verification } = i.seo
@@ -134,31 +148,7 @@ export function rootMetadata(i: RootMetadataInput): Metadata {
     description: i.seo.defaultDescription || undefined,
     applicationName: i.siteName || undefined,
     formatDetection: { email: false, address: false, telephone: false },
-    ...(i.iconVersion
-      ? {
-          icons: {
-            icon: [
-              {
-                url: iconHref(32, i.iconVersion),
-                sizes: "32x32",
-                type: "image/png",
-              },
-              {
-                url: iconHref(192, i.iconVersion),
-                sizes: "192x192",
-                type: "image/png",
-              },
-            ],
-            apple: [
-              {
-                url: iconHref(180, i.iconVersion),
-                sizes: "180x180",
-                type: "image/png",
-              },
-            ],
-          },
-        }
-      : {}),
+    ...(i.iconVersion ? { icons: siteIcons(i.iconVersion) } : {}),
     ...(hasVerification
       ? {
           verification: {

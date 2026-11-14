@@ -1,30 +1,34 @@
-import Image from "next/image"
-
+import { LogoMark } from "@/components/logo-mark"
+import { NO_BRAND_LOGO, type BrandLogo } from "@/lib/brand"
 import { cn } from "@/lib/utils"
 
-// The site's logo mark with the client's name, sized for admin chrome.
+export type AdminBrand = { name: string; logo: BrandLogo }
+
+// The site's own logo (Identity) and name, sized for admin chrome: the
+// Lottie while it is on, else the uploaded logo, else the built-in mark.
 export function BrandMark({
+  brand = { name: "", logo: NO_BRAND_LOGO },
   tone = "default",
   className,
 }: {
+  brand?: AdminBrand
   tone?: "default" | "inverse"
   className?: string
 }) {
   const inverse = tone === "inverse"
   return (
     <span className={cn("flex items-center gap-3", className)}>
-      <span
-        className={cn(
-          "flex size-10 shrink-0 items-center justify-center rounded-full",
-          inverse ? "bg-white/90" : "bg-accent"
-        )}
-      >
-        <Image src="/images/hero/logo-mark.svg" alt="" width={22} height={22} />
-      </span>
+      <LogoMark
+        logo={brand.logo}
+        className="size-10"
+        badgeClassName={cn("size-10", inverse ? "bg-white/90" : "bg-accent")}
+      />
       <span className="flex items-center gap-2">
-        <span className="text-base font-semibold tracking-tight">
-          Magda Kennedy
-        </span>{" "}
+        {brand.name ? (
+          <span className="text-base font-semibold tracking-tight">
+            {brand.name}
+          </span>
+        ) : null}
         <span
           className={cn(
             "rounded-full px-2 py-0.5 text-[11px] font-semibold tracking-wide uppercase",

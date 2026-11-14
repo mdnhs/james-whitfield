@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
-import { BrandMark } from "@/admin/components/brand-mark"
+import { BrandMark, type AdminBrand } from "@/admin/components/brand-mark"
 import { useActor } from "@/admin/lib/actor-context"
 import { useSignOut } from "@/admin/modules/auth/use-sign-out"
 import {
@@ -24,9 +24,11 @@ import { WebsiteCard } from "./website-card"
 
 export function AppSidebar({
   siteUrl,
+  brand,
   badges = {},
 }: {
   siteUrl: string
+  brand: AdminBrand
   badges?: Partial<Record<"new-leads" | "chat-unread", number>>
 }) {
   const { roles } = useActor()
@@ -53,10 +55,13 @@ export function AppSidebar({
         <Link
           href="/admin"
           onClick={onNavigate}
-          aria-label="Magda Kennedy admin home"
+          aria-label={`${brand.name || "Website"} admin home`}
           className="rounded-xl outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
         >
-          <BrandMark className="group-data-[collapsible=icon]:[&>span:last-child]:hidden" />
+          <BrandMark
+            brand={brand}
+            className="group-data-[collapsible=icon]:[&>span:last-child]:hidden"
+          />
         </Link>
       </SidebarHeader>
       <SidebarContent>

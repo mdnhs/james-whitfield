@@ -5,7 +5,7 @@ import { Brand } from "@/components/brand"
 import { Container } from "@/components/layout/container"
 import { CopyrightYear } from "@/components/copyright-year"
 import type { GlobalValue } from "@/lib/content/globals"
-import type { MediaAsset } from "@/lib/media"
+import type { BrandLogo } from "@/lib/brand"
 
 import { CookieSettingsButton } from "./cookie-settings-button"
 import { SOCIAL_NAMES, SocialIcon } from "./social-icons"
@@ -73,7 +73,7 @@ export function SiteFooter({
   cookieSettings,
 }: {
   site: { name: string }
-  logo?: MediaAsset | null
+  logo?: BrandLogo
   footer: GlobalValue<"footer">
   contact: GlobalValue<"contact">
   navigation: GlobalValue<"navigation">

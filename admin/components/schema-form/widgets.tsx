@@ -89,6 +89,7 @@ const HALF: ReadonlySet<FormField["widget"]> = new Set([
   "colour",
   "icon",
   "media",
+  "lottie",
   "toggle",
 ])
 
@@ -219,6 +220,8 @@ function LeafWidget({ field, control }: Props) {
         switch (field.widget) {
           case "media":
             return <MediaWidget {...props} />
+          case "lottie":
+            return <MediaWidget {...props} kind="lottie" />
           case "icon":
             return <IconWidget {...props} />
           case "stat":

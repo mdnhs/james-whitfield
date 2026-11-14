@@ -279,6 +279,7 @@ describe("matcher", () => {
     "/admin",
     "/admin/pages",
     "/site-icons",
+    "/site-logos",
   ])("runs for %s", (url) => expect(matches(url)).toBe(true))
 
   it.each([
@@ -289,6 +290,7 @@ describe("matcher", () => {
     "/og",
     "/og/about",
     "/site-icon/32",
+    "/site-logo/lottie",
     "/favicon.ico",
     "/robots.txt",
     "/sitemap.xml",

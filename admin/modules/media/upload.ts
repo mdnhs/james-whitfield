@@ -118,5 +118,6 @@ export function uploadFile(
 // For <input accept>: types and extensions, since .ico and .json types vary.
 export const ACCEPT_ALL =
   "image/jpeg,image/png,image/webp,image/avif,image/svg+xml,.svg,image/x-icon,.ico,application/pdf,application/json,.json"
+export const ACCEPT_LOTTIE = "application/json,.json"
 export const ACCEPT_IMAGES =
   "image/jpeg,image/png,image/webp,image/avif,image/svg+xml,.svg,image/x-icon,.ico"

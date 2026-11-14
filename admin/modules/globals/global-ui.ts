@@ -6,6 +6,15 @@ export const GLOBAL_FIELD_UI: Partial<
 > = {
   site: {
     logo: { label: "Logo" },
+    logoLottie: {
+      label: "Animated logo (Lottie)",
+      description:
+        "A Lottie JSON file. Shown in place of the logo everywhere on the site while the switch below is on.",
+    },
+    logoLottieEnabled: {
+      label: "Use the animated logo",
+      description: "Off: the site shows the logo above.",
+    },
     portrait: {
       label: "Portrait",
       description: "For search engines only; not shown.",

@@ -110,6 +110,8 @@ export const SETTINGS_DOCS: readonly HelpArticle[] = [
       "colors",
       "brand",
       "logo",
+      "lottie",
+      "animated logo",
       "favicon",
       "dark mode",
     ],
@@ -130,6 +132,24 @@ export const SETTINGS_DOCS: readonly HelpArticle[] = [
             type: "callout",
             tone: "note",
             text: "**Publish** stays blocked until the colours pass the contrast checks, so text stays readable for everyone.",
+          },
+        ],
+      },
+      {
+        title: "Animated logo (Lottie)",
+        blocks: [
+          {
+            type: "steps",
+            items: [
+              "Open [Appearance](/admin/appearance) and find **Brand images**.",
+              "Under **Animated logo (Lottie)**, choose or upload a Lottie **.json** file.",
+              "Turn on **Use the animated logo**. It replaces the logo everywhere the site shows it, straight away.",
+            ],
+          },
+          {
+            type: "callout",
+            tone: "note",
+            text: "Turn the switch off to go back to the still logo. Visitors who ask for reduced motion see the animation's last frame, held still.",
           },
         ],
       },

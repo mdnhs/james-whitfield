@@ -15,6 +15,7 @@ export type Widget =
   | "list"
   | "group"
   | "media"
+  | "lottie"
   | "link"
   | "icon"
   | "stat"

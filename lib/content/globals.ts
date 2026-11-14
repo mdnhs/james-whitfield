@@ -1,7 +1,7 @@
 // lib/content/globals.ts
 import * as z from "zod"
 
-import { Href, HttpsUrl, MediaRef } from "@/blocks/fields"
+import { Href, HttpsUrl, LottieRef, MediaRef } from "@/blocks/fields"
 import { ThemeConfig } from "@/lib/theme/schema"
 import { CUSTOM_SCRIPT_HOSTS } from "@/lib/tracking/hosts"
 import { GA4_ID, GTM_ID, PIXEL_ID } from "@/lib/tracking/ids"
@@ -24,6 +24,10 @@ export const SiteGlobal = z.object({
   legalName: s(120),
   professionalTitle: s(120),
   logo: MediaRef.nullable().default(null),
+  // An animated logo. It replaces the logo across the site only while
+  // switched on, so it can be uploaded and checked before it goes live.
+  logoLottie: LottieRef.nullable().default(null),
+  logoLottieEnabled: z.boolean().default(false),
   portrait: MediaRef.nullable().default(null),
   icon: MediaRef.nullable().default(null),
   locale: z.literal("en-IE").default("en-IE"),

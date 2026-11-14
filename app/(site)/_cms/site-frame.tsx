@@ -18,10 +18,10 @@ import { getEnv } from "@/server/env"
 import { isPreviewing } from "@/server/modules/content/preview"
 import {
   getChatLauncher,
-  getMedia,
   getSetting,
   getThemeConfig,
 } from "@/server/modules/content/queries"
+import { getBrandLogo } from "@/server/modules/theme/brand"
 import { getPublicTracking } from "@/server/modules/tracking/public"
 
 // Site chrome from the globals (docs/brief.md §5.5a). io() suspends during
@@ -54,9 +54,7 @@ export async function SiteFrame({ children }: { children: React.ReactNode }) {
     getPublicTracking(),
     getChatLauncher(),
   ])
-  const logo = site.logo
-    ? ((await getMedia([site.logo.mediaId])).get(site.logo.mediaId) ?? null)
-    : null
+  const logo = await getBrandLogo(site)
   const frame = trackingFrame({
     consent,
     scripts,

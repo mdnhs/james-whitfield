@@ -1,7 +1,7 @@
 "use client"
 
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { FileTextIcon, UploadIcon } from "lucide-react"
+import { FileJsonIcon, FileTextIcon, UploadIcon } from "lucide-react"
 import Image from "next/image"
 import { useState } from "react"
 import { toast } from "sonner"
@@ -10,7 +10,11 @@ import { usePermission } from "@/admin/lib/actor-context"
 import { ApiError } from "@/admin/lib/api-error"
 import { queryKeys } from "@/admin/lib/query-keys"
 import { mediaListQuery, type MediaItem } from "@/admin/modules/media/queries"
-import { ACCEPT_IMAGES, uploadFile } from "@/admin/modules/media/upload"
+import {
+  ACCEPT_IMAGES,
+  ACCEPT_LOTTIE,
+  uploadFile,
+} from "@/admin/modules/media/upload"
 import { buttonVariants } from "@/components/ui/button"
 import {
   Dialog,
@@ -34,6 +38,10 @@ export function Thumb({ item }: { item: MediaItem }) {
       className="aspect-[4/3] w-full rounded-lg object-cover"
       style={{ objectPosition: `${item.focalX * 100}% ${item.focalY * 100}%` }}
     />
+  ) : item.mimeType === "application/json" ? (
+    <span className="flex aspect-4/3 w-full items-center justify-center">
+      <FileJsonIcon aria-hidden className="size-8" />
+    </span>
   ) : (
     <FileTextIcon aria-hidden className="m-auto size-8" />
   )
@@ -44,19 +52,22 @@ export function MediaPickerDialog({
   onOpenChange,
   onPick,
   selectedId,
+  kind = "image",
 }: {
   open: boolean
   onOpenChange(open: boolean): void
   onPick(item: MediaItem): void
   selectedId?: string | null
+  kind?: "image" | "lottie"
 }) {
+  const lottie = kind === "lottie"
   const [q, setQ] = useState("")
   const queryClient = useQueryClient()
   const canUpload = usePermission({ media: ["upload"] })
   // Fraction uploaded, or null when idle.
   const [progress, setProgress] = useState<number | null>(null)
   const library = useQuery({
-    ...mediaListQuery({ q, type: "image" }),
+    ...mediaListQuery({ q, type: kind }),
     enabled: open,
   })
 
@@ -66,6 +77,13 @@ export function MediaPickerDialog({
     try {
       const item = await uploadFile("/api/v1/admin/media", file, setProgress)
       await queryClient.invalidateQueries({ queryKey: queryKeys.media.all })
+      // The library keeps any upload, but a Lottie field takes only Lottie.
+      if (lottie !== (item.mimeType === "application/json")) {
+        toast.error(
+          `${file.name}: ${lottie ? "not a Lottie file" : "not an image"}`
+        )
+        return
+      }
       onPick(item)
       onOpenChange(false)
     } catch (error) {
@@ -80,7 +98,9 @@ export function MediaPickerDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl">
         <DialogHeader>
-          <DialogTitle>Choose an image</DialogTitle>
+          <DialogTitle>
+            {lottie ? "Choose a Lottie file" : "Choose an image"}
+          </DialogTitle>
         </DialogHeader>
         <div className="flex gap-2">
           <Input
@@ -103,8 +123,10 @@ export function MediaPickerDialog({
                 : `Uploading ${Math.round(progress * 100)}%`}
               <input
                 type="file"
-                aria-label="Upload a new image"
-                accept={ACCEPT_IMAGES}
+                aria-label={
+                  lottie ? "Upload a new Lottie file" : "Upload a new image"
+                }
+                accept={lottie ? ACCEPT_LOTTIE : ACCEPT_IMAGES}
                 className="sr-only"
                 disabled={progress !== null}
                 onChange={(event) => {

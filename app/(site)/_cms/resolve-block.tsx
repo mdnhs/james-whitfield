@@ -42,6 +42,7 @@ import {
 import { slugify } from "@/lib/utils"
 import { turnstileSiteKey } from "@/server/lib/turnstile"
 import { getRouteTable } from "@/server/modules/redirects/queries"
+import { getBrandLogo } from "@/server/modules/theme/brand"
 import * as q from "@/server/modules/content/queries"
 
 const withMedia = async <T,>(value: T) =>
@@ -113,7 +114,14 @@ export async function ResolvedBlock({ block }: { block: BlockInstance }) {
         withMedia(block.data),
         q.getSetting("site"),
       ])
-      return <StorySection id={id} content={content} siteName={site.name} />
+      return (
+        <StorySection
+          id={id}
+          content={content}
+          siteName={site.name}
+          logo={await getBrandLogo(site)}
+        />
+      )
     }
     case "about.stats":
       return <StatsBand id={id} content={block.data} />

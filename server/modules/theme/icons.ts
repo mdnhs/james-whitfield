@@ -42,3 +42,27 @@ export async function brandIcon(
     return null
   }
 }
+
+// The animated logo's Lottie JSON, only while it is switched on (Appearance).
+// Same-origin, because the media host sends no CORS headers. Cached until
+// the site settings or the media library change.
+export async function brandLottie(): Promise<string | null> {
+  "use cache"
+  cacheTag(tags.setting("site"), tags.media)
+  const site = await getSetting("site")
+  const ref = site.logoLottieEnabled ? site.logoLottie : null
+  const file = ref ? await repo.findMediaFile(ref.mediaId) : null
+  const bytes = file ? await readMediaBytes(file) : null
+  try {
+    if (!bytes) throw new Error("no lottie")
+    const text = bytes.toString("utf8")
+    // A replaced row could hold any file: serve bodymovin JSON only.
+    const data = JSON.parse(text) as { layers?: unknown }
+    if (!Array.isArray(data.layers)) throw new Error("not a lottie")
+    cacheLife("max")
+    return text
+  } catch {
+    cacheLife(MISS_LIFE)
+    return null
+  }
+}

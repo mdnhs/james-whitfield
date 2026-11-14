@@ -2,6 +2,7 @@ import {
   Focal,
   IconField,
   LinkValue,
+  LottieRef,
   MediaRef,
   Selection,
   StatValue,
@@ -14,6 +15,7 @@ import { ui } from "./registry"
 // Shared field schemas → widgets, once for every form (blocks, globals,
 // collections reuse the same instances). Labels come from the field name.
 ui.add(MediaRef, { widget: "media" })
+ui.add(LottieRef, { widget: "lottie" })
 ui.add(LinkValue, { widget: "link" })
 ui.add(IconField, { widget: "icon" })
 ui.add(StatValue, { widget: "stat" })

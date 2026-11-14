@@ -3,7 +3,7 @@ import Link from "next/link"
 import { Brand } from "@/components/brand"
 import { Container } from "@/components/layout/container"
 import type { GlobalValue } from "@/lib/content/globals"
-import type { MediaAsset } from "@/lib/media"
+import type { BrandLogo } from "@/lib/brand"
 import { cn } from "@/lib/utils"
 import { BookCallButton } from "./book-call-button"
 import { HeaderScroll } from "./header-scroll"
@@ -16,7 +16,7 @@ export function SiteHeader({
   className,
 }: {
   site: { name: string }
-  logo?: MediaAsset | null
+  logo?: BrandLogo
   navigation: GlobalValue<"navigation">
   className?: string
 }) {

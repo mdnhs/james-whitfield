@@ -1,19 +1,21 @@
-import Image from "next/image"
-
 import type { BlockView } from "@/blocks/media-refs"
 import { Eyebrow } from "@/components/eyebrow"
 import { Container } from "@/components/layout/container"
+import { LogoMark } from "@/components/logo-mark"
 import { MediaImage } from "@/components/media-image"
 import { StatValue } from "@/components/stat-value"
+import { NO_BRAND_LOGO, type BrandLogo } from "@/lib/brand"
 
 export function StorySection({
   id,
   content,
   siteName,
+  logo = NO_BRAND_LOGO,
 }: {
   id: string
   content: BlockView<"about.story">
   siteName: string
+  logo?: BrandLogo
 }) {
   const { eyebrow, title, paragraphs, quote, badge, role, photo } = content
 
@@ -97,12 +99,11 @@ export function StorySection({
               className="flex flex-col items-start sm:flex-row sm:flex-wrap sm:items-center sm:gap-3.5"
             >
               <div className="flex items-center gap-3">
-                <span className="hidden size-12 shrink-0 items-center justify-center rounded-full bg-brand-mint sm:flex">
-                  <Image
-                    src="/images/hero/logo-mark.svg"
-                    alt=""
-                    width={28}
-                    height={28}
+                <span className="hidden sm:flex">
+                  <LogoMark
+                    logo={logo}
+                    className="size-14"
+                    badgeClassName="size-12"
                   />
                 </span>
                 <span className="text-[17px] leading-6 font-semibold text-clay sm:font-display sm:text-2xl sm:leading-[1.5] sm:text-forest sm:[font-variation-settings:'SOFT'_0,'WONK'_1]">

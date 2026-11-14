@@ -43,6 +43,9 @@ export const HttpsUrl = z
 
 export const LinkValue = z.object({ label: text(60), href: Href })
 export const MediaRef = z.object({ mediaId: z.uuid() })
+// A Lottie animation (bodymovin JSON) from the media library. Its own
+// instance so the admin form picks Lottie files for it, not images.
+export const LottieRef = z.object({ mediaId: z.uuid() })
 export const Focal = z.object({
   x: z.number().min(0).max(1),
   y: z.number().min(0).max(1),

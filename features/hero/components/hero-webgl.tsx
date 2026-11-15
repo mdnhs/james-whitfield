@@ -52,6 +52,20 @@ const smoothstep = (a: number, b: number, x: number) => {
   return k * k * (3 - 2 * k)
 }
 
+const SOFTWARE_RENDERER = /swiftshader|llvmpipe|softpipe|software/i
+
+// Whether the context is drawn by the CPU. Unknown counts as hardware, so
+// browsers that hide the name keep the effect.
+export function isSoftwareRenderer(
+  gl: WebGLRenderingContext | WebGL2RenderingContext
+) {
+  const info = gl.getExtension("WEBGL_debug_renderer_info")
+  const name = info
+    ? gl.getParameter(info.UNMASKED_RENDERER_WEBGL)
+    : gl.getParameter(gl.RENDERER)
+  return typeof name === "string" && SOFTWARE_RENDERER.test(name)
+}
+
 // The plane a custom depth map keeps still: the median depth of its centre,
 // read once from a small copy (the map is same-origin, so readable).
 function focusOf(image: CanvasImageSource): number {
@@ -140,6 +154,13 @@ export function HeroWebGL({
         })
       } catch {
         return // No WebGL: the static image stays
+      }
+      // A software renderer (no GPU: headless browsers, some VMs and old
+      // machines) draws this shader on the CPU every frame, which stalls the
+      // whole tab. The static image stays there too.
+      if (isSoftwareRenderer(renderer.getContext())) {
+        renderer.dispose()
+        return
       }
 
       const finePointer = matchMedia("(pointer: fine)").matches

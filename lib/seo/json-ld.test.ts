@@ -97,6 +97,38 @@ describe("site nodes", () => {
     })
   })
 
+  it("uses typed areas, coordinates and a rating with its count", () => {
+    const typed = {
+      ...seo,
+      business: {
+        ...seo.business,
+        areaServed: ["Dublin", " "],
+        latitude: "53.1",
+        longitude: "-6.1",
+        ratingValue: "4.9",
+        reviewCount: "40",
+      },
+    }
+    const node = businessNode({ origin, site, contact, seo: typed })
+    expect(node).toMatchObject({
+      areaServed: ["Dublin"],
+      geo: { "@type": "GeoCoordinates", latitude: 53.1, longitude: -6.1 },
+      aggregateRating: {
+        "@type": "AggregateRating",
+        ratingValue: 4.9,
+        reviewCount: 40,
+        bestRating: 5,
+      },
+    })
+    const noCount = businessNode({
+      origin,
+      site,
+      contact,
+      seo: { ...typed, business: { ...typed.business, reviewCount: "" } },
+    })
+    expect(noCount).not.toHaveProperty("aggregateRating")
+  })
+
   it("omits empty optional fields", () => {
     const bare = businessNode({
       origin,

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import { PageSeo } from "@/blocks/page"
+import { parseGlobal } from "@/lib/content/globals"
 import type { MediaAsset } from "@/lib/media"
 
 import { buildMetadata, ogImageUrl, rootMetadata } from "./metadata"
@@ -128,6 +129,7 @@ describe("buildMetadata", () => {
 
 describe("rootMetadata", () => {
   const seo = {
+    ...parseGlobal("seo", {}),
     titleTemplate: "%s | Magda Kennedy",
     defaultTitle: "Magda Kennedy",
     defaultDescription: "Hypnotherapy.",
@@ -135,11 +137,20 @@ describe("rootMetadata", () => {
     robots: "index" as const,
     verification: { google: "g-code", bing: "b-code" },
     business: {
-      type: "ProfessionalService" as const,
+      ...parseGlobal("seo", {}).business,
       priceRange: "€€",
-      sameAs: [],
     },
   }
+  it("adds the X handle as twitter:site", () => {
+    const m = rootMetadata({
+      siteUrl: "https://magdakennedy.ie",
+      seo: { ...seo, twitterHandle: "magda" },
+      siteName: "Magda Kennedy",
+      iconVersion: null,
+      defaultOgImage: null,
+    })
+    expect(m.twitter).toEqual({ card: "summary_large_image", site: "@magda" })
+  })
   it("sets base, template, verification, icons and format detection", () => {
     const m = rootMetadata({
       siteUrl: "https://magdakennedy.ie",

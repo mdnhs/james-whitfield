@@ -10,5 +10,6 @@ export async function seoDefaults(): Promise<SeoDefaults> {
     defaultDescription: seo.defaultDescription,
     siteName: site.name,
     professionalTitle: site.professionalTitle,
+    twitterHandle: seo.twitterHandle,
   }
 }

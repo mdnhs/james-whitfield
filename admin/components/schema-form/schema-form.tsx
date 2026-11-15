@@ -14,8 +14,54 @@ import { FORM_ACTION } from "@/admin/components/dashboard/page-header"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 
-import { toFields, type FieldOverrides } from "./to-fields"
+import { SectionCard } from "./section-card"
+import { toFields, type FieldOverrides, type FormField } from "./to-fields"
 import { FieldGrid } from "./widgets"
+
+export type FieldBlock = {
+  title?: string
+  description?: string
+  icon?: FormField["icon"]
+  fields: FormField[]
+}
+
+// A form that names sections draws them as cards: consecutive top-level
+// fields with the same `section` share one, and each other group (not behind
+// an on/off switch) is a card of its own. A form with no sections is one
+// plain block, as before.
+export function sectionBlocks(fields: readonly FormField[]): FieldBlock[] {
+  if (!fields.some((field) => field.section)) return [{ fields: [...fields] }]
+  const blocks: FieldBlock[] = []
+  for (const field of fields) {
+    const last = blocks.at(-1)
+    if (field.section) {
+      if (last && last.title === field.section) {
+        last.fields.push(field)
+        last.description ??= field.sectionDescription
+        last.icon ??= field.icon
+      } else {
+        blocks.push({
+          title: field.section,
+          description: field.sectionDescription,
+          icon: field.icon,
+          fields: [field],
+        })
+      }
+    } else if (field.widget === "group" && !field.nullable) {
+      blocks.push({
+        title: field.label,
+        description: field.description,
+        icon: field.icon,
+        fields: field.fields ?? [],
+      })
+    } else if (last && !last.title) {
+      last.fields.push(field)
+    } else {
+      blocks.push({ fields: [field] })
+    }
+  }
+  return blocks
+}
 
 export type SubmitResult = void | {
   formError?: string
@@ -78,6 +124,8 @@ export function SchemaForm<S extends z.ZodObject>({
     return () => sub.unsubscribe()
   }, [form, derive])
 
+  const blocks = useMemo(() => sectionBlocks(fields), [fields])
+
   const submit = form.handleSubmit(async (values) => {
     let result: SubmitResult
     try {
@@ -101,7 +149,24 @@ export function SchemaForm<S extends z.ZodObject>({
 
   return (
     <form onSubmit={submit} noValidate className="flex flex-col gap-6">
-      <FieldGrid fields={fields} control={form.control} />
+      {blocks.map((block, index) =>
+        block.title ? (
+          <SectionCard
+            key={`${block.title}-${index}`}
+            title={block.title}
+            description={block.description}
+            icon={block.icon}
+          >
+            <FieldGrid fields={block.fields} control={form.control} />
+          </SectionCard>
+        ) : (
+          <FieldGrid
+            key={`plain-${index}`}
+            fields={block.fields}
+            control={form.control}
+          />
+        )
+      )}
       {rootError ? (
         <p role="alert" className="text-sm text-destructive">
           {rootError}

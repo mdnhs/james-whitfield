@@ -53,6 +53,9 @@ export type FormField = {
   fields?: FormField[]
   item?: FormField
   collection?: OptionSource
+  section?: string
+  sectionDescription?: string
+  icon?: UiMeta["icon"]
   // The field's JSON Schema, for widgets that build values.
   node: JsonNode
 }
@@ -147,6 +150,11 @@ function toField(
     inputType: meta.inputType,
     autoComplete: meta.autoComplete,
     collection: meta.collection,
+    ...(meta.section ? { section: meta.section } : {}),
+    ...(meta.sectionDescription
+      ? { sectionDescription: meta.sectionDescription }
+      : {}),
+    ...(meta.icon ? { icon: meta.icon } : {}),
     node,
   }
   if (widget === "group")

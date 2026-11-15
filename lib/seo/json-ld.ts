@@ -72,6 +72,34 @@ export function websiteNode({
   }
 }
 
+// Admin-typed numbers: a blank or out-of-range value leaves it out.
+const numberOf = (v: string) => (v.trim() === "" ? NaN : Number(v))
+
+function geoOf(lat: string, lng: string) {
+  const latitude = numberOf(lat)
+  const longitude = numberOf(lng)
+  return Math.abs(latitude) <= 90 && Math.abs(longitude) <= 180
+    ? { latitude, longitude }
+    : null
+}
+
+// Google rejects a rating without a count, so both are required.
+function ratingOf(value: string, count: string) {
+  const ratingValue = numberOf(value)
+  const reviewCount = numberOf(count)
+  return ratingValue >= 1 &&
+    ratingValue <= 5 &&
+    Number.isInteger(reviewCount) &&
+    reviewCount >= 1
+    ? {
+        "@type": "AggregateRating" as const,
+        ratingValue,
+        reviewCount,
+        bestRating: 5,
+      }
+    : null
+}
+
 export function businessNode(i: {
   origin: string
   site: GlobalValue<"site">
@@ -81,7 +109,18 @@ export function businessNode(i: {
   image?: string[]
 }): ProfessionalService | LocalBusiness {
   const { address, phone, hours, clinic } = i.contact
-  const sameAs = [...i.seo.business.sameAs, ...i.site.social.map((s) => s.url)]
+  const { business } = i.seo
+  const sameAs = [
+    ...new Set([...business.sameAs, ...i.site.social.map((s) => s.url)]),
+  ]
+  const areaServed = business.areaServed.map((a) => a.trim()).filter(Boolean)
+  // Typed coordinates win over the clinic map's pin.
+  const geo =
+    geoOf(business.latitude, business.longitude) ??
+    (clinic.geo
+      ? { latitude: clinic.geo.lat, longitude: clinic.geo.lng }
+      : null)
+  const rating = ratingOf(business.ratingValue, business.reviewCount)
   return {
     "@type": i.seo.business.type,
     name: i.site.name,
@@ -94,7 +133,7 @@ export function businessNode(i: {
     ...(i.seo.business.priceRange
       ? { priceRange: i.seo.business.priceRange }
       : {}),
-    areaServed: ["IE", "GB", "US"],
+    areaServed: areaServed.length ? areaServed : ["IE", "GB", "US"],
     ...(sameAs.length ? { sameAs } : {}),
     ...(address.city || address.lines.length
       ? {
@@ -109,15 +148,8 @@ export function businessNode(i: {
           },
         }
       : {}),
-    ...(clinic.geo
-      ? {
-          geo: {
-            "@type": "GeoCoordinates",
-            latitude: clinic.geo.lat,
-            longitude: clinic.geo.lng,
-          },
-        }
-      : {}),
+    ...(geo ? { geo: { "@type": "GeoCoordinates", ...geo } } : {}),
+    ...(rating ? { aggregateRating: rating } : {}),
     ...(hours.weekly.length
       ? {
           openingHoursSpecification: hours.weekly.map((h) => ({

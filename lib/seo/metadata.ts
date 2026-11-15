@@ -16,6 +16,8 @@ export type SeoDefaults = {
   defaultDescription: string
   siteName: string
   professionalTitle: string
+  // The X account the cards credit ("twitter:site").
+  twitterHandle?: string
 }
 
 export type SeoSubject = {
@@ -42,6 +44,16 @@ export type SeoSubject = {
 // A stored "" or whitespace counts as missing, so the fallbacks still apply.
 export function blank(v: string | null | undefined) {
   return v?.trim() ? v : null
+}
+
+// "autopaint", "@autopaint" or a profile URL → "@autopaint"; blank → none.
+export function twitterSite(handle: string | null | undefined) {
+  const v = (handle ?? "")
+    .trim()
+    .replace(/^https?:\/\/(www\.)?(x|twitter)\.com\//i, "")
+    .replace(/^@+/, "")
+    .replace(/[/?#].*$/, "")
+  return v ? `@${v}` : undefined
 }
 
 // FNV-1a: a short, stable cache-buster for the generated card's URL.
@@ -105,6 +117,9 @@ export function buildMetadata(s: SeoSubject, d: SeoDefaults): Metadata {
     },
     twitter: {
       card: s.seo.twitterCard,
+      ...(twitterSite(d.twitterHandle)
+        ? { site: twitterSite(d.twitterHandle) }
+        : {}),
       title: ogTitle,
       description: ogDescription ?? undefined,
       images: [image.url],
@@ -176,7 +191,12 @@ export function rootMetadata(i: RootMetadataInput): Metadata {
           }
         : {}),
     },
-    twitter: { card: "summary_large_image" },
+    twitter: {
+      card: "summary_large_image",
+      ...(twitterSite(i.seo.twitterHandle)
+        ? { site: twitterSite(i.seo.twitterHandle) }
+        : {}),
+    },
     ...(i.seo.robots === "noindex"
       ? { robots: { index: false, follow: false } }
       : {}),

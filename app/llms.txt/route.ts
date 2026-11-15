@@ -15,10 +15,16 @@ export async function GET() {
     getSetting("seo"),
     getLlmsEntries(),
   ])
+  // Switched off, or the whole site is hidden from search: no file.
+  if (!seo.llms.enabled || seo.robots === "noindex")
+    return new Response("Not found", {
+      status: 404,
+      headers: { "content-type": "text/plain; charset=utf-8" },
+    })
   return new Response(
     renderLlms({
       name: site.name,
-      description: seo.defaultDescription,
+      description: seo.llms.summary.trim() || seo.defaultDescription,
       origin,
       entries,
     }),

@@ -1,3 +1,12 @@
+import {
+  BotIcon,
+  Building2Icon,
+  HeadingIcon,
+  ListChecksIcon,
+  SearchIcon,
+  Share2Icon,
+} from "lucide-react"
+
 import type { FieldOverrides } from "@/admin/components/schema-form/to-fields"
 import type { EditableGlobalKey } from "@/lib/content/global-access"
 
@@ -80,6 +89,119 @@ export const GLOBAL_FIELD_UI: Partial<
   microcopy: {
     readTime: { description: '"{minutes}" is replaced.' },
     showing: { description: '"{shown}" and "{total}" are replaced.' },
+  },
+  seo: {
+    titleTemplate: {
+      label: "Title template",
+      section: "Titles & descriptions",
+      sectionDescription: "Used for any page that leaves its own empty.",
+      icon: HeadingIcon,
+      description:
+        '"%s" is replaced by the page title, for example "%s | Your name".',
+    },
+    defaultTitle: {
+      label: "Default title",
+      section: "Titles & descriptions",
+      description: "Blank uses the site name.",
+    },
+    defaultDescription: {
+      label: "Default description",
+      section: "Titles & descriptions",
+      widget: "textarea",
+    },
+    defaultOgImage: {
+      label: "Default share image",
+      section: "Social sharing",
+      sectionDescription:
+        "The card used when a page has no share image of its own.",
+      icon: Share2Icon,
+    },
+    twitterHandle: {
+      label: "X / Twitter handle",
+      section: "Social sharing",
+      placeholder: "@yourname",
+    },
+    robots: {
+      label: "Search engines",
+      section: "Indexing",
+      sectionDescription:
+        "Whether search engines list the site, and its main address.",
+      icon: ListChecksIcon,
+      options: [
+        { value: "index", label: "List the site" },
+        { value: "noindex", label: "Hide the whole site" },
+      ],
+    },
+    preferredHost: {
+      label: "Preferred address",
+      section: "Indexing",
+      description:
+        "The other addresses (http, with or without www) send visitors here with a permanent redirect.",
+      options: [
+        { value: "off", label: "Off: keep all addresses working" },
+        { value: "apex", label: "Without www" },
+        { value: "www", label: "With www" },
+      ],
+    },
+    verification: {
+      label: "Search engine verification",
+      icon: SearchIcon,
+    },
+    "verification.google": {
+      label: "Google Search Console code",
+      description: 'Only the code from the content="…" part of the tag.',
+    },
+    "verification.bing": { label: "Bing Webmaster code" },
+    business: {
+      label: "Business details (structured data)",
+      icon: Building2Icon,
+    },
+    "business.type": {
+      label: "Business type",
+      widget: "select",
+      options: [
+        { value: "ProfessionalService", label: "Professional service" },
+        { value: "LocalBusiness", label: "Local business" },
+      ],
+    },
+    "business.priceRange": { label: "Price range", placeholder: "€€" },
+    "business.sameAs": {
+      label: "Other profiles",
+      description: "Google profile, directories and similar pages.",
+    },
+    "business.areaServed": {
+      label: "Areas served",
+      description:
+        "Towns, counties or countries you work with, for example Dublin. Blank uses Ireland, the UK and the US.",
+    },
+    "business.areaServed.$": { label: "Area" },
+    "business.latitude": {
+      label: "Latitude",
+      placeholder: "53.3498",
+      description:
+        "Right-click your pin in Google Maps to copy it. Blank uses the clinic map.",
+    },
+    "business.longitude": { label: "Longitude", placeholder: "-6.2603" },
+    "business.ratingValue": {
+      label: "Google rating",
+      placeholder: "4.9",
+      description:
+        "Only enter the rating shown on your Google profile; it must match real reviews.",
+    },
+    "business.reviewCount": { label: "Number of reviews", placeholder: "40" },
+    llms: {
+      label: "AI assistants (llms.txt)",
+      description:
+        "A plain-text summary of the site at /llms.txt that AI search tools read.",
+      icon: BotIcon,
+    },
+    "llms.enabled": { label: "Publish /llms.txt" },
+    "llms.summary": {
+      label: "Summary",
+      widget: "textarea",
+      description:
+        "Who you are and what you do, in a few sentences. Blank uses the default description.",
+    },
   },
   notifications: {
     recipients: { label: "Recipients" },

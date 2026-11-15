@@ -2,6 +2,7 @@
 import * as z from "zod"
 
 import { Href, HttpsUrl, LottieRef, MediaRef } from "@/blocks/fields"
+import { PREFERRED_HOSTS } from "@/lib/seo/canonical-host"
 import { ThemeConfig } from "@/lib/theme/schema"
 import { CUSTOM_SCRIPT_HOSTS } from "@/lib/tracking/hosts"
 import { GA4_ID, GTM_ID, PIXEL_ID } from "@/lib/tracking/ids"
@@ -12,6 +13,23 @@ const Link = z.object({
   label: s(60),
   href: Href.or(z.literal("")).default(""),
 })
+// Text the admin types for a number: blank, or a number within the range
+// (a dot for decimals).
+const numberText = (max: number, min: number, upper: number, whole = false) =>
+  z
+    .string()
+    .trim()
+    .max(max)
+    .refine(
+      (v) =>
+        v === "" ||
+        (/^-?\d+(\.\d+)?$/.test(v) &&
+          Number(v) >= min &&
+          Number(v) <= upper &&
+          (!whole || Number.isInteger(Number(v)))),
+      `Enter a number from ${min} to ${upper}${whole ? " (whole)" : ""}, using a dot for decimals`
+    )
+    .default("")
 const Time = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/)
 // ISO weekday: 1 = Monday … 7 = Sunday.
 const Day = z.number().int().min(1).max(7)
@@ -293,7 +311,11 @@ export const SeoGlobal = z.object({
   defaultTitle: s(70),
   defaultDescription: s(200),
   defaultOgImage: MediaRef.nullable().default(null),
+  twitterHandle: s(50),
   robots: z.enum(["index", "noindex"]).default("index"),
+  // Which of the four addresses (http/https, with/without www) is the real
+  // one; proxy.ts sends the others to it with a 301.
+  preferredHost: z.enum(PREFERRED_HOSTS).default("off"),
   verification: z.object({ google: s(100), bing: s(100) }).prefault({}),
   business: z
     .object({
@@ -302,6 +324,19 @@ export const SeoGlobal = z.object({
         .default("ProfessionalService"),
       priceRange: s(10),
       sameAs: z.array(HttpsUrl).max(10).default([]),
+      // Local-search details for the business schema; blanks are left out.
+      areaServed: z.array(s(80)).max(10).default([]),
+      latitude: numberText(20, -90, 90),
+      longitude: numberText(20, -180, 180),
+      ratingValue: numberText(5, 1, 5),
+      reviewCount: numberText(7, 1, 9_999_999, true),
+    })
+    .prefault({}),
+  // /llms.txt: a plain-text guide to the site for AI assistants.
+  llms: z
+    .object({
+      enabled: z.boolean().default(true),
+      summary: s(1000),
     })
     .prefault({}),
 })

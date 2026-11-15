@@ -1,3 +1,4 @@
+import type { LucideIcon } from "lucide-react"
 import * as z from "zod"
 
 import type { OptionSource } from "@/lib/content/collections"
@@ -40,6 +41,12 @@ export type UiMeta = {
   autoComplete?: string
   step?: number
   collection?: OptionSource
+  // Top-level fields only: consecutive fields with the same section share a
+  // titled card. A form that sets any section draws its groups as cards too.
+  section?: string
+  sectionDescription?: string
+  // The card's icon (a section's first field, or a group).
+  icon?: LucideIcon
 }
 
 export const ui = z.registry<UiMeta>()

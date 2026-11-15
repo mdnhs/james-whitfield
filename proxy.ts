@@ -3,6 +3,12 @@ import { NextResponse, type NextRequest } from "next/server"
 
 import { ADMIN_PATH_HEADER } from "@/lib/auth/admin-path"
 import { internalOrigin } from "@/lib/internal-origin"
+import {
+  appHostFrom,
+  bareHost,
+  canonicalHostRedirect,
+  type PreferredHost,
+} from "@/lib/seo/canonical-host"
 
 // Admin: optimistic cookie check only. Public pages: the cached route
 // resolver over HTTP (Rulings R1–R4). Never the database or server-only
@@ -90,12 +96,71 @@ function redirectTo(
   return NextResponse.redirect(target, statusCode as number)
 }
 
+// The admin's preferred address (SEO defaults), kept briefly so a request
+// does not pay for a lookup each time; a change applies within the TTL.
+const PREFERRED_HOST_TTL_MS = 30_000
+let preferredCache: { value: PreferredHost; expires: number } | null = null
+
+async function preferredHost(): Promise<PreferredHost> {
+  const now = Date.now()
+  if (preferredCache && preferredCache.expires > now)
+    return preferredCache.value
+  let value: PreferredHost = "off"
+  try {
+    const res = await fetch(new URL("/api/v1/resolve/host", internalOrigin()), {
+      cache: "no-store",
+      redirect: "manual",
+      signal: AbortSignal.timeout(300),
+    })
+    const body =
+      res.status === 200
+        ? ((await res.json()) as { preferred?: unknown })
+        : null
+    if (body?.preferred === "apex" || body?.preferred === "www")
+      value = body.preferred
+  } catch {
+    // Fails open: no redirect, and the next request tries again.
+    return "off"
+  }
+  preferredCache = { value, expires: now + PREFERRED_HOST_TTL_MS }
+  return value
+}
+
+// One address per page: http/https and www/non-www variants 301 to the
+// chosen one. Only this site's own hosts count; any doubt lets it through.
+async function canonicalHost(request: NextRequest) {
+  const appHost = appHostFrom(process.env.SITE_URL)
+  const host =
+    request.headers.get("x-forwarded-host") ?? request.headers.get("host")
+  if (
+    !appHost ||
+    !host ||
+    bareHost(host.split(",")[0]!.trim().replace(/:\d+$/, "")) !== appHost
+  )
+    return null
+  const target = canonicalHostRedirect({
+    host,
+    proto: request.headers.get("x-forwarded-proto"),
+    preferred: await preferredHost(),
+    appHost,
+    pathAndSearch: `${request.nextUrl.pathname}${request.nextUrl.search}`,
+  })
+  if (!target) return null
+  const response = NextResponse.redirect(target, 301)
+  // Not cacheable: a browser holding "www -> bare" after the admin flips the
+  // choice would loop.
+  response.headers.set("Cache-Control", "no-store")
+  return response
+}
+
 // Ruling R2: every public page path asks the cached resolver over loopback.
 // Fails open: on any doubt the request continues as before.
 async function publicRoute(request: NextRequest) {
   if (request.method !== "GET" && request.method !== "HEAD") {
     return NextResponse.next()
   }
+  const moved = await canonicalHost(request)
+  if (moved) return moved
   if (request.cookies.has(DRAFT_COOKIE)) return NextResponse.next()
   const hit = await resolve(request.nextUrl.pathname)
   if (hit?.kind === "missing") {

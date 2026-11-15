@@ -23,6 +23,7 @@ import { ApiError } from "@/admin/lib/api-error"
 import { queryKeys } from "@/admin/lib/query-keys"
 import { conflictOf } from "@/admin/modules/pages/use-autosave"
 import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 import {
   Sheet,
   SheetContent,
@@ -131,12 +132,19 @@ function GlobalForm({
     )
   if (!doc.data) return <FormCardSkeleton fields={6} title={false} />
   const { version, value } = doc.data
+  // A form split into section cards needs no card around it.
+  const sectioned = Object.values(GLOBAL_FIELD_UI[settingKey] ?? {}).some(
+    (meta) => meta.section
+  )
   return (
     // One card per document, its History icon in the corner (as a page
     // section's card in the builder).
     <section
       aria-label={label}
-      className="rounded-card relative flex flex-col gap-4 bg-card p-5 sm:p-6"
+      className={cn(
+        "relative flex flex-col gap-4",
+        !sectioned && "rounded-card bg-card p-5 sm:p-6"
+      )}
     >
       <IconTip label="History">
         <Button

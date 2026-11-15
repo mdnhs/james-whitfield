@@ -29,6 +29,8 @@ export function BrandMark({
             {brand.name}
           </span>
         ) : null}
+        {/* The space keeps the link's text "Name Admin", matching its
+            aria-label (axe label-content-name-mismatch). */}{" "}
         <span
           className={cn(
             "rounded-full px-2 py-0.5 text-[11px] font-semibold tracking-wide uppercase",

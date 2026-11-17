@@ -5,7 +5,7 @@ import { Suspense } from "react"
 import { preload } from "react-dom"
 
 import { AttributionCapture } from "@/components/attribution-capture"
-import { getEnv } from "@/server/env"
+import { getSiteOrigin } from "@/server/modules/seo/site-origin"
 import { iconVersion } from "@/lib/seo/icons"
 import { rootMetadata } from "@/lib/seo/metadata"
 import { getMedia, getSetting } from "@/server/modules/content/queries"
@@ -28,7 +28,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const assets = ids.length ? await getMedia(ids) : new Map()
   const icon = (site.icon && assets.get(site.icon.mediaId)) ?? null
   return rootMetadata({
-    siteUrl: getEnv().SITE_URL,
+    siteUrl: await getSiteOrigin(),
     seo,
     siteName: site.name,
     iconVersion: icon ? iconVersion(icon.src) : null,

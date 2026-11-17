@@ -1,7 +1,7 @@
 import { connection } from "next/server"
 
 import { renderLlms } from "@/lib/seo/llms"
-import { getEnv } from "@/server/env"
+import { getSiteOrigin } from "@/server/modules/seo/site-origin"
 import { getSetting } from "@/server/modules/content/queries"
 import { getLlmsEntries } from "@/server/modules/seo/queries"
 
@@ -9,7 +9,7 @@ import { getLlmsEntries } from "@/server/modules/seo/queries"
 // cached under the sitemap's tags.
 export async function GET() {
   await connection()
-  const origin = getEnv().SITE_URL.replace(/\/$/, "")
+  const origin = await getSiteOrigin()
   const [site, seo, entries] = await Promise.all([
     getSetting("site"),
     getSetting("seo"),

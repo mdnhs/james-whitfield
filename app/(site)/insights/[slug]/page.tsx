@@ -18,7 +18,7 @@ import { ARTICLE_SHELL_SLUG } from "@/lib/content/article-slug"
 import { JsonLd } from "@/components/json-ld"
 import { blogPostingNode, breadcrumbNode, graph, url } from "@/lib/seo/json-ld"
 import { buildMetadata } from "@/lib/seo/metadata"
-import { getEnv } from "@/server/env"
+import { getSiteOrigin } from "@/server/modules/seo/site-origin"
 import {
   getArticle,
   getMedia,
@@ -97,7 +97,7 @@ export default async function ArticlePage({
     { label: copy.articleChapters.newsletter, target: "newsletter" },
     { label: copy.contactChapter, target: "contact" },
   ]
-  const origin = getEnv().SITE_URL.replace(/\/$/, "")
+  const origin = await getSiteOrigin()
   const logoAsset = site.logo
     ? (await getMedia([site.logo.mediaId])).get(site.logo.mediaId)
     : undefined

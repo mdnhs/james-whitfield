@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest"
 import {
   appHostFrom,
   canonicalHostRedirect,
+  siteOriginFor,
   type CanonicalHostInput,
 } from "./canonical-host"
 
@@ -65,5 +66,23 @@ describe("canonicalHostRedirect", () => {
     expect(
       run({ host: "www.autopaintshop.ie", pathAndSearch: "//evil.com" })
     ).toBeNull()
+  })
+})
+
+describe("siteOriginFor", () => {
+  it("follows the preferred address and leaves off / local hosts alone", () => {
+    expect(siteOriginFor("https://magdakennedy.com", "www")).toBe(
+      "https://www.magdakennedy.com"
+    )
+    expect(siteOriginFor("https://www.magdakennedy.com/", "apex")).toBe(
+      "https://magdakennedy.com"
+    )
+    expect(siteOriginFor("https://magdakennedy.com/", "off")).toBe(
+      "https://magdakennedy.com"
+    )
+    expect(siteOriginFor("http://localhost:3000", "www")).toBe(
+      "http://localhost:3000"
+    )
+    expect(siteOriginFor("nope", "www")).toBe("nope")
   })
 })

@@ -16,7 +16,7 @@ import {
   url,
   websiteNode,
 } from "@/lib/seo/json-ld"
-import { getEnv } from "@/server/env"
+import { getSiteOrigin } from "@/server/modules/seo/site-origin"
 import {
   getFaqs,
   getMedia,
@@ -28,7 +28,7 @@ import {
 
 export async function PageJsonLd({ page }: { page: PublishedPage }) {
   await io()
-  const origin = getEnv().SITE_URL.replace(/\/$/, "")
+  const origin = await getSiteOrigin()
   const [site, contact, seo, copy] = await Promise.all([
     getSetting("site"),
     getSetting("contact"),

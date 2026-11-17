@@ -47,3 +47,24 @@ export function canonicalHostRedirect(i: CanonicalHostInput): string | null {
     return null
   return `https://${wanted}${i.pathAndSearch}`
 }
+
+// The site's public origin (no trailing slash), on the address the admin
+// picked: canonicals, the sitemap and structured data follow the same choice
+// proxy.ts redirects to. "off" (or an unreadable SITE_URL) keeps SITE_URL as
+// written.
+export function siteOriginFor(
+  siteUrl: string,
+  preferred: PreferredHost
+): string {
+  const plain = siteUrl.replace(/\/$/, "")
+  if (preferred === "off") return plain
+  try {
+    const u = new URL(siteUrl)
+    const bare = bareHost(u.hostname)
+    if (IPV4.test(u.hostname) || u.hostname === "localhost") return plain
+    u.hostname = preferred === "www" ? `www.${bare}` : bare
+    return u.origin
+  } catch {
+    return plain
+  }
+}

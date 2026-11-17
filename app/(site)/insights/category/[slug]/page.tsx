@@ -13,7 +13,7 @@ import { categoryHref } from "@/lib/content/category-href"
 import { categorySubject } from "@/lib/seo/category"
 import { breadcrumbNode, graph } from "@/lib/seo/json-ld"
 import { buildMetadata } from "@/lib/seo/metadata"
-import { getEnv } from "@/server/env"
+import { getSiteOrigin } from "@/server/modules/seo/site-origin"
 import {
   getCategory,
   getCategoryArticles,
@@ -60,7 +60,7 @@ export default async function CategoryPage({
     hero?.type === "hero.page"
       ? hero.data.title
       : (insights?.title ?? copy.breadcrumbInsights)
-  const origin = getEnv().SITE_URL.replace(/\/$/, "")
+  const origin = await getSiteOrigin()
 
   return (
     <>

@@ -564,7 +564,10 @@ function Builder({
           </div>
         </TabsContent>
         <TabsContent value="seo" className="flex flex-col gap-6">
-          <AddressForm page={page} onChanged={(path) => syncCache({ path })} />
+          <AddressForm
+            key={page.path}
+            page={page}
+            onChanged={(path) => syncCache({ path })} />
           <SeoForm
             page={page}
             onSaved={() =>

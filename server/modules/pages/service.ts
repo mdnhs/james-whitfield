@@ -12,7 +12,8 @@ import {
 } from "@/blocks/page"
 import { hasPermission } from "@/lib/auth/permissions"
 import { parseGlobal } from "@/lib/content/globals"
-import type { NewPageInput } from "@/lib/content/page-path"
+import { CustomPagePath, type NewPageInput } from "@/lib/content/page-path"
+import { slugify } from "@/lib/utils"
 import { ApiError, invalid } from "@/server/api/errors"
 import type { Actor } from "@/server/auth/actor"
 import { getDb, type DbLike } from "@/server/db/client"
@@ -312,7 +313,9 @@ export async function updateMeta(
     column: typeof pages.seo | typeof pages.settings,
     value?: object
   ) => (value ? sql`${column} || ${JSON.stringify(value)}::jsonb` : undefined)
+  let moved: Awaited<ReturnType<typeof movePageTx>> | null = null
   const saved = await getDb().transaction(async (tx) => {
+    await lockRedirects(tx)
     // Locked so a concurrent delete 404s instead of crashing below.
     const before = await findPage(tx, id, true)
     await assertMediaExists(tx, collectMediaIds(patch.seo ?? {}))
@@ -355,10 +358,40 @@ export async function updateMeta(
       },
       tx
     )
+    // A custom page's address follows its title (/how-it-works -> /my-approach).
+    // System and service pages keep theirs; a taken, reserved or empty slug
+    // leaves the address alone.
+    if (
+      patch.title !== undefined &&
+      patch.title !== before.title &&
+      !before.systemKey &&
+      !before.serviceId
+    ) {
+      const next = `/${slugify(patch.title)}`
+      const valid = CustomPagePath.safeParse(next).success
+      const [taken] = valid
+        ? await tx
+            .select({ id: pages.id })
+            .from(pages)
+            .where(eq(pages.path, next))
+        : [undefined]
+      if (valid && !taken && next !== before.path)
+        moved = await movePageTx(tx, actor, before, next)
+    }
     return row!
   })
-  invalidate([tags.page(id)])
-  return { title: saved.title, seo: saved.seo, settings: saved.settings }
+  invalidate([
+    tags.page(id),
+    ...(moved
+      ? [tags.routes, ...(moved.redirected ? REDIRECT_TAGS : [])]
+      : []),
+  ])
+  return {
+    title: saved.title,
+    seo: saved.seo,
+    settings: saved.settings,
+    path: moved ? moved.path : saved.path,
+  }
 }
 
 // Inserts a draft page inside the caller's transaction and audits it. The
@@ -491,6 +524,53 @@ async function navigationWarnings(db: DbLike, oldPath: string) {
   return warnings
 }
 
+type PageRow = Awaited<ReturnType<typeof findPage>>
+
+// Moves a custom page inside the caller's transaction (redirects locked by
+// the caller): leaves a 301 behind for a published page and audits the move.
+async function movePageTx(
+  tx: DbLike,
+  actor: Actor,
+  row: PageRow,
+  path: string
+) {
+  const [taken] = await tx
+    .select({ id: pages.id })
+    .from(pages)
+    .where(eq(pages.path, path))
+  if (taken)
+    throw new ApiError("CONFLICT", "A page already lives at that address", {
+      path: ["A page already lives at that address"],
+    })
+  await tx
+    .update(pages)
+    .set({ path, updatedBy: actor.userId })
+    .where(eq(pages.id, row.id))
+  const redirected = row.status === "published"
+  if (redirected) {
+    await recordPathChange(tx, {
+      from: row.path,
+      to: path,
+      pageId: row.id,
+      note: "Automatic: the page's address changed",
+      createdBy: actor.userId,
+    })
+  }
+  await audit(
+    actor,
+    {
+      action: "page.path",
+      entityType: "page",
+      entityId: row.id,
+      summary: `Moved ${row.path} to ${path}`,
+      diff: { path: { from: row.path, to: path } },
+    },
+    tx
+  )
+  const warnings = await navigationWarnings(tx, row.path)
+  return { path, redirected, warnings }
+}
+
 export async function changePagePath(actor: Actor, id: string, path: string) {
   const result = await getDb().transaction(async (tx) => {
     await lockRedirects(tx)
@@ -504,41 +584,7 @@ export async function changePagePath(actor: Actor, id: string, path: string) {
       )
     if (row.path === path)
       return { path, redirected: false, warnings: [] as string[] }
-    const [taken] = await tx
-      .select({ id: pages.id })
-      .from(pages)
-      .where(eq(pages.path, path))
-    if (taken)
-      throw new ApiError("CONFLICT", "A page already lives at that address", {
-        path: ["A page already lives at that address"],
-      })
-    await tx
-      .update(pages)
-      .set({ path, updatedBy: actor.userId })
-      .where(eq(pages.id, id))
-    const redirected = row.status === "published"
-    if (redirected) {
-      await recordPathChange(tx, {
-        from: row.path,
-        to: path,
-        pageId: id,
-        note: "Automatic: the page's address changed",
-        createdBy: actor.userId,
-      })
-    }
-    await audit(
-      actor,
-      {
-        action: "page.path",
-        entityType: "page",
-        entityId: id,
-        summary: `Moved ${row.path} to ${path}`,
-        diff: { path: { from: row.path, to: path } },
-      },
-      tx
-    )
-    const warnings = await navigationWarnings(tx, row.path)
-    return { path, redirected, warnings }
+    return movePageTx(tx, actor, row, path)
   })
   invalidate([
     tags.page(id),

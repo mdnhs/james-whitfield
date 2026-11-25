@@ -313,8 +313,7 @@ export async function updateMeta(
     column: typeof pages.seo | typeof pages.settings,
     value?: object
   ) => (value ? sql`${column} || ${JSON.stringify(value)}::jsonb` : undefined)
-  let moved: Awaited<ReturnType<typeof movePageTx>> | null = null
-  const saved = await getDb().transaction(async (tx) => {
+  const { saved, moved } = await getDb().transaction(async (tx) => {
     await lockRedirects(tx)
     // Locked so a concurrent delete 404s instead of crashing below.
     const before = await findPage(tx, id, true)
@@ -358,6 +357,7 @@ export async function updateMeta(
       },
       tx
     )
+    let moved: Awaited<ReturnType<typeof movePageTx>> | null = null
     // A custom page's address follows its title (/how-it-works -> /my-approach).
     // System and service pages keep theirs; a taken, reserved or empty slug
     // leaves the address alone.
@@ -378,7 +378,7 @@ export async function updateMeta(
       if (valid && !taken && next !== before.path)
         moved = await movePageTx(tx, actor, before, next)
     }
-    return row!
+    return { saved: row!, moved }
   })
   invalidate([
     tags.page(id),
